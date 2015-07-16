@@ -20,22 +20,21 @@ dependencies {
     compile project(':eureka2-core')
     compile project(':eureka2-metrics-spectator')
 
-    compile "org.slf4j:slf4j-simple:${slf4j_version}"
-
     compile "org.codehaus.jettison:jettison:${jettison_version}"
-    compile "com.netflix.archaius:archaius2-guice:${archaius2_version}"
-    compile "com.netflix.archaius:archaius2-archaius1-bridge:${archaius2_version}"
-    compile "com.netflix.governator:governator:${governator_version}" // Required by Karyon admin
-    compile "com.netflix.governator:governator-core:${governator_version}"
+
+    compile "com.netflix.karyon:karyon3-core:${karyon3_version}"
+    compile "com.netflix.karyon:karyon3-archaius2:${karyon3_version}"
     compile "io.reactivex:rxnetty-spectator:${rxnetty_version}"
 
-    compile "com.netflix.karyon:karyon2-core:${karyon_version}"
-    compile("com.netflix.karyon:karyon2-admin-web:${karyon_version}") {
+    // FIXME Depend on karyon2 for the healthcheck framework and the admin console. Switch over to karyon3
+    // once the equivalent is ready.
+    compile "com.netflix.karyon:karyon2-core:${karyon2_version}"
+    compile("com.netflix.karyon:karyon2-admin-web:${karyon2_version}") {
         exclude module: 'eureka-client'
     }
     compile "commons-codec:commons-codec:${commons_codec_version}"
 
-    compile "com.netflix.servo:servo-core:${servo_version}"
+    runtime "org.slf4j:slf4j-simple:${slf4j_version}"
 
     testCompile project(':eureka2-test-utils')
 }

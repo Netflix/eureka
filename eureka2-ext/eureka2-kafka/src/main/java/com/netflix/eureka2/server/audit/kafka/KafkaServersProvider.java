@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.selector.ServiceSelector;
+import com.netflix.eureka2.server.audit.kafka.config.KafkaAuditServiceConfig;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.utils.StreamedDataCollector;
 import rx.functions.Func1;
@@ -44,10 +45,10 @@ public class KafkaServersProvider implements Provider<StreamedDataCollector<Inet
     private static final ServiceSelector SELECTOR = ServiceSelector.selectBy().publicIp(true).or().any();
 
     private final ExtensionContext context;
-    private final KafkaAuditConfig config;
+    private final KafkaAuditServiceConfig config;
 
     @Inject
-    public KafkaServersProvider(ExtensionContext context, KafkaAuditConfig config) {
+    public KafkaServersProvider(ExtensionContext context, KafkaAuditServiceConfig config) {
         this.context = context;
         this.config = config;
     }
@@ -55,7 +56,7 @@ public class KafkaServersProvider implements Provider<StreamedDataCollector<Inet
     @Override
     public StreamedDataCollector<InetSocketAddress> get() {
         StreamedDataCollector<InetSocketAddress> delegate;
-        if (config.getKafkaServerList() == null) {
+        if (config.getServerList() == null) {
             delegate = StreamedDataCollector.from(
                     context.getLocalRegistryView().forInterest(Interests.forVips(config.getKafkaVip())),
                     new Func1<InstanceInfo, InetSocketAddress>() {
@@ -73,7 +74,7 @@ public class KafkaServersProvider implements Provider<StreamedDataCollector<Inet
 
     private List<InetSocketAddress> parseServerList() {
         List<InetSocketAddress> servers = new ArrayList<>();
-        for (String part : SEMICOLON_RE.split(config.getKafkaServerList())) {
+        for (String part : SEMICOLON_RE.split(config.getServerList())) {
             int idx = part.indexOf(':');
             String host;
             int port;

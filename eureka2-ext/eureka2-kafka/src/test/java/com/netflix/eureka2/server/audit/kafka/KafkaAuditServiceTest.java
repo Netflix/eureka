@@ -20,15 +20,15 @@ import java.util.ServiceLoader;
 
 import com.google.inject.Module;
 import com.netflix.eureka2.server.audit.AuditRecord;
+import com.netflix.eureka2.server.audit.kafka.config.KafkaAuditServiceConfig;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
 import com.netflix.eureka2.testkit.data.builder.SampleAuditRecord;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static java.lang.String.format;
+import static com.netflix.eureka2.server.audit.kafka.config.bean.KafkaAuditServiceConfigBean.*;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * @author Tomasz Bak
@@ -38,16 +38,10 @@ public class KafkaAuditServiceTest {
     private KafkaAuditService auditService;
 
     public void setUpAuditService() throws Exception {
-        String kafkaPropertyValue = System.getProperty(KafkaAuditConfig.KAFKA_SERVERS_KEY);
-        if (kafkaPropertyValue == null) {
-            fail(format("This is integration test and requires that system property %s is set", KafkaAuditConfig.KAFKA_SERVERS_KEY));
-        }
-        String kafkaTopic = System.getProperty(KafkaAuditConfig.KAFKA_TOPIC_KEY);
-        if (kafkaTopic == null) {
-            fail(format("This is integration test and requires that system property %s is set", KafkaAuditConfig.KAFKA_TOPIC_KEY));
-        }
-        KafkaAuditConfig config = new KafkaAuditConfig(kafkaPropertyValue, null, -1, kafkaTopic,
-                KafkaAuditConfig.DEFAULT_RETRY_INTERVAL_MS, KafkaAuditConfig.DEFAULT_MAX_QUEUE_SIZE);
+        KafkaAuditServiceConfig config = anKafkaAuditServiceConfig()
+                .withKafkaServerList("localhost:7101")
+                .withKafkaTopic("myTopic")
+                .build();
         KafkaServersProvider kafkaServersProvider = new KafkaServersProvider(null, config);
         auditService = new KafkaAuditService(null, config, kafkaServersProvider);
         auditService.start();
@@ -60,6 +54,8 @@ public class KafkaAuditServiceTest {
         }
     }
 
+    // TODO obsolete as we now use governator profiles for loading
+    @Ignore
     @Test(timeout = 60000)
     public void testServiceLoadBootstrapping() throws Exception {
         ServiceLoader<ExtAbstractModule> loader = ServiceLoader.load(ExtAbstractModule.class);

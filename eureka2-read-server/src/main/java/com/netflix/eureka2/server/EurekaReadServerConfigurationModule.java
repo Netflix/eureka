@@ -13,6 +13,10 @@ import com.netflix.eureka2.server.module.ServerConfigurationModule;
  */
 public abstract class EurekaReadServerConfigurationModule extends ServerConfigurationModule<EurekaServerConfig> {
 
+    public static Module fromArchaius() {
+        return fromArchaius(DEFAULT_CONFIG_PREFIX);
+    }
+
     public static Module fromArchaius(final String prefix) {
         return new EurekaReadServerConfigurationModule() {
             @Provides

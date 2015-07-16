@@ -29,12 +29,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka2.server.audit.AuditRecord;
 import com.netflix.eureka2.server.audit.AuditService;
+import com.netflix.eureka2.server.audit.kafka.config.KafkaAuditServiceConfig;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.utils.Json;
 import com.netflix.eureka2.utils.StreamedDataCollector;
-import kafka.javaapi.producer.Producer;
-import kafka.producer.KeyedMessage;
-import kafka.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -59,7 +61,7 @@ public class KafkaAuditService implements AuditService {
     private final String topic;
     private final StreamedDataCollector<InetSocketAddress> serverSource;
     private final Worker worker;
-    private final KafkaAuditConfig config;
+    private final KafkaAuditServiceConfig config;
 
     /* Access from test */ volatile Producer<String, byte[]> kafkaProducer;
     private final ConcurrentLinkedQueue<AuditRecord> auditRecordQueue = new ConcurrentLinkedQueue<>();
@@ -74,7 +76,7 @@ public class KafkaAuditService implements AuditService {
                 if (currentKafkaProducer != null) {
                     AuditRecord record = auditRecordQueue.peek();
                     try {
-                        KeyedMessage<String, byte[]> message = new KeyedMessage<>(topic, Json.toByteArrayJson(record));
+                        ProducerRecord<String, byte[]> message = new ProducerRecord<>(topic, Json.toByteArrayJson(record));
                         kafkaProducer.send(message);
                         auditRecordQueue.poll();
                     } catch (Exception e) {
@@ -90,20 +92,31 @@ public class KafkaAuditService implements AuditService {
 
     @Inject
     public KafkaAuditService(ExtensionContext context,
-                             KafkaAuditConfig config,
+                             KafkaAuditServiceConfig config,
                              KafkaServersProvider kafkaServersProvider) {
         this(context, config, kafkaServersProvider, Schedulers.io());
     }
 
     public KafkaAuditService(ExtensionContext context,
-                             KafkaAuditConfig config,
+                             KafkaAuditServiceConfig config,
                              KafkaServersProvider kafkaServersProvider,
                              Scheduler scheduler) {
-        config.validateConfiguration();
+        validateConfiguration(config);
         this.config = config;
         this.topic = config.getKafkaTopic() == null ? context.getEurekaClusterName() : config.getKafkaTopic();
         this.serverSource = kafkaServersProvider.get();
         this.worker = scheduler.createWorker();
+    }
+
+    private void validateConfiguration(KafkaAuditServiceConfig config) {
+        if (config.getServerList() == null) {
+            if (config.getKafkaVip() == null) {
+                throw new IllegalArgumentException("No static server list defined, and kafka vip not defined via property");
+            }
+            if (config.getKafkaPort() == 0) {
+                throw new IllegalArgumentException("No static server list defined, and kafka port not defined via property");
+            }
+        }
     }
 
     @PostConstruct
@@ -166,10 +179,13 @@ public class KafkaAuditService implements AuditService {
         String serverProperty = sb.substring(0, sb.length() - 1);
 
         Properties props = new Properties();
-        props.setProperty("metadata.broker.list", serverProperty);
-        props.setProperty("producer.type", "async");
-        props.setProperty("request.required.acks", "0");
+        props.setProperty(ProducerConfig.CLIENT_ID_CONFIG, "eureka2");
+        props.setProperty(ProducerConfig.ACKS_CONFIG, "0");
 
-        return new Producer<String, byte[]>(new ProducerConfig(props));
+        props.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, serverProperty);
+        props.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+        props.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+
+        return new KafkaProducer<>(props);
     }
 }

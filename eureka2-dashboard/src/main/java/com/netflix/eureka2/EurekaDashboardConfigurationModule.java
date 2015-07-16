@@ -20,6 +20,10 @@ public abstract class EurekaDashboardConfigurationModule extends ServerConfigura
         return rootConfig;
     }
 
+    public static Module fromArchaius() {
+        return fromArchaius(DEFAULT_CONFIG_PREFIX);
+    }
+
     public static Module fromArchaius(final String prefix) {
         return new EurekaDashboardConfigurationModule() {
             @Provides
