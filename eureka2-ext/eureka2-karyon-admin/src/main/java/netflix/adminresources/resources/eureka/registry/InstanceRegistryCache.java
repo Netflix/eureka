@@ -37,7 +37,7 @@ public class InstanceRegistryCache {
 
     @PostConstruct
     public void start() {
-        eurekaServer.getEurekaServerRegistry().forInterest(Interests.forFullRegistry())
+        eurekaServer.getEurekaRegistryView().forInterest(Interests.forFullRegistry())
                 .doOnNext(new Action1<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void call(ChangeNotification<InstanceInfo> changeNotification) {

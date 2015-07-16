@@ -4,6 +4,8 @@ import javax.inject.Inject;
 
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
+import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 
@@ -24,5 +26,9 @@ public class EurekaWriteServer extends AbstractEurekaServer {
 
     public int getReplicationPort() {
         return injector.getInstance(TcpReplicationServer.class).serverPort();
+    }
+
+    public SourcedEurekaRegistry<InstanceInfo> getEurekaServerRegistry() {
+        return injector.getInstance(SourcedEurekaRegistry.class);
     }
 }
