@@ -99,6 +99,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  * @author Karthik Ranganathan, Greg Kim
+ * @author Spencer Gibb
  *
  */
 @FineGrainedLazySingleton

@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author Tomasz Bak
+ * @author Spencer Gibb
  */
 public class EurekaJacksonCodec {
 
