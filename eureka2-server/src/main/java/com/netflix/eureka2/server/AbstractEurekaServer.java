@@ -14,7 +14,7 @@ import netflix.adminresources.AdminResourcesContainer;
 /**
  * @author Tomasz Bak
  */
-public class AbstractEurekaServer {
+public abstract class AbstractEurekaServer {
 
     protected final Injector injector;
 

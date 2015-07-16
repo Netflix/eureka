@@ -30,7 +30,7 @@ buildscript {
 }
 
 plugins {
-    id 'nebula.netflixoss' version '2.2.9'
+    id 'nebula.netflixoss' version '2.2.10'
 }
 
 ext {
@@ -70,8 +70,21 @@ subprojects {
     configurations.all {
         exclude group: 'com.netflix.rxjava' // Use io.reactivex:rxjava
         exclude group: 'com.netflix.rxnetty' // Use io.reactivex:rxnetty
-        exclude module: 'log4j' // From ocelli
         exclude module: 'slf4j-log4j12' // From ocelli
+        exclude group: 'log4j', module: 'log4j'  // exclude log4j 1
+
+        resolutionStrategy {
+            eachDependency { DependencyResolveDetails details ->
+                //specifying a fixed version for all jersey libs
+                if (details.requested.group == 'com.sun.jersey') {
+                    details.useVersion "${jersey_version}"
+                }
+
+                if (details.requested.group == 'com.netflix.governator') {
+                    details.useVersion "${governator_version}"
+                }
+            }
+        }
     }
 
     dependencies {

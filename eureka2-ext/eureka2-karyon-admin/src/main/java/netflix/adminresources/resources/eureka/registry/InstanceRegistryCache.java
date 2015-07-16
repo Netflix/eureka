@@ -12,6 +12,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.AbstractEurekaServer;
+import com.netflix.eureka2.utils.rx.NoOpSubscriber;
 import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,15 +38,7 @@ public class InstanceRegistryCache {
     @PostConstruct
     public void start() {
         eurekaServer.getEurekaServerRegistry().forInterest(Interests.forFullRegistry())
-                .doOnError(new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        logger.warn("forInterest to the registry failed", throwable);
-                        registryCache.clear();  // clear the cache of any stale entries, the retry should repopulate
-                    }
-                })
-                .retryWhen(new RetryStrategyFunc(30, TimeUnit.SECONDS))
-                .subscribe(new Action1<ChangeNotification<InstanceInfo>>() {
+                .doOnNext(new Action1<ChangeNotification<InstanceInfo>>() {
                     @Override
                     public void call(ChangeNotification<InstanceInfo> changeNotification) {
                         final ChangeNotification.Kind notificationKind = changeNotification.getKind();
@@ -57,6 +50,15 @@ public class InstanceRegistryCache {
                             registryCache.remove(instInfo.getId());
                         }
                     }
-                });
+                })
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        logger.warn("forInterest to the registry failed", throwable);
+                        registryCache.clear();  // clear the cache of any stale entries, the retry should repopulate
+                    }
+                })
+                .retryWhen(new RetryStrategyFunc(30, TimeUnit.SECONDS))
+                .subscribe(new NoOpSubscriber<ChangeNotification<InstanceInfo>>());
     }
 }

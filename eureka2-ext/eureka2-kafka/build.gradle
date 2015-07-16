@@ -19,12 +19,7 @@ apply plugin: 'osgi'
 dependencies {
     compile project(':eureka2-server')
     compile project(':eureka2-client')
-    compile("org.apache.kafka:kafka_2.9.2:${kafka_version}") {
-        exclude module: 'jms'
-        exclude module: 'jmxtools'
-        exclude module: 'jmxri'
-        exclude module: 'zookeeper'
-    }
+    compile "org.apache.kafka:kafka-clients:${kafka_version}"
 
     testCompile project(':eureka2-test-utils')
 }

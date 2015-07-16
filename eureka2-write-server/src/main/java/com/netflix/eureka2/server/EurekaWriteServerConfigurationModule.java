@@ -27,6 +27,10 @@ public abstract class EurekaWriteServerConfigurationModule extends ServerConfigu
         return rootConfig.getBootstrap();
     }
 
+    public static Module fromArchaius() {
+        return fromArchaius(DEFAULT_CONFIG_PREFIX);
+    }
+
     public static Module fromArchaius(final String prefix) {
         return new EurekaWriteServerConfigurationModule() {
             @Provides

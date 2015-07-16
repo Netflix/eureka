@@ -17,6 +17,8 @@ import javax.inject.Singleton;
  */
 public abstract class ServerConfigurationModule<T extends EurekaServerConfig> extends AbstractModule {
 
+    protected static final String DEFAULT_CONFIG_PREFIX = "eureka2.";
+
     @Override
     protected void configure() {
         install(new ArchaiusModule());
