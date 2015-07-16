@@ -3,6 +3,7 @@ package com.netflix.eureka2.server;
 import com.google.inject.Binding;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
@@ -54,8 +55,8 @@ public abstract class AbstractEurekaServer {
         return -1;
     }
 
-    public SourcedEurekaRegistry<InstanceInfo> getEurekaServerRegistry() {
-        return injector.getInstance(SourcedEurekaRegistry.class);
+    public EurekaRegistryView<InstanceInfo> getEurekaRegistryView() {
+        return injector.getInstance(EurekaRegistryView.class);
     }
 
     public void shutdown() {
