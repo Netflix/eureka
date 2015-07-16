@@ -99,6 +99,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  * @author Karthik Ranganathan, Greg Kim
+ * @author Spencer Gibb
  *
  */
 @FineGrainedLazySingleton
@@ -196,6 +197,15 @@ public class DiscoveryClient implements EurekaClient {
 
         @Inject(optional = true)
         private Provider<HealthCheckHandler> healthCheckHandlerProvider;
+
+        public DiscoveryClientOptionalArgs() { }
+
+        public DiscoveryClientOptionalArgs(EventBus eventBus, Provider<HealthCheckCallback> healthCheckCallbackProvider, Provider<HealthCheckHandler> healthCheckHandlerProvider) {
+            this.eventBus = eventBus;
+            this.healthCheckCallbackProvider = healthCheckCallbackProvider;
+            this.healthCheckHandlerProvider = healthCheckHandlerProvider;
+        }
+
     }
 
     /**
