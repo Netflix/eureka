@@ -3,6 +3,7 @@ package com.netflix.eureka2.testkit.embedded.cluster;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.inject.Module;
 import com.netflix.eureka2.Server;
@@ -25,6 +26,7 @@ import static com.netflix.eureka2.server.config.bean.EurekaServerTransportConfig
  */
 public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServer, Server, ReadClusterReport> {
 
+    public static final AtomicInteger READ_SERVER_ID = new AtomicInteger(0);
     public static final String READ_SERVER_NAME = "eureka2-read";
     public static final int READ_SERVER_PORTS_FROM = 14000;
 
@@ -82,6 +84,7 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
         EurekaServerConfig config = anEurekaServerConfig()
                 .withInstanceInfoConfig(
                         anEurekaInstanceInfoConfig()
+                                .withUniqueId("" + READ_SERVER_ID.getAndIncrement())
                                 .withEurekaApplicationName(READ_SERVER_NAME)
                                 .withEurekaVipAddress(READ_SERVER_NAME)
                                 .build()
