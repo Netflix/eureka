@@ -139,6 +139,10 @@ public class TcpReplicationHandler implements ConnectionHandler<Object, Object> 
                                 }
                                 return false;
                             }
+                            @Override
+                            public String toString() {
+                                return "evictAllOlderMatcher{" + currSource + "}";
+                            }
                         };
 
                         return registry.evictAll(evictAllOlderMatcher);

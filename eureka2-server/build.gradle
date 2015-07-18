@@ -24,6 +24,12 @@ dependencies {
 
     compile "com.netflix.karyon:karyon3-core:${karyon3_version}"
     compile "com.netflix.karyon:karyon3-archaius2:${karyon3_version}"
+    // add archaius2 dependencies directly (for now) as karyon3 brings in a bad version. Remove once karyon3 is re-released
+    compile "com.netflix.archaius:archaius2-core:${archaius2_version}"
+    compile "com.netflix.archaius:archaius2-guice:${archaius2_version}"
+    compile "com.netflix.archaius:archaius2-persisted2:${archaius2_version}"
+    compile "com.netflix.archaius:archaius2-archaius1-bridge:${archaius2_version}"
+
     compile "io.reactivex:rxnetty-spectator:${rxnetty_version}"
 
     // FIXME Depend on karyon2 for the healthcheck framework and the admin console. Switch over to karyon3

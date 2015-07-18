@@ -105,6 +105,10 @@ public abstract class AbstractInterestClient implements EurekaInterestClient {
                                                 }
                                                 return false;
                                             }
+                                            @Override
+                                            public String toString() {
+                                                return "evictAllOlderMatcher{" + currSource + "}";
+                                            }
                                         };
 
                                         return registry.evictAll(evictAllOlderMatcher);

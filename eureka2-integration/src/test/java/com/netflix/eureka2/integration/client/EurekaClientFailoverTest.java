@@ -22,6 +22,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Subscription;
 import rx.subjects.PublishSubject;
 
@@ -38,6 +40,8 @@ import static org.junit.Assert.fail;
  */
 @Category({IntegrationTest.class, LongRunningTest.class})
 public class EurekaClientFailoverTest {
+
+    private static final Logger logger = LoggerFactory.getLogger(EurekaClientFailoverTest.class);
 
     private static final InstanceInfo INSTANCE_UP = SampleInstanceInfo.WebServer.build();
     private static final InstanceInfo INSTANCE_DOWN = new InstanceInfo.Builder().withInstanceInfo(INSTANCE_UP).withStatus(Status.DOWN).build();
@@ -120,6 +124,8 @@ public class EurekaClientFailoverTest {
 
         assertThat(registrationSubscription.isUnsubscribed(), is(false));
         assertThat(interestSubscriber.takeNext(60, TimeUnit.SECONDS), is(modifyChangeNotificationOf(INSTANCE_DOWN)));
+
+        logger.info("TEST COMPLETED");
     }
 
     private ExtTestSubscriber<ChangeNotification<InstanceInfo>> subscribeTo(EurekaInterestClient interestClient, InstanceInfo instanceInfo) {
