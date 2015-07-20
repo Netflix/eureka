@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author Tomasz Bak
+ * @author Spencer Gibb
  */
 public class EurekaJacksonCodec {
 
@@ -57,36 +58,36 @@ public class EurekaJacksonCodec {
     public static final String NODE_DATACENTER = "dataCenterInfo";
     public static final String NODE_APP = "application";
 
-    private static final String ELEM_INSTANCE = "instance";
-    private static final String ELEM_OVERRIDDEN_STATUS = "overriddenstatus";
-    private static final String ELEM_HOST = "hostName";
-    private static final String ELEM_APP = "app";
-    private static final String ELEM_IP = "ipAddr";
-    private static final String ELEM_SID = "sid";
-    private static final String ELEM_STATUS = "status";
-    private static final String ELEM_PORT = "port";
-    private static final String ELEM_SECURE_PORT = "securePort";
-    private static final String ELEM_COUNTRY_ID = "countryId";
-    private static final String ELEM_IDENTIFYING_ATTR = "identifyingAttribute";
-    private static final String ELEM_HEALTHCHECKURL = "healthCheckUrl";
-    private static final String ELEM_SECHEALTHCHECKURL = "secureHealthCheckUrl";
-    private static final String ELEM_APPGROUPNAME = "appGroupName";
-    private static final String ELEM_HOMEPAGEURL = "homePageUrl";
-    private static final String ELEM_STATUSPAGEURL = "statusPageUrl";
-    private static final String ELEM_VIPADDRESS = "vipAddress";
-    private static final String ELEM_SECVIPADDRESS = "secureVipAddress";
-    private static final String ELEM_ISCOORDINATINGDISCSOERVER = "isCoordinatingDiscoveryServer";
-    private static final String ELEM_LASTUPDATEDTS = "lastUpdatedTimestamp";
-    private static final String ELEM_LASTDIRTYTS = "lastDirtyTimestamp";
-    private static final String ELEM_ACTIONTYPE = "actionType";
-    private static final String ELEM_ASGNAME = "asgName";
-    private static final String ELEM_NAME = "name";
-    private static final String DATACENTER_METADATA = "metadata";
+    protected static final String ELEM_INSTANCE = "instance";
+    protected static final String ELEM_OVERRIDDEN_STATUS = "overriddenstatus";
+    protected static final String ELEM_HOST = "hostName";
+    protected static final String ELEM_APP = "app";
+    protected static final String ELEM_IP = "ipAddr";
+    protected static final String ELEM_SID = "sid";
+    protected static final String ELEM_STATUS = "status";
+    protected static final String ELEM_PORT = "port";
+    protected static final String ELEM_SECURE_PORT = "securePort";
+    protected static final String ELEM_COUNTRY_ID = "countryId";
+    protected static final String ELEM_IDENTIFYING_ATTR = "identifyingAttribute";
+    protected static final String ELEM_HEALTHCHECKURL = "healthCheckUrl";
+    protected static final String ELEM_SECHEALTHCHECKURL = "secureHealthCheckUrl";
+    protected static final String ELEM_APPGROUPNAME = "appGroupName";
+    protected static final String ELEM_HOMEPAGEURL = "homePageUrl";
+    protected static final String ELEM_STATUSPAGEURL = "statusPageUrl";
+    protected static final String ELEM_VIPADDRESS = "vipAddress";
+    protected static final String ELEM_SECVIPADDRESS = "secureVipAddress";
+    protected static final String ELEM_ISCOORDINATINGDISCSOERVER = "isCoordinatingDiscoveryServer";
+    protected static final String ELEM_LASTUPDATEDTS = "lastUpdatedTimestamp";
+    protected static final String ELEM_LASTDIRTYTS = "lastDirtyTimestamp";
+    protected static final String ELEM_ACTIONTYPE = "actionType";
+    protected static final String ELEM_ASGNAME = "asgName";
+    protected static final String ELEM_NAME = "name";
+    protected static final String DATACENTER_METADATA = "metadata";
 
-    private static final String VERSIONS_DELTA_TEMPLATE = "versions_delta";
-    private static final String APPS_HASHCODE_TEMPTE = "apps_hashcode";
+    protected static final String VERSIONS_DELTA_TEMPLATE = "versions_delta";
+    protected static final String APPS_HASHCODE_TEMPTE = "apps_hashcode";
 
-    public static final EurekaJacksonCodec INSTANCE = new EurekaJacksonCodec();
+    public static EurekaJacksonCodec INSTANCE = new EurekaJacksonCodec();
 
     /**
      * XStream codec supports character replacement in field names to generate XML friendly
@@ -114,13 +115,13 @@ public class EurekaJacksonCodec {
         module.addSerializer(DataCenterInfo.class, new DataCenterInfoSerializer());
         module.addSerializer(InstanceInfo.class, new InstanceInfoSerializer());
         module.addSerializer(Application.class, new ApplicationSerializer());
-        module.addSerializer(Applications.class, new ApplicationsSerializer());
+        module.addSerializer(Applications.class, new ApplicationsSerializer(this.versionDeltaKey, this.appHashCodeKey));
 
-        module.addDeserializer(DataCenterInfo.class, new DataCenterInfoDeserializer());
+        module.addDeserializer(DataCenterInfo.class, new DataCenterInfoDeserializer(cache));
         module.addDeserializer(LeaseInfo.class, new LeaseInfoDeserializer());
-        module.addDeserializer(InstanceInfo.class, new InstanceInfoDeserializer(cache));
-        module.addDeserializer(Application.class, new ApplicationDeserializer());
-        module.addDeserializer(Applications.class, new ApplicationsDeserializer());
+        module.addDeserializer(InstanceInfo.class, new InstanceInfoDeserializer(this.mapper, cache));
+        module.addDeserializer(Application.class, new ApplicationDeserializer(this.mapper, cache));
+        module.addDeserializer(Applications.class, new ApplicationsDeserializer(this.mapper, this.versionDeltaKey, this.appHashCodeKey));
 
         this.mapper.registerModule(module);
 
@@ -137,7 +138,23 @@ public class EurekaJacksonCodec {
         this.objectWriterByClass = writers;
     }
 
-    private static String formatKey(String keyTemplate) {
+    protected ObjectMapper getMapper() {
+        return mapper;
+    }
+
+    protected String getVersionDeltaKey() {
+        return versionDeltaKey;
+    }
+
+    protected String getAppHashCodeKey() {
+        return appHashCodeKey;
+    }
+
+    protected StringCache getCache() {
+        return cache;
+    }
+
+    protected static String formatKey(String keyTemplate) {
         EurekaClientConfig clientConfig = DiscoveryManager.getInstance().getEurekaClientConfig();
         String replacement;
         if (clientConfig == null) {
@@ -197,8 +214,11 @@ public class EurekaJacksonCodec {
         return INSTANCE;
     }
 
-    private static class DataCenterInfoSerializer extends JsonSerializer<DataCenterInfo> {
+    public static void setInstance(EurekaJacksonCodec instance) {
+        INSTANCE = instance;
+    }
 
+    public static class DataCenterInfoSerializer extends JsonSerializer<DataCenterInfo> {
         @Override
         public void serializeWithType(DataCenterInfo dataCenterInfo, JsonGenerator jgen,
                                       SerializerProvider provider, TypeSerializer typeSer)
@@ -227,7 +247,13 @@ public class EurekaJacksonCodec {
         }
     }
 
-    private class DataCenterInfoDeserializer extends JsonDeserializer<DataCenterInfo> {
+    public static class DataCenterInfoDeserializer extends JsonDeserializer<DataCenterInfo> {
+
+        protected StringCache cache;
+
+        public DataCenterInfoDeserializer(StringCache cache) {
+            this.cache = cache;
+        }
 
         @Override
         public DataCenterInfo deserialize(JsonParser jp, DeserializationContext context) throws IOException {
@@ -258,14 +284,14 @@ public class EurekaJacksonCodec {
         }
     }
 
-    private static class LeaseInfoDeserializer extends JsonDeserializer<LeaseInfo> {
+    public static class LeaseInfoDeserializer extends JsonDeserializer<LeaseInfo> {
 
-        private static final String ELEM_RENEW_INT = "renewalIntervalInSecs";
-        private static final String ELEM_DURATION = "durationInSecs";
-        private static final String ELEM_REG_TIMESTAMP = "registrationTimestamp";
-        private static final String ELEM_LAST_RENEW_TIMESTAMP = "lastRenewalTimestamp";
-        private static final String ELEM_EVICTION_TIMESTAMP = "evictionTimestamp";
-        private static final String ELEM_SERVICE_UP_TIMESTAMP = "serviceUpTimestamp";
+        protected static final String ELEM_RENEW_INT = "renewalIntervalInSecs";
+        protected static final String ELEM_DURATION = "durationInSecs";
+        protected static final String ELEM_REG_TIMESTAMP = "registrationTimestamp";
+        protected static final String ELEM_LAST_RENEW_TIMESTAMP = "lastRenewalTimestamp";
+        protected static final String ELEM_EVICTION_TIMESTAMP = "evictionTimestamp";
+        protected static final String ELEM_SERVICE_UP_TIMESTAMP = "serviceUpTimestamp";
 
         @Override
         public LeaseInfo deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
@@ -296,9 +322,9 @@ public class EurekaJacksonCodec {
         }
     }
 
-    private static class InstanceInfoSerializer extends JsonSerializer<InstanceInfo> {
+    public static class InstanceInfoSerializer extends JsonSerializer<InstanceInfo> {
         // For backwards compatibility
-        private static final Object EMPTY_METADATA = Collections.singletonMap("@class", "java.util.Collections$EmptyMap");
+        protected static final Object EMPTY_METADATA = Collections.singletonMap("@class", "java.util.Collections$EmptyMap");
 
         @Override
         public void serialize(InstanceInfo info, JsonGenerator jgen, SerializerProvider provider) throws IOException {
@@ -349,7 +375,7 @@ public class EurekaJacksonCodec {
             jgen.writeEndObject();
         }
 
-        private void autoMarshalEligible(Object o, JsonGenerator jgen) {
+        protected void autoMarshalEligible(Object o, JsonGenerator jgen) {
             try {
                 Class c = o.getClass();
                 Field[] fields = c.getDeclaredFields();
@@ -370,10 +396,12 @@ public class EurekaJacksonCodec {
         }
     }
 
-    private class InstanceInfoDeserializer extends JsonDeserializer<InstanceInfo> {
-        private final StringCache cache;
+    public static class InstanceInfoDeserializer extends JsonDeserializer<InstanceInfo> {
+        protected ObjectMapper mapper;
+        protected final StringCache cache;
 
-        private InstanceInfoDeserializer(StringCache cache) {
+        protected InstanceInfoDeserializer(ObjectMapper mapper, StringCache cache) {
+            this.mapper = mapper;
             this.cache = cache;
         }
 
@@ -478,7 +506,7 @@ public class EurekaJacksonCodec {
             return builder.build();
         }
 
-        private void autoUnmarshalEligible(String fieldName, String value, Object o) {
+        protected void autoUnmarshalEligible(String fieldName, String value, Object o) {
             try {
                 Class c = o.getClass();
                 Field f = null;
@@ -514,7 +542,7 @@ public class EurekaJacksonCodec {
 
     }
 
-    private static class ApplicationSerializer extends JsonSerializer<Application> {
+    public static class ApplicationSerializer extends JsonSerializer<Application> {
         @Override
         public void serialize(Application value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
             jgen.writeStartObject();
@@ -524,7 +552,15 @@ public class EurekaJacksonCodec {
         }
     }
 
-    private class ApplicationDeserializer extends JsonDeserializer<Application> {
+    public static class ApplicationDeserializer extends JsonDeserializer<Application> {
+
+        protected ObjectMapper mapper;
+        protected StringCache cache;
+
+        public ApplicationDeserializer(ObjectMapper mapper, StringCache cache) {
+            this.mapper = mapper;
+            this.cache = cache;
+        }
 
         @Override
         public Application deserialize(JsonParser jp, DeserializationContext context) throws IOException {
@@ -550,7 +586,15 @@ public class EurekaJacksonCodec {
         }
     }
 
-    private class ApplicationsSerializer extends JsonSerializer<Applications> {
+    public static class ApplicationsSerializer extends JsonSerializer<Applications> {
+        protected String versionDeltaKey;
+        protected String appHashCodeKey;
+
+        public ApplicationsSerializer(String versionDeltaKey, String appHashCodeKey) {
+            this.versionDeltaKey = versionDeltaKey;
+            this.appHashCodeKey = appHashCodeKey;
+        }
+
         @Override
         public void serialize(Applications applications, JsonGenerator jgen, SerializerProvider provider) throws IOException {
             jgen.writeStartObject();
@@ -560,7 +604,17 @@ public class EurekaJacksonCodec {
         }
     }
 
-    private class ApplicationsDeserializer extends JsonDeserializer<Applications> {
+    public static class ApplicationsDeserializer extends JsonDeserializer<Applications> {
+        protected ObjectMapper mapper;
+        protected String versionDeltaKey;
+        protected String appHashCodeKey;
+
+        public ApplicationsDeserializer(ObjectMapper mapper, String versionDeltaKey, String appHashCodeKey) {
+            this.mapper = mapper;
+            this.versionDeltaKey = versionDeltaKey;
+            this.appHashCodeKey = appHashCodeKey;
+        }
+
         @Override
         public Applications deserialize(JsonParser jp, DeserializationContext context) throws IOException {
             Applications apps = new Applications();

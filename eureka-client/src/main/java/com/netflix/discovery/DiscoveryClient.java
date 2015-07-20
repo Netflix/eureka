@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -73,6 +74,7 @@ import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.filter.ClientFilter;
 import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import org.slf4j.Logger;
@@ -196,6 +198,27 @@ public class DiscoveryClient implements EurekaClient {
 
         @Inject(optional = true)
         private Provider<HealthCheckHandler> healthCheckHandlerProvider;
+
+        @Inject(optional = true)
+        private Collection<ClientFilter> additionalFilters;
+
+        public DiscoveryClientOptionalArgs() { }
+
+        public void setEventBus(EventBus eventBus) {
+            this.eventBus = eventBus;
+        }
+
+        public void setHealthCheckCallbackProvider(Provider<HealthCheckCallback> healthCheckCallbackProvider) {
+            this.healthCheckCallbackProvider = healthCheckCallbackProvider;
+        }
+
+        public void setHealthCheckHandlerProvider(Provider<HealthCheckHandler> healthCheckHandlerProvider) {
+            this.healthCheckHandlerProvider = healthCheckHandlerProvider;
+        }
+
+        public void setAdditionalFilters(Collection<ClientFilter> additionalFilters) {
+            this.additionalFilters = additionalFilters;
+        }
     }
 
     /**
@@ -351,6 +374,13 @@ public class DiscoveryClient implements EurekaClient {
             String ip = instanceInfo == null ? null : instanceInfo.getIPAddr();
             EurekaClientIdentity identity = new EurekaClientIdentity(ip);
             discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
+
+            // add additional ClientFilters if specified
+            if (args != null && args.additionalFilters != null) {
+                for (ClientFilter filter : args.additionalFilters) {
+                    discoveryApacheClient.addFilter(filter);
+                }
+            }
 
         } catch (Throwable e) {
             throw new RuntimeException("Failed to initialize DiscoveryClient!", e);
