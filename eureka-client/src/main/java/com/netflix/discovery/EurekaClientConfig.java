@@ -506,4 +506,14 @@ public interface EurekaClientConfig {
      * @return true or false for whether local status updates should be updated to remote servers on-demand
      */
     boolean shouldOnDemandUpdateStatusChange();
+
+    /**
+     * @return the class name of the json codec to use for the client. If none set a default codec will be used
+     */
+    String getJsonCodecName();
+
+    /**
+     * @return the class name of the xml codec to use for the client. If none set a default codec will be used
+     */
+    String getXmlCodecName();
 }

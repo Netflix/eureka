@@ -10,8 +10,8 @@ import java.net.UnknownHostException;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.EurekaIdentityHeaderFilter;
-import com.netflix.discovery.shared.EurekaJerseyClient;
-import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
+import com.netflix.discovery.shared.JerseyClient;
+import com.netflix.discovery.shared.JerseyClientConfigBuilder;
 import com.netflix.discovery.shared.JerseyEurekaHttpClient;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerIdentity;
@@ -49,19 +49,27 @@ public class JerseyReplicationClient extends JerseyEurekaHttpClient implements H
             String jerseyClientName = "Discovery-PeerNodeClient-" + hostname;
             if (serviceUrl.startsWith("https://") &&
                     "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
-                jerseyClient = EurekaJerseyClient.createSystemSSLJerseyClient(jerseyClientName,
+                jerseyClient = new JerseyClient(
                         config.getPeerNodeConnectTimeoutMs(),
                         config.getPeerNodeReadTimeoutMs(),
-                        config.getPeerNodeTotalConnections(),
-                        config.getPeerNodeTotalConnectionsPerHost(),
-                        config.getPeerNodeConnectionIdleTimeoutSeconds());
+                        config.getPeerNodeConnectionIdleTimeoutSeconds(),
+                        JerseyClientConfigBuilder.newSystemSSLClientConfigBuilder()
+                                .withClientName(jerseyClientName)
+                                .withMaxConnectionsPerHost(config.getPeerNodeTotalConnectionsPerHost())
+                                .withMaxTotalConnections(config.getPeerNodeTotalConnections())
+                                .build()
+                );
             } else {
-                jerseyClient = EurekaJerseyClient.createJerseyClient(jerseyClientName,
+                jerseyClient = new JerseyClient(
                         config.getPeerNodeConnectTimeoutMs(),
                         config.getPeerNodeReadTimeoutMs(),
-                        config.getPeerNodeTotalConnections(),
-                        config.getPeerNodeTotalConnectionsPerHost(),
-                        config.getPeerNodeConnectionIdleTimeoutSeconds());
+                        config.getPeerNodeConnectionIdleTimeoutSeconds(),
+                        JerseyClientConfigBuilder.newClientConfigBuilder()
+                                .withClientName(jerseyClientName)
+                                .withMaxConnectionsPerHost(config.getPeerNodeTotalConnectionsPerHost())
+                                .withMaxTotalConnections(config.getPeerNodeTotalConnections())
+                                .build()
+                );
             }
             jerseyApacheClient = jerseyClient.getClient();
             jerseyApacheClient.addFilter(new DynamicGZIPContentEncodingFilter(config));

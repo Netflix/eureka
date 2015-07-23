@@ -12,8 +12,8 @@ import java.util.regex.Pattern;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.EurekaHttpClient.HttpResponse;
-import com.netflix.discovery.shared.EurekaJerseyClient;
-import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
+import com.netflix.discovery.shared.JerseyClient;
+import com.netflix.discovery.shared.JerseyClientConfigBuilder;
 import com.netflix.discovery.shared.JerseyEurekaHttpClient;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.netflix.eureka.EurekaServerConfig;
@@ -78,12 +78,17 @@ public class EurekaClientServerRestIntegrationTest {
 
             @Override
             protected ApacheHttpClient4 getJerseyApacheClient() {
-                jerseyClient = EurekaJerseyClient.createJerseyClient("testEurekaClient",
+                jerseyClient = new JerseyClient(
                         1000,  // connection timeout
                         1000,  // read timeout
-                        1,     // max connections per host
-                        1,     // max total connections
-                        1000); // connection idle timeout
+                        1000,  // connection idle timeout
+                        JerseyClientConfigBuilder.newClientConfigBuilder()
+                                .withClientName("testEurekaClient")
+                            .withMaxConnectionsPerHost(1)
+                            .withMaxTotalConnections(1)
+                            .build()
+                );
+
                 ApacheHttpClient4 jerseyApacheClient = jerseyClient.getClient();
                 jerseyApacheClient.addFilter(new GZIPContentEncodingFilter(true));
                 return jerseyApacheClient;
@@ -295,6 +300,5 @@ public class EurekaClientServerRestIntegrationTest {
         when(eurekaServerConfig.getPeerNodeTotalConnections()).thenReturn(1);
         when(eurekaServerConfig.getPeerNodeTotalConnectionsPerHost()).thenReturn(1);
         when(eurekaServerConfig.getPeerNodeConnectionIdleTimeoutSeconds()).thenReturn(1000);
-
     }
 }

@@ -1,22 +1,34 @@
 package com.netflix.discovery.converters;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.EnumMap;
 import java.util.Map;
 
 import com.netflix.discovery.converters.jackson.EurekaJacksonCodecNG;
+
+import javax.ws.rs.core.MediaType;
 
 /**
  * @author Tomasz Bak
  */
 public abstract class CodecWrapper {
 
-    enum CodecType {
+    public enum CodecType {
         XStreamJson,
         XStreamXml,
         LegacyJacksonJson,
         JacksonJson,
-        JacksonXml
+        JacksonXml;
+
+        public static CodecType from(String name) {
+            try {
+                return CodecType.valueOf(name);
+            } catch (Exception e) {
+                return null;
+            }
+        }
     }
 
     private static final Map<CodecType, CodecWrapper> jsonCodecsByType = new EnumMap<CodecType, CodecWrapper>(CodecType.class);
@@ -35,7 +47,11 @@ public abstract class CodecWrapper {
 
     public abstract <T> String encode(T object) throws IOException;
 
+    public abstract <T> void encode(T object, OutputStream outputStream) throws IOException;
+
     public abstract <T> T decode(String textValue, Class<T> type) throws IOException;
+
+    public abstract <T> T decode(InputStream inputStream, Class<T> type) throws IOException;
 
     public static CodecWrapper[] availableJsonCodecs() {
         return jsonCodecsByType.values().toArray(new CodecWrapper[jsonCodecsByType.size()]);
@@ -45,7 +61,20 @@ public abstract class CodecWrapper {
         return xmlCodecsByType.values().toArray(new CodecWrapper[xmlCodecsByType.size()]);
     }
 
-    static class XStreamXmlWrapper extends CodecWrapper {
+    public static CodecWrapper get(CodecType type) {
+        if (type == null) {
+            return null;
+        }
+
+        CodecWrapper wrapper = jsonCodecsByType.get(type);
+        if (wrapper == null) {
+            wrapper = xmlCodecsByType.get(type);
+        }
+        return wrapper;
+    }
+
+
+    public static class XStreamXmlWrapper extends CodecWrapper {
 
         @Override
         public CodecType getCodecType() {
@@ -58,12 +87,22 @@ public abstract class CodecWrapper {
         }
 
         @Override
+        public <T> void encode(T object, OutputStream outputStream) throws IOException {
+            XmlXStream.getInstance().toXML(object, outputStream);
+        }
+
+        @Override
         public <T> T decode(String textValue, Class<T> type) throws IOException {
             return (T) XmlXStream.getInstance().fromXML(textValue, type);
         }
+
+        @Override
+        public <T> T decode(InputStream inputStream, Class<T> type) throws IOException {
+            return (T) XmlXStream.getInstance().fromXML(inputStream, type);
+        }
     }
 
-    static class XStreamJsonWrapper extends CodecWrapper {
+    public static class XStreamJsonWrapper extends CodecWrapper {
 
         @Override
         public CodecType getCodecType() {
@@ -76,12 +115,22 @@ public abstract class CodecWrapper {
         }
 
         @Override
+        public <T> void encode(T object, OutputStream outputStream) throws IOException {
+            JsonXStream.getInstance().toXML(object, outputStream);
+        }
+
+        @Override
         public <T> T decode(String textValue, Class<T> type) throws IOException {
             return (T) JsonXStream.getInstance().fromXML(textValue, type);
         }
+
+        @Override
+        public <T> T decode(InputStream inputStream, Class<T> type) throws IOException {
+            return (T) JsonXStream.getInstance().fromXML(inputStream, type);
+        }
     }
 
-    static class LegacyJacksonJsonWrapper extends CodecWrapper {
+    public static class LegacyJacksonJsonWrapper extends CodecWrapper {
 
         private final EurekaJacksonCodec codec = new EurekaJacksonCodec();
 
@@ -96,12 +145,22 @@ public abstract class CodecWrapper {
         }
 
         @Override
+        public <T> void encode(T object, OutputStream outputStream) throws IOException {
+            codec.writeTo(object, outputStream);
+        }
+
+        @Override
         public <T> T decode(String textValue, Class<T> type) throws IOException {
             return codec.readValue(type, textValue);
         }
+
+        @Override
+        public <T> T decode(InputStream inputStream, Class<T> type) throws IOException {
+            return codec.readValue(type, inputStream);
+        }
     }
 
-    static class JacksonJsonWrapper extends CodecWrapper {
+    public static class JacksonJsonWrapper extends CodecWrapper {
 
         private final EurekaJacksonCodecNG codec = new EurekaJacksonCodecNG();
 
@@ -116,12 +175,22 @@ public abstract class CodecWrapper {
         }
 
         @Override
+        public <T> void encode(T object, OutputStream outputStream) throws IOException {
+            codec.writeTo(object, outputStream, MediaType.APPLICATION_JSON_TYPE);
+        }
+
+        @Override
         public <T> T decode(String textValue, Class<T> type) throws IOException {
             return codec.getJsonMapper().readValue(textValue, type);
         }
+
+        @Override
+        public <T> T decode(InputStream inputStream, Class<T> type) throws IOException {
+            return codec.getJsonMapper().readValue(inputStream, type);
+        }
     }
 
-    static class JacksonXmlWrapper extends CodecWrapper {
+    public static class JacksonXmlWrapper extends CodecWrapper {
 
         private final EurekaJacksonCodecNG codec = new EurekaJacksonCodecNG();
 
@@ -136,8 +205,18 @@ public abstract class CodecWrapper {
         }
 
         @Override
+        public <T> void encode(T object, OutputStream outputStream) throws IOException {
+            codec.writeTo(object, outputStream, MediaType.APPLICATION_XML_TYPE);
+        }
+
+        @Override
         public <T> T decode(String textValue, Class<T> type) throws IOException {
             return codec.getXmlMapper().readValue(textValue, type);
+        }
+
+        @Override
+        public <T> T decode(InputStream inputStream, Class<T> type) throws IOException {
+            return codec.getXmlMapper().readValue(inputStream, type);
         }
     }
 }

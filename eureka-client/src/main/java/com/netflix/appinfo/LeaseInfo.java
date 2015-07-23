@@ -159,19 +159,33 @@ public class LeaseInfo {
     private LeaseInfo() {
     }
 
+    /**
+     * TODO: note about renewalTimestamp legacy:
+     * The previous change to use Jackson ser/deser changed the field name for lastRenewalTimestamp to renewalTimestamp
+     * for serialization, which causes an incompatibility with the jacksonNG codec when the server returns data with
+     * field renewalTimestamp and jacksonNG expects lastRenewalTimestamp. Remove this legacy field from client code
+     * in a few releases (once servers are updated to a release that generates json with the correct
+     * lastRenewalTimestamp).
+     */
     @JsonCreator
     public LeaseInfo(@JsonProperty("renewalIntervalInSecs") int renewalIntervalInSecs,
                      @JsonProperty("durationInSecs") int durationInSecs,
                      @JsonProperty("registrationTimestamp") long registrationTimestamp,
-                     @JsonProperty("lastRenewalTimestamp") long lastRenewalTimestamp,
+                     @JsonProperty("lastRenewalTimestamp") Long lastRenewalTimestamp,
+                     @JsonProperty("renewalTimestamp") Long lastRenewalTimestampLegacy,  // for legacy
                      @JsonProperty("evictionTimestamp") long evictionTimestamp,
                      @JsonProperty("serviceUpTimestamp") long serviceUpTimestamp) {
         this.renewalIntervalInSecs = renewalIntervalInSecs;
         this.durationInSecs = durationInSecs;
         this.registrationTimestamp = registrationTimestamp;
-        this.lastRenewalTimestamp = lastRenewalTimestamp;
         this.evictionTimestamp = evictionTimestamp;
         this.serviceUpTimestamp = serviceUpTimestamp;
+
+        if (lastRenewalTimestamp == null) {
+            this.lastRenewalTimestamp = lastRenewalTimestampLegacy;
+        } else {
+            this.lastRenewalTimestamp = lastRenewalTimestamp;
+        }
     }
 
     /**

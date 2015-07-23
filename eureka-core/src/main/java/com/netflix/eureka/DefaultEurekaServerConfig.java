@@ -31,6 +31,7 @@ import com.netflix.config.DynamicIntProperty;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
 import com.netflix.config.DynamicStringSetProperty;
+import com.netflix.discovery.converters.CodecWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -570,6 +571,18 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     @Override
     public boolean shouldLogIdentityHeaders() {
         return configInstance.getBooleanProperty(namespace + "auth.shouldLogIdentityHeaders", true).get();
+    }
+
+    @Override
+    public String getJsonCodecName() {
+        return configInstance.getStringProperty(
+                namespace + "jsonCodecName", null).get();
+    }
+
+    @Override
+    public String getXmlCodecName() {
+        return configInstance.getStringProperty(
+                namespace + "xmlCodecName", null).get();
     }
 
     @Override

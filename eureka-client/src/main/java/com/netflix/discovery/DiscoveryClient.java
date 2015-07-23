@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -62,10 +63,13 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.config.DynamicPropertyFactory;
+import com.netflix.discovery.converters.CodecWrapper;
+import com.netflix.discovery.converters.CodecWrapper.CodecType;
+import com.netflix.discovery.provider.DiscoveryJerseyProvider;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.discovery.shared.EurekaJerseyClient;
-import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
+import com.netflix.discovery.shared.JerseyClient;
+import com.netflix.discovery.shared.JerseyClientConfigBuilder;
 import com.netflix.eventbus.spi.EventBus;
 import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
 import com.netflix.servo.monitor.Counter;
@@ -73,6 +77,7 @@ import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.filter.ClientFilter;
 import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import org.slf4j.Logger;
@@ -99,6 +104,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  * @author Karthik Ranganathan, Greg Kim
+ * @author Spencer Gibb
  *
  */
 @FineGrainedLazySingleton
@@ -196,6 +202,27 @@ public class DiscoveryClient implements EurekaClient {
 
         @Inject(optional = true)
         private Provider<HealthCheckHandler> healthCheckHandlerProvider;
+
+        @Inject(optional = true)
+        private Collection<ClientFilter> additionalFilters;
+
+        public DiscoveryClientOptionalArgs() { }
+
+        public void setEventBus(EventBus eventBus) {
+            this.eventBus = eventBus;
+        }
+
+        public void setHealthCheckCallbackProvider(Provider<HealthCheckCallback> healthCheckCallbackProvider) {
+            this.healthCheckCallbackProvider = healthCheckCallbackProvider;
+        }
+
+        public void setHealthCheckHandlerProvider(Provider<HealthCheckHandler> healthCheckHandlerProvider) {
+            this.healthCheckHandlerProvider = healthCheckHandlerProvider;
+        }
+
+        public void setAdditionalFilters(Collection<ClientFilter> additionalFilters) {
+            this.additionalFilters = additionalFilters;
+        }
     }
 
     /**
@@ -300,30 +327,52 @@ public class DiscoveryClient implements EurekaClient {
                 logger.warn("Setting instanceInfo to a passed in null value");
             }
 
+            DiscoveryJerseyProvider discoveryJerseyProvider = new DiscoveryJerseyProvider(
+                    CodecWrapper.get(CodecType.from(clientConfig.getJsonCodecName())),
+                    CodecWrapper.get(CodecType.from(clientConfig.getXmlCodecName()))
+            );
+
             if (eurekaServiceUrls.get().get(0).startsWith("https://") &&
                     "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
-                discoveryJerseyClient = EurekaJerseyClient.createSystemSSLJerseyClient("DiscoveryClient-HTTPClient-System",
+                discoveryJerseyClient = new JerseyClient(
                         clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
                         clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
-                        clientConfig.getEurekaServerTotalConnectionsPerHost(),
-                        clientConfig.getEurekaServerTotalConnections(),
-                        clientConfig.getEurekaConnectionIdleTimeoutSeconds());
-            } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
-                discoveryJerseyClient = EurekaJerseyClient.createProxyJerseyClient("Proxy-DiscoveryClient-HTTPClient",
-                        clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
-                        clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
-                        clientConfig.getEurekaServerTotalConnectionsPerHost(),
-                        clientConfig.getEurekaServerTotalConnections(),
                         clientConfig.getEurekaConnectionIdleTimeoutSeconds(),
-                        clientConfig.getProxyHost(), clientConfig.getProxyPort(),
-                        clientConfig.getProxyUserName(), clientConfig.getProxyPassword());
-            } else {
-                discoveryJerseyClient = EurekaJerseyClient.createJerseyClient("DiscoveryClient-HTTPClient",
+                        JerseyClientConfigBuilder.newSystemSSLClientConfigBuilder()
+                                .withClientName("DiscoveryClient-HTTPClient-System")
+                                .withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost())
+                                .withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections())
+                                .withDiscoveryJerseyProvider(discoveryJerseyProvider)
+                                .build()
+                );
+            } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
+                discoveryJerseyClient = new JerseyClient(
                         clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
                         clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
-                        clientConfig.getEurekaServerTotalConnectionsPerHost(),
-                        clientConfig.getEurekaServerTotalConnections(),
-                        clientConfig.getEurekaConnectionIdleTimeoutSeconds());
+                        clientConfig.getEurekaConnectionIdleTimeoutSeconds(),
+                        JerseyClientConfigBuilder.newProxyClientConfigBuilder()
+                                .withClientName("Proxy-DiscoveryClient-HTTPClient")
+                                .withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost())
+                                .withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections())
+                                .withProxyHost(clientConfig.getProxyHost())
+                                .withProxyPort(clientConfig.getProxyPort())
+                                .withProxyUserName(clientConfig.getProxyUserName())
+                                .withProxyPassword(clientConfig.getProxyPassword())
+                                .withDiscoveryJerseyProvider(discoveryJerseyProvider)
+                                .build()
+                );
+            } else {
+                discoveryJerseyClient = new JerseyClient(
+                        clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
+                        clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
+                        clientConfig.getEurekaConnectionIdleTimeoutSeconds(),
+                        JerseyClientConfigBuilder.newClientConfigBuilder()
+                                .withClientName("DiscoveryClient-HTTPClient")
+                                .withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost())
+                                .withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections())
+                                .withDiscoveryJerseyProvider(discoveryJerseyProvider)
+                                .build()
+                );
             }
             discoveryApacheClient = discoveryJerseyClient.getClient();
             remoteRegionsToFetch = new AtomicReference<String>(clientConfig.fetchRegistryForRemoteRegions());
@@ -351,6 +400,13 @@ public class DiscoveryClient implements EurekaClient {
             String ip = instanceInfo == null ? null : instanceInfo.getIPAddr();
             EurekaClientIdentity identity = new EurekaClientIdentity(ip);
             discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
+
+            // add additional ClientFilters if specified
+            if (args != null && args.additionalFilters != null) {
+                for (ClientFilter filter : args.additionalFilters) {
+                    discoveryApacheClient.addFilter(filter);
+                }
+            }
 
         } catch (Throwable e) {
             throw new RuntimeException("Failed to initialize DiscoveryClient!", e);
