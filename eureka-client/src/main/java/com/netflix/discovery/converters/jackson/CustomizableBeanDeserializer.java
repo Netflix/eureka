@@ -10,14 +10,16 @@ import com.fasterxml.jackson.databind.deser.BeanDeserializerBase;
 import com.fasterxml.jackson.databind.deser.SettableBeanProperty;
 import com.fasterxml.jackson.databind.deser.impl.PropertyBasedCreator;
 import com.fasterxml.jackson.databind.deser.impl.PropertyValueBuffer;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.Applications;
 
 /**
  * {@link Applications} and {@link InstanceInfo} objects require legacy formatting for some fields, that cannot
- * be accomplished by using standard Jackson mechanisms. This class overriddes {@link BeanDeserializer#_deserializeUsingPropertyBased}
- * method, and provides means to deal directly with deserialization of some fields, while preserving the default
+ * be accomplished by using standard Jackson mechanisms. This class overrides
+ * {@link BeanDeserializer#_deserializeUsingPropertyBased} method, and provides means to deal directly with
+ * deserialization of some fields, while preserving the default
  * behavior for the other.
  *
  * @author Tomasz Bak
@@ -52,10 +54,14 @@ abstract class CustomizableBeanDeserializer extends BeanDeserializer {
                 SettableBeanProperty creatorProp = creator.findCreatorProperty(propName);
                 if (creatorProp != null) {
                     // Last creator property to set?
-                    Object value = creatorProp.deserialize(jp, ctxt);
-                    isComplete = buffer.assignParameter(creatorProp.getCreatorIndex(), value);
-                    if (!isComplete) {
-                        continue;
+                    try {
+                        Object value = creatorProp.deserialize(jp, ctxt);
+                        isComplete = buffer.assignParameter(creatorProp.getCreatorIndex(), value);
+                        if (!isComplete) {
+                            continue;
+                        }
+                    } catch (UnrecognizedPropertyException e) {
+                        //ignore this exception
                     }
                 }
             }

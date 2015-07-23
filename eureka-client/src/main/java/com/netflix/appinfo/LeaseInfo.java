@@ -172,7 +172,7 @@ public class LeaseInfo {
                      @JsonProperty("durationInSecs") int durationInSecs,
                      @JsonProperty("registrationTimestamp") long registrationTimestamp,
                      @JsonProperty("lastRenewalTimestamp") Long lastRenewalTimestamp,
-                     @JsonProperty("renewalTimestamp") Long lastRenewalTimestampLegacy,  // for legacy
+                     @JsonProperty("renewalTimestamp") long lastRenewalTimestampLegacy,  // for legacy
                      @JsonProperty("evictionTimestamp") long evictionTimestamp,
                      @JsonProperty("serviceUpTimestamp") long serviceUpTimestamp) {
         this.renewalIntervalInSecs = renewalIntervalInSecs;
