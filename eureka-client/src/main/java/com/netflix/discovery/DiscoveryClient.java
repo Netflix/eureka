@@ -63,10 +63,13 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.config.DynamicPropertyFactory;
+import com.netflix.discovery.converters.CodecWrapper;
+import com.netflix.discovery.converters.CodecWrapper.CodecType;
+import com.netflix.discovery.provider.DiscoveryJerseyProvider;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.discovery.shared.EurekaJerseyClient;
-import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
+import com.netflix.discovery.shared.JerseyClient;
+import com.netflix.discovery.shared.JerseyClientConfigBuilder;
 import com.netflix.eventbus.spi.EventBus;
 import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
 import com.netflix.servo.monitor.Counter;
@@ -101,6 +104,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  * @author Karthik Ranganathan, Greg Kim
+ * @author Spencer Gibb
  *
  */
 @FineGrainedLazySingleton
@@ -323,30 +327,52 @@ public class DiscoveryClient implements EurekaClient {
                 logger.warn("Setting instanceInfo to a passed in null value");
             }
 
+            DiscoveryJerseyProvider discoveryJerseyProvider = new DiscoveryJerseyProvider(
+                    CodecWrapper.get(CodecType.from(clientConfig.getJsonCodecName())),
+                    CodecWrapper.get(CodecType.from(clientConfig.getXmlCodecName()))
+            );
+
             if (eurekaServiceUrls.get().get(0).startsWith("https://") &&
                     "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
-                discoveryJerseyClient = EurekaJerseyClient.createSystemSSLJerseyClient("DiscoveryClient-HTTPClient-System",
+                discoveryJerseyClient = new JerseyClient(
                         clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
                         clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
-                        clientConfig.getEurekaServerTotalConnectionsPerHost(),
-                        clientConfig.getEurekaServerTotalConnections(),
-                        clientConfig.getEurekaConnectionIdleTimeoutSeconds());
-            } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
-                discoveryJerseyClient = EurekaJerseyClient.createProxyJerseyClient("Proxy-DiscoveryClient-HTTPClient",
-                        clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
-                        clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
-                        clientConfig.getEurekaServerTotalConnectionsPerHost(),
-                        clientConfig.getEurekaServerTotalConnections(),
                         clientConfig.getEurekaConnectionIdleTimeoutSeconds(),
-                        clientConfig.getProxyHost(), clientConfig.getProxyPort(),
-                        clientConfig.getProxyUserName(), clientConfig.getProxyPassword());
-            } else {
-                discoveryJerseyClient = EurekaJerseyClient.createJerseyClient("DiscoveryClient-HTTPClient",
+                        JerseyClientConfigBuilder.newSystemSSLClientConfigBuilder()
+                                .withClientName("DiscoveryClient-HTTPClient-System")
+                                .withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost())
+                                .withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections())
+                                .withDiscoveryJerseyProvider(discoveryJerseyProvider)
+                                .build()
+                );
+            } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
+                discoveryJerseyClient = new JerseyClient(
                         clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
                         clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
-                        clientConfig.getEurekaServerTotalConnectionsPerHost(),
-                        clientConfig.getEurekaServerTotalConnections(),
-                        clientConfig.getEurekaConnectionIdleTimeoutSeconds());
+                        clientConfig.getEurekaConnectionIdleTimeoutSeconds(),
+                        JerseyClientConfigBuilder.newProxyClientConfigBuilder()
+                                .withClientName("Proxy-DiscoveryClient-HTTPClient")
+                                .withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost())
+                                .withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections())
+                                .withProxyHost(clientConfig.getProxyHost())
+                                .withProxyPort(clientConfig.getProxyPort())
+                                .withProxyUserName(clientConfig.getProxyUserName())
+                                .withProxyPassword(clientConfig.getProxyPassword())
+                                .withDiscoveryJerseyProvider(discoveryJerseyProvider)
+                                .build()
+                );
+            } else {
+                discoveryJerseyClient = new JerseyClient(
+                        clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000,
+                        clientConfig.getEurekaServerReadTimeoutSeconds() * 1000,
+                        clientConfig.getEurekaConnectionIdleTimeoutSeconds(),
+                        JerseyClientConfigBuilder.newClientConfigBuilder()
+                                .withClientName("DiscoveryClient-HTTPClient")
+                                .withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost())
+                                .withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections())
+                                .withDiscoveryJerseyProvider(discoveryJerseyProvider)
+                                .build()
+                );
             }
             discoveryApacheClient = discoveryJerseyClient.getClient();
             remoteRegionsToFetch = new AtomicReference<String>(clientConfig.fetchRegistryForRemoteRegions());

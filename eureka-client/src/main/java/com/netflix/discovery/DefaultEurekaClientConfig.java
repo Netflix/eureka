@@ -26,6 +26,7 @@ import com.google.inject.ProvidedBy;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
+import com.netflix.discovery.converters.CodecWrapper.CodecType;
 import com.netflix.discovery.providers.DefaultEurekaClientConfigProvider;
 import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
 import org.slf4j.Logger;
@@ -490,5 +491,17 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     public boolean shouldOnDemandUpdateStatusChange() {
         return configInstance.getBooleanProperty(
                 namespace + "shouldOnDemandUpdateStatusChange", true).get();
+    }
+
+    @Override
+    public String getJsonCodecName() {
+        return configInstance.getStringProperty(
+                namespace + "jsonCodecName", null).get();
+    }
+
+    @Override
+    public String getXmlCodecName() {
+        return configInstance.getStringProperty(
+                namespace + "xmlCodecName", null).get();
     }
 }

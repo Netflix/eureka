@@ -38,8 +38,8 @@ import com.netflix.discovery.EurekaIdentityHeaderFilter;
 import com.netflix.discovery.TimedSupervisorTask;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.discovery.shared.EurekaJerseyClient;
-import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
+import com.netflix.discovery.shared.JerseyClient;
+import com.netflix.discovery.shared.JerseyClientConfigBuilder;
 import com.netflix.discovery.shared.LookupService;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
@@ -82,37 +82,46 @@ public class RemoteRegionRegistry implements LookupService<String> {
         this.remoteRegionURL = remoteRegionURL;
         this.fetchRegistryTimer = Monitors.newTimer(this.remoteRegionURL
                 .toString() + "_" + "FetchRegistry");
+
         String jerseyClientName;
         if (remoteRegionURL.getProtocol().equals("http")) {
             jerseyClientName = "Discovery-RemoteRegionClient-" + regionName;
-            discoveryJerseyClient = EurekaJerseyClient.createJerseyClient(jerseyClientName,
+            discoveryJerseyClient = new JerseyClient(
                     EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs(),
                     EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs(),
-                    EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost(),
-                    EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections(),
-                    EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds());
+                    EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds(),
+                    JerseyClientConfigBuilder.newClientConfigBuilder()
+                            .withClientName(jerseyClientName)
+                            .withMaxConnectionsPerHost(EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost())
+                            .withMaxTotalConnections(EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections())
+                            .build()
+            );
         } else if ("true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
             jerseyClientName = "Discovery-RemoteRegionSystemSecureClient-" + regionName;
-            discoveryJerseyClient =
-                    EurekaJerseyClient.createSystemSSLJerseyClient(
-                            jerseyClientName,
-                            EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs(),
-                            EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs(),
-                            EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost(),
-                            EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections(),
-                            EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds());
+            discoveryJerseyClient = new JerseyClient(
+                    EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs(),
+                    EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs(),
+                    EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds(),
+                    JerseyClientConfigBuilder.newSystemSSLClientConfigBuilder()
+                            .withClientName(jerseyClientName)
+                            .withMaxConnectionsPerHost(EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost())
+                            .withMaxTotalConnections(EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections())
+                            .build()
+            );
         } else {
             jerseyClientName = "Discovery-RemoteRegionSecureClient-" + regionName;
-            discoveryJerseyClient =
-                    EurekaJerseyClient.createSSLJerseyClient(
-                            jerseyClientName,
-                            EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs(),
-                            EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs(),
-                            EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost(),
-                            EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections(),
-                            EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds(),
-                            EUREKA_SERVER_CONFIG.getRemoteRegionTrustStore(),
-                            EUREKA_SERVER_CONFIG.getRemoteRegionTrustStorePassword());
+            discoveryJerseyClient = new JerseyClient(
+                    EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs(),
+                    EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs(),
+                    EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds(),
+                    JerseyClientConfigBuilder.newSSLClientConfigBuilder()
+                            .withClientName(jerseyClientName)
+                            .withMaxConnectionsPerHost(EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost())
+                            .withMaxTotalConnections(EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections())
+                            .withTrustStoreFileName(EUREKA_SERVER_CONFIG.getRemoteRegionTrustStore())
+                            .withTrustStorePassword(EUREKA_SERVER_CONFIG.getRemoteRegionTrustStorePassword())
+                            .build()
+            );
         }
         discoveryApacheClient = discoveryJerseyClient.getClient();
 

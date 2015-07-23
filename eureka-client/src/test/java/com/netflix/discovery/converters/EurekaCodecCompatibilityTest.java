@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.LeaseInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.InstanceInfoGenerator;
@@ -22,6 +23,32 @@ public class EurekaCodecCompatibilityTest {
 
     interface Action2 {
         void call(CodecWrapper encodingCodec, CodecWrapper decodingCodec) throws IOException;
+    }
+
+    /**
+     * @deprecated see to do note in {@link com.netflix.appinfo.LeaseInfo} and delete once legacy is removed
+     */
+    @Deprecated
+    @Test
+    public void testInstanceInfoEncodeDecodeLegacyJacksonToJackson() throws Exception {
+        final InstanceInfo instanceInfo = infoIterator.next();
+        Action2 codingAction = new Action2() {
+            @Override
+            public void call(CodecWrapper encodingCodec, CodecWrapper decodingCodec) throws IOException {
+                String encodedString = encodingCodec.encode(instanceInfo);
+                // convert the field from the json string to what the legacy json would encode as
+                encodedString = encodedString.replaceFirst("lastRenewalTimestamp", "renewalTimestamp");
+                InstanceInfo decodedValue = decodingCodec.decode(encodedString, InstanceInfo.class);
+                assertThat(EurekaEntityComparators.equal(instanceInfo, decodedValue), is(true));
+            }
+        };
+
+        verifyForPair(
+                codingAction,
+                InstanceInfo.class,
+                CodecWrapper.get(CodecWrapper.CodecType.LegacyJacksonJson),
+                CodecWrapper.get(CodecWrapper.CodecType.JacksonJson)
+        );
     }
 
     @Test
@@ -87,6 +114,16 @@ public class EurekaCodecCompatibilityTest {
                     throw new Exception("Encoding failure for codec pair " + pair, ex);
                 }
             }
+        }
+    }
+
+    public void verifyForPair(Action2 codingAction, Class<?> typeToEncode, CodecWrapper encodingCodec, CodecWrapper decodingCodec) throws Exception {
+        String pair = "{" + encodingCodec.getCodecType() + ',' + decodingCodec.getCodecType() + '}';
+        System.out.println("Encoding " + typeToEncode.getSimpleName() + " using " + pair);
+        try {
+            codingAction.call(encodingCodec, decodingCodec);
+        } catch (Exception ex) {
+            throw new Exception("Encoding failure for codec pair " + pair, ex);
         }
     }
 }
