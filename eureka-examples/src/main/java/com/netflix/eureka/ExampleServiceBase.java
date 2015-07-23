@@ -5,6 +5,8 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.discovery.EurekaClient;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.BufferedReader;
@@ -37,6 +39,7 @@ public class ExampleServiceBase {
         this.configInstance = configInstance;
     }
 
+    @PostConstruct
     public void start() {
         // A good practice is to register as STARTING and only change status to UP
         // after the service is ready to receive traffic
@@ -80,13 +83,12 @@ public class ExampleServiceBase {
 
     }
 
+    @PreDestroy
     public void stop() {
         if (eurekaClient != null) {
             eurekaClient.shutdown();
         }
     }
-
-
 
     private void waitForRegistrationWithEureka(EurekaClient eurekaClient) {
         // my vip address to listen on

@@ -18,6 +18,7 @@ package com.netflix.discovery;
 
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
+import javax.inject.Singleton;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
@@ -68,7 +69,6 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.EurekaJerseyClient;
 import com.netflix.discovery.shared.EurekaJerseyClient.JerseyClient;
 import com.netflix.eventbus.spi.EventBus;
-import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
 import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
@@ -104,7 +104,7 @@ import org.slf4j.LoggerFactory;
  * @author Spencer Gibb
  *
  */
-@FineGrainedLazySingleton
+@Singleton
 public class DiscoveryClient implements EurekaClient {
     private static final Logger logger = LoggerFactory.getLogger(DiscoveryClient.class);
     private static final DynamicPropertyFactory configInstance = DynamicPropertyFactory.getInstance();
