@@ -174,7 +174,7 @@ public class PeerEurekaNode {
                 } else if (config.shouldSyncWhenTimestampDiffers()) {
                     InstanceInfo peerInstanceInfo = (InstanceInfo) responseEntity;
                     if (peerInstanceInfo != null) {
-                        syncInstancesIfTimestampDiffers(id, info, peerInstanceInfo);
+                        syncInstancesIfTimestampDiffers(appName, id, info, peerInstanceInfo);
                     }
                 }
             }
@@ -299,7 +299,7 @@ public class PeerEurekaNode {
      * Synchronize {@link InstanceInfo} information if the timestamp between
      * this node and the peer eureka nodes vary.
      */
-    private void syncInstancesIfTimestampDiffers(String id, InstanceInfo info, InstanceInfo infoFromPeer) {
+    private void syncInstancesIfTimestampDiffers(String appName, String id, InstanceInfo info, InstanceInfo infoFromPeer) {
         try {
             if (infoFromPeer != null) {
                 logger.warn("Peer wants us to take the instance information from it, since the timestamp differs,"
@@ -307,7 +307,7 @@ public class PeerEurekaNode {
 
                 if (infoFromPeer.getOverriddenStatus() != null && !InstanceStatus.UNKNOWN.equals(infoFromPeer.getOverriddenStatus())) {
                     logger.warn("Overridden Status info -id {}, mine {}, peer's {}", id, info.getOverriddenStatus(), infoFromPeer.getOverriddenStatus());
-                    registry.storeOverriddenStatusIfRequired(id, infoFromPeer.getOverriddenStatus());
+                    registry.storeOverriddenStatusIfRequired(appName, id, infoFromPeer.getOverriddenStatus());
                 }
                 registry.register(infoFromPeer, true);
             }
