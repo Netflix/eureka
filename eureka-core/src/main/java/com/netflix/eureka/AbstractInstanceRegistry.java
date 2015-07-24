@@ -344,7 +344,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     }
 
     /**
-     * @deprecated this is expensive, try not to use.
+     * @deprecated this is expensive, try not to use. See if you can use
+     * {@link #storeOverriddenStatusIfRequired(String, String, InstanceStatus)} instead.
      *
      * Stores overridden status if it is not already there. This happens during
      * a reconciliation process during renewal requests.
@@ -396,7 +397,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             logger.info("Adding overridden status for instance id {} and the value is {}",
                     id, overriddenStatus.name());
             overriddenInstanceStatusMap.put(id, overriddenStatus);
-            InstanceInfo instanceInfo = this.getInstanceByAppAndId(appName, id);
+            InstanceInfo instanceInfo = this.getInstanceByAppAndId(appName, id, false);
             instanceInfo.setOverriddenStatus(overriddenStatus);
              logger.info("Set the overridden status for instance (appname:{}, id:{}} and the value is {} ",
                     appName, id, overriddenStatus.name());
@@ -984,8 +985,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      *            otherwise
      * @return the information about the instance.
      */
-    public InstanceInfo getInstanceByAppAndId(String appName, String id,
-                                              boolean includeRemoteRegions) {
+    public InstanceInfo getInstanceByAppAndId(String appName, String id, boolean includeRemoteRegions) {
         Map<String, Lease<InstanceInfo>> leaseMap = registry.get(appName);
         Lease<InstanceInfo> lease = null;
         if (leaseMap != null) {
