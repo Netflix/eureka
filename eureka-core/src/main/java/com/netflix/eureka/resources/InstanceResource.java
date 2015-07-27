@@ -111,8 +111,7 @@ public class InstanceResource {
             @QueryParam("status") String status,
             @QueryParam("lastDirtyTimestamp") String lastDirtyTimestamp) {
         boolean isFromReplicaNode = "true".equals(isReplication);
-        boolean isSuccess = registry
-                .renew(app.getName(), id, isFromReplicaNode);
+        boolean isSuccess = registry.renew(app.getName(), id, isFromReplicaNode);
 
         // Not found in the registry, immediately ask for a register
         if (!isSuccess) {
@@ -123,18 +122,14 @@ public class InstanceResource {
         // instance might have changed some value
         Response response = null;
         if (lastDirtyTimestamp != null
-                && EurekaServerConfigurationManager.getInstance()
-                .getConfiguration().shouldSyncWhenTimestampDiffers()) {
-            response = this.validateDirtyTimestamp(
-                    Long.valueOf(lastDirtyTimestamp), isFromReplicaNode);
+                && EurekaServerConfigurationManager.getInstance().getConfiguration().shouldSyncWhenTimestampDiffers()) {
+            response = this.validateDirtyTimestamp(Long.valueOf(lastDirtyTimestamp), isFromReplicaNode);
             // Store the overridden status since the validation found out the node that replicates wins
-            if (response.getStatus() == Response.Status.NOT_FOUND
-                    .getStatusCode()
+            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()
                     && (overriddenStatus != null)
-                    && !(InstanceStatus.UNKNOWN.equals(overriddenStatus))
+                    && !(InstanceStatus.UNKNOWN.name().equals(overriddenStatus))
                     && isFromReplicaNode) {
-                registry.storeOverriddenStatusIfRequired(id,
-                        InstanceStatus.valueOf(overriddenStatus));
+                registry.storeOverriddenStatusIfRequired(app.appName, id, InstanceStatus.valueOf(overriddenStatus));
             }
         } else {
             response = Response.ok().build();
