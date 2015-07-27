@@ -1006,15 +1006,20 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     }
 
     /**
+     * @deprecated Try {@link #getInstanceByAppAndId(String, String)} instead.
+     *
      * Get all instances by ID, including automatically asking other regions if the ID is unknown.
      *
      * @see com.netflix.discovery.shared.LookupService#getInstancesById(String)
      */
+    @Deprecated
     public List<InstanceInfo> getInstancesById(String id) {
         return this.getInstancesById(id, true);
     }
 
     /**
+     * @deprecated Try {@link #getInstanceByAppAndId(String, String, boolean)} instead.
+     *
      * Get the list of instances by its unique id.
      *
      * @param id
@@ -1026,6 +1031,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      *            otherwise
      * @return list of InstanceInfo objects.
      */
+    @Deprecated
     public List<InstanceInfo> getInstancesById(String id,
                                                boolean includeRemoteRegions) {
         List<InstanceInfo> list = new ArrayList<InstanceInfo>();

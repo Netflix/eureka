@@ -200,20 +200,26 @@ public class DiscoveryClient implements EurekaClient {
         @Inject(optional = true)
         private Provider<HealthCheckHandler> healthCheckHandlerProvider;
 
+        @Inject(optional = true)
+        private Collection<ClientFilter> additionalFilters;
+
         public DiscoveryClientOptionalArgs() { }
 
-        public DiscoveryClientOptionalArgs(EventBus eventBus, Provider<HealthCheckCallback> healthCheckCallbackProvider, Provider<HealthCheckHandler> healthCheckHandlerProvider) {
+        public void setEventBus(EventBus eventBus) {
             this.eventBus = eventBus;
-            this.healthCheckCallbackProvider = healthCheckCallbackProvider;
-            this.healthCheckHandlerProvider = healthCheckHandlerProvider;
         }
 
-        private Collection<ClientFilter> additionalFilters;
+        public void setHealthCheckCallbackProvider(Provider<HealthCheckCallback> healthCheckCallbackProvider) {
+            this.healthCheckCallbackProvider = healthCheckCallbackProvider;
+        }
+
+        public void setHealthCheckHandlerProvider(Provider<HealthCheckHandler> healthCheckHandlerProvider) {
+            this.healthCheckHandlerProvider = healthCheckHandlerProvider;
+        }
 
         public void setAdditionalFilters(Collection<ClientFilter> additionalFilters) {
             this.additionalFilters = additionalFilters;
         }
-
     }
 
     /**
