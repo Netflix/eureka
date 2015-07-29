@@ -25,6 +25,7 @@ import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Subscription;
+import rx.functions.Action1;
 import rx.subjects.PublishSubject;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
@@ -67,6 +68,7 @@ public class EurekaClientFailoverTest {
             @Override
             public void run() {
                 // Scale the write cluster up, and break network connection to the first node
+                logger.info("===== scaling up another write server =====");
                 writeCluster.scaleUpByOne();
 
                 // before we break the links, verify that replication has completed to the new server (serverId 1)
@@ -80,12 +82,16 @@ public class EurekaClientFailoverTest {
                     interestClient.shutdown();
                 }
 
+                logger.info("===== breaking the network links ... =====");
+
                 NetworkLink registrationLink = networkRouter.getLinkTo(writeCluster.getServer(0).getRegistrationPort());
                 NetworkLink interestLink = networkRouter.getLinkTo(writeCluster.getServer(0).getInterestPort());
                 NetworkLink replicationLink = networkRouter.getLinkTo(writeCluster.getServer(1).getReplicationPort());
                 interestLink.disconnect(1, TimeUnit.SECONDS);
                 replicationLink.disconnect(1, TimeUnit.SECONDS);
                 registrationLink.disconnect(1, TimeUnit.SECONDS);
+
+                logger.info("===== done breaking the network links =====");
             }
         });
     }
@@ -114,6 +120,7 @@ public class EurekaClientFailoverTest {
         Subscription registrationSubscription = registrationClient.register(registrationSubject).subscribe();
         registrationSubject.onNext(INSTANCE_UP);
 
+        logger.info("===== waiting for test instance to be UP =====");
         assertThat(interestSubscriber.takeNext(60, TimeUnit.SECONDS), is(addChangeNotificationOf(INSTANCE_UP)));
 
         // Inject failure

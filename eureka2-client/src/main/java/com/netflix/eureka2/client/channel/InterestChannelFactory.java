@@ -30,7 +30,7 @@ public class InterestChannelFactory extends ClientChannelFactory<InterestChannel
                                   BatchingRegistry<InstanceInfo> remoteBatchingRegistry,
                                   EurekaClientMetricFactory metricFactory) {
         this(
-                TransportClients.newTcpDiscoveryClient(clientId, config, resolver, metricFactory),
+                TransportClients.newTcpInterestClient(clientId, config, resolver, metricFactory),
                 eurekaRegistry, remoteBatchingRegistry, metricFactory
         );
     }

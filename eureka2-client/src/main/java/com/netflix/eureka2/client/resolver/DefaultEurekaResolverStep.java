@@ -135,12 +135,14 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
 
         @Override
         public Observable<Boolean> register(InstanceInfo instanceInfo, Source source) {
+            logger.info("Adding {}", instanceInfo);
             relay.onNext(new ChangeNotification<>(ChangeNotification.Kind.Add, instanceInfo));
             return Observable.just(true);
         }
 
         @Override
         public Observable<Boolean> unregister(InstanceInfo instanceInfo, Source source) {
+            logger.info("Removing {}", instanceInfo);
             relay.onNext(new ChangeNotification<>(ChangeNotification.Kind.Delete, instanceInfo));
             return Observable.just(true);
         }

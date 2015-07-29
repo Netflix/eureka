@@ -51,7 +51,7 @@ public abstract class AbstractInterestClient implements EurekaInterestClient {
     @Override
     public void shutdown() {
         if (isShutdown.compareAndSet(false, true)) {
-            logger.info("Shutting down InterestClient");
+            logger.info("Shutting down {}", this.getClass().getSimpleName());
             if (getRetryableConnection() != null) {
                 getRetryableConnection().close();
             }

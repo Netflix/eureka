@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Convenience base implementation for {@link com.netflix.eureka2.transport.TransportClient} that reads the server list from a {@link ServerResolver}
+ * Convenience base implementation for {@link TransportClient} that reads the server list from a {@link ServerResolver}
  *
  * @author Nitesh Kant
  */
@@ -62,8 +62,7 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
                         // This should be invoked from a single thread.
                         RxClient<Object, Object> client = clients.get(server);
                         if (null == client) {
-                            client = RxNetty.createTcpClient(server.getHost(), server.getPort(),
-                                    pipelineConfigurator);
+                            client = RxNetty.createTcpClient(server.getHost(), server.getPort(), pipelineConfigurator);
                             clients.put(server, client);
                         }
 
