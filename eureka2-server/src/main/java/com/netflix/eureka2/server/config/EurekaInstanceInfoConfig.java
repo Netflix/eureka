@@ -12,6 +12,11 @@ public interface EurekaInstanceInfoConfig {
 
     int DEFAULT_DATA_CENTER_RESOLVE_INTERVAL_SEC = 30;
 
+    /**
+     * @return the unique identifier for this instance. if null, an uuid will be used
+     */
+    String getUniqueId();
+
     @DefaultValue(DEFAULT_EUREKA_APPLICATION_NAME)
     String getEurekaApplicationName();
 
@@ -23,4 +28,5 @@ public interface EurekaInstanceInfoConfig {
 
     @DefaultValue("" + DEFAULT_DATA_CENTER_RESOLVE_INTERVAL_SEC)
     long getDataCenterResolveIntervalSec();
+
 }

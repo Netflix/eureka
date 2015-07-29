@@ -1,7 +1,7 @@
 package com.netflix.eureka2.client.transport;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
-import com.netflix.eureka2.client.transport.tcp.TcpDiscoveryClient;
+import com.netflix.eureka2.client.transport.tcp.TcpInterestClient;
 import com.netflix.eureka2.client.transport.tcp.TcpRegistrationClient;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
@@ -17,11 +17,11 @@ public final class TransportClients {
     private TransportClients() {
     }
 
-    public static TransportClient newTcpDiscoveryClient(String clientId,
-                                                        EurekaTransportConfig config,
-                                                        ServerResolver resolver,
-                                                        EurekaClientMetricFactory metricFactory) {
-        return new TcpDiscoveryClient(clientId, config, resolver, metricFactory.getDiscoveryServerConnectionMetrics());
+    public static TransportClient newTcpInterestClient(String clientId,
+                                                       EurekaTransportConfig config,
+                                                       ServerResolver resolver,
+                                                       EurekaClientMetricFactory metricFactory) {
+        return new TcpInterestClient(clientId, config, resolver, metricFactory.getDiscoveryServerConnectionMetrics());
     }
 
     public static TransportClient newTcpRegistrationClient(String clientId,

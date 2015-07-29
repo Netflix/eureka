@@ -51,7 +51,7 @@ public abstract class AbstractInterestClient implements EurekaInterestClient {
     @Override
     public void shutdown() {
         if (isShutdown.compareAndSet(false, true)) {
-            logger.info("Shutting down InterestClient");
+            logger.info("Shutting down {}", this.getClass().getSimpleName());
             if (getRetryableConnection() != null) {
                 getRetryableConnection().close();
             }
@@ -104,6 +104,10 @@ public abstract class AbstractInterestClient implements EurekaInterestClient {
                                                     return true;
                                                 }
                                                 return false;
+                                            }
+                                            @Override
+                                            public String toString() {
+                                                return "evictAllOlderMatcher{" + currSource + "}";
                                             }
                                         };
 

@@ -95,7 +95,7 @@ public class Source {
             }
             @Override
             public String toString() {
-                return "Matcher{" + source.toString() + "}";
+                return "SourceMatcher{" + source.toString() + "}";
             }
         };
     }
@@ -108,6 +108,10 @@ public class Source {
                     return false;
                 }
                 return origin.equals(another.origin);
+            }
+            @Override
+            public String toString() {
+                return "OriginMatcher{" + origin.toString() + "}";
             }
         };
     }

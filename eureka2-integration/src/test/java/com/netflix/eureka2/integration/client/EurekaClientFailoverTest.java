@@ -22,7 +22,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Subscription;
+import rx.functions.Action1;
 import rx.subjects.PublishSubject;
 
 import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
@@ -38,6 +41,8 @@ import static org.junit.Assert.fail;
  */
 @Category({IntegrationTest.class, LongRunningTest.class})
 public class EurekaClientFailoverTest {
+
+    private static final Logger logger = LoggerFactory.getLogger(EurekaClientFailoverTest.class);
 
     private static final InstanceInfo INSTANCE_UP = SampleInstanceInfo.WebServer.build();
     private static final InstanceInfo INSTANCE_DOWN = new InstanceInfo.Builder().withInstanceInfo(INSTANCE_UP).withStatus(Status.DOWN).build();
@@ -63,6 +68,7 @@ public class EurekaClientFailoverTest {
             @Override
             public void run() {
                 // Scale the write cluster up, and break network connection to the first node
+                logger.info("===== scaling up another write server =====");
                 writeCluster.scaleUpByOne();
 
                 // before we break the links, verify that replication has completed to the new server (serverId 1)
@@ -76,12 +82,16 @@ public class EurekaClientFailoverTest {
                     interestClient.shutdown();
                 }
 
+                logger.info("===== breaking the network links ... =====");
+
                 NetworkLink registrationLink = networkRouter.getLinkTo(writeCluster.getServer(0).getRegistrationPort());
                 NetworkLink interestLink = networkRouter.getLinkTo(writeCluster.getServer(0).getInterestPort());
                 NetworkLink replicationLink = networkRouter.getLinkTo(writeCluster.getServer(1).getReplicationPort());
                 interestLink.disconnect(1, TimeUnit.SECONDS);
                 replicationLink.disconnect(1, TimeUnit.SECONDS);
                 registrationLink.disconnect(1, TimeUnit.SECONDS);
+
+                logger.info("===== done breaking the network links =====");
             }
         });
     }
@@ -110,6 +120,7 @@ public class EurekaClientFailoverTest {
         Subscription registrationSubscription = registrationClient.register(registrationSubject).subscribe();
         registrationSubject.onNext(INSTANCE_UP);
 
+        logger.info("===== waiting for test instance to be UP =====");
         assertThat(interestSubscriber.takeNext(60, TimeUnit.SECONDS), is(addChangeNotificationOf(INSTANCE_UP)));
 
         // Inject failure
@@ -120,6 +131,8 @@ public class EurekaClientFailoverTest {
 
         assertThat(registrationSubscription.isUnsubscribed(), is(false));
         assertThat(interestSubscriber.takeNext(60, TimeUnit.SECONDS), is(modifyChangeNotificationOf(INSTANCE_DOWN)));
+
+        logger.info("TEST COMPLETED");
     }
 
     private ExtTestSubscriber<ChangeNotification<InstanceInfo>> subscribeTo(EurekaInterestClient interestClient, InstanceInfo instanceInfo) {

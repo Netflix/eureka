@@ -3,6 +3,7 @@ package com.netflix.eureka2.testkit.embedded.cluster;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.inject.Module;
 import com.netflix.eureka2.Server;
@@ -33,6 +34,7 @@ import static com.netflix.eureka2.server.config.bean.WriteServerConfigBean.aWrit
  */
 public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteServer, ClusterAddress, WriteClusterReport> {
 
+    public static final AtomicInteger WRITE_SERVER_ID = new AtomicInteger(0);
     public static final String WRITE_SERVER_NAME = "eureka2-write";
     public static final int WRITE_SERVER_PORTS_FROM = 13000;
 
@@ -71,6 +73,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
         WriteServerConfig config = aWriteServerConfig()
                 .withInstanceInfoConfig(
                         anEurekaInstanceInfoConfig()
+                                .withUniqueId("" + WRITE_SERVER_ID.getAndIncrement())
                                 .withEurekaApplicationName(WRITE_SERVER_NAME)
                                 .withEurekaVipAddress(WRITE_SERVER_NAME)
                                 .build()

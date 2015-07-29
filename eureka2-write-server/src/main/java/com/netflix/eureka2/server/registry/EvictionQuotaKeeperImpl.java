@@ -2,6 +2,7 @@ package com.netflix.eureka2.server.registry;
 
 import javax.inject.Inject;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.config.EurekaRegistryConfig;
@@ -9,6 +10,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -47,7 +49,7 @@ public class EvictionQuotaKeeperImpl implements EvictionQuotaKeeper {
     private static final Logger logger = LoggerFactory.getLogger(EvictionQuotaKeeperImpl.class);
 
     private final SourcedEurekaRegistry<InstanceInfo> registry;
-    private final int allowedPercentageDrop;
+    private final EurekaRegistryConfig config;
 
     private final Semaphore quotaRequests = new Semaphore(0);
     private final Subject<Long, Long> quotaSubject = new SerializedSubject<>(PublishSubject.<Long>create());
@@ -59,38 +61,43 @@ public class EvictionQuotaKeeperImpl implements EvictionQuotaKeeper {
     @Inject
     public EvictionQuotaKeeperImpl(final SourcedEurekaRegistry registry, EurekaRegistryConfig config) {
         this.registry = registry;
-        this.allowedPercentageDrop = config.getEvictionAllowedPercentageDrop();
+        this.config = config;
 
         /**
          * Registry size change should trigger state evaluation, as it may generate eviction permits.
          */
-        interestSubscription = this.registry.forInterest(Interests.forFullRegistry()).skipWhile(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
-            @Override
-            public Boolean call(ChangeNotification<InstanceInfo> notification) {
-                // Skip first snapshot buffer
-                return notification.isDataNotification();
-            }
-        }).map(new Func1<ChangeNotification<InstanceInfo>, Integer>() {
-            @Override
-            public Integer call(ChangeNotification<InstanceInfo> notification) {
-                return registry.size();
-            }
-        }).distinctUntilChanged().subscribe(new Subscriber<Integer>() {
-            @Override
-            public void onCompleted() {
-                logger.info("Interest subscription completed with onCompleted. Registry updates will no longer be handled");
-            }
+        interestSubscription = this.registry.forInterest(Interests.forFullRegistry())
+                .skipWhile(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
+                    @Override
+                    public Boolean call(ChangeNotification<InstanceInfo> notification) {
+                        // Skip first snapshot buffer
+                        return notification.isDataNotification();
+                    }
+                })
+                .map(new Func1<ChangeNotification<InstanceInfo>, Integer>() {
+                    @Override
+                    public Integer call(ChangeNotification<InstanceInfo> notification) {
+                        return registry.size();
+                    }
+                })
+                .distinctUntilChanged()
+                .retryWhen(new RetryStrategyFunc(30, TimeUnit.SECONDS))
+                .subscribe(new Subscriber<Integer>() {
+                    @Override
+                    public void onCompleted() {
+                        logger.info("Interest subscription completed with onCompleted. Registry updates will no longer be handled");
+                    }
 
-            @Override
-            public void onError(Throwable e) {
-                logger.error("Interest subscription completed with an error. Registry updates will no longer be handled", e);
-            }
+                    @Override
+                    public void onError(Throwable e) {
+                        logger.error("Interest subscription completed with an error. Registry updates will no longer be handled", e);
+                    }
 
-            @Override
-            public void onNext(Integer registrySize) {
-                evaluate();
-            }
-        });
+                    @Override
+                    public void onNext(Integer registrySize) {
+                        evaluate();
+                    }
+                });
     }
 
     @Override
@@ -141,14 +148,16 @@ public class EvictionQuotaKeeperImpl implements EvictionQuotaKeeper {
      * This class encapsulates state related to pending evictions.
      */
     class EvictionState {
+        private final int steadyStateRegistrySize;
         private final int minRegistrySize;
 
         EvictionState() {
-            this.minRegistrySize = registry.size() * allowedPercentageDrop / 100;
+            this.steadyStateRegistrySize = registry.size();
+            this.minRegistrySize = registry.size() * config.getEvictionAllowedPercentageDrop() / 100;
         }
 
         public boolean isEvictionAllowed() {
-            return registry.size() > minRegistrySize;
+            return registry.size() > (steadyStateRegistrySize * config.getEvictionAllowedPercentageDrop() / 100);
         }
     }
 }
