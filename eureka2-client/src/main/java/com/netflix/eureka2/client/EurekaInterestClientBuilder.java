@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.client;
 
+import com.netflix.eureka2.Names;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
@@ -34,8 +35,6 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 public class EurekaInterestClientBuilder
         extends AbstractClientBuilder<EurekaInterestClient, EurekaInterestClientBuilder> {
 
-    private static final String INTEREST_CLIENT_ID = "interestClient";
-
     /**
      * @deprecated do not create explicitly, use {@link Eurekas#newInterestClientBuilder()}
      * In future releases access right to this constructor may narrow (after rc.3)
@@ -50,7 +49,7 @@ public class EurekaInterestClientBuilder
             throw new IllegalArgumentException("Cannot build client for discovery without read server resolver");
         }
         if(clientId == null) {
-            clientId = INTEREST_CLIENT_ID;
+            clientId = Names.INTEREST_CLIENT;
         }
 
         BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new BatchingRegistryImpl<>();

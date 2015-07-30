@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.client;
 
+import com.netflix.eureka2.Names;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.RegistrationChannelFactory;
@@ -26,8 +27,6 @@ import com.netflix.eureka2.client.registration.EurekaRegistrationClientImpl;
  */
 public class EurekaRegistrationClientBuilder
         extends AbstractClientBuilder<EurekaRegistrationClient, EurekaRegistrationClientBuilder> {
-
-    private static final String REGISTRATION_CLIENT_ID = "registrationClient";
 
     /**
      * @deprecated do not create explicitly, use {@link Eurekas#newRegistrationClientBuilder()}
@@ -43,7 +42,7 @@ public class EurekaRegistrationClientBuilder
             throw new IllegalArgumentException("Cannot build client for registration without write server resolver");
         }
         if(clientId == null) {
-            clientId = REGISTRATION_CLIENT_ID;
+            clientId = Names.REGISTRATION_CLIENT;
         }
 
         ClientChannelFactory<RegistrationChannel> channelFactory

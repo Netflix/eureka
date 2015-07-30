@@ -76,6 +76,7 @@ public class Eureka1ClientResource extends EurekaExternalResource {
             eurekaClient.shutdown();
             eurekaClient = null;
         }
+        System.clearProperty("eureka.client.props");
     }
 
     public DiscoveryClient getEurekaClient() {

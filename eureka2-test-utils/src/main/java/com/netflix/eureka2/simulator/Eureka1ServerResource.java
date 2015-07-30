@@ -11,11 +11,14 @@ import org.junit.rules.ExternalResource;
  */
 public class Eureka1ServerResource extends ExternalResource {
 
+    private static final String EUREKA1_SIMULATOR_CLIENT_FILE = "eureka1-simulator-client";
+
     private Eureka1Server eureka1Server;
     private final List<DiscoveryClient> createdClients = new ArrayList<>();
 
     @Override
     protected void before() throws Throwable {
+        System.setProperty("eureka.client.props", EUREKA1_SIMULATOR_CLIENT_FILE);
         eureka1Server = new Eureka1Server();
         eureka1Server.start();
     }
@@ -29,6 +32,8 @@ public class Eureka1ServerResource extends ExternalResource {
             eureka1Server.stop();
         } catch (InterruptedException e) {
             // IGONRE
+        } finally {
+            System.clearProperty("eureka.client.props");
         }
     }
 
@@ -37,6 +42,8 @@ public class Eureka1ServerResource extends ExternalResource {
     }
 
     public DiscoveryClient createDiscoveryClient(String appName) {
-        return eureka1Server.createDiscoveryClient(appName);
+        DiscoveryClient client = eureka1Server.createDiscoveryClient(appName);
+        createdClients.add(client);
+        return client;
     }
 }

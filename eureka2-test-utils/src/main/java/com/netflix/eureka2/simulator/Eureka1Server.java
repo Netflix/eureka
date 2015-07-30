@@ -56,8 +56,6 @@ public class Eureka1Server {
     public static final Pattern REGISTRATION_PATH = Pattern.compile("/discovery/v2/apps/([^/]+)");
     public static final Pattern INSTANCE_PATH = Pattern.compile("/discovery/v2/apps/([^/]+)/([^/]+)");
 
-    private static final String EUREKA1_SIMULATOR_CLIENT_FILE = "eureka1-simulator-client";
-
     private final HttpServer<ByteBuf, ByteBuf> server;
     private final Applications applications = new Applications();
 
@@ -104,8 +102,6 @@ public class Eureka1Server {
      * application name. All configuration parameters are provided directly, however
      */
     public DiscoveryClient createDiscoveryClient(String appName) {
-        System.setProperty("eureka.client.props", EUREKA1_SIMULATOR_CLIENT_FILE);
-
         LeaseInfo leaseInfo = LeaseInfo.Builder.newBuilder()
                 .setRenewalIntervalInSecs(1)
                 .build();

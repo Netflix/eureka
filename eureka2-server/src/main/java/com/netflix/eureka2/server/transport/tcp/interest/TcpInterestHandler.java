@@ -134,7 +134,7 @@ public class TcpInterestHandler implements ConnectionHandler<Object, Object> {
         }
 
         MessageConnection broker = new HeartBeatConnection(
-                new BaseMessageConnection(Names.INTEREST, connection, metricFactory.getDiscoveryConnectionMetrics()),
+                new BaseMessageConnection(Names.INTEREST_SERVER, connection, metricFactory.getDiscoveryConnectionMetrics()),
                 config.getHeartbeatIntervalMs(), 3,
                 Schedulers.computation()
         );

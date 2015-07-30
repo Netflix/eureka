@@ -31,6 +31,11 @@ public final class Names {
     public static final String INTEREST = "interest";
     public static final String REPLICATION = "replication";
 
+    public static final String REGISTRATION_CLIENT = "registrationClient";
+    public static final String INTEREST_CLIENT = "interestClient";
+
+    public static final String REGISTRATION_SERVER = "registrationServer";
+    public static final String INTEREST_SERVER = "interestServer";
     private Names() {
     }
 }
