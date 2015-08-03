@@ -16,9 +16,9 @@ import com.google.inject.Inject;
 import netflix.adminresources.tableview.TableViewResource;
 
 public class RegistryTableView implements TableViewResource {
+    private final InstanceRegistryCache registryCache;
     private final Gson gson;
     private String searchTerm;
-    private InstanceRegistryCache registryCache;
 
     private PageInfo currentPage;
     private int totalRecords;
@@ -29,8 +29,8 @@ public class RegistryTableView implements TableViewResource {
         InstanceId,
         Status,
         IpAddress,
-        VipAddress,
-        Hostname;
+        Hostname,
+        VipAddress;
 
         public static List<String> getAllColumnNames() {
             List<String> columns = new ArrayList<String>();
@@ -159,9 +159,9 @@ public class RegistryTableView implements TableViewResource {
         if (searchTerm != null && !searchTerm.isEmpty()) {
             List<InstanceInfoSummary> result = new ArrayList<>();
             for (InstanceInfoSummary instanceInfo : instanceInfoList) {
-                final String app = instanceInfo.getApplication();
                 if (containsIn(instanceInfo.getApplication()) ||
                         containsIn(instanceInfo.getVipAddress()) ||
+                        containsIn(instanceInfo.getInstanceId()) ||
                         (instanceInfo.getStatus() != null && containsIn(instanceInfo.getStatus().name()))) {
                     result.add(instanceInfo);
                 }
