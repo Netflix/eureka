@@ -169,6 +169,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
                     notificationSubject.onNext(deleteNotification);
 
                     // remove self from the holder datastore if empty
+                    logger.debug("Removed last copy of instance {} for source {}", removed.getId(), source);
                     return true;
                 } else {  // promote the newHead as the snapshot and publish a modify notification
                     Snapshot<InstanceInfo> newSnapshot = new Snapshot<>(newHead.getKey(), newHead.getValue());
