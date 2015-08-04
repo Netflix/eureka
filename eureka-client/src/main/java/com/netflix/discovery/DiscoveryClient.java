@@ -63,7 +63,6 @@ import com.netflix.appinfo.HealthCheckHandler;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
-import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.EurekaJerseyClient;
@@ -107,7 +106,6 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class DiscoveryClient implements EurekaClient {
     private static final Logger logger = LoggerFactory.getLogger(DiscoveryClient.class);
-    private static final DynamicPropertyFactory configInstance = DynamicPropertyFactory.getInstance();
 
     // Constants
     public static final int MAX_FOLLOWED_REDIRECTS = 10;
