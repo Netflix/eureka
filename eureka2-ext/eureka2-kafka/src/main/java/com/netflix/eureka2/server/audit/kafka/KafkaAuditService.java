@@ -85,6 +85,8 @@ public class KafkaAuditService implements AuditService {
                         scheduleReconnect();
                         return;
                     }
+                } else {
+                    return;
                 }
             }
         }
