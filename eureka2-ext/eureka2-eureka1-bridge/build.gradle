@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-dependencies {
-    compile project(':eureka2-test-utils')
-    compile project(':eureka2-examples')
+apply plugin: 'osgi'
+apply plugin:'application'
 
-    // runtime dep for extension loading
-    runtime project(':eureka2-ext:eureka2-aws')
-    runtime project(':eureka2-ext:eureka2-eureka1-rest-api')
+dependencies {
+    compile project(':eureka2-write-server')
+    compile project(':eureka2-ext:eureka2-eureka1-support')
+    testCompile project(':eureka2-test-utils')
 }
 
-sourceSets {
-    test {
-        resources {
-            srcDir "test/resources"
-        }
+jar {
+    manifest {
+        name = 'eureka2-eureka1-bridge'
+        instruction 'Bundle-Vendor', 'Netflix'
+        instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
+        instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
     }
 }

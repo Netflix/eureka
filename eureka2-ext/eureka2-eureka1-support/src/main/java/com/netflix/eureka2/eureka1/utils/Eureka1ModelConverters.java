@@ -3,6 +3,7 @@ package com.netflix.eureka2.eureka1.utils;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -34,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.netflix.eureka2.utils.ExtCollections.asSet;
+import static java.util.Arrays.asList;
 
 /**
  * Map Eureka 2.x domain model to Eureka 1.x abstractions.
@@ -231,6 +233,10 @@ public final class Eureka1ModelConverters {
      */
     public static Applications toEureka1xApplicationsFromV2Collection(Collection<InstanceInfo> v2Instances) {
         return toEureka1xApplications(toEureka1xInstanceInfos(v2Instances));
+    }
+
+    public static Applications toEureka1xApplicationsFromV2Collection(InstanceInfo... v2Instances) {
+        return toEureka1xApplications(toEureka1xInstanceInfos(asList(v2Instances)));
     }
 
     public static Applications toEureka1xApplications(Collection<com.netflix.appinfo.InstanceInfo> v1Instances) {
