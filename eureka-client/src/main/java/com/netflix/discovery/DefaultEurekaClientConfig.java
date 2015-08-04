@@ -17,6 +17,7 @@
 package com.netflix.discovery;
 
 import javax.annotation.Nullable;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,7 +29,6 @@ import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
 import com.netflix.discovery.converters.CodecWrapper.CodecType;
 import com.netflix.discovery.providers.DefaultEurekaClientConfigProvider;
-import com.netflix.governator.guice.lazy.FineGrainedLazySingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
  * @author Karthik Ranganathan
  *
  */
-@FineGrainedLazySingleton
+@Singleton
 @ProvidedBy(DefaultEurekaClientConfigProvider.class)
 public class DefaultEurekaClientConfig implements EurekaClientConfig {
     private static final String ARCHAIUS_DEPLOYMENT_ENVIRONMENT = "archaius.deployment.environment";

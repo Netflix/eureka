@@ -1,14 +1,15 @@
 dependencies {
     compile project(':eureka-client')
 
-    compile "com.amazonaws:aws-java-sdk-core:$awsVersion"
-    compile "com.amazonaws:aws-java-sdk-ec2:$awsVersion"
-    compile "com.amazonaws:aws-java-sdk-autoscaling:$awsVersion"
-    compile "com.amazonaws:aws-java-sdk-sts:$awsVersion"
-    compile "javax.servlet:servlet-api:$servletVersion"
+    compile "com.amazonaws:aws-java-sdk-core:${awsVersion}"
+    compile "com.amazonaws:aws-java-sdk-ec2:${awsVersion}"
+    compile "com.amazonaws:aws-java-sdk-autoscaling:${awsVersion}"
+    compile "com.amazonaws:aws-java-sdk-sts:${awsVersion}"
+    compile "javax.servlet:servlet-api:${servletVersion}"
+    compile "com.netflix.governator:governator:${governatorVersion}"
     compile 'com.thoughtworks.xstream:xstream:1.4.2'
     compile 'javax.ws.rs:jsr311-api:1.1.1'
-    compile "com.netflix.blitz4j:blitz4j:$blitzVersion"
+    compile "com.netflix.blitz4j:blitz4j:${blitzVersion}"
 
     testCompile project(':eureka-test-utils')
     testCompile "junit:junit:${junit_version}"

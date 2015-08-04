@@ -12,6 +12,9 @@ import com.netflix.appinfo.LeaseInfo;
 public interface MiniInstanceInfoMixIn {
 
     @JsonIgnore
+    String getAppGroupName();
+
+    @JsonIgnore
     InstanceStatus getOverriddenStatus();
 
     @JsonIgnore

@@ -12,4 +12,6 @@ public interface InstanceRegistry extends LeaseManager<InstanceInfo>, LookupServ
 
     void storeOverriddenStatusIfRequired(String id, InstanceStatus overriddenStatus);
 
+    void storeOverriddenStatusIfRequired(String appName, String id, InstanceStatus overriddenStatus);
+
 }
