@@ -63,7 +63,7 @@ public class KafkaAuditService implements AuditService {
     private final Worker worker;
     private final KafkaAuditServiceConfig config;
 
-    /* Access from test */ volatile Producer<String, byte[]> kafkaProducer;
+    /* Access from test */ volatile Producer<String, String> kafkaProducer;
     private final ConcurrentLinkedQueue<AuditRecord> auditRecordQueue = new ConcurrentLinkedQueue<>();
 
     private final AtomicBoolean processorScheduled = new AtomicBoolean();
@@ -72,11 +72,11 @@ public class KafkaAuditService implements AuditService {
         public void call() {
             processorScheduled.set(false);
             while (!auditRecordQueue.isEmpty()) {
-                Producer<String, byte[]> currentKafkaProducer = kafkaProducer;
+                Producer<String, String> currentKafkaProducer = kafkaProducer;
                 if (currentKafkaProducer != null) {
                     AuditRecord record = auditRecordQueue.peek();
                     try {
-                        ProducerRecord<String, byte[]> message = new ProducerRecord<>(topic, Json.toByteArrayJson(record));
+                        ProducerRecord<String, String> message = new ProducerRecord<>(topic, Json.toStringJson(record));
                         kafkaProducer.send(message);
                         auditRecordQueue.poll();
                     } catch (Exception e) {
@@ -173,7 +173,7 @@ public class KafkaAuditService implements AuditService {
         worker.schedule(processorAction);
     }
 
-    private static Producer<String, byte[]> createKafkaProducer(List<InetSocketAddress> addresses) {
+    private static Producer<String, String> createKafkaProducer(List<InetSocketAddress> addresses) {
         StringBuilder sb = new StringBuilder();
         for (InetSocketAddress server : addresses) {
             sb.append(server.getHostString()).append(':').append(server.getPort()).append(',');
