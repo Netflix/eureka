@@ -298,14 +298,19 @@ public class BaseMessageConnection implements MessageConnection {
     }
 
     private Observable<Void> writeWhenSubscribed(final Object message, final PendingAck ack) {
-        return connection.writeAndFlush(message)
-                .doOnCompleted(new Action0() {
+        return connection
+                .writeAndFlush(message)
+                .doOnSubscribe(new Action0() {
                     @Override
                     public void call() {
                         pendingAckQueue.add(ack);
                         metrics.incrementPendingAckCounter();
                         metrics.incrementOutgoingMessageCounter(message.getClass(), 1);
-
+                    }
+                })
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
                         // Connection might be closed when we serve this request, and since
                         // pendingAckQueue and closed variables are not changed together atomically, we check
                         // close status after adding item to pendingAckQueue, and optionally drain it.
