@@ -1,6 +1,7 @@
 package com.netflix.appinfo.providers;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Map;
 
 import com.google.inject.Provider;
@@ -9,7 +10,6 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.InstanceInfo.PortType;
 import com.netflix.appinfo.LeaseInfo;
-import com.netflix.governator.guice.lazy.LazySingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
  * @author elandau
  *
  */
-@LazySingleton
+@Singleton
 public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceInfo> {
     private static final Logger LOG = LoggerFactory.getLogger(EurekaConfigBasedInstanceInfoProvider.class);
 

@@ -1,18 +1,13 @@
 package com.netflix.eureka;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Injector;
-import com.google.inject.Scopes;
+import com.google.inject.util.Modules;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.discovery.guice.EurekaModule;
-import com.netflix.eventbus.impl.EventBusImpl;
-import com.netflix.eventbus.spi.EventBus;
-import com.netflix.governator.guice.LifecycleInjector;
-import com.netflix.governator.guice.LifecycleInjectorBuilder;
-import com.netflix.governator.guice.LifecycleInjectorMode;
-import com.netflix.governator.lifecycle.LifecycleManager;
+import com.netflix.governator.Governator;
+import com.netflix.governator.LifecycleInjector;
 
 /**
  * Sample Eureka service that registers with Eureka to receive and process requests, using EurekaModule.
@@ -28,13 +23,11 @@ public class ExampleEurekaGovernatedService {
         }
     }
 
-    private static ExampleServiceBase init() throws Exception {
+    private static LifecycleInjector init() throws Exception {
         System.out.println("Creating injector for Example Service");
 
-        // Simulated Child Injectors required for the optional @Injects in DiscoveryClient
-        LifecycleInjectorBuilder builder = LifecycleInjector.builder().withMode(LifecycleInjectorMode.SIMULATED_CHILD_INJECTORS);
-        builder.withModules(
-                new AbstractModule() {
+        LifecycleInjector injector = Governator.createInjector(
+                Modules.override(new EurekaModule()).with(new AbstractModule() {
                     @Override
                     protected void configure() {
                         DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory.getInstance();
@@ -46,29 +39,26 @@ public class ExampleEurekaGovernatedService {
                         // (DiscoveryClient optional bindings) bind the optional event bus
                         // bind(EventBus.class).to(EventBusImpl.class).in(Scopes.SINGLETON);
                     }
-                },
-                new EurekaModule(),
-                new ExampleServiceModule());
+                }),
+                new ExampleServiceModule()
+        );
 
-        Injector injector = builder.build().createInjector();
-        LifecycleManager lifecycleManager = injector.getInstance(LifecycleManager.class);
-        lifecycleManager.start();
 
         System.out.println("Done creating the injector");
-        return injector.getInstance(ExampleServiceBase.class);
+        return injector;
     }
 
     public static void main(String[] args) throws Exception {
-        ExampleServiceBase exampleServiceBase = null;
+        LifecycleInjector injector = null;
         try {
-            exampleServiceBase = init();
-            exampleServiceBase.start();
+            injector = init();
+            injector.awaitTermination();
         } catch (Exception e) {
             System.out.println("Error starting the sample service: " + e);
             e.printStackTrace();
         } finally {
-            if (exampleServiceBase != null) {
-                exampleServiceBase.stop();
+            if (injector != null) {
+                injector.shutdown();
             }
         }
     }

@@ -126,6 +126,11 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     }
 
+    // for server info use
+    public Map<String, InstanceStatus> overriddenInstanceStatusesSnapshot() {
+        return new HashMap<>(overriddenInstanceStatusMap);
+    }
+
     /**
      * Registers a new instance with a given duration.
      *
@@ -306,16 +311,14 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         }
         if (leaseToRenew == null) {
             RENEW_NOT_FOUND.increment(isReplication);
-            logger.warn("DS: Registry: lease doesn't exist, registering resource: "
-                    + appName + " - " + id);
+            logger.warn("DS: Registry: lease doesn't exist, registering resource: {} - {}", appName ,id);
             return false;
         } else {
             InstanceInfo instanceInfo = leaseToRenew.getHolder();
             if (instanceInfo != null) {
                 // touchASGCache(instanceInfo.getASGName());
-                InstanceStatus overriddenInstanceStatus = this
-                        .getOverriddenInstanceStatus(instanceInfo,
-                                leaseToRenew, isReplication);
+                InstanceStatus overriddenInstanceStatus = this.getOverriddenInstanceStatus(
+                        instanceInfo, leaseToRenew, isReplication);
                 if (overriddenInstanceStatus == InstanceStatus.UNKNOWN) {
                     logger.info("Instance status UNKNOWN possibly due to deleted override for instance {}"
                             + "; re-register required", instanceInfo.getId());
@@ -323,9 +326,11 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     return false;
                 }
                 if (!instanceInfo.getStatus().equals(overriddenInstanceStatus)) {
-                    Object[] args = {instanceInfo.getStatus().name(),
+                    Object[] args = {
+                            instanceInfo.getStatus().name(),
                             instanceInfo.getOverriddenStatus().name(),
-                            instanceInfo.getId()};
+                            instanceInfo.getId()
+                    };
                     logger.info(
                             "The instance status {} is different from overridden instance status {} for instance {}. "
                                     + "Hence setting the status to overridden status", args);
@@ -339,6 +344,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     }
 
     /**
+     * @deprecated this is expensive, try not to use. See if you can use
+     * {@link #storeOverriddenStatusIfRequired(String, String, InstanceStatus)} instead.
+     *
      * Stores overridden status if it is not already there. This happens during
      * a reconciliation process during renewal requests.
      *
@@ -347,6 +355,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      * @param overriddenStatus
      *            Overridden status if any.
      */
+    @Deprecated
     @Override
     public void storeOverriddenStatusIfRequired(String id, InstanceStatus overriddenStatus) {
         InstanceStatus instanceStatus = overriddenInstanceStatusMap.get(id);
@@ -367,6 +376,31 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                         id, overriddenStatus.name());
 
             }
+        }
+    }
+
+    /**
+     * Stores overridden status if it is not already there. This happens during
+     * a reconciliation process during renewal requests.
+     *
+     * @param appName the application name of the instance.
+     * @param id the unique identifier of the instance.
+     * @param overriddenStatus overridden status if any.
+     */
+    @Override
+    public void storeOverriddenStatusIfRequired(String appName, String id, InstanceStatus overriddenStatus) {
+        InstanceStatus instanceStatus = overriddenInstanceStatusMap.get(id);
+        if ((instanceStatus == null) || (!overriddenStatus.equals(instanceStatus))) {
+            // We might not have the overridden status if the server got
+            // restarted -this will help us maintain the overridden state
+            // from the replica
+            logger.info("Adding overridden status for instance id {} and the value is {}",
+                    id, overriddenStatus.name());
+            overriddenInstanceStatusMap.put(id, overriddenStatus);
+            InstanceInfo instanceInfo = this.getInstanceByAppAndId(appName, id, false);
+            instanceInfo.setOverriddenStatus(overriddenStatus);
+             logger.info("Set the overridden status for instance (appname:{}, id:{}} and the value is {} ",
+                    appName, id, overriddenStatus.name());
         }
     }
 
@@ -951,8 +985,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      *            otherwise
      * @return the information about the instance.
      */
-    public InstanceInfo getInstanceByAppAndId(String appName, String id,
-                                              boolean includeRemoteRegions) {
+    public InstanceInfo getInstanceByAppAndId(String appName, String id, boolean includeRemoteRegions) {
         Map<String, Lease<InstanceInfo>> leaseMap = registry.get(appName);
         Lease<InstanceInfo> lease = null;
         if (leaseMap != null) {
@@ -973,15 +1006,20 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     }
 
     /**
+     * @deprecated Try {@link #getInstanceByAppAndId(String, String)} instead.
+     *
      * Get all instances by ID, including automatically asking other regions if the ID is unknown.
      *
      * @see com.netflix.discovery.shared.LookupService#getInstancesById(String)
      */
+    @Deprecated
     public List<InstanceInfo> getInstancesById(String id) {
         return this.getInstancesById(id, true);
     }
 
     /**
+     * @deprecated Try {@link #getInstanceByAppAndId(String, String, boolean)} instead.
+     *
      * Get the list of instances by its unique id.
      *
      * @param id
@@ -993,6 +1031,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      *            otherwise
      * @return list of InstanceInfo objects.
      */
+    @Deprecated
     public List<InstanceInfo> getInstancesById(String id,
                                                boolean includeRemoteRegions) {
         List<InstanceInfo> list = new ArrayList<InstanceInfo>();
@@ -1200,20 +1239,18 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         // The OUT_OF_SERVICE from the client or replica needs to be confirmed
         // as well since the service may be
         // currently in SERVICE
-        if ((!InstanceStatus.UP.equals(r.getStatus()))
+        if (
+                (!InstanceStatus.UP.equals(r.getStatus()))
                 && (!InstanceStatus.OUT_OF_SERVICE.equals(r.getStatus()))) {
-            logger.debug(
-                    "Trusting the instance status {} from replica or instance for instance",
+            logger.debug("Trusting the instance status {} from replica or instance for instance {}",
                     r.getStatus(), r.getId());
             return r.getStatus();
         }
         // Overrides are the status like OUT_OF_SERVICE and UP set by NAC
         InstanceStatus overridden = overriddenInstanceStatusMap.get(r.getId());
-        // If there are instance specific overrides, then they win - otherwise
-        // the ASG status
+        // If there are instance specific overrides, then they win - otherwise the ASG status
         if (overridden != null) {
-            logger.debug(
-                    "The instance specific override for instance {} and the value is {}",
+            logger.debug("The instance specific override for instance {} and the value is {}",
                     r.getId(), overridden.name());
             return overridden;
         }
@@ -1221,8 +1258,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         boolean isASGDisabled = false;
         if (r.getASGName() != null) {
             isASGDisabled = !AwsAsgUtil.getInstance().isASGEnabled(r);
-            logger.debug("The ASG name is specified {} and the value is {}",
-                    r.getASGName(), isASGDisabled);
+            logger.debug("The ASG name is specified {} and the value is {}", r.getASGName(), isASGDisabled);
             if (isASGDisabled) {
                 return InstanceStatus.OUT_OF_SERVICE;
             } else {
@@ -1237,20 +1273,18 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             if (existingLease != null) {
                 existingStatus = existingLease.getHolder().getStatus();
             }
-            // Allow server to have its way when the status is UP or
-            // OUT_OF_SERVICE
-            if ((existingStatus != null)
+            // Allow server to have its way when the status is UP or OUT_OF_SERVICE
+            if (
+                    (existingStatus != null)
                     && (InstanceStatus.OUT_OF_SERVICE.equals(existingStatus)
                     || InstanceStatus.UP.equals(existingStatus))) {
-                logger.debug(
-                        "There is already an existing lease with status {}  for instance {}",
+                logger.debug("There is already an existing lease with status {}  for instance {}",
                         existingLease.getHolder().getStatus().name(),
                         existingLease.getHolder().getId());
                 return existingLease.getHolder().getStatus();
             }
         }
-        logger.debug(
-                "Returning the default instance status {} for instance {},",
+        logger.debug("Returning the default instance status {} for instance {}",
                 r.getStatus(), r.getId());
         return r.getStatus();
     }

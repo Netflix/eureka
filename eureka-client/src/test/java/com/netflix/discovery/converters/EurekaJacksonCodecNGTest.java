@@ -164,7 +164,6 @@ public class EurekaJacksonCodecNGTest {
 
         assertThat(decodedValue.getId(), is(equalTo(instanceInfo.getId())));
         assertThat(decodedValue.getAppName(), is(equalTo(instanceInfo.getAppName())));
-        assertThat(decodedValue.getAppGroupName(), is(equalTo(instanceInfo.getAppGroupName())));
         assertThat(decodedValue.getIPAddr(), is(equalTo(instanceInfo.getIPAddr())));
         assertThat(decodedValue.getVIPAddress(), is(equalTo(instanceInfo.getVIPAddress())));
         assertThat(decodedValue.getSecureVipAddress(), is(equalTo(instanceInfo.getSecureVipAddress())));
@@ -172,6 +171,7 @@ public class EurekaJacksonCodecNGTest {
         assertThat(decodedValue.getStatus(), is(equalTo(instanceInfo.getStatus())));
         assertThat(decodedValue.getActionType(), is(equalTo(instanceInfo.getActionType())));
         assertThat(decodedValue.getASGName(), is(equalTo(instanceInfo.getASGName())));
+        assertThat(decodedValue.getLastUpdatedTimestamp(), is(equalTo(instanceInfo.getLastUpdatedTimestamp())));
 
         AmazonInfo sourceAmazonInfo = (AmazonInfo) instanceInfo.getDataCenterInfo();
         AmazonInfo decodedAmazonInfo = (AmazonInfo) decodedValue.getDataCenterInfo();

@@ -10,7 +10,6 @@ import com.google.inject.TypeLiteral;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.governator.annotations.binding.DownStatus;
 import com.netflix.governator.annotations.binding.UpStatus;
-import com.netflix.governator.guice.lazy.LazySingleton;
 
 /**
  * Specific bindings for eureka status checker.
@@ -29,7 +28,7 @@ import com.netflix.governator.guice.lazy.LazySingleton;
  */
 @Singleton
 public class InternalEurekaStatusModule extends AbstractModule {
-    @LazySingleton
+    @Singleton
     public static class UpStatusProvider implements Provider<Supplier<Boolean>> {
         @Inject
         private Provider<EurekaUpStatusResolver> upStatus;
@@ -46,7 +45,7 @@ public class InternalEurekaStatusModule extends AbstractModule {
         }
     }
 
-    @LazySingleton
+    @Singleton
     public static class DownStatusProvider implements Provider<Supplier<Boolean>> {
         @Inject
         private Provider<EurekaUpStatusResolver> upStatus;

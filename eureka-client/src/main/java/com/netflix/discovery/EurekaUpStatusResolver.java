@@ -2,6 +2,7 @@ package com.netflix.discovery;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.inject.Singleton;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.inject.Inject;
@@ -9,7 +10,6 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.eventbus.spi.EventBus;
 import com.netflix.eventbus.spi.InvalidSubscriberException;
 import com.netflix.eventbus.spi.Subscribe;
-import com.netflix.governator.guice.lazy.LazySingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
  * @author elandau
  *
  */
-@LazySingleton
+@Singleton
 public class EurekaUpStatusResolver {
     private static Logger LOG = LoggerFactory.getLogger(EurekaUpStatusResolver.class);
 
