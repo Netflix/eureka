@@ -81,8 +81,8 @@ public class KafkaAuditService implements AuditService {
                         auditRecordQueue.poll();
                     } catch (Exception e) {
                         logger.error("Kafka message send error; reconnecting", e);
-                        kafkaProducer = null;
-                        scheduleReconnect();
+                        disconnectFromKafka();
+                        scheduleKafkaReconnect();
                         return;
                     }
                 } else {
@@ -123,17 +123,14 @@ public class KafkaAuditService implements AuditService {
 
     @PostConstruct
     public void start() {
-        reconnect();
+        reconnectToKafka();
     }
 
     @PreDestroy
     public void stop() {
         worker.unsubscribe();
         serverSource.close();
-        if (kafkaProducer != null) {
-            kafkaProducer.close();
-            kafkaProducer = null;
-        }
+        disconnectFromKafka();
     }
 
     @Override
@@ -150,23 +147,34 @@ public class KafkaAuditService implements AuditService {
         return Observable.empty();
     }
 
-    private void reconnect() {
+    private void scheduleKafkaReconnect() {
+        worker.schedule(new Action0() {
+            @Override
+            public void call() {
+                reconnectToKafka();
+            }
+        }, config.getRetryIntervalMs(), TimeUnit.MILLISECONDS);
+    }
+
+    private void reconnectToKafka() {
         List<InetSocketAddress> addresses = serverSource.latestSnapshot();
         if (addresses.isEmpty()) {
-            scheduleReconnect();
+            scheduleKafkaReconnect();
         } else {
             kafkaProducer = createKafkaProducer(addresses);
             scheduleQueueProcessing();
         }
     }
 
-    private void scheduleReconnect() {
-        worker.schedule(new Action0() {
-            @Override
-            public void call() {
-                reconnect();
+    private void disconnectFromKafka() {
+        if (kafkaProducer != null) {
+            try {
+                kafkaProducer.close();
+            } catch (Exception e) {
+                logger.warn("Kafka producer shutdown failure; possible resource leak", e);
             }
-        }, config.getRetryIntervalMs(), TimeUnit.MILLISECONDS);
+            kafkaProducer = null;
+        }
     }
 
     private void scheduleQueueProcessing() {
