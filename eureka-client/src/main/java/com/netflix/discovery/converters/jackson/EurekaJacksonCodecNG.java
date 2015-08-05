@@ -35,7 +35,7 @@ public class EurekaJacksonCodecNG {
 
     private final XmlMapper xmlMapper;
 
-    private static final Set<String> MINI_META_INFO_INCLUDE_KEYS = new HashSet<>(
+    private static final Set<String> MINI_AMAZON_INFO_INCLUDE_KEYS = new HashSet<>(
             Arrays.asList("instance-id", "public-ipv4", "public-hostname", "local-ipv4", "availability-zone")
     );
 
@@ -94,10 +94,10 @@ public class EurekaJacksonCodecNG {
 
     private void addMiniConfig(ObjectMapper mapper) {
         mapper.addMixInAnnotations(InstanceInfo.class, MiniInstanceInfoMixIn.class);
-        bindMetaInfoFilter(mapper);
+        bindAmazonInfoFilter(mapper);
     }
 
-    private void bindMetaInfoFilter(ObjectMapper mapper) {
+    private void bindAmazonInfoFilter(ObjectMapper mapper) {
         SimpleFilterProvider filters = new SimpleFilterProvider();
         final String filterName = "exclude-meta-info-entries";
         mapper.setAnnotationIntrospector(new JacksonAnnotationIntrospector() {
@@ -117,7 +117,7 @@ public class EurekaJacksonCodecNG {
 
             @Override
             protected boolean include(PropertyWriter writer) {
-                return MINI_META_INFO_INCLUDE_KEYS.contains(writer.getName());
+                return MINI_AMAZON_INFO_INCLUDE_KEYS.contains(writer.getName());
             }
         });
         mapper.setFilters(filters);

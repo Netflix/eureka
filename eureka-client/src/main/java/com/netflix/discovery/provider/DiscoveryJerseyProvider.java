@@ -79,6 +79,14 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter,
         LOGGER.info("Using xml codec {}", xmlCodec == null ? "default" : xmlCodec.getCodecType().name());
     }
 
+    public CodecWrapper getJsonCodec() {
+        return jsonCodec;
+    }
+
+    public CodecWrapper getXmlCodec() {
+        return xmlCodec;
+    }
+
     /*
      * (non-Javadoc)
      *

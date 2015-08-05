@@ -20,7 +20,8 @@ public abstract class CodecWrapper {
         XStreamXml,
         LegacyJacksonJson,
         JacksonJson,
-        JacksonXml;
+        JacksonXml,
+        JacksonJsonMini;
 
         public static CodecType from(String name) {
             try {
@@ -41,6 +42,7 @@ public abstract class CodecWrapper {
         jsonCodecsByType.put(CodecType.XStreamJson, new XStreamJsonWrapper());
         jsonCodecsByType.put(CodecType.LegacyJacksonJson, new LegacyJacksonJsonWrapper());
         jsonCodecsByType.put(CodecType.JacksonJson, new JacksonJsonWrapper());
+        jsonCodecsByType.put(CodecType.JacksonJsonMini, new JacksonJsonMiniWrapper());
     }
 
     public abstract CodecType getCodecType();
@@ -52,14 +54,6 @@ public abstract class CodecWrapper {
     public abstract <T> T decode(String textValue, Class<T> type) throws IOException;
 
     public abstract <T> T decode(InputStream inputStream, Class<T> type) throws IOException;
-
-    public static CodecWrapper[] availableJsonCodecs() {
-        return jsonCodecsByType.values().toArray(new CodecWrapper[jsonCodecsByType.size()]);
-    }
-
-    public static CodecWrapper[] availableXmlCodecs() {
-        return xmlCodecsByType.values().toArray(new CodecWrapper[xmlCodecsByType.size()]);
-    }
 
     public static CodecWrapper get(CodecType type) {
         if (type == null) {
@@ -73,6 +67,9 @@ public abstract class CodecWrapper {
         return wrapper;
     }
 
+    // ========================================
+    // Codecs
+    // ========================================
 
     public static class XStreamXmlWrapper extends CodecWrapper {
 
@@ -132,7 +129,11 @@ public abstract class CodecWrapper {
 
     public static class LegacyJacksonJsonWrapper extends CodecWrapper {
 
-        private final EurekaJacksonCodec codec = new EurekaJacksonCodec();
+        protected final EurekaJacksonCodec codec;
+
+        LegacyJacksonJsonWrapper() {
+            this.codec = new EurekaJacksonCodec();
+        }
 
         @Override
         public CodecType getCodecType() {
@@ -162,7 +163,15 @@ public abstract class CodecWrapper {
 
     public static class JacksonJsonWrapper extends CodecWrapper {
 
-        private final EurekaJacksonCodecNG codec = new EurekaJacksonCodecNG();
+        protected final EurekaJacksonCodecNG codec;
+
+        JacksonJsonWrapper() {
+            this(new EurekaJacksonCodecNG());
+        }
+
+        JacksonJsonWrapper(EurekaJacksonCodecNG codec) {
+            this.codec = codec;
+        }
 
         @Override
         public CodecType getCodecType() {
@@ -190,9 +199,24 @@ public abstract class CodecWrapper {
         }
     }
 
+    public static class JacksonJsonMiniWrapper extends JacksonJsonWrapper {
+        JacksonJsonMiniWrapper() {
+            super(new EurekaJacksonCodecNG(KeyFormatter.defaultKeyFormatter(), true));
+        }
+
+        @Override
+        public CodecType getCodecType() {
+            return CodecType.JacksonJsonMini;
+        }
+    }
+
     public static class JacksonXmlWrapper extends CodecWrapper {
 
-        private final EurekaJacksonCodecNG codec = new EurekaJacksonCodecNG();
+        protected final EurekaJacksonCodecNG codec;
+
+        JacksonXmlWrapper() {
+            this.codec = new EurekaJacksonCodecNG();
+        }
 
         @Override
         public CodecType getCodecType() {

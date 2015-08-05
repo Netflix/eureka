@@ -45,6 +45,34 @@ public final class EurekaEntityComparators {
         return first.getMetadata().equals(second.getMetadata());
     }
 
+    public static boolean subsetOf(DataCenterInfo first, DataCenterInfo second) {
+        if (first == second) {
+            return true;
+        }
+        if (first == null || first == null && second != null) {
+            return false;
+        }
+        if (first.getClass() != second.getClass()) {
+            return false;
+        }
+        if (first instanceof AmazonInfo) {
+            return subsetOf((AmazonInfo) first, (AmazonInfo) second);
+        }
+        return first.getName() == second.getName();
+    }
+
+    public static boolean subsetOf(AmazonInfo first, AmazonInfo second) {
+        if (first == second) {
+            return true;
+        }
+        if (first == null || first == null && second != null) {
+            return false;
+        }
+
+        return first.getMetadata().entrySet().containsAll(second.getMetadata().entrySet());
+    }
+
+
     public static boolean equal(LeaseInfo first, LeaseInfo second) {
         if (first == second) {
             return true;
@@ -149,6 +177,54 @@ public final class EurekaEntityComparators {
             return false;
         }
         if (first.isCoordinatingDiscoveryServer() != null ? !first.isCoordinatingDiscoveryServer().equals(second.isCoordinatingDiscoveryServer()) : second.isCoordinatingDiscoveryServer() != null) {
+            return false;
+        }
+        return true;
+    }
+
+
+    public static boolean equalMini(InstanceInfo first, InstanceInfo second) {
+        if (first == second) {
+            return true;
+        }
+        if (first == null || first == null && second != null) {
+            return false;
+        }
+
+        if (first.getPort() != second.getPort()) {
+            return false;
+        }
+        if (first.getSecurePort() != second.getSecurePort()) {
+            return false;
+        }
+        if (first.getActionType() != second.getActionType()) {
+            return false;
+        }
+        if (first.getAppName() != null ? !first.getAppName().equals(second.getAppName()) : second.getAppName() != null) {
+            return false;
+        }
+        if (first.getASGName() != null ? !first.getASGName().equals(second.getASGName()) : second.getASGName() != null) {
+            return false;
+        }
+        if (!subsetOf(first.getDataCenterInfo(), second.getDataCenterInfo())) {
+            return false;
+        }
+        if (first.getHostName() != null ? !first.getHostName().equals(second.getHostName()) : second.getHostName() != null) {
+            return false;
+        }
+        if (first.getIPAddr() != null ? !first.getIPAddr().equals(second.getIPAddr()) : second.getIPAddr() != null) {
+            return false;
+        }
+        if (first.getVIPAddress() != null ? !first.getVIPAddress().equals(second.getVIPAddress()) : second.getVIPAddress() != null) {
+            return false;
+        }
+        if (first.getSecureVipAddress() != null ? !first.getSecureVipAddress().equals(second.getSecureVipAddress()) : second.getSecureVipAddress() != null) {
+            return false;
+        }
+        if (first.getStatus() != null ? !first.getStatus().equals(second.getStatus()) : second.getStatus() != null) {
+            return false;
+        }
+        if (first.getLastUpdatedTimestamp()!= second.getLastUpdatedTimestamp()) {
             return false;
         }
         return true;

@@ -1,8 +1,6 @@
 package com.netflix.discovery.converters.jackson;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
@@ -24,23 +22,6 @@ class InstanceInfoBeanDeserializers {
 
     abstract static class AbstractInstanceInfoDeserializer extends CustomizableBeanDeserializer {
 
-        protected static final Set<String> COMPACT_FIELDS;
-
-        static {
-            Set<String> fields = new HashSet<>();
-            fields.add("app");
-            fields.add("appGroupName");
-            fields.add("ipAddr");
-            fields.add("vipAddress");
-            fields.add("secureVipAddress");
-            fields.add("dataCenterInfo");
-            fields.add("hostName");
-            fields.add("status");
-            fields.add("actionType");
-            fields.add("asgName");
-            COMPACT_FIELDS = fields;
-        }
-
         private final boolean compactMode;
 
         protected AbstractInstanceInfoDeserializer(BeanDeserializerBase src, boolean compactMode) {
@@ -50,7 +31,9 @@ class InstanceInfoBeanDeserializers {
 
         @Override
         protected boolean isCustomField(String propName) {
-            return "port".equals(propName) || "securePort".equals(propName) || compactMode && !COMPACT_FIELDS.contains(propName);
+            return "port".equals(propName) ||
+                   "securePort".equals(propName) ||
+                   compactMode && !MiniInstanceInfoMixIn.AllowedFields.ALLOWED_FIELDS.contains(propName);
         }
 
         @Override
