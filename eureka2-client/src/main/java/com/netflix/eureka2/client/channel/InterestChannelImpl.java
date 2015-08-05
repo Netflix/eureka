@@ -24,7 +24,6 @@ import com.netflix.eureka2.protocol.common.InterestSetNotification;
 import com.netflix.eureka2.protocol.common.StreamStateUpdate;
 import com.netflix.eureka2.protocol.interest.UpdateInstanceInfo;
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -219,7 +218,9 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
         InstanceInfo incoming = msg.getInstanceInfo();
         InstanceInfo cached = idVsInstance.get(incoming.getId());
         if (cached != null) {
-            logger.debug("Received newer version of an existing instanceInfo as Add");
+            logger.debug("Received newer version of an existing instanceInfo {} as Add", incoming.getId());
+        } else {
+            logger.debug("Received new instanceInfo {} as Add", incoming.getId());
         }
         idVsInstance.put(incoming.getId(), incoming);
         notification = new ChangeNotification<>(ChangeNotification.Kind.Add, incoming);
@@ -241,12 +242,13 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
         InstanceInfo cached = idVsInstance.get(delta.getId());
         if (cached == null) {
             if (logger.isWarnEnabled()) {
-                logger.warn("Update notification received for non-existent instance id " + delta.getId());
+                logger.warn("Update notification received for non-existent instance {}", delta.getId());
             }
         } else {
             InstanceInfo updatedInfo = cached.applyDelta(delta);
             idVsInstance.put(updatedInfo.getId(), updatedInfo);
             notification = new ModifyNotification(updatedInfo, Collections.singleton(delta));
+            logger.debug("Update notification received for instance {}", delta.getId());
         }
 
         return notification;
@@ -264,8 +266,9 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
         InstanceInfo removedInstance = idVsInstance.remove(instanceId);
         if (removedInstance != null) {
             notification = new ChangeNotification<>(ChangeNotification.Kind.Delete, removedInstance);
+            logger.warn("Delete notification received for instance {}", instanceId);
         } else if (logger.isWarnEnabled()) {
-            logger.warn("Delete notification received for non-existent instance id:" + instanceId);
+            logger.warn("Delete notification received for non-existent instance {}", instanceId);
         }
 
         return notification;
@@ -273,6 +276,7 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
 
     private ChangeNotification<InstanceInfo> streamStateUpdateToStreamStateNotification(StreamStateUpdate notification) {
         BufferState state = notification.getState();
+        logger.debug("Buffer notification {} received", state);
         if (state == BufferState.BufferStart || state == BufferState.BufferEnd) {
             return new StreamStateNotification<>(state, notification.getInterest());
         }
