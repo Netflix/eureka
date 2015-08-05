@@ -1,5 +1,7 @@
 package com.netflix.eureka2.server.config;
 
+import javax.annotation.Nullable;
+
 import com.netflix.archaius.annotations.DefaultValue;
 import com.netflix.eureka2.server.resolver.ClusterAddress;
 import com.netflix.eureka2.server.resolver.EurekaClusterResolvers.ResolverType;
@@ -19,6 +21,7 @@ public interface BootstrapConfig {
     @DefaultValue("Fixed")
     ResolverType getBootstrapResolverType();
 
+    @Nullable
     ClusterAddress[] getBootstrapClusterAddresses();
 
     @DefaultValue("" + DEFAULT_BOOTSTRAP_TIMEOUT_MS)
