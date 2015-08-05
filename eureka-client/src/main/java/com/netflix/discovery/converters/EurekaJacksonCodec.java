@@ -122,6 +122,8 @@ public class EurekaJacksonCodec {
         module.addDeserializer(Application.class, new ApplicationDeserializer(this.mapper, cache));
         module.addDeserializer(Applications.class, new ApplicationsDeserializer(this.mapper, this.versionDeltaKey, this.appHashCodeKey));
 
+        customizeModule(module);
+
         this.mapper.registerModule(module);
 
         HashMap<Class<?>, ObjectReader> readers = new HashMap<>();
@@ -135,6 +137,15 @@ public class EurekaJacksonCodec {
         writers.put(Application.class, mapper.writer().withType(Application.class).withRootName("application"));
         writers.put(Applications.class, mapper.writer().withType(Applications.class).withRootName("applications"));
         this.objectWriterByClass = writers;
+    }
+
+    /**
+     * A hook to allow sub-classes to customize the eureka module.
+     * For example, adding a custom serializer/deserializer, such as:
+     * <pre>module.addSerializer(InstanceInfo.class, new DCAwareInstanceInfoSerializer());</pre>
+     * @param module
+     */
+    protected void customizeModule(SimpleModule module) {
     }
 
     protected ObjectMapper getMapper() {
