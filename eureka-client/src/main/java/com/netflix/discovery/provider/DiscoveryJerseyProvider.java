@@ -32,7 +32,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.netflix.discovery.converters.CodecWrapper;
+import com.netflix.discovery.converters.wrappers.CodecWrappers;
+import com.netflix.discovery.converters.wrappers.DecoderWrapper;
+import com.netflix.discovery.converters.wrappers.EncoderWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,32 +61,32 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter,
     // Cache the serializers so that they don't have to be instantiated every time
     private static ConcurrentHashMap<Class, ISerializer> serializers = new ConcurrentHashMap<Class, ISerializer>();
 
-    private final CodecWrapper jsonCodec;
-    private final CodecWrapper xmlCodec;
+    private final EncoderWrapper encoder;
+    private final DecoderWrapper decoder;
 
     public DiscoveryJerseyProvider() {
         this(null, null);
     }
 
-    public DiscoveryJerseyProvider(CodecWrapper jsonCodec, CodecWrapper xmlCodec) {
-        // for json we need to default to at least the LegacyJackson codec as changes to the replication protocol
-        // have a minimum requirement on this.
-        this.jsonCodec = jsonCodec == null
-                ? CodecWrapper.get(CodecWrapper.CodecType.LegacyJacksonJson)
-                : jsonCodec;
+    public DiscoveryJerseyProvider(EncoderWrapper encoder, DecoderWrapper decoder) {
+        this.encoder = encoder == null
+                ? CodecWrappers.getEncoder(CodecWrappers.LegacyJacksonJson.class.getSimpleName())
+                : encoder;
 
-        this.xmlCodec = xmlCodec;
+        this.decoder = decoder == null
+                ? CodecWrappers.getDecoder(CodecWrappers.LegacyJacksonJson.class.getSimpleName())
+                : decoder;
 
-        LOGGER.info("Using json codec {}", this.jsonCodec);
-        LOGGER.info("Using xml codec {}", xmlCodec == null ? "default" : xmlCodec.getCodecType().name());
+        LOGGER.info("Using encoding codec {}", this.encoder.codecName());
+        LOGGER.info("Using decoding codec {}", this.decoder.codecName());
     }
 
-    public CodecWrapper getJsonCodec() {
-        return jsonCodec;
+    public EncoderWrapper getEncoder() {
+        return encoder;
     }
 
-    public CodecWrapper getXmlCodec() {
-        return xmlCodec;
+    public DecoderWrapper getDecoder() {
+        return decoder;
     }
 
     /*
@@ -114,10 +116,9 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter,
                            MultivaluedMap headers, InputStream inputStream)
             throws IOException, WebApplicationException {
 
-        // Use Jackson for JSON
-        if (mediaType.equals(MediaType.APPLICATION_JSON_TYPE) && jsonCodec != null) {
+        if (decoder.support(mediaType)) {
             try {
-                return jsonCodec.decode(inputStream, serializableClass);
+                return decoder.decode(inputStream, serializableClass);
             } catch (Error e) {
                 LOGGER.error("Unexpected error occurred during de-serialization of discovery data, doing connection "
                         + "cleanup.", e);
@@ -126,19 +127,7 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter,
             }
         }
 
-        // use custom xml codec if provided
-        if (mediaType.equals(MediaType.APPLICATION_XML_TYPE) && xmlCodec != null) {
-            try {
-                return xmlCodec.decode(inputStream, serializableClass);
-            } catch (Error e) {
-                LOGGER.error("Unexpected error occurred during de-serialization of discovery data, doing connection "
-                        + "cleanup.", e);
-                inputStream.close();
-                throw e;
-            }
-        }
-
-        // XML encoded with XStream
+        // default to XML encoded with XStream
         ISerializer serializer = getSerializer(serializableClass);
         if (null != serializer) {
             try {
@@ -201,11 +190,9 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter,
                         MultivaluedMap headers, OutputStream outputStream)
             throws IOException, WebApplicationException {
 
-        if (mediaType.equals(MediaType.APPLICATION_JSON_TYPE) && jsonCodec != null) {
-            jsonCodec.encode(serializableObject, outputStream);
-        } else if (mediaType.equals(MediaType.APPLICATION_XML_TYPE) && xmlCodec != null) {
-            xmlCodec.encode(serializableObject, outputStream);
-        } else {
+        if (encoder.support(mediaType)) {
+            encoder.encode(serializableObject, outputStream);
+        } else {  // default
             ISerializer serializer = getSerializer(serializableClass);
             if (null != serializer) {
                 serializer.write(serializableObject, outputStream, mediaType);

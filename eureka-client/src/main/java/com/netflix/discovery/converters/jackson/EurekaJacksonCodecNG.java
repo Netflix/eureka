@@ -31,13 +31,13 @@ import com.netflix.discovery.converters.KeyFormatter;
  */
 public class EurekaJacksonCodecNG {
 
-    private final ObjectMapper jsonMapper = new ObjectMapper();
-
-    private final XmlMapper xmlMapper;
-
     private static final Set<String> MINI_AMAZON_INFO_INCLUDE_KEYS = new HashSet<>(
             Arrays.asList("instance-id", "public-ipv4", "public-hostname", "local-ipv4", "availability-zone")
     );
+
+    private final ObjectMapper jsonMapper = new ObjectMapper();
+
+    private final XmlMapper xmlMapper;
 
     public EurekaJacksonCodecNG() {
         this(KeyFormatter.defaultKeyFormatter(), false);
@@ -99,7 +99,7 @@ public class EurekaJacksonCodecNG {
 
     private void bindAmazonInfoFilter(ObjectMapper mapper) {
         SimpleFilterProvider filters = new SimpleFilterProvider();
-        final String filterName = "exclude-meta-info-entries";
+        final String filterName = "exclude-amazon-info-entries";
         mapper.setAnnotationIntrospector(new JacksonAnnotationIntrospector() {
             @Override
             public Object findFilterId(Annotated a) {

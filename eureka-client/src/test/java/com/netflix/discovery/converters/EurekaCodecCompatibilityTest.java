@@ -1,13 +1,17 @@
 package com.netflix.discovery.converters;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.MyDataCenterInfo;
+import com.netflix.discovery.converters.wrappers.CodecWrappers;
+import com.netflix.discovery.converters.wrappers.DecoderWrapper;
+import com.netflix.discovery.converters.wrappers.EncoderDecoderWrapper;
+import com.netflix.discovery.converters.wrappers.EncoderWrapper;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.InstanceInfoGenerator;
@@ -21,11 +25,23 @@ import static org.junit.Assert.assertThat;
  */
 public class EurekaCodecCompatibilityTest {
 
+    private static final List<EncoderDecoderWrapper> availableJsonWrappers = new ArrayList<>();
+    private static final List<EncoderDecoderWrapper> availableXmlWrappers = new ArrayList<>();
+
+    static {
+        availableJsonWrappers.add(new CodecWrappers.XStreamJson());
+        availableJsonWrappers.add(new CodecWrappers.LegacyJacksonJson());
+        availableJsonWrappers.add(new CodecWrappers.JacksonJson());
+
+        availableXmlWrappers.add(new CodecWrappers.JacksonXml());
+        availableXmlWrappers.add(new CodecWrappers.XStreamXml());
+    }
+
     private final InstanceInfoGenerator infoGenerator = InstanceInfoGenerator.newBuilder(4, 2).withMetaData(true).build();
     private final Iterator<InstanceInfo> infoIterator = infoGenerator.serviceIterator();
 
     interface Action2 {
-        void call(CodecWrapper encodingCodec, CodecWrapper decodingCodec) throws IOException;
+        void call(EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws IOException;
     }
 
     /**
@@ -37,7 +53,7 @@ public class EurekaCodecCompatibilityTest {
         final InstanceInfo instanceInfo = infoIterator.next();
         Action2 codingAction = new Action2() {
             @Override
-            public void call(CodecWrapper encodingCodec, CodecWrapper decodingCodec) throws IOException {
+            public void call(EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws IOException {
                 String encodedString = encodingCodec.encode(instanceInfo);
                 // convert the field from the json string to what the legacy json would encode as
                 encodedString = encodedString.replaceFirst("lastRenewalTimestamp", "renewalTimestamp");
@@ -49,8 +65,8 @@ public class EurekaCodecCompatibilityTest {
         verifyForPair(
                 codingAction,
                 InstanceInfo.class,
-                CodecWrapper.get(CodecWrapper.CodecType.LegacyJacksonJson),
-                CodecWrapper.get(CodecWrapper.CodecType.JacksonJson)
+                new CodecWrappers.LegacyJacksonJson(),
+                new CodecWrappers.JacksonJson()
         );
     }
 
@@ -59,7 +75,7 @@ public class EurekaCodecCompatibilityTest {
         final InstanceInfo instanceInfo = infoIterator.next();
         Action2 codingAction = new Action2() {
             @Override
-            public void call(CodecWrapper encodingCodec, CodecWrapper decodingCodec) throws IOException {
+            public void call(EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws IOException {
                 String encodedString = encodingCodec.encode(instanceInfo);
                 InstanceInfo decodedValue = decodingCodec.decode(encodedString, InstanceInfo.class);
                 assertThat(EurekaEntityComparators.equalMini(instanceInfo, decodedValue), is(true));
@@ -69,8 +85,8 @@ public class EurekaCodecCompatibilityTest {
         verifyForPair(
                 codingAction,
                 InstanceInfo.class,
-                CodecWrapper.get(CodecWrapper.CodecType.JacksonJson),
-                CodecWrapper.get(CodecWrapper.CodecType.JacksonJsonMini)
+                new CodecWrappers.JacksonJson(),
+                new CodecWrappers.JacksonJsonMini()
         );
     }
 
@@ -83,7 +99,7 @@ public class EurekaCodecCompatibilityTest {
 
         Action2 codingAction = new Action2() {
             @Override
-            public void call(CodecWrapper encodingCodec, CodecWrapper decodingCodec) throws IOException {
+            public void call(EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws IOException {
                 String encodedString = encodingCodec.encode(instanceInfo);
                 InstanceInfo decodedValue = decodingCodec.decode(encodedString, InstanceInfo.class);
                 assertThat(EurekaEntityComparators.equalMini(instanceInfo, decodedValue), is(true));
@@ -93,8 +109,8 @@ public class EurekaCodecCompatibilityTest {
         verifyForPair(
                 codingAction,
                 InstanceInfo.class,
-                CodecWrapper.get(CodecWrapper.CodecType.JacksonJson),
-                CodecWrapper.get(CodecWrapper.CodecType.JacksonJsonMini)
+                new CodecWrappers.JacksonJson(),
+                new CodecWrappers.JacksonJsonMini()
         );
     }
 
@@ -103,7 +119,7 @@ public class EurekaCodecCompatibilityTest {
         final InstanceInfo instanceInfo = infoIterator.next();
         Action2 codingAction = new Action2() {
             @Override
-            public void call(CodecWrapper encodingCodec, CodecWrapper decodingCodec) throws IOException {
+            public void call(EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws IOException {
                 String encodedString = encodingCodec.encode(instanceInfo);
                 InstanceInfo decodedValue = decodingCodec.decode(encodedString, InstanceInfo.class);
                 assertThat(EurekaEntityComparators.equalMini(instanceInfo, decodedValue), is(true));
@@ -113,8 +129,8 @@ public class EurekaCodecCompatibilityTest {
         verifyForPair(
                 codingAction,
                 InstanceInfo.class,
-                CodecWrapper.get(CodecWrapper.CodecType.JacksonJsonMini),
-                CodecWrapper.get(CodecWrapper.CodecType.JacksonJsonMini)
+                new CodecWrappers.JacksonJsonMini(),
+                new CodecWrappers.JacksonJsonMini()
         );
     }
 
@@ -123,15 +139,15 @@ public class EurekaCodecCompatibilityTest {
         final InstanceInfo instanceInfo = infoIterator.next();
         Action2 codingAction = new Action2() {
             @Override
-            public void call(CodecWrapper encodingCodec, CodecWrapper decodingCodec) throws IOException {
+            public void call(EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws IOException {
                 String encodedString = encodingCodec.encode(instanceInfo);
                 InstanceInfo decodedValue = decodingCodec.decode(encodedString, InstanceInfo.class);
                 assertThat(EurekaEntityComparators.equal(instanceInfo, decodedValue), is(true));
             }
         };
 
-        verifyAllPairs(codingAction, InstanceInfo.class, availableJsonCodecs());
-        verifyAllPairs(codingAction, InstanceInfo.class, availableXmlCodecs());
+        verifyAllPairs(codingAction, InstanceInfo.class, availableJsonWrappers);
+        verifyAllPairs(codingAction, InstanceInfo.class, availableXmlWrappers);
     }
 
     @Test
@@ -142,15 +158,15 @@ public class EurekaCodecCompatibilityTest {
 
         Action2 codingAction = new Action2() {
             @Override
-            public void call(CodecWrapper encodingCodec, CodecWrapper decodingCodec) throws IOException {
+            public void call(EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws IOException {
                 String encodedString = encodingCodec.encode(application);
                 Application decodedValue = decodingCodec.decode(encodedString, Application.class);
                 assertThat(EurekaEntityComparators.equal(application, decodedValue), is(true));
             }
         };
 
-        verifyAllPairs(codingAction, Application.class, availableJsonCodecs());
-        verifyAllPairs(codingAction, Application.class, availableXmlCodecs());
+        verifyAllPairs(codingAction, Application.class, availableJsonWrappers);
+        verifyAllPairs(codingAction, Application.class, availableXmlWrappers);
     }
 
     @Test
@@ -159,21 +175,21 @@ public class EurekaCodecCompatibilityTest {
 
         Action2 codingAction = new Action2() {
             @Override
-            public void call(CodecWrapper encodingCodec, CodecWrapper decodingCodec) throws IOException {
+            public void call(EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws IOException {
                 String encodedString = encodingCodec.encode(applications);
                 Applications decodedValue = decodingCodec.decode(encodedString, Applications.class);
                 assertThat(EurekaEntityComparators.equal(applications, decodedValue), is(true));
             }
         };
 
-        verifyAllPairs(codingAction, Applications.class, availableJsonCodecs());
-        verifyAllPairs(codingAction, Applications.class, availableXmlCodecs());
+        verifyAllPairs(codingAction, Applications.class, availableJsonWrappers);
+        verifyAllPairs(codingAction, Applications.class, availableXmlWrappers);
     }
 
-    public void verifyAllPairs(Action2 codingAction, Class<?> typeToEncode, List<CodecWrapper> codecWrappers) throws Exception {
-        for (CodecWrapper encodingCodec : codecWrappers) {
-            for (CodecWrapper decodingCodec : codecWrappers) {
-                String pair = "{" + encodingCodec.getCodecType() + ',' + decodingCodec.getCodecType() + '}';
+    public void verifyAllPairs(Action2 codingAction, Class<?> typeToEncode, List<EncoderDecoderWrapper> codecHolders) throws Exception {
+        for (EncoderWrapper encodingCodec : codecHolders) {
+            for (DecoderWrapper decodingCodec : codecHolders) {
+                String pair = "{" + encodingCodec.codecName() + ',' + decodingCodec.codecName() + '}';
                 System.out.println("Encoding " + typeToEncode.getSimpleName() + " using " + pair);
                 try {
                     codingAction.call(encodingCodec, decodingCodec);
@@ -184,8 +200,8 @@ public class EurekaCodecCompatibilityTest {
         }
     }
 
-    public void verifyForPair(Action2 codingAction, Class<?> typeToEncode, CodecWrapper encodingCodec, CodecWrapper decodingCodec) throws Exception {
-        String pair = "{" + encodingCodec.getCodecType() + ',' + decodingCodec.getCodecType() + '}';
+    public void verifyForPair(Action2 codingAction, Class<?> typeToEncode, EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws Exception {
+        String pair = "{" + encodingCodec.codecName() + ',' + decodingCodec.codecName() + '}';
         System.out.println("Encoding " + typeToEncode.getSimpleName() + " using " + pair);
         try {
             codingAction.call(encodingCodec, decodingCodec);
@@ -194,19 +210,4 @@ public class EurekaCodecCompatibilityTest {
         }
     }
 
-
-    public static List<CodecWrapper> availableJsonCodecs() {
-        return Arrays.asList(
-                CodecWrapper.get(CodecWrapper.CodecType.XStreamJson),
-                CodecWrapper.get(CodecWrapper.CodecType.LegacyJacksonJson),
-                CodecWrapper.get(CodecWrapper.CodecType.JacksonJson)
-        );
-    }
-
-    public static List<CodecWrapper> availableXmlCodecs() {
-        return Arrays.asList(
-                CodecWrapper.get(CodecWrapper.CodecType.XStreamXml),
-                CodecWrapper.get(CodecWrapper.CodecType.JacksonXml)
-        );
-    }
 }

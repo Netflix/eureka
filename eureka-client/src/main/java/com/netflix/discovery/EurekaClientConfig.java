@@ -508,12 +508,12 @@ public interface EurekaClientConfig {
     boolean shouldOnDemandUpdateStatusChange();
 
     /**
-     * @return the class name of the json codec to use for the client. If none set a default codec will be used
+     * @return the class name of the encoding codec to use for the client. If none set a default codec will be used
      */
-    String getJsonCodecName();
+    String getEncoderName();
 
     /**
-     * @return the class name of the xml codec to use for the client. If none set a default codec will be used
+     * @return the class name of the decoding codec to use for the client. If none set a default codec will be used
      */
-    String getXmlCodecName();
+    String getDecoderName();
 }

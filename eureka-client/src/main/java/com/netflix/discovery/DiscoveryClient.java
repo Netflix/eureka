@@ -63,8 +63,7 @@ import com.netflix.appinfo.HealthCheckHandler;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
-import com.netflix.discovery.converters.CodecWrapper;
-import com.netflix.discovery.converters.CodecWrapper.CodecType;
+import com.netflix.discovery.converters.wrappers.CodecWrappers;
 import com.netflix.discovery.provider.DiscoveryJerseyProvider;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
@@ -167,7 +166,7 @@ public class DiscoveryClient implements EurekaClient {
     private final AtomicLong fetchRegistryGeneration;
     private final ApplicationInfoManager applicationInfoManager;
     private final InstanceInfo instanceInfo;
-    private final String deserCodecName;
+    private final String decoderName;
     private final JerseyClient discoveryJerseyClient;
     private final AtomicReference<String> remoteRegionsToFetch;
     private final InstanceRegionChecker instanceRegionChecker;
@@ -326,10 +325,10 @@ public class DiscoveryClient implements EurekaClient {
             }
 
             DiscoveryJerseyProvider discoveryJerseyProvider = new DiscoveryJerseyProvider(
-                    CodecWrapper.get(CodecType.from(clientConfig.getJsonCodecName())),
-                    CodecWrapper.get(CodecType.from(clientConfig.getXmlCodecName()))
+                    CodecWrappers.getEncoder(clientConfig.getEncoderName()),
+                    CodecWrappers.getDecoder(clientConfig.getDecoderName())
             );
-            deserCodecName = discoveryJerseyProvider.getJsonCodec().getCodecType().name();
+            decoderName = discoveryJerseyProvider.getDecoder().codecName();
 
             if (eurekaServiceUrls.get().get(0).startsWith("https://") &&
                     "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
@@ -1831,7 +1830,7 @@ public class DiscoveryClient implements EurekaClient {
     private ClientResponse getUrl(String fullServiceUrl) {
         ClientResponse cr = discoveryApacheClient.resource(fullServiceUrl)
                 .accept(MediaType.APPLICATION_JSON_TYPE)
-                .header(HTTP_X_DISCOVERY_CODEC, deserCodecName)
+                .header(HTTP_X_DISCOVERY_CODEC, decoderName)
                 .get(ClientResponse.class);
 
         return cr;
