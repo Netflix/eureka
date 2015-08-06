@@ -61,7 +61,7 @@ public class ApplicationResourceTest extends AbstractTester {
         Response response = applicationResource.getApplication(
                 Version.V2.name(),
                 MediaType.APPLICATION_JSON,
-                EurekaAccept.mini.name()
+                EurekaAccept.compact.name()
         );
 
         String json = String.valueOf(response.getEntity());

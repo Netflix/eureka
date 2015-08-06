@@ -269,11 +269,11 @@ public class ResponseCache {
             for (Version v : Version.values()) {
                 invalidate(
                         new Key(Key.EntityType.Application, appName, type, v, EurekaAccept.full),
-                        new Key(Key.EntityType.Application, appName, type, v, EurekaAccept.mini),
+                        new Key(Key.EntityType.Application, appName, type, v, EurekaAccept.compact),
                         new Key(Key.EntityType.Application, ALL_APPS, type, v, EurekaAccept.full),
-                        new Key(Key.EntityType.Application, ALL_APPS, type, v, EurekaAccept.mini),
+                        new Key(Key.EntityType.Application, ALL_APPS, type, v, EurekaAccept.compact),
                         new Key(Key.EntityType.Application, ALL_APPS_DELTA, type, v, EurekaAccept.full),
-                        new Key(Key.EntityType.Application, ALL_APPS_DELTA, type, v, EurekaAccept.mini)
+                        new Key(Key.EntityType.Application, ALL_APPS_DELTA, type, v, EurekaAccept.compact)
                 );
                 if (null != vipAddress) {
                     invalidate(new Key(Key.EntityType.VIP, vipAddress, type, v, EurekaAccept.full));

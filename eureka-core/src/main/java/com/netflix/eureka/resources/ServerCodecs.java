@@ -38,7 +38,7 @@ class ServerCodecs {
 
     public EncoderWrapper getEncoder(ResponseCache.KeyType keyType, EurekaAccept eurekaAccept) {
         switch (eurekaAccept) {
-            case mini:
+            case compact:
                 return miniJsonEncoder;
             case full:
             default:

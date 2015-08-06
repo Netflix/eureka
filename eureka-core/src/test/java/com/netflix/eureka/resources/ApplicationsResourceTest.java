@@ -72,7 +72,7 @@ public class ApplicationsResourceTest extends AbstractTester {
                 Version.V2.name(),
                 MediaType.APPLICATION_JSON,
                 null, // encoding
-                EurekaAccept.mini.name(),
+                EurekaAccept.compact.name(),
                 null,  // uriInfo
                 null  // remote regions
         );

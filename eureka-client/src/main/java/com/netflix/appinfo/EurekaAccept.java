@@ -11,7 +11,7 @@ import java.util.Map;
  * @author David Liu
  */
 public enum EurekaAccept {
-    full, mini;
+    full, compact;
 
     public static final String HTTP_X_EUREKA_ACCEPT = "X-Eureka-Accept";
 
@@ -23,7 +23,7 @@ public enum EurekaAccept {
         decoderNameToAcceptMap.put(CodecWrappers.getCodecName(XStreamXml.class), full);
         decoderNameToAcceptMap.put(CodecWrappers.getCodecName(JacksonXml.class), full);
 
-        decoderNameToAcceptMap.put(CodecWrappers.JacksonJsonMini.class.getSimpleName(), mini);
+        decoderNameToAcceptMap.put(CodecWrappers.JacksonJsonMini.class.getSimpleName(), compact);
     }
 
     public static EurekaAccept getClientAccept(DecoderWrapper decoderWrapper) {
