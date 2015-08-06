@@ -33,6 +33,7 @@ import java.lang.reflect.Type;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.discovery.converters.wrappers.CodecWrappers;
+import com.netflix.discovery.converters.wrappers.CodecWrappers.LegacyJacksonJson;
 import com.netflix.discovery.converters.wrappers.DecoderWrapper;
 import com.netflix.discovery.converters.wrappers.EncoderWrapper;
 import org.slf4j.Logger;
@@ -69,13 +70,12 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter,
     }
 
     public DiscoveryJerseyProvider(EncoderWrapper encoder, DecoderWrapper decoder) {
-        this.encoder = encoder == null
-                ? CodecWrappers.getEncoder(CodecWrappers.LegacyJacksonJson.class.getSimpleName())
-                : encoder;
+        this.encoder = encoder == null ? CodecWrappers.getEncoder(LegacyJacksonJson.class) : encoder;
+        this.decoder = decoder == null ? CodecWrappers.getDecoder(LegacyJacksonJson.class) : decoder;
 
-        this.decoder = decoder == null
-                ? CodecWrappers.getDecoder(CodecWrappers.LegacyJacksonJson.class.getSimpleName())
-                : decoder;
+        if (encoder instanceof CodecWrappers.JacksonJsonMini) {
+            throw new UnsupportedOperationException("Encoder: " + encoder.codecName() + "is not supported for the client");
+        }
 
         LOGGER.info("Using encoding codec {}", this.encoder.codecName());
         LOGGER.info("Using decoding codec {}", this.decoder.codecName());

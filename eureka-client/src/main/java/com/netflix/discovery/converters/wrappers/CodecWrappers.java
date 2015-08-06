@@ -22,13 +22,17 @@ public final class CodecWrappers {
 
     private static final Map<String, EncoderDecoderWrapper> CODECS = new ConcurrentHashMap<>();
 
+    public static <T extends CodecWrapperBase> String getCodecName(Class<T> clazz) {
+        return clazz.getSimpleName();
+    }
+
+    public static <T extends EncoderWrapper> EncoderWrapper getEncoder(Class<T> clazz) {
+        return getEncoder(getCodecName(clazz));
+    }
+
     public static synchronized EncoderWrapper getEncoder(String name) {
         if (name == null) {
             return null;
-        }
-
-        if (JacksonJsonMini.class.getSimpleName().equals(name)) {
-            throw new UnsupportedOperationException("Encoder: " + name + "is not supported");
         }
 
         if (!CODECS.containsKey(name)) {
@@ -39,6 +43,10 @@ public final class CodecWrappers {
         }
 
         return CODECS.get(name);
+    }
+
+    public static <T extends DecoderWrapper> DecoderWrapper getDecoder(Class<T> clazz) {
+        return getDecoder(getCodecName(clazz));
     }
 
     public static synchronized DecoderWrapper getDecoder(String name) {
@@ -57,17 +65,17 @@ public final class CodecWrappers {
     }
 
     private static EncoderDecoderWrapper create(String name) {
-        if (JacksonJson.class.getSimpleName().equals(name)) {
+        if (getCodecName(JacksonJson.class).equals(name)) {
             return new JacksonJson();
-        } else if (JacksonJsonMini.class.getSimpleName().equals(name)) {
+        } else if (getCodecName(JacksonJsonMini.class).equals(name)) {
             return new JacksonJsonMini();
-        } else if (LegacyJacksonJson.class.getSimpleName().equals(name)) {
+        } else if (getCodecName(LegacyJacksonJson.class).equals(name)) {
             return new LegacyJacksonJson();
-        } else if (XStreamJson.class.getSimpleName().equals(name)) {
+        } else if (getCodecName(XStreamJson.class).equals(name)) {
             return new XStreamJson();
-        } else if (JacksonXml.class.getSimpleName().equals(name)) {
+        } else if (getCodecName(JacksonXml.class).equals(name)) {
             return new JacksonXml();
-        } else if (XmlXStream.class.getSimpleName().equals(name)) {
+        } else if (getCodecName(XStreamXml.class).equals(name)) {
             return new XStreamXml();
         } else {
             return null;
@@ -84,7 +92,7 @@ public final class CodecWrappers {
 
         @Override
         public String codecName() {
-            return this.getClass().getSimpleName();
+            return CodecWrappers.getCodecName(this.getClass());
         }
 
         @Override
@@ -119,7 +127,7 @@ public final class CodecWrappers {
 
         @Override
         public String codecName() {
-            return this.getClass().getSimpleName();
+            return CodecWrappers.getCodecName(this.getClass());
         }
 
         @Override
@@ -154,7 +162,7 @@ public final class CodecWrappers {
 
         @Override
         public String codecName() {
-            return this.getClass().getSimpleName();
+            return CodecWrappers.getCodecName(this.getClass());
         }
 
         @Override
@@ -189,7 +197,7 @@ public final class CodecWrappers {
 
         @Override
         public String codecName() {
-            return this.getClass().getSimpleName();
+            return CodecWrappers.getCodecName(this.getClass());
         }
 
         @Override
@@ -224,7 +232,7 @@ public final class CodecWrappers {
 
         @Override
         public String codecName() {
-            return this.getClass().getSimpleName();
+            return CodecWrappers.getCodecName(this.getClass());
         }
 
         @Override
@@ -262,7 +270,7 @@ public final class CodecWrappers {
 
         @Override
         public String codecName() {
-            return this.getClass().getSimpleName();
+            return CodecWrappers.getCodecName(this.getClass());
         }
 
         @Override

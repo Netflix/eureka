@@ -32,6 +32,7 @@ import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.discovery.converters.Auto;
+import com.netflix.discovery.converters.EurekaJacksonCodec.InstanceInfoSerializer;
 import com.netflix.discovery.provider.Serializer;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
@@ -179,6 +180,12 @@ public class InstanceInfo {
         this.lastDirtyTimestamp = lastDirtyTimestamp;
         this.actionType = actionType;
         this.asgName = asgName;
+
+        // remove for backwards compatibility
+        if (this.metadata != null &&
+                InstanceInfoSerializer.METADATA_COMPATIBILITY_VALUE.equals(this.metadata.get(InstanceInfoSerializer.METADATA_COMPATIBILITY_KEY))) {
+            this.metadata.remove(InstanceInfoSerializer.METADATA_COMPATIBILITY_KEY);
+        }
     }
 
     /**

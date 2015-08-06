@@ -580,12 +580,12 @@ public interface EurekaServerConfig {
     String getListAutoScalingGroupsRoleName();
 
     /**
-     * @return the class name of the json codec to use for the server. If none set a default codec will be used
+     * @return the class name of the full json codec to use for the server. If none set a default codec will be used
      */
     String getJsonCodecName();
 
     /**
-     * @return the class name of the xml codec to use for the server. If none set a default codec will be used
+     * @return the class name of the full xml codec to use for the server. If none set a default codec will be used
      */
     String getXmlCodecName();
 }

@@ -56,6 +56,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.netflix.appinfo.ApplicationInfoManager;
+import com.netflix.appinfo.EurekaAccept;
 import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.appinfo.HealthCheckCallback;
 import com.netflix.appinfo.HealthCheckCallbackToHandlerBridge;
@@ -112,7 +113,6 @@ public class DiscoveryClient implements EurekaClient {
     // Constants
     public static final int MAX_FOLLOWED_REDIRECTS = 10;
     public static final String HTTP_X_DISCOVERY_ALLOW_REDIRECT = "X-Discovery-AllowRedirect";
-    public static final String HTTP_X_DISCOVERY_CODEC = "X-Discovery-Codec";
 
     private static final String VALUE_DELIMITER = ",";
     private static final String COMMA_STRING = VALUE_DELIMITER;
@@ -166,7 +166,7 @@ public class DiscoveryClient implements EurekaClient {
     private final AtomicLong fetchRegistryGeneration;
     private final ApplicationInfoManager applicationInfoManager;
     private final InstanceInfo instanceInfo;
-    private final String decoderName;
+    private final EurekaAccept clientAccept;
     private final JerseyClient discoveryJerseyClient;
     private final AtomicReference<String> remoteRegionsToFetch;
     private final InstanceRegionChecker instanceRegionChecker;
@@ -328,7 +328,7 @@ public class DiscoveryClient implements EurekaClient {
                     CodecWrappers.getEncoder(clientConfig.getEncoderName()),
                     CodecWrappers.getDecoder(clientConfig.getDecoderName())
             );
-            decoderName = discoveryJerseyProvider.getDecoder().codecName();
+            clientAccept = EurekaAccept.getClientAccept(discoveryJerseyProvider.getDecoder());
 
             if (eurekaServiceUrls.get().get(0).startsWith("https://") &&
                     "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
@@ -1830,7 +1830,7 @@ public class DiscoveryClient implements EurekaClient {
     private ClientResponse getUrl(String fullServiceUrl) {
         ClientResponse cr = discoveryApacheClient.resource(fullServiceUrl)
                 .accept(MediaType.APPLICATION_JSON_TYPE)
-                .header(HTTP_X_DISCOVERY_CODEC, decoderName)
+                .header(EurekaAccept.HTTP_X_EUREKA_ACCEPT, clientAccept.name())
                 .get(ClientResponse.class);
 
         return cr;

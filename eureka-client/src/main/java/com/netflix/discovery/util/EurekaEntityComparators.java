@@ -1,4 +1,4 @@
-package com.netflix.discovery.converters;
+package com.netflix.discovery.util;
 
 import java.util.List;
 import java.util.Map;
@@ -11,6 +11,8 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 
 /**
+ * For test use.
+ *
  * @author Tomasz Bak
  */
 public final class EurekaEntityComparators {
@@ -152,9 +154,6 @@ public final class EurekaEntityComparators {
         if (!equal(first.getMetadata(), second.getMetadata())) {
             return false;
         }
-        if (first.getMetadata() != null ? !first.getMetadata().equals(second.getMetadata()) : second.getMetadata() != null) {
-            return false;
-        }
         if (first.getHealthCheckUrls() != null ? !first.getHealthCheckUrls().equals(second.getHealthCheckUrls()) : second.getHealthCheckUrls() != null) {
             return false;
         }
@@ -241,8 +240,19 @@ public final class EurekaEntityComparators {
         if (first.getName() != null ? !first.getName().equals(second.getName()) : second.getName() != null) {
             return false;
         }
-        if (first.getInstances() != null ? !first.getInstances().equals(second.getInstances()) : second.getInstances() != null) {
+        List<InstanceInfo> firstInstanceInfos = first.getInstances();
+        List<InstanceInfo> secondInstanceInfos = second.getInstances();
+        if (firstInstanceInfos == null && secondInstanceInfos == null) {
+            return true;
+        }
+        if (firstInstanceInfos == null || secondInstanceInfos == null || firstInstanceInfos.size() != secondInstanceInfos.size()) {
             return false;
+        }
+        for (InstanceInfo firstInstanceInfo : firstInstanceInfos) {
+            InstanceInfo secondInstanceInfo = second.getByInstanceId(firstInstanceInfo.getId());
+            if (!equal(firstInstanceInfo, secondInstanceInfo)) {
+                return false;
+            }
         }
 
         return true;
@@ -263,8 +273,9 @@ public final class EurekaEntityComparators {
         if (firstApps == null || secondApps == null || firstApps.size() != secondApps.size()) {
             return false;
         }
-        for (int i = 0; i < firstApps.size(); i++) {
-            if (!equal(firstApps.get(i), secondApps.get(i))) {
+        for (Application firstApp : firstApps) {
+            Application secondApp = second.getRegisteredApplications(firstApp.getName());
+            if (!equal(firstApp, secondApp)) {
                 return false;
             }
         }

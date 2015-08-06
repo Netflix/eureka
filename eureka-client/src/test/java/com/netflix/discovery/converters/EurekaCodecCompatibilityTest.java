@@ -2,6 +2,7 @@ package com.netflix.discovery.converters;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -14,6 +15,7 @@ import com.netflix.discovery.converters.wrappers.EncoderDecoderWrapper;
 import com.netflix.discovery.converters.wrappers.EncoderWrapper;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.junit.Test;
 
@@ -57,6 +59,30 @@ public class EurekaCodecCompatibilityTest {
                 String encodedString = encodingCodec.encode(instanceInfo);
                 // convert the field from the json string to what the legacy json would encode as
                 encodedString = encodedString.replaceFirst("lastRenewalTimestamp", "renewalTimestamp");
+                InstanceInfo decodedValue = decodingCodec.decode(encodedString, InstanceInfo.class);
+                assertThat(EurekaEntityComparators.equal(instanceInfo, decodedValue), is(true));
+            }
+        };
+
+        verifyForPair(
+                codingAction,
+                InstanceInfo.class,
+                new CodecWrappers.LegacyJacksonJson(),
+                new CodecWrappers.JacksonJson()
+        );
+    }
+
+    @Test
+    public void testInstanceInfoEncodeDecodeLegacyJacksonToJacksonWithEmptyMetadataMap() throws Exception {
+        final InstanceInfo base = infoIterator.next();
+        final InstanceInfo instanceInfo = new InstanceInfo.Builder(base)
+                .setMetadata(Collections.EMPTY_MAP)
+                .build();
+
+        Action2 codingAction = new Action2() {
+            @Override
+            public void call(EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws IOException {
+                String encodedString = encodingCodec.encode(instanceInfo);
                 InstanceInfo decodedValue = decodingCodec.decode(encodedString, InstanceInfo.class);
                 assertThat(EurekaEntityComparators.equal(instanceInfo, decodedValue), is(true));
             }

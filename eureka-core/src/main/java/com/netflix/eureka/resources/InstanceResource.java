@@ -129,7 +129,7 @@ public class InstanceResource {
                     && (overriddenStatus != null)
                     && !(InstanceStatus.UNKNOWN.name().equals(overriddenStatus))
                     && isFromReplicaNode) {
-                registry.storeOverriddenStatusIfRequired(app.appName, id, InstanceStatus.valueOf(overriddenStatus));
+                registry.storeOverriddenStatusIfRequired(app.getAppName(), id, InstanceStatus.valueOf(overriddenStatus));
             }
         } else {
             response = Response.ok().build();
