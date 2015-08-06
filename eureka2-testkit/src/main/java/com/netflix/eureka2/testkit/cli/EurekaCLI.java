@@ -36,6 +36,7 @@ import com.netflix.eureka2.testkit.cli.command.session.DisconnectCommand;
 import com.netflix.eureka2.testkit.cli.command.session.InterestCommand;
 import com.netflix.eureka2.testkit.cli.command.session.QueryCommand;
 import com.netflix.eureka2.testkit.cli.command.session.RegisterCommand;
+import com.netflix.eureka2.testkit.cli.command.session.SearchCommand;
 import com.netflix.eureka2.testkit.cli.command.session.UnregisterCommand;
 import com.netflix.eureka2.testkit.cli.command.session.UpdateCommand;
 import jline.Terminal;
@@ -81,7 +82,8 @@ public class EurekaCLI {
             InterestCommand.forVips(),
             InterestCommand.forSecureVips(),
             new QueryCommand(),
-            new DescribeCommand()
+            new DescribeCommand(),
+            new SearchCommand()
     );
 
 

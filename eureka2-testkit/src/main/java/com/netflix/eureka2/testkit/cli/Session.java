@@ -42,21 +42,16 @@ public class Session {
 
     public enum Status {NotStarted, Initiated, Streaming, Complete, Failed;}
 
-    public enum Mode {Read, Write, ReadWrite}
-
     private static final AtomicInteger sessionIds = new AtomicInteger(0);
 
-    private final Context context;
-
     private final int sessionId = sessionIds.incrementAndGet();
-
-    private Mode mode;
 
     private volatile Subscription registrationSubscription;
     private Status registrationStatus = Status.NotStarted;
     private final BehaviorSubject<InstanceInfo> infoSubject = BehaviorSubject.create();
 
     private volatile InstanceInfo lastInstanceInfo;
+    private final SessionDescriptor descriptor;
     private EurekaRegistrationClient registrationClient;
     private EurekaInterestClient interestClient;
 
@@ -64,11 +59,12 @@ public class Session {
     private final Map<String, InterestSubscriber> subscriptions = new HashMap<>();
     private final Map<String, Subscription> pendingSubscriptions = new HashMap<>();
 
-    public Session(Context context, EurekaRegistrationClient registrationClient, EurekaInterestClient interestClient) {
-        this.context = context;
+    public Session(SessionDescriptor descriptor,
+                   EurekaRegistrationClient registrationClient,
+                   EurekaInterestClient interestClient) {
+        this.descriptor = descriptor;
         this.registrationClient = registrationClient;
         this.interestClient = interestClient;
-        this.mode = registrationClient == null ? Mode.Read : Mode.ReadWrite;
     }
 
     public EurekaRegistrationClient getRegistrationClient() {
@@ -113,7 +109,7 @@ public class Session {
     }
 
     public void register(final InstanceInfo instanceInfo) {
-        if (mode == Mode.Read) {
+        if (descriptor.isReadOnly()) {
             System.err.println("ERROR: subscription-only session");
             return;
         }
@@ -146,7 +142,7 @@ public class Session {
     }
 
     public void update(final InstanceInfo newInfo) {
-        if (mode == Mode.Read) {
+        if (descriptor.isReadOnly()) {
             System.err.println("ERROR: subscription-only session");
             return;
         }
@@ -155,7 +151,7 @@ public class Session {
     }
 
     public void unregister() {
-        if (mode == Mode.Read) {
+        if (descriptor.isReadOnly()) {
             System.err.println("ERROR: subscription-only session");
             return;
         }
@@ -175,10 +171,6 @@ public class Session {
     }
 
     public void forInterest(Interest<InstanceInfo> interest) {
-        if (mode == Mode.Write) {
-            System.err.println("ERROR: registration-only session");
-            return;
-        }
         String id = nextSubscriptionId();
         InterestSubscriber subscriber = new InterestSubscriber(interest, id);
         subscriptions.put(id, subscriber);
@@ -211,7 +203,6 @@ public class Session {
             interestClient = null;
             System.out.println("Shutdown interest client");
         }
-        mode = null;
     }
 
     public void printFormatted(PrintStream out, int indentSize) {
@@ -219,51 +210,45 @@ public class Session {
         Arrays.fill(indent, ' ');
 
         out.print(indent);
-        out.println("Session " + sessionId);
-        if (mode == null) {
+        out.println("Session id: " + sessionId);
+        out.print(indent);
+        descriptor.printFormatted(out, indentSize);
+        switch (registrationStatus) {
+            case NotStarted:
+                out.print(indent);
+                out.print(indent);
+                out.println("Registration status: unregistered");
+                break;
+            case Initiated:
+                out.print(indent);
+                out.print(indent);
+                out.println("Registration status: Initiated but not completed.");
+                break;
+            case Complete:
+                out.print(indent);
+                out.print(indent);
+                out.println("Registration status: registered");
+                break;
+            case Failed:
+                out.print(indent);
+                out.print(indent);
+                out.println("Registration status: failed");
+                break;
+        }
+        out.print(indent);
+        out.print(indent);
+        out.println("Number of subscriptions: " + (subscriptions.size() + pendingSubscriptions.size()));
+        for (Map.Entry<String, InterestSubscriber> entry : subscriptions.entrySet()) {
             out.print(indent);
             out.print(indent);
-            out.println("connection status: disconnected");
-        } else {
             out.print(indent);
-            out.println("connection status: connected in mode " + mode);
-            switch (registrationStatus) {
-                case NotStarted:
-                    out.print(indent);
-                    out.print(indent);
-                    out.println("Registration status: unregistered");
-                    break;
-                case Initiated:
-                    out.print(indent);
-                    out.print(indent);
-                    out.println("Registration status: Initiated but not completed.");
-                    break;
-                case Complete:
-                    out.print(indent);
-                    out.print(indent);
-                    out.println("Registration status: registered");
-                    break;
-                case Failed:
-                    out.print(indent);
-                    out.print(indent);
-                    out.println("Registration status: failed");
-                    break;
-            }
+            out.println(entry.getKey() + " -> " + entry.getValue().interest);
+        }
+        for (String id : pendingSubscriptions.keySet()) {
             out.print(indent);
             out.print(indent);
-            out.println("Number of subscriptions: " + (subscriptions.size() + pendingSubscriptions.size()));
-            for (Map.Entry<String, InterestSubscriber> entry : subscriptions.entrySet()) {
-                out.print(indent);
-                out.print(indent);
-                out.print(indent);
-                out.println(entry.getKey() + " -> " + entry.getValue().interest);
-            }
-            for (String id : pendingSubscriptions.keySet()) {
-                out.print(indent);
-                out.print(indent);
-                out.print(indent);
-                out.println(id + " -> query");
-            }
+            out.print(indent);
+            out.println(id + " -> query");
         }
         System.out.println();
     }

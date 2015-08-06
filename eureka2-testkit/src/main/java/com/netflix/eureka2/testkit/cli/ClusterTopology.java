@@ -68,20 +68,22 @@ public class ClusterTopology {
         if (writeServers != null && !writeServers.isEmpty()) {
             out.print(indent);
             out.println("write servers:");
-            for (ClusterAddress clusterAddress : writeServers) {
-                out.print(indent);
-                out.print(indent);
-                out.println(clusterAddress);
-            }
+            printServers(writeServers, out, indent);
         }
         if (readServers != null && !readServers.isEmpty()) {
             out.print(indent);
             out.println("read servers:");
-            for (ClusterAddress clusterAddress : readServers) {
-                out.print(indent);
-                out.print(indent);
-                out.println(clusterAddress);
-            }
+            printServers(readServers, out, indent);
+        }
+    }
+
+    private static void printServers(List<ClusterAddress> servers, PrintStream out, char[] indent) {
+        for (int i = 0; i < servers.size(); i++) {
+            ClusterAddress clusterAddress = servers.get(i);
+            out.print(indent);
+            out.print(indent);
+            out.print("[" + i + "] ");
+            out.println(clusterAddress);
         }
     }
 }
