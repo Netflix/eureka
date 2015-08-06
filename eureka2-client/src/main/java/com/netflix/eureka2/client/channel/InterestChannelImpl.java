@@ -266,7 +266,7 @@ public class InterestChannelImpl extends AbstractClientChannel<STATE> implements
         InstanceInfo removedInstance = idVsInstance.remove(instanceId);
         if (removedInstance != null) {
             notification = new ChangeNotification<>(ChangeNotification.Kind.Delete, removedInstance);
-            logger.warn("Delete notification received for instance {}", instanceId);
+            logger.debug("Delete notification received for instance {}", instanceId);
         } else if (logger.isWarnEnabled()) {
             logger.warn("Delete notification received for non-existent instance {}", instanceId);
         }
