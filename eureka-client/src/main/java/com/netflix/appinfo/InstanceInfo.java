@@ -15,6 +15,7 @@
  */
 package com.netflix.appinfo;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
@@ -175,17 +176,30 @@ public class InstanceInfo {
         this.overriddenstatus = overriddenstatus;
         this.leaseInfo = leaseInfo;
         this.isCoordinatingDiscoveryServer = isCoordinatingDiscoveryServer;
-        this.metadata = metadata;
         this.lastUpdatedTimestamp = lastUpdatedTimestamp;
         this.lastDirtyTimestamp = lastDirtyTimestamp;
         this.actionType = actionType;
         this.asgName = asgName;
 
-        // remove for backwards compatibility
-        if (this.metadata != null &&
-                InstanceInfoSerializer.METADATA_COMPATIBILITY_VALUE.equals(this.metadata.get(InstanceInfoSerializer.METADATA_COMPATIBILITY_KEY))) {
-            this.metadata.remove(InstanceInfoSerializer.METADATA_COMPATIBILITY_KEY);
+        // for compatibility
+        if (metadata == null) {
+            this.metadata = Collections.emptyMap();
+        } else if (metadata.size() == 1) {
+            this.metadata = removeMetadataMapLegacyValues(metadata);
+        } else {
+            this.metadata = metadata;
         }
+    }
+
+    private Map<String, String> removeMetadataMapLegacyValues(Map<String, String> metadata) {
+        if (InstanceInfoSerializer.METADATA_COMPATIBILITY_VALUE.equals(metadata.get(InstanceInfoSerializer.METADATA_COMPATIBILITY_KEY))) {
+            // TODO this else if can be removed once the server no longer uses legacy json
+            metadata.remove(InstanceInfoSerializer.METADATA_COMPATIBILITY_KEY);
+        } else if (InstanceInfoSerializer.METADATA_COMPATIBILITY_VALUE.equals(metadata.get("class"))) {
+            // TODO this else if can be removed once the server no longer uses legacy xml
+            metadata.remove("class");
+        }
+        return metadata;
     }
 
     /**

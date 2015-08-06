@@ -89,6 +89,7 @@ public class EurekaCodecCompatibilityTest {
         };
 
         verifyAllPairs(codingAction, Application.class, availableJsonWrappers);
+        verifyAllPairs(codingAction, Application.class, availableXmlWrappers);
     }
 
     @Test
