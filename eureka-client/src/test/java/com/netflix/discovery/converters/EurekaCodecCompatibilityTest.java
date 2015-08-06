@@ -73,7 +73,7 @@ public class EurekaCodecCompatibilityTest {
     }
 
     @Test
-    public void testInstanceInfoEncodeDecodeLegacyJacksonToJacksonWithEmptyMetadataMap() throws Exception {
+    public void testInstanceInfoEncodeDecodeJsonWithEmptyMetadataMap() throws Exception {
         final InstanceInfo base = infoIterator.next();
         final InstanceInfo instanceInfo = new InstanceInfo.Builder(base)
                 .setMetadata(Collections.EMPTY_MAP)
@@ -88,12 +88,7 @@ public class EurekaCodecCompatibilityTest {
             }
         };
 
-        verifyForPair(
-                codingAction,
-                InstanceInfo.class,
-                new CodecWrappers.LegacyJacksonJson(),
-                new CodecWrappers.JacksonJson()
-        );
+        verifyAllPairs(codingAction, Application.class, availableJsonWrappers);
     }
 
     @Test

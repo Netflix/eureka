@@ -326,9 +326,10 @@ public class DiscoveryClient implements EurekaClient {
 
             DiscoveryJerseyProvider discoveryJerseyProvider = new DiscoveryJerseyProvider(
                     CodecWrappers.getEncoder(clientConfig.getEncoderName()),
-                    CodecWrappers.getDecoder(clientConfig.getDecoderName())
+                    CodecWrappers.resolveDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept())
             );
-            clientAccept = EurekaAccept.getClientAccept(discoveryJerseyProvider.getDecoder());
+
+            clientAccept = EurekaAccept.fromString(clientConfig.getClientDataAccept());
 
             if (eurekaServiceUrls.get().get(0).startsWith("https://") &&
                     "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {

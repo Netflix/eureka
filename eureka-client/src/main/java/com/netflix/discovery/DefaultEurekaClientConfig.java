@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.google.inject.ProvidedBy;
+import com.netflix.appinfo.EurekaAccept;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
@@ -502,5 +503,11 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     public String getDecoderName() {
         return configInstance.getStringProperty(
                 namespace + "decoderName", null).get();
+    }
+
+    @Override
+    public String getClientDataAccept() {
+        return configInstance.getStringProperty(
+                namespace + "clientDataAccept", EurekaAccept.full.name()).get();
     }
 }

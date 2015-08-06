@@ -1,5 +1,6 @@
 package com.netflix.discovery.converters.wrappers;
 
+import com.netflix.appinfo.EurekaAccept;
 import com.netflix.discovery.converters.EurekaJacksonCodec;
 import com.netflix.discovery.converters.JsonXStream;
 import com.netflix.discovery.converters.KeyFormatter;
@@ -14,8 +15,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- *
- *
  * @author David Liu
  */
 public final class CodecWrappers {
@@ -47,6 +46,22 @@ public final class CodecWrappers {
 
     public static <T extends DecoderWrapper> DecoderWrapper getDecoder(Class<T> clazz) {
         return getDecoder(getCodecName(clazz));
+    }
+
+    /**
+     * Resolve the decoder to use based on the specified decoder name, as well as the specified eurekaAccept.
+     * The eurekAccept trumps the decoder name if the decoder specified is one that is not valid for use for the
+     * specified eurekaAccept.
+     */
+    public static synchronized DecoderWrapper resolveDecoder(String name, String eurekaAccept) {
+        EurekaAccept accept = EurekaAccept.fromString(eurekaAccept);
+        switch (accept) {
+            case compact:
+                return getDecoder(JacksonJsonMini.class);
+            case full:
+            default:
+                return getDecoder(name);
+        }
     }
 
     public static synchronized DecoderWrapper getDecoder(String name) {

@@ -473,6 +473,9 @@ public class EurekaJacksonCodec {
                                 meta.put(key, value);
                             }
                         }
+                        if (meta == null) {
+                            meta = Collections.emptyMap();
+                        }
                         builder.setMetadata(meta);
                     } else if (ELEM_HEALTHCHECKURL.equals(fieldName)) {
                         healthChecUrl = fieldNode.asText();

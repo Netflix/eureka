@@ -508,12 +508,21 @@ public interface EurekaClientConfig {
     boolean shouldOnDemandUpdateStatusChange();
 
     /**
+     * This is a transient config and once the latest codecs are stable, can be removed (as there will only be one)
+     *
      * @return the class name of the encoding codec to use for the client. If none set a default codec will be used
      */
     String getEncoderName();
 
     /**
+     * This is a transient config and once the latest codecs are stable, can be removed (as there will only be one)
+     *
      * @return the class name of the decoding codec to use for the client. If none set a default codec will be used
      */
     String getDecoderName();
+
+    /**
+     * @return {@link com.netflix.appinfo.EurekaAccept#name()} for client data accept
+     */
+    String getClientDataAccept();
 }
