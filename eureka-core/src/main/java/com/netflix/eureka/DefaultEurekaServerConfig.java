@@ -31,7 +31,6 @@ import com.netflix.config.DynamicIntProperty;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
 import com.netflix.config.DynamicStringSetProperty;
-import com.netflix.discovery.converters.CodecWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

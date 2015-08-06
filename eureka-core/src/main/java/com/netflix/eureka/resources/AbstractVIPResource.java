@@ -18,6 +18,7 @@ package com.netflix.eureka.resources;
 
 import javax.ws.rs.core.Response;
 
+import com.netflix.appinfo.EurekaAccept;
 import com.netflix.eureka.CurrentRequestVersion;
 import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
 import com.netflix.eureka.Version;
@@ -45,7 +46,7 @@ abstract class AbstractVIPResource {
         }
 
         ResponseCache.Key cacheKey = new ResponseCache.Key(entityType, entityName, keyType,
-                CurrentRequestVersion.get());
+                CurrentRequestVersion.get(), EurekaAccept.full);
 
         String payLoad = ResponseCache.getInstance().get(cacheKey);
 

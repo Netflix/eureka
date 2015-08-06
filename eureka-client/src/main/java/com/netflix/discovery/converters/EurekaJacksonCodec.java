@@ -324,7 +324,9 @@ public class EurekaJacksonCodec {
 
     public static class InstanceInfoSerializer extends JsonSerializer<InstanceInfo> {
         // For backwards compatibility
-        protected static final Object EMPTY_METADATA = Collections.singletonMap("@class", "java.util.Collections$EmptyMap");
+        public static final String METADATA_COMPATIBILITY_KEY = "@class";
+        public static final String METADATA_COMPATIBILITY_VALUE = "java.util.Collections$EmptyMap";
+        protected static final Object EMPTY_METADATA = Collections.singletonMap(METADATA_COMPATIBILITY_KEY, METADATA_COMPATIBILITY_VALUE);
 
         @Override
         public void serialize(InstanceInfo info, JsonGenerator jgen, SerializerProvider provider) throws IOException {
@@ -470,6 +472,9 @@ public class EurekaJacksonCodec {
                                 String value = cache.cachedValueOf(fieldNode.get(key).asText());
                                 meta.put(key, value);
                             }
+                        }
+                        if (meta == null) {
+                            meta = Collections.emptyMap();
                         }
                         builder.setMetadata(meta);
                     } else if (ELEM_HEALTHCHECKURL.equals(fieldName)) {

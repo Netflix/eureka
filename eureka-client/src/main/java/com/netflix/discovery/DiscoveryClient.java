@@ -56,6 +56,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.netflix.appinfo.ApplicationInfoManager;
+import com.netflix.appinfo.EurekaAccept;
 import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.appinfo.HealthCheckCallback;
 import com.netflix.appinfo.HealthCheckCallbackToHandlerBridge;
@@ -63,8 +64,7 @@ import com.netflix.appinfo.HealthCheckHandler;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
-import com.netflix.discovery.converters.CodecWrapper;
-import com.netflix.discovery.converters.CodecWrapper.CodecType;
+import com.netflix.discovery.converters.wrappers.CodecWrappers;
 import com.netflix.discovery.provider.DiscoveryJerseyProvider;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
@@ -113,7 +113,6 @@ public class DiscoveryClient implements EurekaClient {
     // Constants
     public static final int MAX_FOLLOWED_REDIRECTS = 10;
     public static final String HTTP_X_DISCOVERY_ALLOW_REDIRECT = "X-Discovery-AllowRedirect";
-    public static final String HTTP_X_DISCOVERY_CODEC = "X-Discovery-Codec";
 
     private static final String VALUE_DELIMITER = ",";
     private static final String COMMA_STRING = VALUE_DELIMITER;
@@ -167,7 +166,7 @@ public class DiscoveryClient implements EurekaClient {
     private final AtomicLong fetchRegistryGeneration;
     private final ApplicationInfoManager applicationInfoManager;
     private final InstanceInfo instanceInfo;
-    private final String deserCodecName;
+    private final EurekaAccept clientAccept;
     private final JerseyClient discoveryJerseyClient;
     private final AtomicReference<String> remoteRegionsToFetch;
     private final InstanceRegionChecker instanceRegionChecker;
@@ -326,10 +325,11 @@ public class DiscoveryClient implements EurekaClient {
             }
 
             DiscoveryJerseyProvider discoveryJerseyProvider = new DiscoveryJerseyProvider(
-                    CodecWrapper.get(CodecType.from(clientConfig.getJsonCodecName())),
-                    CodecWrapper.get(CodecType.from(clientConfig.getXmlCodecName()))
+                    CodecWrappers.getEncoder(clientConfig.getEncoderName()),
+                    CodecWrappers.resolveDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept())
             );
-            deserCodecName = discoveryJerseyProvider.getJsonCodec().getCodecType().name();
+
+            clientAccept = EurekaAccept.fromString(clientConfig.getClientDataAccept());
 
             if (eurekaServiceUrls.get().get(0).startsWith("https://") &&
                     "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
@@ -1831,7 +1831,7 @@ public class DiscoveryClient implements EurekaClient {
     private ClientResponse getUrl(String fullServiceUrl) {
         ClientResponse cr = discoveryApacheClient.resource(fullServiceUrl)
                 .accept(MediaType.APPLICATION_JSON_TYPE)
-                .header(HTTP_X_DISCOVERY_CODEC, deserCodecName)
+                .header(EurekaAccept.HTTP_X_EUREKA_ACCEPT, clientAccept.name())
                 .get(ClientResponse.class);
 
         return cr;

@@ -79,8 +79,7 @@ public enum EurekaMonitors {
         this.name = name;
         this.description = description;
 
-        DataCenterInfo dcInfo = ApplicationInfoManager.getInstance().getInfo()
-                .getDataCenterInfo();
+        DataCenterInfo dcInfo = ApplicationInfoManager.getInstance().getInfo().getDataCenterInfo();
         if (dcInfo.getName() == Name.Amazon) {
             myZoneCounterName = ((AmazonInfo) dcInfo)
                     .get(MetaDataKey.availabilityZone) + "." + name;

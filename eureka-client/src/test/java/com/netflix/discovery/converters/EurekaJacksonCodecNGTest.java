@@ -12,6 +12,7 @@ import com.netflix.appinfo.LeaseInfo;
 import com.netflix.discovery.converters.jackson.EurekaJacksonCodecNG;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.junit.Test;
 

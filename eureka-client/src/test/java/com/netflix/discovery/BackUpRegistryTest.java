@@ -94,7 +94,7 @@ public class BackUpRegistryTest {
     }
 
     @Test
-    public void testRemoteEnabledButLocalOnlyQuried() throws Exception {
+    public void testRemoteEnabledButLocalOnlyQueried() throws Exception {
         setUp(true);
         Applications applications = client.getApplications();
         List<Application> registeredApplications = applications.getRegisteredApplications();
@@ -114,7 +114,7 @@ public class BackUpRegistryTest {
     }
 
     @Test
-    public void testRemoteEnabledAndQuried() throws Exception {
+    public void testRemoteEnabledAndQueried() throws Exception {
         setUp(true);
         Applications applications = client.getApplicationsForARegion(REMOTE_REGION);
         List<Application> registeredApplications = applications.getRegisteredApplications();

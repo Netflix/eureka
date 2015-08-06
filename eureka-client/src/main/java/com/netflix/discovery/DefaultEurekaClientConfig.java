@@ -24,10 +24,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.google.inject.ProvidedBy;
+import com.netflix.appinfo.EurekaAccept;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
-import com.netflix.discovery.converters.CodecWrapper.CodecType;
 import com.netflix.discovery.providers.DefaultEurekaClientConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -494,14 +494,20 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     }
 
     @Override
-    public String getJsonCodecName() {
+    public String getEncoderName() {
         return configInstance.getStringProperty(
-                namespace + "jsonCodecName", null).get();
+                namespace + "encoderName", null).get();
     }
 
     @Override
-    public String getXmlCodecName() {
+    public String getDecoderName() {
         return configInstance.getStringProperty(
-                namespace + "xmlCodecName", null).get();
+                namespace + "decoderName", null).get();
+    }
+
+    @Override
+    public String getClientDataAccept() {
+        return configInstance.getStringProperty(
+                namespace + "clientDataAccept", EurekaAccept.full.name()).get();
     }
 }
