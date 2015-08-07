@@ -25,6 +25,10 @@ public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
     
     @Inject
     public EurekaArchaius2InstanceConfig(Config config) {
+        this(config, "eureka");
+    }
+    
+    public EurekaArchaius2InstanceConfig(Config config, String namespace) {
         this(config, "eureka", new DataCenterInfo() {
             @Override
             public Name getName() {

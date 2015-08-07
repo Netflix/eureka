@@ -10,8 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.appinfo.AmazonInfo;
-import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
+import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.archaius.Config;
 
@@ -33,8 +33,12 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
     private volatile DataCenterInfo info;
 
     @Inject
+    public Ec2EurekaArchaius2InstanceConfig(Config config) {
+        this(config, DEFAULT_NAMESPACE);
+    }
+
     public Ec2EurekaArchaius2InstanceConfig(Config config, String namespace) {
-        super(config);
+        super(config, namespace);
         
         try {
             this.info = AmazonInfo.Builder.newBuilder().autoBuild(namespace);
@@ -70,15 +74,9 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
             // public hostname might be null
             amazonInfo.getMetadata().put(MetaDataKey.publicHostname.getName(),
                     (amazonInfo.get(MetaDataKey.localIpv4)));
-        }
-        
+        }        
     }
     
-    @Inject
-    public Ec2EurekaArchaius2InstanceConfig(Config config) {
-        this(config, DEFAULT_NAMESPACE);
-    }
-
     @Override
     public String getHostName(boolean refresh) {
         if (refresh) {
