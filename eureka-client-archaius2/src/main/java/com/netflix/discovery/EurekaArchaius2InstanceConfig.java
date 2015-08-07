@@ -16,7 +16,7 @@ import com.netflix.archaius.annotations.ConfigurationSource;
 @ConfigurationSource("eureka-client")
 public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
     private static final String UNKNOWN_APPLICATION = "unknown";
-    
+
     private Config config;
     private String namespace;
     private final DataCenterInfo dcInfo;
@@ -25,11 +25,11 @@ public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
     
     @Inject
     public EurekaArchaius2InstanceConfig(Config config) {
-        this(config, "eureka");
+        this(config, DEFAULT_NAMESPACE);
     }
     
     public EurekaArchaius2InstanceConfig(Config config, String namespace) {
-        this(config, "eureka", new DataCenterInfo() {
+        this(config, namespace, new DataCenterInfo() {
             @Override
             public Name getName() {
                 return Name.MyOwn;

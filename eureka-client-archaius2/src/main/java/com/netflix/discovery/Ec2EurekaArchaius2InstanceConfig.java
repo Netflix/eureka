@@ -28,8 +28,6 @@ import com.netflix.archaius.Config;
 public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceConfig {
     private static final Logger LOG = LoggerFactory.getLogger(Ec2EurekaArchaius2InstanceConfig.class);
     
-    private static final String DEFAULT_NAMESPACE = "eureka";
-    
     private volatile DataCenterInfo info;
 
     @Inject

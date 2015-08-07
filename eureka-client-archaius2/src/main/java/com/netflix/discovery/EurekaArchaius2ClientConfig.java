@@ -26,7 +26,7 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
 
     public EurekaArchaius2ClientConfig(Config config, String namespace) {
         this.defaultRegion = config.getString("@region", null);
-        this.config = config.getPrefixedView(DEFAULT_NAMESPACE);
+        this.config = config.getPrefixedView(namespace);
     }
 
     public int getRegistryFetchIntervalSeconds() {
