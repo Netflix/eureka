@@ -14,7 +14,7 @@ import com.netflix.archaius.annotations.ConfigurationSource;
 
 @Singleton
 @ConfigurationSource("eureka-client")
-public class KaryonEurekaInstanceConfig extends AbstractInstanceConfig {
+public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
     private static final String UNKNOWN_APPLICATION = "unknown";
     
     private Config config;
@@ -24,7 +24,7 @@ public class KaryonEurekaInstanceConfig extends AbstractInstanceConfig {
     private final String defaultAppGroup;
     
     @Inject
-    public KaryonEurekaInstanceConfig(Config config) {
+    public EurekaArchaius2InstanceConfig(Config config) {
         this(config, "eureka", new DataCenterInfo() {
             @Override
             public Name getName() {
@@ -33,7 +33,7 @@ public class KaryonEurekaInstanceConfig extends AbstractInstanceConfig {
         });
     }
     
-    public KaryonEurekaInstanceConfig(Config config, String namespace, DataCenterInfo dcInfo) {
+    public EurekaArchaius2InstanceConfig(Config config, String namespace, DataCenterInfo dcInfo) {
         this.defaultAppGroup = config.getString("NETFLIX_APP_GROUP", null);
         
         this.namespace = namespace;

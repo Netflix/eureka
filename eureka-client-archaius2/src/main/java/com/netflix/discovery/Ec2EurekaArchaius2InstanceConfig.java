@@ -25,15 +25,15 @@ import com.netflix.archaius.Config;
  *
  */
 @Singleton
-public class KaryonEc2EurekaInstanceConfig extends KaryonEurekaInstanceConfig {
-    private static final Logger LOG = LoggerFactory.getLogger(KaryonEc2EurekaInstanceConfig.class);
+public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceConfig {
+    private static final Logger LOG = LoggerFactory.getLogger(Ec2EurekaArchaius2InstanceConfig.class);
     
     private static final String DEFAULT_NAMESPACE = "eureka";
     
     private volatile DataCenterInfo info;
 
     @Inject
-    public KaryonEc2EurekaInstanceConfig(Config config, String namespace) {
+    public Ec2EurekaArchaius2InstanceConfig(Config config, String namespace) {
         super(config);
         
         try {
@@ -75,7 +75,7 @@ public class KaryonEc2EurekaInstanceConfig extends KaryonEurekaInstanceConfig {
     }
     
     @Inject
-    public KaryonEc2EurekaInstanceConfig(Config config) {
+    public Ec2EurekaArchaius2InstanceConfig(Config config) {
         this(config, DEFAULT_NAMESPACE);
     }
 

@@ -11,7 +11,7 @@ import com.netflix.archaius.annotations.ConfigurationSource;
 
 @Configuration(prefix="eureka")
 @ConfigurationSource("eureka-client")
-public class KaryonEurekaClientConfig implements EurekaClientConfig {
+public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
     public static final String DEFAULT_ZONE = "defaultZone";
 
     private static final String DEFAULT_NAMESPACE = "eureka";
@@ -20,11 +20,11 @@ public class KaryonEurekaClientConfig implements EurekaClientConfig {
     private final String defaultRegion;
 
     @Inject
-    public KaryonEurekaClientConfig(Config config) {
+    public EurekaArchaius2ClientConfig(Config config) {
         this(config, DEFAULT_NAMESPACE);
     }
 
-    public KaryonEurekaClientConfig(Config config, String namespace) {
+    public EurekaArchaius2ClientConfig(Config config, String namespace) {
         this.defaultRegion = config.getString("@region", null);
         this.config = config.getPrefixedView(DEFAULT_NAMESPACE);
     }

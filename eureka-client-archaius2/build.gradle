@@ -1,7 +1,7 @@
 apply plugin: 'nebula-test-jar'
 
 dependencies {
-    compile project(':eureka-core')
+    compile project(':eureka-client')
     compile "com.netflix.archaius:archaius2-core:${archaius2Version}"
     compile "com.netflix.archaius:archaius2-guice:${archaius2Version}"
 
