@@ -34,8 +34,18 @@ abstract class AbstractVIPResource {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractVIPResource.class);
 
+    private final ResponseCache responseCache;
+
+    /* For testing */ AbstractVIPResource(ResponseCache responseCache) {
+        this.responseCache = responseCache;
+    }
+
+    protected AbstractVIPResource() {
+        this(ResponseCache.getInstance());
+    }
+
     protected Response getVipResponse(String version, String entityName, String acceptHeader,
-                                      ResponseCache.Key.EntityType entityType) {
+                                      EurekaAccept eurekaAccept, ResponseCache.Key.EntityType entityType) {
         if (!PeerAwareInstanceRegistryImpl.getInstance().shouldAllowAccess(false)) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
@@ -45,10 +55,15 @@ abstract class AbstractVIPResource {
             keyType = ResponseCache.KeyType.XML;
         }
 
-        ResponseCache.Key cacheKey = new ResponseCache.Key(entityType, entityName, keyType,
-                CurrentRequestVersion.get(), EurekaAccept.full);
+        ResponseCache.Key cacheKey = new ResponseCache.Key(
+                entityType,
+                entityName,
+                keyType,
+                CurrentRequestVersion.get(),
+                eurekaAccept
+        );
 
-        String payLoad = ResponseCache.getInstance().get(cacheKey);
+        String payLoad = responseCache.get(cacheKey);
 
         if (payLoad != null) {
             logger.debug("Found: {}", entityName);
