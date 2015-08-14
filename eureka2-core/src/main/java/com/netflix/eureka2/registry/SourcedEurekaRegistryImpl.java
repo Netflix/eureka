@@ -65,7 +65,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
 
     private static final Logger logger = LoggerFactory.getLogger(SourcedEurekaRegistryImpl.class);
 
-    protected final ConcurrentMap<String, NotifyingInstanceInfoHolder> internalStore;
+    protected final ConcurrentMap<String, MultiSourcedDataHolder<InstanceInfo>> internalStore;
     private final PauseableSubject<ChangeNotification<InstanceInfo>> registryChangeSubject;  // subject for all changes in the registry
     private final IndexRegistry<InstanceInfo> indexRegistry;
     private final EurekaRegistryMetrics metrics;
@@ -123,7 +123,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
                             return;
                         }
 
-                        NotifyingInstanceInfoHolder holder = internalStore.get(instanceInfo.getId());
+                        NotifyingInstanceInfoHolder holder = (NotifyingInstanceInfoHolder) internalStore.get(instanceInfo.getId());
                         switch (notification.getKind()) {
                             case Add:
                                 if (holder == null) {
@@ -314,7 +314,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     }
 
     @Override
-    public Observable<? extends MultiSourcedDataHolder<InstanceInfo>> getHolders() {
+    public Observable<MultiSourcedDataHolder<InstanceInfo>> getHolders() {
         return Observable.from(internalStore.values());
     }
 
@@ -338,25 +338,25 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("SourcedEurekaRegistryImpl{\n");
-        for (NotifyingInstanceInfoHolder holder : internalStore.values()) {
-            sb.append(holder.toStringSummary()).append(",\n");
+        for (MultiSourcedDataHolder<InstanceInfo> holder : internalStore.values()) {
+            sb.append(((NotifyingInstanceInfoHolder)holder).toStringSummary()).append(",\n");
         }
         sb.append('}');
         return sb.toString();
     }
 
     private Iterator<ChangeNotification<InstanceInfo>> getSnapshotForInterest(final Interest<InstanceInfo> interest) {
-        final Collection<NotifyingInstanceInfoHolder> eurekaHolders = internalStore.values();
+        final Collection<MultiSourcedDataHolder<InstanceInfo>> eurekaHolders = internalStore.values();
         return new FilteredIterator(interest, eurekaHolders.iterator());
     }
 
     private static class FilteredIterator implements Iterator<ChangeNotification<InstanceInfo>> {
 
         private final Interest<InstanceInfo> interest;
-        private final Iterator<NotifyingInstanceInfoHolder> delegate;
+        private final Iterator<MultiSourcedDataHolder<InstanceInfo>> delegate;
         private ChangeNotification<InstanceInfo> next;
 
-        private FilteredIterator(Interest<InstanceInfo> interest, Iterator<NotifyingInstanceInfoHolder> delegate) {
+        private FilteredIterator(Interest<InstanceInfo> interest, Iterator<MultiSourcedDataHolder<InstanceInfo>> delegate) {
             this.interest = interest;
             this.delegate = delegate;
         }
