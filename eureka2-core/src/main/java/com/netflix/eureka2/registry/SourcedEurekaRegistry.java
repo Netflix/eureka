@@ -39,7 +39,7 @@ public interface SourcedEurekaRegistry<T> extends EurekaRegistrationProcessor<T>
      */
     Observable<Long> evictAllExcept(Source.SourceMatcher retainMatcher);
 
-    Observable<? extends MultiSourcedDataHolder<T>> getHolders();
+    Observable<MultiSourcedDataHolder<T>> getHolders();
 
     @Override
     Observable<Void> shutdown();
