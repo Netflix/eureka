@@ -53,11 +53,6 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
 @XStreamAlias("application")
 @JsonRootName("application")
 public class Application {
-	
-	static
-	{
-		System.out.println("JB Application");
-	}
 
     @Override
     public String toString() {
