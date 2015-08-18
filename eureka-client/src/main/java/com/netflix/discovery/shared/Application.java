@@ -16,7 +16,6 @@
 
 package com.netflix.discovery.shared;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -26,6 +25,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+
+import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -52,6 +53,11 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
 @XStreamAlias("application")
 @JsonRootName("application")
 public class Application {
+	
+	static
+	{
+		System.out.println("JB Application");
+	}
 
     @Override
     public String toString() {
@@ -79,7 +85,7 @@ public class Application {
     }
 
     public Application(String name) {
-        this.name = name;
+        this.name = name!=null?name.intern():null;
         instancesMap = new ConcurrentHashMap<String, InstanceInfo>();
         instances = new LinkedHashSet<InstanceInfo>();
     }

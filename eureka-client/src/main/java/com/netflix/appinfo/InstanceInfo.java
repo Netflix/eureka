@@ -37,6 +37,7 @@ import com.netflix.discovery.converters.EurekaJacksonCodec.InstanceInfoSerialize
 import com.netflix.discovery.provider.Serializer;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,8 @@ import org.slf4j.LoggerFactory;
 @XStreamAlias("instance")
 @JsonRootName("instance")
 public class InstanceInfo {
+
+
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfo.class);
     private static final Pattern VIP_ATTRIBUTES_PATTERN = Pattern.compile("\\$\\{(.*?)\\}");
 
@@ -113,7 +116,7 @@ public class InstanceInfo {
     @Auto
     private volatile Boolean isCoordinatingDiscoveryServer = Boolean.FALSE;
     @XStreamAlias("metadata")
-    private volatile Map<String, String> metadata = new ConcurrentHashMap<String, String>();
+    private volatile Map<String, String> metadata;
     @Auto
     private volatile Long lastUpdatedTimestamp = System.currentTimeMillis();
     @Auto
@@ -125,6 +128,7 @@ public class InstanceInfo {
     private String version = "unknown";
 
     private InstanceInfo() {
+    	metadata = new ConcurrentHashMap<String, String>();
     }
 
     @JsonCreator
@@ -155,23 +159,23 @@ public class InstanceInfo {
             @JsonProperty("lastDirtyTimestamp") Long lastDirtyTimestamp,
             @JsonProperty("actionType") ActionType actionType,
             @JsonProperty("asgName") String asgName) {
-        this.appName = appName;
-        this.appGroupName = appGroupName;
-        this.ipAddr = ipAddr;
-        this.sid = sid;
+        this.appName = appName!=null ? appName.intern():null;
+        this.appGroupName = appGroupName!=null? appGroupName.intern():null;
+        this.ipAddr = ipAddr!=null?ipAddr.intern():null;
+        this.sid = sid!=null?sid.intern():null;
         this.port = port;
         this.isUnsecurePortEnabled = portEnabled;
         this.securePort = securePort;
         this.isSecurePortEnabled = securePortEnabled;
-        this.homePageUrl = homePageUrl;
-        this.statusPageUrl = statusPageUrl;
-        this.healthCheckUrl = healthCheckUrl;
-        this.secureHealthCheckUrl = secureHealthCheckUrl;
-        this.vipAddress = vipAddress;
-        this.secureVipAddress = secureVipAddress;
+        this.homePageUrl = homePageUrl!=null?homePageUrl.intern():null;
+        this.statusPageUrl = statusPageUrl!=null?statusPageUrl.intern():null;
+        this.healthCheckUrl = healthCheckUrl!=null?healthCheckUrl.intern():null;
+        this.secureHealthCheckUrl = secureHealthCheckUrl!=null?secureHealthCheckUrl.intern():null;
+        this.vipAddress = vipAddress!=null?vipAddress.intern():null;
+        this.secureVipAddress = secureVipAddress!=null?secureVipAddress.intern():null;
         this.countryId = countryId;
         this.dataCenterInfo = dataCenterInfo;
-        this.hostName = hostName;
+        this.hostName = hostName!=null?hostName.intern():null;
         this.status = status;
         this.overriddenstatus = overriddenstatus;
         this.leaseInfo = leaseInfo;
@@ -179,7 +183,7 @@ public class InstanceInfo {
         this.lastUpdatedTimestamp = lastUpdatedTimestamp;
         this.lastDirtyTimestamp = lastDirtyTimestamp;
         this.actionType = actionType;
-        this.asgName = asgName;
+        this.asgName = asgName!=null?asgName.intern():null;
 
         // for compatibility
         if (metadata == null) {
@@ -187,7 +191,12 @@ public class InstanceInfo {
         } else if (metadata.size() == 1) {
             this.metadata = removeMetadataMapLegacyValues(metadata);
         } else {
-            this.metadata = metadata;
+        	
+        	this.metadata = new ConcurrentHashMap<String, String>();
+        	
+        	for (Map.Entry<String, String> element : metadata.entrySet()) {
+				this.metadata.put(element.getKey().intern(), element.getValue().intern());
+			}            
         }
     }
 
