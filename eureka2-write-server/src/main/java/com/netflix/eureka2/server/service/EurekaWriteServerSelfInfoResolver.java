@@ -18,6 +18,7 @@ import com.netflix.eureka2.server.service.selfinfo.PeriodicDataCenterInfoResolve
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolverChain;
 import com.netflix.eureka2.server.service.selfinfo.StatusInfoResolver;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
@@ -57,6 +58,10 @@ public class EurekaWriteServerSelfInfoResolver implements SelfInfoResolver {
                             }
                         })
                 ),
+                new ChainableSelfInfoResolver(Observable.just(InstanceInfo.anInstanceInfo()
+                                .withMetaData(META_EUREKA_SERVER_TYPE, ServerType.Write.name())
+                                .withMetaData(META_EUREKA_WRITE_CLUSTER_ID, config.getEurekaInstance().getEurekaVipAddress())
+                )),
                 new PeriodicDataCenterInfoResolver(config.getEurekaInstance(), config.getEurekaTransport())
         );
 
