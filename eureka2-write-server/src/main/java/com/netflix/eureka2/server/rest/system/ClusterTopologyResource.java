@@ -3,15 +3,12 @@ package com.netflix.eureka2.server.rest.system;
 import javax.inject.Inject;
 import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.ChangeNotifications;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -70,7 +67,7 @@ public class ClusterTopologyResource implements RequestHandler<ByteBuf, ByteBuf>
         response.setStatus(HttpResponseStatus.OK);
         response.getHeaders().add(Names.CONTENT_TYPE, MediaType.APPLICATION_JSON);
 
-        return selfInfoResolver.resolve().flatMap(new Func1<InstanceInfo, Observable<Void>>() {
+        return selfInfoResolver.resolve().take(1).flatMap(new Func1<InstanceInfo, Observable<Void>>() {
             @Override
             public Observable<Void> call(final InstanceInfo localInstanceInfo) {
                 String clusterId = localInstanceInfo.getMetaData() == null ?
@@ -79,19 +76,15 @@ public class ClusterTopologyResource implements RequestHandler<ByteBuf, ByteBuf>
                     clusterId = localInstanceInfo.getVipAddress();
                 }
                 final String finalClusterId = clusterId;
-                return registry
-                        .forInterest(Interests.forFullRegistry())
-                        .filter(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
+                List<InstanceInfo> instanceInfos = registry
+                        .forSnapshot(Interests.forFullRegistry())
+                        .filter(new Func1<InstanceInfo, Boolean>() {
                             @Override
-                            public Boolean call(ChangeNotification<InstanceInfo> notification) {
-                                if (!notification.isDataNotification()) {
-                                    return true;
-                                }
-                                InstanceInfo checkedItem = notification.getData();
+                            public Boolean call(InstanceInfo checkedItem) {
                                 if (equalValues(localInstanceInfo.getVipAddress(), checkedItem.getVipAddress())) {
                                     return true;
                                 }
-                                Map<String, String> meta = notification.getData().getMetaData();
+                                Map<String, String> meta = checkedItem.getMetaData();
                                 if (meta != null) {
                                     if (equalValues(finalClusterId, meta.get(META_EUREKA_WRITE_CLUSTER_ID))) {
                                         return true;
@@ -104,35 +97,23 @@ public class ClusterTopologyResource implements RequestHandler<ByteBuf, ByteBuf>
                                 }
                                 return false;
                             }
-                        })
-                        .compose(ChangeNotifications.<InstanceInfo>buffers())
-                        .compose(ChangeNotifications.snapshots(ChangeNotifications.instanceInfoIdentity()))
-                        .filter(new Func1<LinkedHashSet<InstanceInfo>, Boolean>() {
-                            @Override
-                            public Boolean call(LinkedHashSet<InstanceInfo> instanceInfos) {
-                                return !instanceInfos.isEmpty();
-                            }
-                        })
-                        .take(1)
-                        .flatMap(new Func1<LinkedHashSet<InstanceInfo>, Observable<Void>>() {
-                            @Override
-                            public Observable<Void> call(LinkedHashSet<InstanceInfo> instanceInfos) {
-                                List<InstanceInfo> writeNodes = new ArrayList<>();
-                                List<InstanceInfo> readNodes = new ArrayList<>();
-                                for (InstanceInfo checkedItem : instanceInfos) {
-                                    if (equalValues(localInstanceInfo.getVipAddress(), checkedItem.getVipAddress())) {
-                                        writeNodes.add(checkedItem);
-                                    } else {
-                                        readNodes.add(checkedItem);
-                                    }
-                                }
-                                DeploymentDescriptor descriptor = new DeploymentDescriptor(
-                                        new ClusterDescriptor(finalClusterId, writeNodes),
-                                        new ClusterDescriptor(finalClusterId, readNodes)
-                                );
-                                return response.writeStringAndFlush(Json.toStringJson(descriptor));
-                            }
-                        });
+                        }).toList().toBlocking().first();
+
+
+                List<InstanceInfo> writeNodes = new ArrayList<>();
+                List<InstanceInfo> readNodes = new ArrayList<>();
+                for (InstanceInfo checkedItem : instanceInfos) {
+                    if (equalValues(localInstanceInfo.getVipAddress(), checkedItem.getVipAddress())) {
+                        writeNodes.add(checkedItem);
+                    } else {
+                        readNodes.add(checkedItem);
+                    }
+                }
+                DeploymentDescriptor descriptor = new DeploymentDescriptor(
+                        new ClusterDescriptor(finalClusterId, writeNodes),
+                        new ClusterDescriptor(finalClusterId, readNodes)
+                );
+                return response.writeStringAndFlush(Json.toStringJson(descriptor));
             }
         }).timeout(5, TimeUnit.SECONDS);
     }
