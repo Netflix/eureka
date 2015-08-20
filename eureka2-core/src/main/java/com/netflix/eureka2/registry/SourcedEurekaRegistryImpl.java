@@ -164,7 +164,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
                                     public void call() {
                                         approvedRegistrations.put(clientIdFor(id, source), source);
                                     }
-                                });
+                                }).onErrorResumeNext(Observable.<ChangeNotification<InstanceInfoWithSource>>empty());
                 registrationSubject.onNext(changeNotifications);
                 subscriber.onCompleted();
             }
@@ -330,6 +330,8 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
 
     @Override
     public Observable<Void> shutdown(Throwable cause) {
+        logger.info("Shutting down the eureka registry due to an error", cause);
+
         registrationSubject.onCompleted();
         registryChangeSubject.onCompleted();
         return indexRegistry.shutdown(cause);
@@ -339,7 +341,7 @@ public class SourcedEurekaRegistryImpl implements SourcedEurekaRegistry<Instance
     public String toString() {
         StringBuilder sb = new StringBuilder("SourcedEurekaRegistryImpl{\n");
         for (MultiSourcedDataHolder<InstanceInfo> holder : internalStore.values()) {
-            sb.append(((NotifyingInstanceInfoHolder)holder).toStringSummary()).append(",\n");
+            sb.append(((NotifyingInstanceInfoHolder) holder).toStringSummary()).append(",\n");
         }
         sb.append('}');
         return sb.toString();
