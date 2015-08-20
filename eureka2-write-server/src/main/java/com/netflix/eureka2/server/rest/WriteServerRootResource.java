@@ -20,6 +20,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import com.netflix.eureka2.server.http.EurekaHttpServer;
+import com.netflix.eureka2.server.http.JarResourcesRequestHandler;
 import com.netflix.eureka2.server.rest.diagnostic.DiagnosticInstanceHoldersResource;
 import com.netflix.eureka2.server.rest.system.ApplicationsResource;
 import com.netflix.eureka2.server.rest.system.ClusterTopologyResource;
@@ -42,11 +43,19 @@ import static com.netflix.eureka2.server.rest.system.ClusterTopologyResource.PAT
 @Singleton
 public class WriteServerRootResource implements RequestHandler<ByteBuf, ByteBuf> {
 
+    private static final String PATH_WEB_CLIENT = "/ui";
+
     @Inject
     public WriteServerRootResource(EurekaHttpServer httpServer,
                                    ClusterTopologyResource clusterTopologyResource,
                                    ApplicationsResource applicationsResource,
                                    DiagnosticInstanceHoldersResource diagnosticInstanceHoldersResource) {
+        JarResourcesRequestHandler jarHandler = new JarResourcesRequestHandler(
+                PATH_WEB_CLIENT,
+                "eureka2-write-ui-([\\d.]+)(-SNAPSHOT)?.jar",
+                PATH_WEB_CLIENT + "/index.html"
+        );
+        httpServer.connectHttpEndpoint(PATH_WEB_CLIENT, jarHandler);
         httpServer.connectHttpEndpoint(PATH_CLUSTER_TOPOLOGY, clusterTopologyResource);
         httpServer.connectHttpEndpoint(PATH_APPLICATIONS, applicationsResource);
         httpServer.connectHttpEndpoint(PATH_DIAGNOSTIC_ENTRYHOLDERS, diagnosticInstanceHoldersResource);
