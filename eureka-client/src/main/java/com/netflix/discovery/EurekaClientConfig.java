@@ -123,6 +123,7 @@ public interface EurekaClientConfig {
      * traffic.
      *
      * @return true, if the content need to be compressed, false otherwise.
+     * @deprecated gzip content encoding will be always enforced in the next minor Eureka release (see com.netflix.eureka.GzipEncodingEnforcingFilter).
      */
     boolean shouldGZipContent();
 
