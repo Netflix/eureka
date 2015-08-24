@@ -114,6 +114,10 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 EUREKA_CONFIG.getDeltaRetentionTimerIntervalInMs());
     }
 
+    public long getLocalRegistrySize() {
+        return registry.size();
+    }
+
     /**
      * Completely clear the registry.
      */
