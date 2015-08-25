@@ -24,7 +24,6 @@ public class EurekaIdentityHeaderFilter extends ClientFilter {
                 cr.getHeaders().putSingle(AbstractEurekaIdentity.AUTH_ID_HEADER_KEY, authInfo.getId());
             }
         }
-
         return getNext().handle(cr);
     }
 }

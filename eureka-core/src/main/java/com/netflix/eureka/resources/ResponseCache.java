@@ -351,11 +351,16 @@ public class ResponseCache {
      * Generate pay load with both JSON and XML formats for all applications.
      */
     private static String getPayLoad(Key key, Applications apps) {
+        String result;
         if (key.getType() == KeyType.JSON) {
-            return EurekaJacksonCodec.getInstance().writeToString(apps);
+            result = EurekaJacksonCodec.getInstance().writeToString(apps);
         } else {
-            return XmlXStream.getInstance().toXML(apps);
+            result = XmlXStream.getInstance().toXML(apps);
         }
+        if(logger.isDebugEnabled()) {
+            logger.debug("New application cache entry {} with apps hashcode {}", key.toStringCompact(), apps.getAppsHashCode());
+        }
+        return result;
     }
 
     /**
@@ -547,6 +552,16 @@ public class ResponseCache {
             } else {
                 return false;
             }
+        }
+
+        public String toStringCompact() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("{name=").append(entityName).append(", type=").append(entityType).append(", format=").append(requestType);
+            if(regions != null) {
+                sb.append(", regions=").append(Arrays.toString(regions));
+            }
+            sb.append('}');
+            return sb.toString();
         }
     }
 
