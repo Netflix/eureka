@@ -24,11 +24,6 @@ public abstract class AsgReplicationTask extends ReplicationTask {
         return asgName + ':' + action + '@' + peerNodeName;
     }
 
-    @Override
-    public boolean isBatchingSupported() {
-        return false;
-    }
-
     public String getAsgName() {
         return asgName;
     }
