@@ -69,6 +69,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
             .getInstance().getStringProperty("eureka.client.props",
                     "eureka-client");
     public static final String DEFAULT_ZONE = "defaultZone";
+    private static final int DEFAULT_EXECUTOR_THREAD_POOL_SIZE = 5;
     private String namespace = "eureka.";
 
     public DefaultEurekaClientConfig() {
@@ -449,7 +450,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     @Override
     public int getHeartbeatExecutorThreadPoolSize() {
         return configInstance.getIntProperty(
-                namespace + "client.heartbeat.threadPoolSize", 2).get();
+                namespace + "client.heartbeat.threadPoolSize", DEFAULT_EXECUTOR_THREAD_POOL_SIZE).get();
     }
 
     @Override
@@ -466,7 +467,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     @Override
     public int getCacheRefreshExecutorThreadPoolSize() {
         return configInstance.getIntProperty(
-                namespace + "client.cacheRefresh.threadPoolSize", 2).get();
+                namespace + "client.cacheRefresh.threadPoolSize", DEFAULT_EXECUTOR_THREAD_POOL_SIZE).get();
     }
 
     @Override

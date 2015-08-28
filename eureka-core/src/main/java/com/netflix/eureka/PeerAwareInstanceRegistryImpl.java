@@ -743,4 +743,11 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                             + node.getServiceUrl(), e);
         }
     }
+
+    @Override
+    @com.netflix.servo.annotations.Monitor(name = "localRegistrySize",
+            description = "Current registry size", type = DataSourceType.GAUGE)
+    public long getLocalRegistrySize() {
+        return super.getLocalRegistrySize();
+    }
 }

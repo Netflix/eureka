@@ -18,16 +18,14 @@ public class DefaultEurekaClientConfigProvider implements Provider<EurekaClientC
     private String namespace;
 
     private DefaultEurekaClientConfig config;
-
+    
     @Override
     public synchronized EurekaClientConfig get() {
         if (config == null) {
-            if (namespace == null) {
-                config = new DefaultEurekaClientConfig();
-            } else {
-                config = new DefaultEurekaClientConfig(namespace);
-            }
-
+            config = (namespace == null)
+                    ? new DefaultEurekaClientConfig()
+                    : new DefaultEurekaClientConfig(namespace);
+                    
             // TODO: Remove this when DiscoveryManager is finally no longer used
             DiscoveryManager.getInstance().setEurekaClientConfig(config);
         }

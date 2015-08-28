@@ -366,12 +366,17 @@ public class ResponseCache {
      */
     private String getPayLoad(Key key, Applications apps) {
         EncoderWrapper encoderWrapper = serverCodecs.getEncoder(key.getType(), key.getEurekaAccept());
+        String result;
         try {
-            return encoderWrapper.encode(apps);
+            result = encoderWrapper.encode(apps);
         } catch (Exception e) {
             logger.error("Failed to encode the payload for all apps", e);
             return "";
         }
+        if(logger.isDebugEnabled()) {
+            logger.debug("New application cache entry {} with apps hashcode {}", key.toStringCompact(), apps.getAppsHashCode());
+        }
+        return result;
     }
 
     /**
@@ -570,6 +575,16 @@ public class ResponseCache {
             } else {
                 return false;
             }
+        }
+
+        public String toStringCompact() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("{name=").append(entityName).append(", type=").append(entityType).append(", format=").append(requestType);
+            if(regions != null) {
+                sb.append(", regions=").append(Arrays.toString(regions));
+            }
+            sb.append('}');
+            return sb.toString();
         }
     }
 

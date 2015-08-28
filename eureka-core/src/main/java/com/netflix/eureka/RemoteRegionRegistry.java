@@ -38,8 +38,8 @@ import com.netflix.discovery.EurekaIdentityHeaderFilter;
 import com.netflix.discovery.TimedSupervisorTask;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.discovery.shared.JerseyClient;
-import com.netflix.discovery.shared.JerseyClientConfigBuilder;
+import com.netflix.discovery.shared.EurekaJerseyClient;
+import com.netflix.discovery.shared.EurekaJerseyClient.EurekaJerseyClientBuilder;
 import com.netflix.discovery.shared.LookupService;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
@@ -59,70 +59,50 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class RemoteRegionRegistry implements LookupService<String> {
-    private static EurekaServerConfig EUREKA_SERVER_CONFIG = EurekaServerConfigurationManager
-            .getInstance().getConfiguration();
+    private static final Logger logger = LoggerFactory.getLogger(RemoteRegionRegistry.class);
 
-    private static final Logger logger = LoggerFactory
-            .getLogger(RemoteRegionRegistry.class);
-    private ApacheHttpClient4 discoveryApacheClient;
-    private JerseyClient discoveryJerseyClient;
-    private com.netflix.servo.monitor.Timer fetchRegistryTimer;
-    private URL remoteRegionURL;
+    private static final EurekaServerConfig EUREKA_SERVER_CONFIG =
+            EurekaServerConfigurationManager.getInstance().getConfiguration();
+
+    private final ApacheHttpClient4 discoveryApacheClient;
+    private final EurekaJerseyClient discoveryJerseyClient;
+    private final com.netflix.servo.monitor.Timer fetchRegistryTimer;
+    private final URL remoteRegionURL;
 
     private final ScheduledExecutorService scheduler;
     // monotonically increasing generation counter to ensure stale threads do not reset registry to an older version
-    private volatile AtomicLong fullRegistryGeneration = new AtomicLong(0);
-    private volatile AtomicLong deltaGeneration = new AtomicLong(0);
+    private final AtomicLong fullRegistryGeneration = new AtomicLong(0);
+    private final AtomicLong deltaGeneration = new AtomicLong(0);
 
-    private volatile AtomicReference<Applications> applications = new AtomicReference<Applications>();
-    private volatile AtomicReference<Applications> applicationsDelta = new AtomicReference<Applications>();
+    private final AtomicReference<Applications> applications = new AtomicReference<Applications>();
+    private final AtomicReference<Applications> applicationsDelta = new AtomicReference<Applications>();
     private volatile boolean readyForServingData;
 
     public RemoteRegionRegistry(String regionName, URL remoteRegionURL) {
         this.remoteRegionURL = remoteRegionURL;
-        this.fetchRegistryTimer = Monitors.newTimer(this.remoteRegionURL
-                .toString() + "_" + "FetchRegistry");
+        this.fetchRegistryTimer = Monitors.newTimer(this.remoteRegionURL.toString() + "_FetchRegistry");
 
-        String jerseyClientName;
+        EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
+                .withUserAgent("Java EurekaClient (remote region)")
+                .withConnectionTimeout(EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs())
+                .withReadTimeout(EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs())
+                .withMaxConnectionsPerHost(EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost())
+                .withMaxTotalConnections(EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections())
+                .withConnectionIdleTimeout(EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds());
+
         if (remoteRegionURL.getProtocol().equals("http")) {
-            jerseyClientName = "Discovery-RemoteRegionClient-" + regionName;
-            discoveryJerseyClient = new JerseyClient(
-                    EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs(),
-                    EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs(),
-                    EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds(),
-                    JerseyClientConfigBuilder.newClientConfigBuilder()
-                            .withClientName(jerseyClientName)
-                            .withMaxConnectionsPerHost(EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost())
-                            .withMaxTotalConnections(EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections())
-                            .build()
-            );
+            clientBuilder.withClientName("Discovery-RemoteRegionClient-" + regionName);
         } else if ("true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
-            jerseyClientName = "Discovery-RemoteRegionSystemSecureClient-" + regionName;
-            discoveryJerseyClient = new JerseyClient(
-                    EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs(),
-                    EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs(),
-                    EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds(),
-                    JerseyClientConfigBuilder.newSystemSSLClientConfigBuilder()
-                            .withClientName(jerseyClientName)
-                            .withMaxConnectionsPerHost(EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost())
-                            .withMaxTotalConnections(EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections())
-                            .build()
-            );
+            clientBuilder.withClientName("Discovery-RemoteRegionSystemSecureClient-" + regionName)
+                    .withSystemSSLConfiguration();
         } else {
-            jerseyClientName = "Discovery-RemoteRegionSecureClient-" + regionName;
-            discoveryJerseyClient = new JerseyClient(
-                    EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs(),
-                    EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs(),
-                    EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds(),
-                    JerseyClientConfigBuilder.newSSLClientConfigBuilder()
-                            .withClientName(jerseyClientName)
-                            .withMaxConnectionsPerHost(EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost())
-                            .withMaxTotalConnections(EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections())
-                            .withTrustStoreFileName(EUREKA_SERVER_CONFIG.getRemoteRegionTrustStore())
-                            .withTrustStorePassword(EUREKA_SERVER_CONFIG.getRemoteRegionTrustStorePassword())
-                            .build()
-            );
+            clientBuilder.withClientName("Discovery-RemoteRegionSecureClient-" + regionName)
+                    .withTrustStoreFile(
+                            EUREKA_SERVER_CONFIG.getRemoteRegionTrustStore(),
+                            EUREKA_SERVER_CONFIG.getRemoteRegionTrustStorePassword()
+                    );
         }
+        discoveryJerseyClient = clientBuilder.build();
         discoveryApacheClient = discoveryJerseyClient.getClient();
 
         // should we enable GZip decoding of responses based on Response

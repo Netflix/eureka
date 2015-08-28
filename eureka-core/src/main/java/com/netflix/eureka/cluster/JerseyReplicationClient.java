@@ -10,8 +10,8 @@ import java.net.UnknownHostException;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.EurekaIdentityHeaderFilter;
-import com.netflix.discovery.shared.JerseyClient;
-import com.netflix.discovery.shared.JerseyClientConfigBuilder;
+import com.netflix.discovery.shared.EurekaJerseyClient;
+import com.netflix.discovery.shared.EurekaJerseyClient.EurekaJerseyClientBuilder;
 import com.netflix.discovery.shared.JerseyEurekaHttpClient;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerIdentity;
@@ -32,7 +32,7 @@ public class JerseyReplicationClient extends JerseyEurekaHttpClient implements H
 
     private static final Logger logger = LoggerFactory.getLogger(JerseyReplicationClient.class);
 
-    private final JerseyClient jerseyClient;
+    private final EurekaJerseyClient jerseyClient;
     private final ApacheHttpClient4 jerseyApacheClient;
 
     public JerseyReplicationClient(EurekaServerConfig config, String serviceUrl) {
@@ -46,31 +46,22 @@ public class JerseyReplicationClient extends JerseyEurekaHttpClient implements H
             } catch (MalformedURLException e) {
                 hostname = serviceUrl;
             }
+
             String jerseyClientName = "Discovery-PeerNodeClient-" + hostname;
+            EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
+                    .withClientName(jerseyClientName)
+                    .withUserAgent("Java EurekaClient (replication)")
+                    .withConnectionTimeout(config.getPeerNodeConnectTimeoutMs())
+                    .withReadTimeout(config.getPeerNodeReadTimeoutMs())
+                    .withMaxConnectionsPerHost(config.getPeerNodeTotalConnectionsPerHost())
+                    .withMaxTotalConnections(config.getPeerNodeTotalConnections())
+                    .withConnectionIdleTimeout(config.getPeerNodeConnectionIdleTimeoutSeconds());
+
             if (serviceUrl.startsWith("https://") &&
                     "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
-                jerseyClient = new JerseyClient(
-                        config.getPeerNodeConnectTimeoutMs(),
-                        config.getPeerNodeReadTimeoutMs(),
-                        config.getPeerNodeConnectionIdleTimeoutSeconds(),
-                        JerseyClientConfigBuilder.newSystemSSLClientConfigBuilder()
-                                .withClientName(jerseyClientName)
-                                .withMaxConnectionsPerHost(config.getPeerNodeTotalConnectionsPerHost())
-                                .withMaxTotalConnections(config.getPeerNodeTotalConnections())
-                                .build()
-                );
-            } else {
-                jerseyClient = new JerseyClient(
-                        config.getPeerNodeConnectTimeoutMs(),
-                        config.getPeerNodeReadTimeoutMs(),
-                        config.getPeerNodeConnectionIdleTimeoutSeconds(),
-                        JerseyClientConfigBuilder.newClientConfigBuilder()
-                                .withClientName(jerseyClientName)
-                                .withMaxConnectionsPerHost(config.getPeerNodeTotalConnectionsPerHost())
-                                .withMaxTotalConnections(config.getPeerNodeTotalConnections())
-                                .build()
-                );
+                clientBuilder.withSystemSSLConfiguration();
             }
+            jerseyClient = clientBuilder.build();
             jerseyApacheClient = jerseyClient.getClient();
             jerseyApacheClient.addFilter(new DynamicGZIPContentEncodingFilter(config));
         } catch (Throwable e) {
