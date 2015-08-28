@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 import com.netflix.eureka.util.batcher.TaskProcessor.ProcessingResult;
 import com.netflix.servo.annotations.DataSourceType;
@@ -16,6 +15,8 @@ import com.netflix.servo.monitor.StatsTimer;
 import com.netflix.servo.stats.StatsConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static com.netflix.eureka.Names.METRIC_REPLICATION_PREFIX;
 
 /**
  * {@link TaskExecutors} instance holds a number of worker threads that cooperate with {@link AcceptorExecutor}.
@@ -62,7 +63,7 @@ class TaskExecutors<ID, T> {
         return new TaskExecutors<>(new WorkerRunnableFactory<ID, T>() {
             @Override
             public WorkerRunnable<ID, T> create(int idx) {
-                return new SingleTaskWorkerRunnable<>(name + "-nonBatchingWorker-" + idx, isShutdown, metrics, processor, acceptorExecutor);
+                return new SingleTaskWorkerRunnable<>("TaskNonBatchingWorker-" + name + '-' + idx, isShutdown, metrics, processor, acceptorExecutor);
             }
         }, workerCount, isShutdown);
     }
@@ -76,36 +77,36 @@ class TaskExecutors<ID, T> {
         return new TaskExecutors<>(new WorkerRunnableFactory<ID, T>() {
             @Override
             public WorkerRunnable<ID, T> create(int idx) {
-                return new BatchWorkerRunnable<>(name + "-batchingWorker-" + idx, isShutdown, metrics, processor, acceptorExecutor);
+                return new BatchWorkerRunnable<>("TaskBatchingWorker-" +name + '-' + idx, isShutdown, metrics, processor, acceptorExecutor);
             }
         }, workerCount, isShutdown);
     }
 
     static class TaskExecutorMetrics {
 
-        @Monitor(name = "numberOfSuccessfulExecutions", description = "Number of successful task executions", type = DataSourceType.COUNTER)
-        final AtomicLong numberOfSuccessfulExecutions = new AtomicLong();
+        @Monitor(name = METRIC_REPLICATION_PREFIX + "numberOfSuccessfulExecutions", description = "Number of successful task executions", type = DataSourceType.COUNTER)
+        volatile long numberOfSuccessfulExecutions;
 
-        @Monitor(name = "numberOfTransientError", description = "Number of transient task execution errors", type = DataSourceType.COUNTER)
-        final AtomicLong numberOfTransientError = new AtomicLong();
+        @Monitor(name = METRIC_REPLICATION_PREFIX + "numberOfTransientErrors", description = "Number of transient task execution errors", type = DataSourceType.COUNTER)
+        volatile long numberOfTransientError;
 
-        @Monitor(name = "numberOfPermanentError", description = "Number of permanent task execution errors", type = DataSourceType.COUNTER)
-        final AtomicLong numberOfPermanentError = new AtomicLong();
+        @Monitor(name = METRIC_REPLICATION_PREFIX + "numberOfPermanentErrors", description = "Number of permanent task execution errors", type = DataSourceType.COUNTER)
+        volatile long numberOfPermanentError;
 
         final StatsTimer taskWaitingTimeForProcessing;
 
-        TaskExecutorMetrics(String name) {
+        TaskExecutorMetrics(String id) {
             final double[] percentiles = {50.0, 95.0, 99.0, 99.5};
             final StatsConfig statsConfig = new StatsConfig.Builder()
                     .withSampleSize(1000)
                     .withPercentiles(percentiles)
                     .withPublishStdDev(true)
                     .build();
-            final MonitorConfig config = MonitorConfig.builder(name).build();
+            final MonitorConfig config = MonitorConfig.builder(METRIC_REPLICATION_PREFIX + "executionTime").build();
             taskWaitingTimeForProcessing = new StatsTimer(config, statsConfig);
 
             try {
-                Monitors.registerObject(name, this);
+                Monitors.registerObject(id, this);
             } catch (Throwable e) {
                 logger.warn("Cannot register servo monitor for this object", e);
             }
@@ -114,13 +115,13 @@ class TaskExecutors<ID, T> {
         void registerTaskResult(ProcessingResult result, int count) {
             switch (result) {
                 case Success:
-                    numberOfSuccessfulExecutions.addAndGet(count);
+                    numberOfSuccessfulExecutions += count;
                     break;
                 case TransientError:
-                    numberOfTransientError.addAndGet(count);
+                    numberOfTransientError += count;
                     break;
                 case PermanentError:
-                    numberOfPermanentError.addAndGet(count);
+                    numberOfPermanentError += count;
                     break;
             }
         }

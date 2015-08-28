@@ -17,6 +17,7 @@
 package com.netflix.eureka.util.batcher;
 
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka.util.batcher.TaskProcessor.ProcessingResult;
@@ -36,6 +37,7 @@ public class AcceptorExecutorTest {
 
     private static final long SERVER_UNAVAILABLE_SLEEP_TIME_MS = 1000;
     private static final long RETRY_SLEEP_TIME_MS = 100;
+    private static final long MAX_BATCHING_DELAY_MS = 10;
 
     private static final int MAX_BUFFER_SIZE = 3;
     private static final int WORK_LOAD_SIZE = 2;
@@ -44,7 +46,10 @@ public class AcceptorExecutorTest {
 
     @Before
     public void setUp() throws Exception {
-        acceptorExecutor = new AcceptorExecutor<>("TEST", MAX_BUFFER_SIZE, WORK_LOAD_SIZE, SERVER_UNAVAILABLE_SLEEP_TIME_MS, RETRY_SLEEP_TIME_MS);
+        acceptorExecutor = new AcceptorExecutor<>(
+                "TEST", MAX_BUFFER_SIZE, WORK_LOAD_SIZE, MAX_BATCHING_DELAY_MS,
+                SERVER_UNAVAILABLE_SLEEP_TIME_MS, RETRY_SLEEP_TIME_MS
+        );
     }
 
     @After
@@ -110,6 +115,19 @@ public class AcceptorExecutorTest {
         // Task 0 should be dropped out
         TaskHolder<Integer, String> firstTaskHolder = acceptorExecutor.requestWorkItem().poll(5, TimeUnit.SECONDS);
         verifyTaskHolder(firstTaskHolder, 1, "Task1");
+    }
+
+    @Test
+    public void testTasksAreDelayToMaximizeBatchSize() throws Exception {
+        BlockingQueue<List<TaskHolder<Integer, String>>> taskQueue = acceptorExecutor.requestWorkItems();
+
+        acceptorExecutor.process(1, "Task1", System.currentTimeMillis() + 60 * 1000);
+        Thread.sleep(MAX_BATCHING_DELAY_MS / 2);
+        acceptorExecutor.process(2, "Task2", System.currentTimeMillis() + 60 * 1000);
+
+        List<TaskHolder<Integer, String>> taskHolders = taskQueue.poll(5, TimeUnit.SECONDS);
+
+        assertThat(taskHolders.size(), is(equalTo(2)));
     }
 
     private static void verifyTaskHolder(TaskHolder<Integer, String> taskHolder, int id, String task) {

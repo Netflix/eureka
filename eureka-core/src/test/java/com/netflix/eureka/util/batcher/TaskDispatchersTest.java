@@ -39,6 +39,7 @@ public class TaskDispatchersTest {
 
     private static final long SERVER_UNAVAILABLE_SLEEP_TIME_MS = 1000;
     private static final long RETRY_SLEEP_TIME_MS = 100;
+    private static final long MAX_BATCHING_DELAY_MS = 10;
 
     private static final int MAX_BUFFER_SIZE = 1000000;
     private static final int WORK_LOAD_SIZE = 2;
@@ -60,6 +61,7 @@ public class TaskDispatchersTest {
                 "TEST",
                 MAX_BUFFER_SIZE,
                 1,
+                MAX_BATCHING_DELAY_MS,
                 SERVER_UNAVAILABLE_SLEEP_TIME_MS,
                 RETRY_SLEEP_TIME_MS,
                 processor
@@ -77,6 +79,7 @@ public class TaskDispatchersTest {
                 MAX_BUFFER_SIZE,
                 WORK_LOAD_SIZE,
                 1,
+                MAX_BATCHING_DELAY_MS,
                 SERVER_UNAVAILABLE_SLEEP_TIME_MS,
                 RETRY_SLEEP_TIME_MS,
                 processor
@@ -98,6 +101,7 @@ public class TaskDispatchersTest {
                 MAX_BUFFER_SIZE,
                 WORK_LOAD_SIZE,
                 threadCount,
+                MAX_BATCHING_DELAY_MS,
                 SERVER_UNAVAILABLE_SLEEP_TIME_MS,
                 RETRY_SLEEP_TIME_MS,
                 countingProcessor

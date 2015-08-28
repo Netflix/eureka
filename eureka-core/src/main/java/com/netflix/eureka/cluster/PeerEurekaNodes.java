@@ -1,7 +1,5 @@
 package com.netflix.eureka.cluster;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -11,6 +9,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
@@ -27,6 +27,8 @@ import org.slf4j.LoggerFactory;
  * @author Tomasz Bak
  */
 public class PeerEurekaNodes {
+
+    private static final Pattern HOST_NAME_RE = Pattern.compile("(http|https)://([^:/]+).*");
 
     private static final Logger logger = LoggerFactory.getLogger(PeerEurekaNodes.class);
 
@@ -169,8 +171,11 @@ public class PeerEurekaNodes {
 
     protected PeerEurekaNode createPeerEurekaNode(String peerEurekaNodeUrl) {
         HttpReplicationClient replicationClient = new JerseyReplicationClient(config, peerEurekaNodeUrl);
-        String name = PeerEurekaNode.class.getSimpleName() + ": " + peerEurekaNodeUrl + "apps/: ";
-        return new PeerEurekaNode(registry, name, peerEurekaNodeUrl, replicationClient, config);
+        String targetHost = hostFromUrl(peerEurekaNodeUrl);
+        if (targetHost == null) {
+            targetHost = "host";
+        }
+        return new PeerEurekaNode(registry, targetHost, peerEurekaNodeUrl, replicationClient, config);
     }
 
     /**
@@ -186,12 +191,15 @@ public class PeerEurekaNodes {
      */
     public static boolean isThisMe(String url) {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
-        try {
-            URI uri = new URI(url);
-            return (uri.getHost().equals(myInfo.getHostName()));
-        } catch (URISyntaxException e) {
-            logger.error("Error in syntax", e);
-            return false;
+        String hostName = hostFromUrl(url);
+        return hostName != null && hostName.equals(myInfo.getHostName());
+    }
+
+    public static String hostFromUrl(String url) {
+        Matcher matcher = HOST_NAME_RE.matcher(url);
+        if (!matcher.matches()) {
+            return null;
         }
+        return matcher.group(2);
     }
 }

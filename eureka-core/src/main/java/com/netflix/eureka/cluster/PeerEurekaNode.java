@@ -57,9 +57,14 @@ public class PeerEurekaNode {
     private static final long SERVER_UNAVAILABLE_SLEEP_TIME_MS = 1000;
 
     /**
+     * Maximum amount of time in ms to wait for new items prior to dispatching a batch of tasks.
+     */
+    private static final long MAX_BATCHING_DELAY_MS = 500;
+
+    /**
      * Maximum batch size for batched requests.
      */
-    private static final int BATCH_SIZE = 200;
+    private static final int BATCH_SIZE = 250;
 
     private static final Logger logger = LoggerFactory.getLogger(PeerEurekaNode.class);
 
@@ -71,21 +76,21 @@ public class PeerEurekaNode {
     private final EurekaServerConfig config;
     private final long maxProcessingDelayMs;
     private final PeerAwareInstanceRegistry registry;
-    private final String name;
+    private final String targetHost;
     private final HttpReplicationClient replicationClient;
 
     private final TaskDispatcher<String, ReplicationTask> batchingDispatcher;
     private final TaskDispatcher<String, ReplicationTask> nonBatchingDispatcher;
 
-    public PeerEurekaNode(PeerAwareInstanceRegistry registry, String name, String serviceUrl, HttpReplicationClient replicationClient, EurekaServerConfig config) {
-        this(registry, name, serviceUrl, replicationClient, config, RETRY_SLEEP_TIME_MS, SERVER_UNAVAILABLE_SLEEP_TIME_MS);
+    public PeerEurekaNode(PeerAwareInstanceRegistry registry, String targetHost, String serviceUrl, HttpReplicationClient replicationClient, EurekaServerConfig config) {
+        this(registry, targetHost, serviceUrl, replicationClient, config, RETRY_SLEEP_TIME_MS, SERVER_UNAVAILABLE_SLEEP_TIME_MS);
     }
 
-    /* For testing */ PeerEurekaNode(PeerAwareInstanceRegistry registry, String name, String serviceUrl,
+    /* For testing */ PeerEurekaNode(PeerAwareInstanceRegistry registry, String targetHost, String serviceUrl,
                                      HttpReplicationClient replicationClient, EurekaServerConfig config,
                                      long retrySleepTimeMs, long serverUnavailableSleepTimeMs) {
         this.registry = registry;
-        this.name = name;
+        this.targetHost = targetHost;
         this.replicationClient = replicationClient;
 
         this.serviceUrl = serviceUrl;
@@ -93,20 +98,22 @@ public class PeerEurekaNode {
         this.maxProcessingDelayMs = config.getMaxTimeForReplication();
 
         String batcherName = getBatcherName();
-        ReplicationTaskProcessor taskProcessor = new ReplicationTaskProcessor(name, replicationClient);
+        ReplicationTaskProcessor taskProcessor = new ReplicationTaskProcessor(targetHost, replicationClient);
         this.batchingDispatcher = TaskDispatchers.createBatchingTaskDispatcher(
                 batcherName,
                 config.getMaxElementsInPeerReplicationPool(),
                 BATCH_SIZE,
                 config.getMaxThreadsForPeerReplication(),
+                MAX_BATCHING_DELAY_MS,
                 serverUnavailableSleepTimeMs,
                 retrySleepTimeMs,
                 taskProcessor
         );
         this.nonBatchingDispatcher = TaskDispatchers.createNonBatchingTaskDispatcher(
-                name,
+                targetHost,
                 config.getMaxElementsInStatusReplicationPool(),
                 config.getMaxThreadsForStatusReplication(),
+                MAX_BATCHING_DELAY_MS,
                 serverUnavailableSleepTimeMs,
                 retrySleepTimeMs,
                 taskProcessor
@@ -127,7 +134,7 @@ public class PeerEurekaNode {
         long expiryTime = System.currentTimeMillis() + info.getLeaseInfo().getRenewalIntervalInSecs() * 1000;
         batchingDispatcher.process(
                 "register#" + info.getId(),
-                new InstanceReplicationTask(name, Action.Register, info, null, true) {
+                new InstanceReplicationTask(targetHost, Action.Register, info, null, true) {
                     public HttpResponse<Void> execute() {
                         return replicationClient.register(info);
                     }
@@ -150,7 +157,7 @@ public class PeerEurekaNode {
         long expiryTime = System.currentTimeMillis() + maxProcessingDelayMs;
         batchingDispatcher.process(
                 "cancel#" + id,
-                new InstanceReplicationTask(name, Action.Cancel, appName, id) {
+                new InstanceReplicationTask(targetHost, Action.Cancel, appName, id) {
                     @Override
                     public HttpResponse<Void> execute() {
                         return replicationClient.cancel(appName, id);
@@ -191,7 +198,7 @@ public class PeerEurekaNode {
             replicationClient.sendHeartBeat(appName, id, info, overriddenStatus);
             return;
         }
-        ReplicationTask replicationTask = new InstanceReplicationTask(name, Action.Heartbeat, info, overriddenStatus, false) {
+        ReplicationTask replicationTask = new InstanceReplicationTask(targetHost, Action.Heartbeat, info, overriddenStatus, false) {
             @Override
             public HttpResponse<InstanceInfo> execute() throws Throwable {
                 return replicationClient.sendHeartBeat(appName, id, info, overriddenStatus);
@@ -236,7 +243,7 @@ public class PeerEurekaNode {
         long expiryTime = System.currentTimeMillis() + maxProcessingDelayMs;
         nonBatchingDispatcher.process(
                 asgName,
-                new AsgReplicationTask(name, Action.StatusUpdate, asgName, newStatus) {
+                new AsgReplicationTask(targetHost, Action.StatusUpdate, asgName, newStatus) {
                     public HttpResponse<?> execute() {
                         return replicationClient.statusUpdate(asgName, newStatus);
                     }
@@ -263,7 +270,7 @@ public class PeerEurekaNode {
         long expiryTime = System.currentTimeMillis() + maxProcessingDelayMs;
         batchingDispatcher.process(
                 "statusUpdate#" + id,
-                new InstanceReplicationTask(name, Action.StatusUpdate, info, null, false) {
+                new InstanceReplicationTask(targetHost, Action.StatusUpdate, info, null, false) {
                     @Override
                     public HttpResponse<Void> execute() {
                         return replicationClient.statusUpdate(appName, id, newStatus, info);
@@ -287,7 +294,7 @@ public class PeerEurekaNode {
         long expiryTime = System.currentTimeMillis() + maxProcessingDelayMs;
         batchingDispatcher.process(
                 "statusUpdate#" + id,
-                new InstanceReplicationTask(name, Action.DeleteStatusOverride, info, null, false) {
+                new InstanceReplicationTask(targetHost, Action.DeleteStatusOverride, info, null, false) {
                     @Override
                     public HttpResponse<Void> execute() {
                         return replicationClient.deleteStatusOverride(appName, id, info);
@@ -371,6 +378,6 @@ public class PeerEurekaNode {
         } catch (MalformedURLException e1) {
             batcherName = serviceUrl;
         }
-        return batcherName;
+        return "target_" + batcherName;
     }
 }
