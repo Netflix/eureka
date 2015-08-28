@@ -35,6 +35,7 @@ import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.discovery.converters.Auto;
 import com.netflix.discovery.converters.EurekaJacksonCodec.InstanceInfoSerializer;
 import com.netflix.discovery.provider.Serializer;
+import com.netflix.discovery.util.StringCache;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import org.slf4j.Logger;
@@ -155,8 +156,8 @@ public class InstanceInfo {
             @JsonProperty("lastDirtyTimestamp") Long lastDirtyTimestamp,
             @JsonProperty("actionType") ActionType actionType,
             @JsonProperty("asgName") String asgName) {
-        this.appName = appName;
-        this.appGroupName = appGroupName;
+        this.appName = StringCache.intern(appName);
+        this.appGroupName = StringCache.intern(appGroupName);
         this.ipAddr = ipAddr;
         this.sid = sid;
         this.port = port;
@@ -167,8 +168,8 @@ public class InstanceInfo {
         this.statusPageUrl = statusPageUrl;
         this.healthCheckUrl = healthCheckUrl;
         this.secureHealthCheckUrl = secureHealthCheckUrl;
-        this.vipAddress = vipAddress;
-        this.secureVipAddress = secureVipAddress;
+        this.vipAddress = StringCache.intern(vipAddress);
+        this.secureVipAddress = StringCache.intern(secureVipAddress);
         this.countryId = countryId;
         this.dataCenterInfo = dataCenterInfo;
         this.hostName = hostName;
@@ -179,7 +180,7 @@ public class InstanceInfo {
         this.lastUpdatedTimestamp = lastUpdatedTimestamp;
         this.lastDirtyTimestamp = lastDirtyTimestamp;
         this.actionType = actionType;
-        this.asgName = asgName;
+        this.asgName = StringCache.intern(asgName);
 
         // for compatibility
         if (metadata == null) {
@@ -348,11 +349,7 @@ public class InstanceInfo {
          * @return the instance info builder.
          */
         public Builder setAppName(String appName) {
-            if (appName != null) {
-                result.appName = appName.toUpperCase(Locale.ROOT);
-            } else {
-                result.appName = null;
-            }
+            result.appName = StringCache.intern(appName.toUpperCase(Locale.ROOT));
             return this;
         }
 
@@ -642,8 +639,8 @@ public class InstanceInfo {
          * @return the instance builder.
          */
         public Builder setVIPAddress(String vipAddress) {
-            result.vipAddressUnresolved = vipAddress;
-            result.vipAddress = resolveDeploymentContextBasedVipAddresses(vipAddress);
+            result.vipAddressUnresolved = StringCache.intern(vipAddress);
+            result.vipAddress = StringCache.intern(resolveDeploymentContextBasedVipAddresses(vipAddress));
             return this;
         }
 
@@ -651,7 +648,7 @@ public class InstanceInfo {
          * Setter used during deserialization process, that does not do macro expansion on the provided value.
          */
         public Builder setVIPAddressDeser(String vipAddress) {
-            result.vipAddress = vipAddress;
+            result.vipAddress = StringCache.intern(vipAddress);
             return this;
         }
 
@@ -667,8 +664,8 @@ public class InstanceInfo {
          * @return - Builder instance
          */
         public Builder setSecureVIPAddress(String secureVIPAddress) {
-            result.secureVipAddressUnresolved = secureVIPAddress;
-            result.secureVipAddress = resolveDeploymentContextBasedVipAddresses(secureVIPAddress);
+            result.secureVipAddressUnresolved = StringCache.intern(secureVIPAddress);
+            result.secureVipAddress = StringCache.intern(resolveDeploymentContextBasedVipAddresses(secureVIPAddress));
             return this;
         }
 
@@ -676,7 +673,7 @@ public class InstanceInfo {
          * Setter used during deserialization process, that does not do macro expansion on the provided value.
          */
         public Builder setSecureVIPAddressDeser(String secureVIPAddress) {
-            result.secureVipAddress = secureVIPAddress;
+            result.secureVipAddress = StringCache.intern(secureVIPAddress);
             return this;
         }
 
@@ -764,7 +761,7 @@ public class InstanceInfo {
          * @return the instance info builder.
          */
         public Builder setASGName(String asgName) {
-            result.asgName = asgName;
+            result.asgName = StringCache.intern(asgName);
             return this;
         }
 

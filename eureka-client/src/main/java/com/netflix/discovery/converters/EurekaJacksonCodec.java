@@ -40,6 +40,7 @@ import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.util.StringCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,7 +99,6 @@ public class EurekaJacksonCodec {
     private final String versionDeltaKey;
     private final String appHashCodeKey;
 
-    private final StringCache cache = new StringCache();
     private final ObjectMapper mapper;
 
     private final Map<Class<?>, ObjectReader> objectReaderByClass;
@@ -117,10 +117,10 @@ public class EurekaJacksonCodec {
         module.addSerializer(Application.class, new ApplicationSerializer());
         module.addSerializer(Applications.class, new ApplicationsSerializer(this.versionDeltaKey, this.appHashCodeKey));
 
-        module.addDeserializer(DataCenterInfo.class, new DataCenterInfoDeserializer(cache));
+        module.addDeserializer(DataCenterInfo.class, new DataCenterInfoDeserializer());
         module.addDeserializer(LeaseInfo.class, new LeaseInfoDeserializer());
-        module.addDeserializer(InstanceInfo.class, new InstanceInfoDeserializer(this.mapper, cache));
-        module.addDeserializer(Application.class, new ApplicationDeserializer(this.mapper, cache));
+        module.addDeserializer(InstanceInfo.class, new InstanceInfoDeserializer(this.mapper));
+        module.addDeserializer(Application.class, new ApplicationDeserializer(this.mapper));
         module.addDeserializer(Applications.class, new ApplicationsDeserializer(this.mapper, this.versionDeltaKey, this.appHashCodeKey));
 
         this.mapper.registerModule(module);
@@ -148,10 +148,6 @@ public class EurekaJacksonCodec {
 
     protected String getAppHashCodeKey() {
         return appHashCodeKey;
-    }
-
-    protected StringCache getCache() {
-        return cache;
     }
 
     protected static String formatKey(String keyTemplate) {
@@ -249,12 +245,6 @@ public class EurekaJacksonCodec {
 
     public static class DataCenterInfoDeserializer extends JsonDeserializer<DataCenterInfo> {
 
-        protected StringCache cache;
-
-        public DataCenterInfoDeserializer(StringCache cache) {
-            this.cache = cache;
-        }
-
         @Override
         public DataCenterInfo deserialize(JsonParser jp, DeserializationContext context) throws IOException {
             JsonNode node = jp.getCodec().readTree(jp);
@@ -274,7 +264,7 @@ public class EurekaJacksonCodec {
             while (metaNamesIt.hasNext()) {
                 String key = metaNamesIt.next();
                 String value = metaNode.get(key).asText();
-                metaData.put(cache.cachedValueOf(key), cache.cachedValueOf(value));
+                metaData.put(StringCache.intern(key), StringCache.intern(value));
             }
 
             AmazonInfo amazonInfo = new AmazonInfo();
@@ -400,11 +390,9 @@ public class EurekaJacksonCodec {
 
     public static class InstanceInfoDeserializer extends JsonDeserializer<InstanceInfo> {
         protected ObjectMapper mapper;
-        protected final StringCache cache;
 
-        protected InstanceInfoDeserializer(ObjectMapper mapper, StringCache cache) {
+        protected InstanceInfoDeserializer(ObjectMapper mapper) {
             this.mapper = mapper;
-            this.cache = cache;
         }
 
         @Override
@@ -429,11 +417,11 @@ public class EurekaJacksonCodec {
                     if (ELEM_HOST.equals(fieldName)) {
                         builder.setHostName(fieldNode.asText());
                     } else if (ELEM_APP.equals(fieldName)) {
-                        builder.setAppName(cache.cachedValueOf(fieldNode.asText()));
+                        builder.setAppName(fieldNode.asText());
                     } else if (ELEM_IP.equals(fieldName)) {
                         builder.setIPAddr(fieldNode.asText());
                     } else if (ELEM_SID.equals(fieldName)) {
-                        builder.setSID(cache.cachedValueOf(fieldNode.asText()));
+                        builder.setSID(fieldNode.asText());
                     } else if (ELEM_IDENTIFYING_ATTR.equals(fieldName)) {
                         // nothing;
                     } else if (ELEM_STATUS.equals(fieldName)) {
@@ -460,7 +448,7 @@ public class EurekaJacksonCodec {
                         Map<String, String> meta = null;
                         Iterator<String> metaNameIt = fieldNode.fieldNames();
                         while (metaNameIt.hasNext()) {
-                            String key = cache.cachedValueOf(metaNameIt.next());
+                            String key = StringCache.intern(metaNameIt.next());
                             if (key.equals("@class")) { // For backwards compatibility
                                 if (meta == null && !metaNameIt.hasNext()) { // Optimize for empty maps
                                     meta = Collections.emptyMap();
@@ -469,7 +457,7 @@ public class EurekaJacksonCodec {
                                 if (meta == null) {
                                     meta = new ConcurrentHashMap<String, String>();
                                 }
-                                String value = cache.cachedValueOf(fieldNode.get(key).asText());
+                                String value = StringCache.intern(fieldNode.get(key).asText());
                                 meta.put(key, value);
                             }
                         }
@@ -560,19 +548,16 @@ public class EurekaJacksonCodec {
     public static class ApplicationDeserializer extends JsonDeserializer<Application> {
 
         protected ObjectMapper mapper;
-        protected StringCache cache;
 
-        public ApplicationDeserializer(ObjectMapper mapper, StringCache cache) {
+        public ApplicationDeserializer(ObjectMapper mapper) {
             this.mapper = mapper;
-            this.cache = cache;
         }
 
         @Override
         public Application deserialize(JsonParser jp, DeserializationContext context) throws IOException {
             JsonNode node = jp.getCodec().readTree(jp);
 
-            String name = cache.cachedValueOf(node.get(ELEM_NAME).asText());
-            Application application = new Application(name);
+            Application application = new Application(node.get(ELEM_NAME).asText());
 
             JsonNode instanceNode = node.get(ELEM_INSTANCE);
             if (instanceNode != null) {

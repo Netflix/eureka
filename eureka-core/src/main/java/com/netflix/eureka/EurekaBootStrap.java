@@ -33,7 +33,6 @@ import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.converters.JsonXStream;
-import com.netflix.discovery.converters.StringCache;
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.eureka.util.EIPManager;
@@ -76,8 +75,6 @@ public class EurekaBootStrap implements ServletContextListener {
     private static final int EIP_BIND_SLEEP_TIME_MS = 1000;
     private static final Timer timer = new Timer("Eureka-EIPBinder", true);
 
-    private final StringCache stringCache = new StringCache();
-
     /**
      * Initializes Eureka, including syncing up with other Eureka peers and publishing the registry.
      *
@@ -90,10 +87,10 @@ public class EurekaBootStrap implements ServletContextListener {
 
             // For backward compatibility
             JsonXStream.getInstance().registerConverter(
-                    new V1AwareInstanceInfoConverter(stringCache),
+                    new V1AwareInstanceInfoConverter(),
                     XStream.PRIORITY_VERY_HIGH);
             XmlXStream.getInstance().registerConverter(
-                    new V1AwareInstanceInfoConverter(stringCache),
+                    new V1AwareInstanceInfoConverter(),
                     XStream.PRIORITY_VERY_HIGH);
             InstanceInfo info = ApplicationInfoManager.getInstance().getInfo();
 

@@ -34,6 +34,7 @@ import com.netflix.appinfo.InstanceInfo.PortType;
 import com.netflix.appinfo.LeaseInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.util.StringCache;
 import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.Monitors;
 import com.thoughtworks.xstream.converters.Converter;
@@ -64,17 +65,15 @@ import org.slf4j.LoggerFactory;
  */
 public final class Converters {
     private static final String UNMARSHAL_ERROR = "UNMARSHAL_ERROR";
-    private static final Counter UNMARSHALL_ERROR_COUNTER = Monitors
-            .newCounter(UNMARSHAL_ERROR);
     public static final String NODE_LEASE = "leaseInfo";
     public static final String NODE_METADATA = "metadata";
     public static final String NODE_DATACENTER = "dataCenterInfo";
     public static final String NODE_INSTANCE = "instance";
     public static final String NODE_APP = "application";
-    public static final String NODE_APPS = "applications";
 
-    private static final Logger logger = LoggerFactory
-            .getLogger(Converters.class);
+    private static final Logger logger = LoggerFactory.getLogger(Converters.class);
+
+    private static final Counter UNMARSHALL_ERROR_COUNTER = Monitors.newCounter(UNMARSHAL_ERROR);
 
     /**
      * Serialize/deserialize {@link Applications} object types.
@@ -158,11 +157,6 @@ public final class Converters {
     public static class ApplicationConverter implements Converter {
 
         private static final String ELEM_NAME = "name";
-        private final StringCache cache;
-
-        public ApplicationConverter(StringCache cache) {
-            this.cache = cache;
-        }
 
         /*
          * (non-Javadoc)
@@ -218,7 +212,7 @@ public final class Converters {
                 String nodeName = reader.getNodeName();
 
                 if (ELEM_NAME.equals(nodeName)) {
-                    app.setName(cache.cachedValueOf(reader.getValue()));
+                    app.setName(reader.getValue());
                 } else if (NODE_INSTANCE.equals(nodeName)) {
                     app.addInstance((InstanceInfo) context.convertAnother(app,
                             InstanceInfo.class));
@@ -245,12 +239,6 @@ public final class Converters {
         private static final String ELEM_COUNTRY_ID = "countryId";
         private static final String ELEM_IDENTIFYING_ATTR = "identifyingAttribute";
         private static final String ATTR_ENABLED = "enabled";
-
-        private final StringCache cache;
-
-        public InstanceInfoConverter(StringCache cache) {
-            this.cache = cache;
-        }
 
         /*
          * (non-Javadoc)
@@ -378,11 +366,11 @@ public final class Converters {
                 if (ELEM_HOST.equals(nodeName)) {
                     builder.setHostName(reader.getValue());
                 } else if (ELEM_APP.equals(nodeName)) {
-                    builder.setAppName(cache.cachedValueOf(reader.getValue()));
+                    builder.setAppName(reader.getValue());
                 } else if (ELEM_IP.equals(nodeName)) {
                     builder.setIPAddr(reader.getValue());
                 } else if (ELEM_SID.equals(nodeName)) {
-                    builder.setSID(cache.cachedValueOf(reader.getValue()));
+                    builder.setSID(reader.getValue());
                 } else if (ELEM_IDENTIFYING_ATTR.equals(nodeName)) {
                     // nothing;
                 } else if (ELEM_STATUS.equals(nodeName)) {
@@ -431,11 +419,6 @@ public final class Converters {
     public static class DataCenterInfoConverter implements Converter {
 
         private static final String ELEM_NAME = "name";
-        private final StringCache cache;
-
-        public DataCenterInfoConverter(StringCache cache) {
-            this.cache = cache;
-        }
 
         /*
          * (non-Javadoc)
@@ -518,7 +501,7 @@ public final class Converters {
                                 .convertAnother(info, Map.class);
                         Map<String, String> metadataMapInter = new HashMap<String, String>(metadataMap.size());
                         for (Map.Entry<String, String> entry : metadataMap.entrySet()) {
-                            metadataMapInter.put(cache.cachedValueOf(entry.getKey()), cache.cachedValueOf(entry.getValue()));
+                            metadataMapInter.put(StringCache.intern(entry.getKey()), StringCache.intern(entry.getValue()));
                         }
                         ((AmazonInfo) info).setMetadata(metadataMapInter);
                     }
@@ -648,12 +631,6 @@ public final class Converters {
      */
     public static class MetadataConverter implements Converter {
 
-        private final StringCache cache;
-
-        public MetadataConverter(StringCache cache) {
-            this.cache = cache;
-        }
-
         /*
          * (non-Javadoc)
          *
@@ -718,7 +695,7 @@ public final class Converters {
                 String value = reader.getValue();
                 reader.moveUp();
 
-                map.put(cache.cachedValueOf(key), cache.cachedValueOf(value));
+                map.put(StringCache.intern(key), value);
             }
             return map;
         }

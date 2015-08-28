@@ -37,6 +37,7 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.InstanceRegionChecker;
 import com.netflix.discovery.provider.Serializer;
+import com.netflix.discovery.util.StringCache;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamImplicit;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
@@ -79,7 +80,7 @@ public class Application {
     }
 
     public Application(String name) {
-        this.name = name;
+        this.name = StringCache.intern(name);
         instancesMap = new ConcurrentHashMap<String, InstanceInfo>();
         instances = new LinkedHashSet<InstanceInfo>();
     }
@@ -179,7 +180,7 @@ public class Application {
      *            the name of the application.
      */
     public void setName(String name) {
-        this.name = name;
+        this.name = StringCache.intern(name);
     }
 
     /**

@@ -8,6 +8,7 @@ import java.util.Set;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.DataCenterInfo.Name;
+import com.netflix.discovery.util.StringCache;
 
 /**
  * Amazon instance info builder that is doing key names interning, together with
@@ -48,7 +49,7 @@ public class StringInterningAmazonInfoBuilder {
             String key = entry.getKey().intern();
             String value = entry.getValue();
             if (VALUE_INTERN_KEYS.contains(key)) {
-                value = value.intern();
+                value = StringCache.intern(value);
             }
             this.metadata.put(key, value);
         }
