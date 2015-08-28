@@ -52,13 +52,13 @@ class TrafficShaper {
         }
         long now = System.currentTimeMillis();
         if (now - lastCongestionError < congestionRetryDelayMs) {
-            return now - congestionRetryDelayMs;
+            return congestionRetryDelayMs - (now - lastCongestionError);
         } else {
             lastCongestionError = -1;
         }
 
         if (now - lastNetworkFailure < networkFailureRetryMs) {
-            return now - networkFailureRetryMs;
+            return networkFailureRetryMs - (now - lastNetworkFailure);
         }
         lastNetworkFailure = -1;
         return 0;

@@ -251,6 +251,8 @@ class AcceptorExecutor<ID, T> {
             TaskHolder<ID, T> previousTask = pendingTasks.put(taskHolder.getId(), taskHolder);
             if (previousTask == null) {
                 processingOrder.add(taskHolder.getId());
+            } else {
+                overriddenTasks++;
             }
         }
 
