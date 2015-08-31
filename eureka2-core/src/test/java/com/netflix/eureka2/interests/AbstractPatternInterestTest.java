@@ -32,5 +32,10 @@ public class AbstractPatternInterestTest {
         protected String getValue(String data) {
             return data;
         }
+
+        @Override
+        public boolean isAtomicInterest() {
+            return true;
+        }
     }
 }

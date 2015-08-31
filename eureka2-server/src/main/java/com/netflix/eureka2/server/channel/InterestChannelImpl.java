@@ -21,6 +21,7 @@ import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.utils.rx.LoggingSubscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -40,54 +41,62 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
 
     private static final Logger logger = LoggerFactory.getLogger(InterestChannelImpl.class);
 
+    private final Subscriber<Void> channelSubscriber;
     private final Source selfSource;
     private final ServerInterestChannelMetrics metrics;
 
+    private final EurekaRegistryView<InstanceInfo> registryView;
     private final InterestNotificationMultiplexer notificationMultiplexer;
     private final ChannelSubscriptionMonitor channelSubscriptionMonitor;
 
     public InterestChannelImpl(final EurekaRegistryView<InstanceInfo> registry, final MessageConnection transport, final ServerInterestChannelMetrics metrics) {
         super(STATE.Idle, transport, metrics);
         this.metrics = metrics;
+        this.registryView = registry;
         this.notificationMultiplexer = new InterestNotificationMultiplexer(registry);
         this.channelSubscriptionMonitor = new ChannelSubscriptionMonitor(metrics);
         this.selfSource = new Source(Source.Origin.INTERESTED, "serverInterestChannel");
+        this.channelSubscriber = new LoggingSubscriber<>(logger);
 
-        subscribeToTransportInput(new Action1<Object>() {
-            @Override
-            public void call(Object message) {
-                /**
-                 * Since, it is guaranteed that the messages on a connection are strictly sequential (single threaded
-                 * invocation), we do not need to worry about thread safety here and hence we can safely do a
-                 * isRegistered -> register kind of actions without worrying about race conditions.
-                 */
-                if (message instanceof InterestRegistration) {
-                    Interest<InstanceInfo> interest = ((InterestRegistration) message).toComposite();
-                    switch (state.get()) {
-                        case Idle:
-                        case Open:
-                            change(interest);
-                            break;
-                        case Closed:
-                            sendErrorOnTransport(CHANNEL_CLOSED_EXCEPTION);
-                            break;
+        connectInputToLifecycle(transport.incoming())
+                .doOnNext(new Action1<Object>() {
+                    @Override
+                    public void call(Object message) {
+                        /**
+                         * Since, it is guaranteed that the messages on a connection are strictly sequential (single threaded
+                         * invocation), we do not need to worry about thread safety here and hence we can safely do a
+                         * isRegistered -> register kind of actions without worrying about race conditions.
+                         */
+                        if (message instanceof InterestRegistration) {
+                            Interest<InstanceInfo> interest = ((InterestRegistration) message).toComposite();
+                            switch (state.get()) {
+                                case Idle:
+                                case Open:
+                                    change(interest);
+                                    break;
+                                case Closed:
+                                    sendErrorOnTransport(CHANNEL_CLOSED_EXCEPTION);
+                                    break;
+                            }
+                        } else if (message instanceof UnregisterInterestSet) {
+                            switch (state.get()) {
+                                case Idle:
+                                case Open:
+                                    change(Interests.forNone());  // best effort acknowledge back
+                                    close();
+                                    break;
+                                case Closed:
+                                    sendErrorOnTransport(CHANNEL_CLOSED_EXCEPTION);
+                                    break;
+                            }
+                        } else {
+                            sendErrorOnTransport(new EurekaProtocolError("Unexpected message " + message));
+                        }
                     }
-                } else if (message instanceof UnregisterInterestSet) {
-                    switch (state.get()) {
-                        case Idle:
-                        case Open:
-                            change(Interests.forNone());  // best effort acknowledge back
-                            close();
-                            break;
-                        case Closed:
-                            sendErrorOnTransport(CHANNEL_CLOSED_EXCEPTION);
-                            break;
-                    }
-                } else {
-                    sendErrorOnTransport(new EurekaProtocolError("Unexpected message " + message));
-                }
-            }
-        });
+                })
+                .ignoreElements()
+                .cast(Void.class)
+                .subscribe(channelSubscriber);
     }
 
     @Override
@@ -197,6 +206,7 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
     @Override
     public void _close() {
         if (moveToState(STATE.Open, STATE.Closed)) {
+            channelSubscriber.unsubscribe();
             channelSubscriptionMonitor.update(Interests.forNone());
             notificationMultiplexer.unregister();
             super._close(); // Shutdown the transport

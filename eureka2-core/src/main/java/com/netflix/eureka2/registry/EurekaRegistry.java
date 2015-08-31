@@ -16,16 +16,17 @@
 
 package com.netflix.eureka2.registry;
 
+import com.netflix.eureka2.EurekaCloseable;
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.registry.data.MultiSourcedDataHolder;
 import rx.Observable;
 
 /**
- * Interface for eureka registries that contain a notion of data source
- *
- * @author Tomasz Bak
+ * @author David Liu
  */
-public interface SourcedEurekaRegistry<T> extends EurekaRegistrationProcessor<T>, EurekaRegistryView<T> {
+public interface EurekaRegistry<T> extends EurekaRegistryView<T>, Sourced, EurekaCloseable {
 
-    int size();
+    Observable<Void> connect(Source source, Observable<ChangeNotification<T>> registrationUpdates);
 
     /**
      * Evict all registry info for all sources that matches the matcher
@@ -33,13 +34,9 @@ public interface SourcedEurekaRegistry<T> extends EurekaRegistrationProcessor<T>
      */
     Observable<Long> evictAll(Source.SourceMatcher evictionMatcher);
 
-    /**
-     * Evict all registry info for all sources except those that matches the matcher
-     * @return an observable of long denoting the number of holder items touched for the eviction
-     */
-    Observable<Long> evictAllExcept(Source.SourceMatcher retainMatcher);
-
     Observable<? extends MultiSourcedDataHolder<T>> getHolders();
+
+    int size();
 
     @Override
     Observable<Void> shutdown();

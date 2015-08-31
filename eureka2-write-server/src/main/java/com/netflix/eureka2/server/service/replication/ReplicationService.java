@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.WriteServerConfig;
@@ -53,7 +53,7 @@ public class ReplicationService {
 
     private final AtomicReference<STATE> state = new AtomicReference<>(STATE.Idle);
     private final WriteServerConfig config;
-    private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry;
+    private final EurekaRegistry<InstanceInfo> eurekaRegistry;
     private final SelfInfoResolver selfInfoResolver;
     private final ReplicationPeerAddressesProvider peerAddressesProvider;
     private final WriteServerMetricFactory metricFactory;
@@ -65,7 +65,7 @@ public class ReplicationService {
 
     @Inject
     public ReplicationService(WriteServerConfig config,
-                              SourcedEurekaRegistry eurekaRegistry,
+                              EurekaRegistry eurekaRegistry,
                               SelfInfoResolver selfInfoResolver,
                               ReplicationPeerAddressesProvider peerAddressesProvider,
                               WriteServerMetricFactory metricFactory) {

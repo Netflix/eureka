@@ -8,11 +8,13 @@ import java.util.concurrent.TimeUnit;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.data.toplogy.ServiceTopologyGenerator;
 import com.netflix.eureka2.data.toplogy.TopologyDataProviders;
+import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.interests.SourcedChangeNotification;
+import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Source.Origin;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.InterestChannelImpl;
 import org.apache.commons.cli.CommandLine;
@@ -26,8 +28,10 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
+import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.subjects.PublishSubject;
 
 import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
 import static com.netflix.eureka2.metric.server.EurekaServerMetricFactory.serverMetrics;
@@ -47,7 +51,7 @@ public class ServerInterestPerf {
     private final ConcurrentLinkedQueue<InstanceInfo> servicePool;
     private final Iterator<Interest<InstanceInfo>> clientInterestIt;
 
-    private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry = new SourcedEurekaRegistryImpl(registryMetrics());
+    private final EurekaRegistry<InstanceInfo> eurekaRegistry = new EurekaRegistryImpl(registryMetrics());
 
     private final PerformanceScoreBoard scoreBoard = new PerformanceScoreBoard();
     private final Configuration config;
@@ -98,51 +102,54 @@ public class ServerInterestPerf {
         });
     }
 
-    private Observable<Void> registerBatchOfInstances(Queue<InstanceInfo> activeRegistrationsQueue, Source source, long batchSize) {
-        Observable<Void> result = null;
-        for (int i = 0; i < batchSize; i++) {
-            InstanceInfo instanceInfo = servicePool.poll();
-            if (instanceInfo == null) {
-                logger.warn("Run out of available instance info objects");
-                return result == null ? Observable.<Void>empty() : result;
-            }
-            logger.info("Registered instance {}", instanceInfo.getId());
+    private Observable<Void> registerBatchOfInstances(final Queue<InstanceInfo> activeRegistrationsQueue, final Source source, final long batchSize) {
+        final PublishSubject<ChangeNotification<InstanceInfo>> instanceSubject = PublishSubject.create();
+        return eurekaRegistry.connect(source, instanceSubject)
+                .doOnSubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        for (int i = 0; i < batchSize; i++) {
+                            InstanceInfo instanceInfo = servicePool.poll();
+                            if (instanceInfo == null) {
+                                logger.warn("Run out of available instance info objects");
+                                break;
+                            }
+                            logger.info("Registered instance {}", instanceInfo.getId());
 
-            scoreBoard.processedRegistrationIncrement();
-            scoreBoard.setRegistrySize(eurekaRegistry.size());
+                            scoreBoard.processedRegistrationIncrement();
+                            scoreBoard.setRegistrySize(eurekaRegistry.size());
 
-            activeRegistrationsQueue.add(instanceInfo);
-            Observable<Void> registrationResult = eurekaRegistry.register(instanceInfo, source).ignoreElements().cast(Void.class);
-            if (result == null) {
-                result = registrationResult;
-            } else {
-                result = result.concatWith(registrationResult);
-            }
-        }
-        return result;
+                            activeRegistrationsQueue.add(instanceInfo);
+                            instanceSubject.onNext(new SourcedChangeNotification<>(ChangeNotification.Kind.Add, instanceInfo, source));
+                        }
+
+                    }
+                });
     }
 
-    private Observable<Void> unregisterBatchOfInstances(Queue<InstanceInfo> activeRegistrationsQueue, Source source, long batchSize) {
-        Observable<Void> result = null;
-        for (int i = 0; i < batchSize && eurekaRegistry.size() > config.getTargetRegistryLevel(); i++) {
-            InstanceInfo instanceInfo = activeRegistrationsQueue.poll();
-            if (instanceInfo == null) {
-                return result == null ? Observable.<Void>empty() : result;
-            }
-            logger.info("Unregistered instance {}", instanceInfo.getId());
+    private Observable<Void> unregisterBatchOfInstances(final Queue<InstanceInfo> activeRegistrationsQueue, final Source source, final long batchSize) {
+        final PublishSubject<ChangeNotification<InstanceInfo>> instanceSubject = PublishSubject.create();
+        return eurekaRegistry.connect(source, instanceSubject)
+                .doOnSubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        for (int i = 0; i < batchSize; i++) {
+                            InstanceInfo instanceInfo = servicePool.poll();
+                            if (instanceInfo == null) {
+                                logger.warn("Run out of available instance info objects");
+                                break;
+                            }
+                            logger.info("Registered instance {}", instanceInfo.getId());
 
-            scoreBoard.processedUnregistrationIncrement();
-            scoreBoard.setRegistrySize(eurekaRegistry.size());
+                            scoreBoard.processedRegistrationIncrement();
+                            scoreBoard.setRegistrySize(eurekaRegistry.size());
 
-            servicePool.add(serviceTopology.replacementFor(instanceInfo));
-            Observable<Void> unregistrationResult = eurekaRegistry.unregister(instanceInfo, source).ignoreElements().cast(Void.class);
-            if (result == null) {
-                result = unregistrationResult;
-            } else {
-                result = result.concatWith(unregistrationResult);
-            }
-        }
-        return result == null ? Observable.<Void>empty() : result;
+                            activeRegistrationsQueue.add(instanceInfo);
+                            instanceSubject.onNext(new SourcedChangeNotification<>(ChangeNotification.Kind.Delete, instanceInfo, source));
+                        }
+
+                    }
+                });
     }
 
     public void startInterestSubscriptions() {

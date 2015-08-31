@@ -54,6 +54,10 @@ public class Source {
         return id;
     }
 
+    public String getOriginNamePair() {
+        return origin.name() + (name == null ? "" : name);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -85,6 +89,9 @@ public class Source {
                 '}';
     }
 
+    /**
+     * @return a matcher that matches the given source exactly (match on origin:name:id). This is the same as equals
+     */
     public static SourceMatcher matcherFor(final Source source) {
         return new SourceMatcher() {
             @Override
@@ -100,6 +107,9 @@ public class Source {
         };
     }
 
+    /**
+     * @return a matcher that matches the given origin
+     */
     public static SourceMatcher matcherFor(final Origin origin) {
         return new SourceMatcher() {
             @Override
@@ -116,6 +126,9 @@ public class Source {
         };
     }
 
+    /**
+     * @return a matcher that matches the given source on origin:name only, but not id
+     */
     public static SourceMatcher matcherFor(final Origin origin, final String name) {
         return new SourceMatcher() {
             @Override

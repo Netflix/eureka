@@ -1,10 +1,11 @@
 package com.netflix.eureka2.registry;
 
+import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import rx.Observable;
-import rx.Observable.OnSubscribe;
-import rx.Subscriber;
+import rx.functions.Action0;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -15,29 +16,17 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 public class EurekaRegistrationProcessorStub implements EurekaRegistrationProcessor<InstanceInfo> {
-
-    private final ExtTestSubscriber<InstanceInfo> registrationUpdateSubscriber = new ExtTestSubscriber<>();
-
-    @Override
-    public Observable<Void> register(String id, final Observable<InstanceInfo> registrationUpdates, Source source) {
-        return Observable.create(new OnSubscribe<Void>() {
-            @Override
-            public void call(Subscriber<? super Void> subscriber) {
-                registrationUpdates.subscribe(registrationUpdateSubscriber);
-                subscriber.onCompleted();
-
-            }
-        });
-    }
+    private final ExtTestSubscriber<ChangeNotification<InstanceInfo>> registrationUpdateSubscriber = new ExtTestSubscriber<>();
 
     @Override
-    public Observable<Boolean> register(InstanceInfo instanceInfo, Source source) {
-        return null;
-    }
-
-    @Override
-    public Observable<Boolean> unregister(InstanceInfo instanceInfo, Source source) {
-        return null;
+    public Observable<Void> connect(String id, Source source, final Observable<ChangeNotification<InstanceInfo>> registrationUpdates) {
+        return Observable.<Void>never()
+                .doOnSubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        registrationUpdates.subscribe(registrationUpdateSubscriber);
+                    }
+                });
     }
 
     @Override
@@ -51,16 +40,24 @@ public class EurekaRegistrationProcessorStub implements EurekaRegistrationProces
     }
 
     public void verifyRegisteredWith(InstanceInfo expected) {
-        InstanceInfo next = registrationUpdateSubscriber.getLatestItem();
+        ChangeNotification<InstanceInfo> notification = registrationUpdateSubscriber.getLatestItem();
+        assertThat(notification.isDataNotification(), is(true));
+        InstanceInfo next = notification.getData();
         assertThat(next, is(notNullValue()));
         assertThat(next, is(equalTo(expected)));
     }
 
-    public void verifyRegistrationActive() {
-        registrationUpdateSubscriber.assertOpen();
-    }
-
     public void verifyRegistrationCompleted() {
         registrationUpdateSubscriber.assertOnCompleted();
+    }
+
+    @Override
+    public Observable<Integer> sizeObservable() {
+        return null;
+    }
+
+    @Override
+    public int size() {
+        return 0;
     }
 }

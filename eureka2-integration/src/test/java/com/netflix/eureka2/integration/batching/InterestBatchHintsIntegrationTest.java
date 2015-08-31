@@ -4,13 +4,8 @@ import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
-import com.netflix.eureka2.client.interest.BatchAwareIndexRegistry;
-import com.netflix.eureka2.client.interest.BatchingRegistry;
-import com.netflix.eureka2.client.interest.BatchingRegistryImpl;
 import com.netflix.eureka2.client.interest.EurekaInterestClientImpl;
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.IndexRegistry;
-import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
@@ -18,9 +13,10 @@ import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.protocol.common.InterestSetNotification;
 import com.netflix.eureka2.protocol.interest.SampleAddInstance;
+import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
-import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.transport.MessageConnection;
@@ -70,20 +66,13 @@ public class InterestBatchHintsIntegrationTest extends AbstractBatchHintsIntegra
     private ClientChannelFactory<InterestChannel> channelFactory;
     private List<InterestChannel> createdInterestChannels;
 
-    private SourcedEurekaRegistryImpl registry;
-    private BatchingRegistry<InstanceInfo> remoteBatchingRegistry;
-    private IndexRegistry<InstanceInfo> localIndexRegistry;
-    private IndexRegistry<InstanceInfo> compositeIndexRegistry;
+    private EurekaRegistry<InstanceInfo> registry;
     private EurekaInterestClient interestClient;
 
     @Before
     public void setUp() {
         testSubscriber = new ExtTestSubscriber<>();
-        remoteBatchingRegistry = new BatchingRegistryImpl<>();
-        localIndexRegistry = new IndexRegistryImpl<>();
-        compositeIndexRegistry = new BatchAwareIndexRegistry<>(localIndexRegistry, remoteBatchingRegistry);
-
-        registry = spy(new SourcedEurekaRegistryImpl(compositeIndexRegistry, EurekaRegistryMetricFactory.registryMetrics()));
+        registry = spy(new EurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics()));
 
         incomingSubject = ReplaySubject.create();
         serverConnectionLifecycle = ReplaySubject.create();
@@ -100,7 +89,6 @@ public class InterestBatchHintsIntegrationTest extends AbstractBatchHintsIntegra
         final InterestChannelFactory realChannelFactory = new InterestChannelFactory(
                 transport,
                 registry,
-                remoteBatchingRegistry,
                 EurekaClientMetricFactory.clientMetrics()
         );
 

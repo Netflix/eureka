@@ -12,13 +12,18 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.channel.BridgeChannel;
 import com.netflix.eureka2.channel.BridgeChannel.STATE;
+import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.interests.SourcedChangeNotification;
+import com.netflix.eureka2.interests.SourcedStreamStateNotification;
+import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
 import com.netflix.eureka2.metric.server.BridgeChannelMetrics;
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.bridge.InstanceInfoConverter;
 import com.netflix.eureka2.server.bridge.InstanceInfoConverterImpl;
+import com.netflix.eureka2.utils.rx.LoggingSubscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Scheduler;
@@ -26,6 +31,7 @@ import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
+import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 import rx.subjects.Subject;
 
@@ -37,7 +43,7 @@ import rx.subjects.Subject;
 public class BridgeChannelImpl extends AbstractHandlerChannel<STATE> implements BridgeChannel {
     private static final Logger logger = LoggerFactory.getLogger(BridgeChannelImpl.class);
 
-    private final SourcedEurekaRegistry<InstanceInfo> registry;
+    private final EurekaRegistry<InstanceInfo> registry;
     private final DiscoveryClient discoveryClient;
     private final InstanceInfoConverter converter;
     private final BridgeChannelMetrics metrics;
@@ -46,9 +52,14 @@ public class BridgeChannelImpl extends AbstractHandlerChannel<STATE> implements 
     private final Source selfSource;
     private final Scheduler.Worker worker;
 
+    private final PublishSubject<ChangeNotification<InstanceInfo>> bridgeSubject;
+    private final Subscriber<Void> bridgeSubscriber;
     private final Subject<Void, Void> lifecycle;
 
-    public BridgeChannelImpl(SourcedEurekaRegistry<InstanceInfo> registry,
+    private final SourcedStreamStateNotification<InstanceInfo> bufferStart;
+    private final SourcedStreamStateNotification<InstanceInfo> bufferEnd;
+
+    public BridgeChannelImpl(EurekaRegistry<InstanceInfo> registry,
                              DiscoveryClient discoveryClient,
                              int refreshRateSec,
                              InstanceInfo self,
@@ -56,7 +67,7 @@ public class BridgeChannelImpl extends AbstractHandlerChannel<STATE> implements 
         this(registry, discoveryClient, refreshRateSec, self, metrics, Schedulers.io());
     }
 
-    public BridgeChannelImpl(SourcedEurekaRegistry<InstanceInfo> registry,
+    public BridgeChannelImpl(EurekaRegistry<InstanceInfo> registry,
                              DiscoveryClient discoveryClient,
                              int refreshRateSec,
                              InstanceInfo self,
@@ -67,13 +78,18 @@ public class BridgeChannelImpl extends AbstractHandlerChannel<STATE> implements 
         this.discoveryClient = discoveryClient;
         this.refreshRateSec = refreshRateSec;
         this.self = self;
-        this.selfSource = new Source(Source.Origin.LOCAL);
+        this.selfSource = new Source(Source.Origin.REPLICATED, "bridge");
         this.metrics = metrics;
 
         converter = new InstanceInfoConverterImpl();
         worker = scheduler.createWorker();
 
+        bridgeSubscriber = new LoggingSubscriber<>(logger);
+        bridgeSubject = PublishSubject.create();
         lifecycle = ReplaySubject.create();
+
+        bufferStart = new SourcedStreamStateNotification<>(BufferState.BufferStart, Interests.forFullRegistry(), selfSource);
+        bufferEnd = new SourcedStreamStateNotification<>(BufferState.BufferEnd, Interests.forFullRegistry(), selfSource);
     }
 
     @Override
@@ -86,6 +102,9 @@ public class BridgeChannelImpl extends AbstractHandlerChannel<STATE> implements 
         if (!moveToState(STATE.Idle, STATE.Opened)) {
             return;
         }
+
+        registry.connect(selfSource, bridgeSubject).subscribe(bridgeSubscriber);
+
         worker.schedulePeriodically(
                 new Action0() {
                     @Override
@@ -140,26 +159,29 @@ public class BridgeChannelImpl extends AbstractHandlerChannel<STATE> implements 
         final Map<String, InstanceInfo> newSnapshot = new HashMap<>();
 
         List<InstanceInfo> latestV1Instances = getLatestV1Instances();
+
+        bridgeSubject.onNext(bufferStart);
         for (InstanceInfo instanceInfo : latestV1Instances) {
             totalCount.incrementAndGet();
             newSnapshot.put(instanceInfo.getId(), instanceInfo);
             if (currentSnapshot.containsKey(instanceInfo.getId())) {
                 InstanceInfo older = currentSnapshot.get(instanceInfo.getId());
                 if (!older.equals(instanceInfo)) {
-                    registry.register(instanceInfo, selfSource);
+                    bridgeSubject.onNext(new SourcedChangeNotification<>(ChangeNotification.Kind.Add, instanceInfo, selfSource));
                     updateCount.incrementAndGet();
                 }
             } else {
-                registry.register(instanceInfo, selfSource);
+                bridgeSubject.onNext(new SourcedChangeNotification<>(ChangeNotification.Kind.Add, instanceInfo, selfSource));
                 registerCount.incrementAndGet();
             }
         }
 
         currentSnapshot.keySet().removeAll(newSnapshot.keySet());
         for (InstanceInfo instanceInfo : currentSnapshot.values()) {
-            registry.unregister(instanceInfo, selfSource);
+            bridgeSubject.onNext(new SourcedChangeNotification<>(ChangeNotification.Kind.Delete, instanceInfo, selfSource));
             unregisterCount.incrementAndGet();
         }
+        bridgeSubject.onNext(bufferEnd);
 
         logger.info("Finished new round of replication from v1 to v2." +
                         " Total: {}, registers: {}, updates: {}, unregisters: {}",
@@ -184,7 +206,11 @@ public class BridgeChannelImpl extends AbstractHandlerChannel<STATE> implements 
 
     @Override
     protected void _close() {
-        discoveryClient.shutdown();
-        lifecycle.onCompleted();
+        STATE prev = moveToState(STATE.Closed);
+        if (prev != STATE.Closed) {
+            discoveryClient.shutdown();
+            bridgeSubscriber.unsubscribe();
+            lifecycle.onCompleted();
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.netflix.eureka2.server.service.overrides;
 
-import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
@@ -40,18 +41,8 @@ public class CompositeOverridesService implements OverridesService {
     }
 
     @Override
-    public Observable<Void> register(String id, Observable<InstanceInfo> registrationUpdates, Source source) {
-        return head.register(id, registrationUpdates, source);
-    }
-
-    @Override
-    public Observable<Boolean> register(InstanceInfo registrant, Source source) {
-        return head.register(registrant, source);
-    }
-
-    @Override
-    public Observable<Boolean> unregister(InstanceInfo registrant, Source source) {
-        return head.unregister(registrant, source);
+    public Observable<Void> connect(String id, Source source, Observable<ChangeNotification<InstanceInfo>> registrationUpdates) {
+        return head.connect(id, source, registrationUpdates);
     }
 
     @Override
@@ -62,5 +53,15 @@ public class CompositeOverridesService implements OverridesService {
     @Override
     public Observable<Void> shutdown(Throwable cause) {
         return head.shutdown(cause);  // chained
+    }
+
+    @Override
+    public Observable<Integer> sizeObservable() {
+        return null;
+    }
+
+    @Override
+    public int size() {
+        return 0;
     }
 }

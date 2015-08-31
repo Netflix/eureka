@@ -19,7 +19,7 @@ package com.netflix.eureka2.protocol.registration;
 /**
  * @author Tomasz Bak
  */
-public class Unregister {
+public class Unregister implements RegistrationMessage {
 
     public static final Unregister INSTANCE = new Unregister();
 

@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.eureka2.channel.BridgeChannel;
 import com.netflix.eureka2.metric.server.BridgeServerMetricFactory;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.BridgeChannelImpl;
 import com.netflix.eureka2.server.config.BridgeServerConfig;
@@ -28,7 +28,7 @@ public class BridgeService {
     private final BridgeServerConfig config;
     private final SelfInfoResolver selfIdentityService;
     private final BridgeServerMetricFactory metricFactory;
-    private final SourcedEurekaRegistry<InstanceInfo> registry;
+    private final EurekaRegistry<InstanceInfo> registry;
     private final DiscoveryClient discoveryClient;
 
     private final AtomicReference<BridgeChannel> channelRef;
@@ -37,7 +37,7 @@ public class BridgeService {
     public BridgeService(BridgeServerConfig config,
                          SelfInfoResolver selfIdentityService,
                          BridgeServerMetricFactory metricFactory,
-                         SourcedEurekaRegistry registry,
+                         EurekaRegistry registry,
                          DiscoveryClient discoveryClient) {
 
         this.config = config;

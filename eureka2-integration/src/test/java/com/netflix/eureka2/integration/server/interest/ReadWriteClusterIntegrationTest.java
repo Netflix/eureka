@@ -4,7 +4,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.integration.IntegrationTestClassSetup;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
@@ -33,7 +32,7 @@ import static org.hamcrest.Matchers.is;
  * @author David Liu
  */
 @Category(IntegrationTest.class)
-public class ReadWriteClusterIntegrationTest extends IntegrationTestClassSetup {
+public class ReadWriteClusterIntegrationTest {
 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource =

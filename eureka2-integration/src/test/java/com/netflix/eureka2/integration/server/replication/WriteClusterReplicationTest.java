@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
-import com.netflix.eureka2.integration.IntegrationTestClassSetup;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
@@ -38,7 +37,7 @@ import static org.hamcrest.Matchers.is;
  * @author David Liu
  */
 @Category(IntegrationTest.class)
-public class WriteClusterReplicationTest extends IntegrationTestClassSetup {
+public class WriteClusterReplicationTest {
 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(2, 0);

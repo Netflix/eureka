@@ -5,7 +5,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 /**
  * @author David Liu
  */
-public class EmptyRegistryInterest extends Interest<InstanceInfo> {
+public class EmptyRegistryInterest implements Interest<InstanceInfo> {
 
     private static final EmptyRegistryInterest DEFAULT_INSTANCE = new EmptyRegistryInterest();
 
@@ -18,6 +18,11 @@ public class EmptyRegistryInterest extends Interest<InstanceInfo> {
     @Override
     public boolean matches(InstanceInfo data) {
         return false;
+    }
+
+    @Override
+    public boolean isAtomicInterest() {
+        return true;
     }
 
     @Override

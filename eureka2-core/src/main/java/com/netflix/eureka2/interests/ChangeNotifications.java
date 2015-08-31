@@ -74,7 +74,13 @@ public final class ChangeNotifications {
         }
     };
 
+    private static final ChangeNotification[] EMPTY_CHANGE_NOTIFICATIONS = new ChangeNotification[0];
+
     private ChangeNotifications() {
+    }
+
+    public static <T> ChangeNotification<T>[] emptyChangeNotifications() {
+        return EMPTY_CHANGE_NOTIFICATIONS;
     }
 
     public static Identity<InstanceInfo, String> instanceInfoIdentity() {

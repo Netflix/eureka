@@ -4,9 +4,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.metric.StateMachineMetrics;
 import rx.Observable;
-import rx.Subscriber;
+import rx.functions.Action0;
 import rx.functions.Action1;
-import rx.subjects.ReplaySubject;
+import rx.subjects.AsyncSubject;
 import rx.subjects.Subject;
 
 /**
@@ -30,7 +30,7 @@ public abstract class AbstractServiceChannel<STATE extends Enum<STATE>> implemen
         this.metrics = metrics;
         this.state = new AtomicReference<>(initState);
         // Since its of type void there isn't any caching of data. Its just the terminal state that is cached.
-        this.lifecycle = ReplaySubject.create();
+        this.lifecycle = AsyncSubject.create();
     }
 
     @Override
@@ -52,23 +52,20 @@ public abstract class AbstractServiceChannel<STATE extends Enum<STATE>> implemen
 
     protected abstract void _close();
 
-    protected <T> void connectInputToLifecycle(Observable<T> inputObservable, final Action1<T> onNext) {
-        inputObservable.subscribe(new Subscriber<T>() {
-            @Override
-            public void onCompleted() {
-                close();
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                close(e);
-            }
-
-            @Override
-            public void onNext(T message) {
-                onNext.call(message);
-            }
-        });
+    protected <T> Observable<T> connectInputToLifecycle(Observable<T> inputObservable) {
+        return inputObservable
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        close();
+                    }
+                })
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        close(throwable);
+                    }
+                });
     }
 
     protected STATE getState() {
@@ -100,6 +97,8 @@ public abstract class AbstractServiceChannel<STATE extends Enum<STATE>> implemen
             // happen when a connection is established.
             if (from == initState) {
                 metrics.incrementStateCounter(to);
+            } else if (from == to) {
+                // no need for metrics
             } else {
                 metrics.stateTransition(from, to);
                 metrics.incrementStateCounter(to);

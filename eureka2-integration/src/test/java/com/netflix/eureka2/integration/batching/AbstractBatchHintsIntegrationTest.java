@@ -6,9 +6,9 @@ import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.protocol.common.AddInstance;
 import com.netflix.eureka2.protocol.common.InterestSetNotification;
 import com.netflix.eureka2.protocol.common.StreamStateUpdate;
-import com.netflix.eureka2.registry.MultiSourcedDataHolder;
+import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.data.MultiSourcedDataHolder;
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 
 import java.util.ArrayList;
@@ -27,7 +27,7 @@ public abstract class AbstractBatchHintsIntegrationTest {
     // ----- helpers -----
     //
 
-    protected void verifyRegistryContentContainOnlySource(SourcedEurekaRegistry<InstanceInfo> registry, Source source) {
+    protected void verifyRegistryContentContainOnlySource(EurekaRegistry<InstanceInfo> registry, Source source) {
         List<? extends MultiSourcedDataHolder<InstanceInfo>> holders = registry.getHolders().toList().toBlocking().first();
         for (MultiSourcedDataHolder<InstanceInfo> holder : holders) {
             assertThat(holder.getAllSources().size(), is(1));
@@ -35,7 +35,7 @@ public abstract class AbstractBatchHintsIntegrationTest {
         }
     }
 
-    protected void verifyRegistryContentSourceEntries(SourcedEurekaRegistry<InstanceInfo> registry, Source source, int entries) {
+    protected void verifyRegistryContentSourceEntries(EurekaRegistry<InstanceInfo> registry, Source source, int entries) {
         List<? extends MultiSourcedDataHolder<InstanceInfo>> holders = registry.getHolders().toList().toBlocking().first();
         Collection<Source> matches = new ArrayList<>();
         for (MultiSourcedDataHolder<InstanceInfo> holder : holders) {

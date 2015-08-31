@@ -15,6 +15,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import rx.schedulers.Schedulers;
 
+import static com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource.anEurekaDeploymentResource;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -27,7 +28,7 @@ import static org.junit.Assert.assertThat;
 public class LightEurekaInterestClientTest {
 
     @Rule
-    public EurekaDeploymentResource deploymentResource = new EurekaDeploymentResource(1, 0);
+    public EurekaDeploymentResource deploymentResource = anEurekaDeploymentResource(1, 0).build();
 
     private LightEurekaInterestClient lightInterestClient;
 

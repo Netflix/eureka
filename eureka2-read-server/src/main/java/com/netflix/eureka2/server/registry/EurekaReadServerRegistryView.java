@@ -30,14 +30,13 @@ import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 import rx.functions.Func1;
 
 /**
  * Registry implemented on top of eureka-client. It does not story anything, just
- * provides an adapter from {@link EurekaInterestClient} to {@link SourcedEurekaRegistry} interface.
+ * provides an adapter from {@link EurekaInterestClient} to {@link com.netflix.eureka2.registry.EurekaRegistry} interface.
  * Server side {@link InterestChannel} is bound to real registry on write server,
  * and to proxy registry (this class) for read server.
  *

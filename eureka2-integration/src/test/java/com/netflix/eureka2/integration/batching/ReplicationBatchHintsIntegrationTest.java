@@ -3,11 +3,6 @@ package com.netflix.eureka2.integration.batching;
 import java.util.Arrays;
 import java.util.List;
 
-import com.netflix.eureka2.client.interest.BatchAwareIndexRegistry;
-import com.netflix.eureka2.client.interest.BatchingRegistry;
-import com.netflix.eureka2.client.interest.BatchingRegistryImpl;
-import com.netflix.eureka2.interests.IndexRegistry;
-import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
@@ -18,8 +13,9 @@ import com.netflix.eureka2.protocol.common.InterestSetNotification;
 import com.netflix.eureka2.protocol.interest.SampleAddInstance;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
+import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.ReceiverReplicationChannel;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
@@ -50,17 +46,13 @@ public class ReplicationBatchHintsIntegrationTest extends AbstractBatchHintsInte
     private ChannelSet channelSet3;
     private ChannelSet channelSet4;
 
-    private SourcedEurekaRegistryImpl registry;
+    private EurekaRegistry<InstanceInfo> registry;
 
     private TestTcpReplicationHandler handler;
 
     @Before
     public void setUp() {
-        BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new BatchingRegistryImpl<>();
-        IndexRegistry<InstanceInfo> localIndexRegistry = new IndexRegistryImpl<>();
-        IndexRegistry<InstanceInfo> compositeIndexRegistry = new BatchAwareIndexRegistry<>(localIndexRegistry, remoteBatchingRegistry);
-
-        registry = spy(new SourcedEurekaRegistryImpl(compositeIndexRegistry, EurekaRegistryMetricFactory.registryMetrics()));
+        registry = spy(new EurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics()));
 
         channelSet1 = new ChannelSet();
         channelSet2 = new ChannelSet();

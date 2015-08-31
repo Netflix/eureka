@@ -23,7 +23,7 @@ import com.google.inject.Provider;
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
-import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
+import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.server.channel.RegistrationChannelImpl;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.transport.MessageConnection;

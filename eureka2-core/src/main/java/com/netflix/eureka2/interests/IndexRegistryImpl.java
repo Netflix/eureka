@@ -1,6 +1,6 @@
 package com.netflix.eureka2.interests;
 
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import rx.Observable;
 
 import java.util.ArrayList;
@@ -40,7 +40,7 @@ public class IndexRegistryImpl<T> implements IndexRegistry<T> {
 
     @Override
     public Observable<ChangeNotification<T>> forCompositeInterest(
-            MultipleInterests<T> interest, SourcedEurekaRegistry<T> registry
+            MultipleInterests<T> interest, EurekaRegistry<T> registry
     ) {
         List<Observable<ChangeNotification<T>>> indexes = new ArrayList<>();
         for (Interest<T> atomicInterest : interest.flatten()) {

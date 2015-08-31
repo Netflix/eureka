@@ -7,18 +7,14 @@ import com.google.inject.Inject;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
-import com.netflix.eureka2.client.interest.BatchAwareIndexRegistry;
-import com.netflix.eureka2.client.interest.BatchingRegistry;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
-import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
+import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.interest.FullFetchBatchingRegistry;
 import com.netflix.eureka2.server.interest.FullFetchInterestClient;
 
 /**
@@ -46,13 +42,8 @@ public class FullFetchInterestClientProvider implements Provider<FullFetchIntere
     @Override
     public synchronized FullFetchInterestClient get() {
         if (client == null) {
-            BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new FullFetchBatchingRegistry<>();
-            BatchAwareIndexRegistry<InstanceInfo> indexRegistry = new BatchAwareIndexRegistry<>(
-                    new IndexRegistryImpl<InstanceInfo>(), remoteBatchingRegistry);
-
+            EurekaRegistry<InstanceInfo> registry = new EurekaRegistryImpl(registryMetricFactory);
             BasicEurekaTransportConfig transportConfig = new BasicEurekaTransportConfig.Builder().build();
-
-            SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(indexRegistry, registryMetricFactory);
             ServerResolver discoveryResolver = WriteClusterResolver.createInterestResolver(config.getEurekaClusterDiscovery());
 
             ClientChannelFactory<InterestChannel> channelFactory = new InterestChannelFactory(
@@ -60,7 +51,6 @@ public class FullFetchInterestClientProvider implements Provider<FullFetchIntere
                     transportConfig,
                     discoveryResolver,
                     registry,
-                    remoteBatchingRegistry,
                     clientMetricFactory
             );
 

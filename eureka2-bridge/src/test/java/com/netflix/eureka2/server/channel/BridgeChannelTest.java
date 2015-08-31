@@ -2,6 +2,7 @@ package com.netflix.eureka2.server.channel;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -11,12 +12,15 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.channel.BridgeChannel;
 import com.netflix.eureka2.channel.BridgeChannel.STATE;
+import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.noop.NoOpEurekaRegistryMetrics;
 import com.netflix.eureka2.metric.noop.NoOpSerializedTaskInvokerMetrics;
 import com.netflix.eureka2.metric.server.BridgeChannelMetrics;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
+import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistryImpl;
+import com.netflix.eureka2.registry.EurekaRegistryRegistrationStub;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.bridge.InstanceInfoConverter;
 import com.netflix.eureka2.server.bridge.InstanceInfoConverterImpl;
@@ -26,11 +30,21 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
+import rx.Observable;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -40,8 +54,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * @author David Liu
- */
+* FIXME
+*
+* @author David Liu
+*/
 @RunWith(MockitoJUnitRunner.class)
 public class BridgeChannelTest {
 
@@ -59,7 +75,7 @@ public class BridgeChannelTest {
     @Mock
     private Applications mockApplications;
 
-    private SourcedEurekaRegistry<InstanceInfo> registry;
+    private EurekaRegistryRegistrationStub registry;
 
     private TestScheduler testScheduler;
     private BridgeChannel bridgeChannel;
@@ -80,7 +96,7 @@ public class BridgeChannelTest {
             when(registryMetrics.getRegistryTaskInvokerMetrics()).thenReturn(NoOpSerializedTaskInvokerMetrics.INSTANCE);
             when(registryMetrics.getEurekaServerRegistryMetrics()).thenReturn(NoOpEurekaRegistryMetrics.INSTANCE);
 
-            registry = spy(new SourcedEurekaRegistryImpl(registryMetrics));
+            registry = spy(new EurekaRegistryRegistrationStub());
 
             testScheduler = Schedulers.test();
             bridgeChannel = new BridgeChannelImpl(
@@ -111,28 +127,30 @@ public class BridgeChannelTest {
     };
 
     @Test(timeout = 60000)
-    public void testAddThenUpdate() {
+    public void testAddThenUpdate() throws Exception {
         when(mockApplications.getRegisteredApplications())
                 .thenReturn(Arrays.asList(app1t0))
                 .thenReturn(Arrays.asList(app1t1));
 
         bridgeChannel.connect();
         testScheduler.advanceTimeTo(PERIOD - 1, TimeUnit.SECONDS);
-
         InstanceInfo app1t0Info = converter.fromV1(app1t0.getInstances().get(0));
-        verify(registry, times(1)).register(app1t0Info, bridgeChannel.getSource());
-        verify(registry, never()).unregister(any(InstanceInfo.class), eq(bridgeChannel.getSource()));
+
+        assertTrue(registry.getLatest(1, TimeUnit.SECONDS).isStreamStateNotification());  // bufferStart
+        registry.verifyRegisteredWith(app1t0Info);
+        assertTrue(registry.getLatest(1, TimeUnit.SECONDS).isStreamStateNotification());  // bufferEnd
+        registry.setCurrSnapshot(app1t0Info);
 
         testScheduler.advanceTimeTo(PERIOD * 2 - 1, TimeUnit.SECONDS);
-
         InstanceInfo app1t1Info = converter.fromV1(app1t1.getInstances().get(0));
-        verify(registry, times(1)).register(app1t0Info, bridgeChannel.getSource());
-        verify(registry, times(1)).register(app1t1Info, bridgeChannel.getSource());
-        verify(registry, never()).unregister(any(InstanceInfo.class), eq(bridgeChannel.getSource()));
+
+        assertTrue(registry.getLatest(1, TimeUnit.SECONDS).isStreamStateNotification());  // bufferStart
+        registry.verifyRegisteredWith(app1t1Info);
+        assertTrue(registry.getLatest(1, TimeUnit.SECONDS).isStreamStateNotification());  // bufferEnd
     }
 
     @Test(timeout = 60000)
-    public void testAddThenRemove() {
+    public void testAddThenRemove() throws Exception {
         when(mockApplications.getRegisteredApplications())
                 .thenReturn(Arrays.asList(app2t0))
                 .thenReturn(Arrays.asList(app2t1));
@@ -141,21 +159,42 @@ public class BridgeChannelTest {
         testScheduler.advanceTimeTo(PERIOD - 1, TimeUnit.SECONDS);
 
         InstanceInfo app2t0Info = converter.fromV1(app2t0.getInstances().get(0));
-        verify(registry, times(1)).register(app2t0Info, bridgeChannel.getSource());
-        verify(registry, never()).unregister(any(InstanceInfo.class), eq(bridgeChannel.getSource()));
+        assertTrue(registry.getLatest(1, TimeUnit.SECONDS).isStreamStateNotification());  // bufferStart
+        registry.verifyRegisteredWith(app2t0Info);
+        assertTrue(registry.getLatest(1, TimeUnit.SECONDS).isStreamStateNotification());  // bufferEnd
+        registry.setCurrSnapshot(app2t0Info);
 
         testScheduler.advanceTimeTo(PERIOD * 2 - 1, TimeUnit.SECONDS);
-
-        verify(registry, times(1)).register(app2t0Info, bridgeChannel.getSource());
-        verify(registry, times(1)).unregister(app2t0Info, bridgeChannel.getSource());
+        assertTrue(registry.getLatest(1, TimeUnit.SECONDS).isStreamStateNotification());  // bufferStart
+        registry.verifyUnregistered(app2t0Info.getId());
+        assertTrue(registry.getLatest(1, TimeUnit.SECONDS).isStreamStateNotification());  // bufferEnd
+        registry.setCurrSnapshot(app2t0Info);
     }
 
     @Test(timeout = 60000)
     public void testMetrics() throws Exception {
         when(mockApplications.getRegisteredApplications())
-                .thenReturn(Arrays.asList(app1t0))
-                .thenReturn(Arrays.asList(app1t1))
-                .thenReturn(Arrays.asList(app2t1));
+                .thenAnswer(new Answer<List<Application>>() {
+                    @Override
+                    public List<Application> answer(InvocationOnMock invocation) throws Throwable {
+                        registry.setCurrSnapshot(converter.fromV1(app1t0.getInstances().get(0)));
+                        return Arrays.asList(app1t0);
+                    }
+                })
+                .thenAnswer(new Answer<List<Application>>() {
+                    @Override
+                    public List<Application> answer(InvocationOnMock invocation) throws Throwable {
+                        registry.setCurrSnapshot(converter.fromV1(app1t1.getInstances().get(0)));
+                        return Arrays.asList(app1t1);
+                    }
+                })
+                .thenAnswer(new Answer<List<Application>>() {
+                    @Override
+                    public List<Application> answer(InvocationOnMock invocation) throws Throwable {
+                        registry.setCurrSnapshot();  // app2t1 has no instances
+                        return Arrays.asList(app2t1);
+                    }
+                });
 
         // Connect moves to STATE.Opened
         bridgeChannel.connect();

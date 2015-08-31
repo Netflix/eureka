@@ -28,7 +28,7 @@ import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
 import com.netflix.eureka2.protocol.common.AddInstance;
 import com.netflix.eureka2.protocol.interest.InterestRegistration;
 import com.netflix.eureka2.protocol.interest.UnregisterInterestSet;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
@@ -61,7 +61,7 @@ public class TcpInterestHandlerTest {
 
     private final TestScheduler testScheduler = Schedulers.test();
 
-    private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
+    private final EurekaRegistry<InstanceInfo> registry = mock(EurekaRegistry.class);
 
     private final TestableObservableConnection<Object, Object> observableConnection = new TestableObservableConnection<>();
     private final EurekaHealthStatusAggregator systemHealthStatus = mock(EurekaHealthStatusAggregator.class);

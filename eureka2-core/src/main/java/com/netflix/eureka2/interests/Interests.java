@@ -93,6 +93,7 @@ public final class Interests {
         return EmptyRegistryInterest.getInstance();
     }
 
+    @SafeVarargs
     public static Interest<InstanceInfo> forSome(Interest<InstanceInfo>... interests) {
         return new MultipleInterests<>(interests);
     }

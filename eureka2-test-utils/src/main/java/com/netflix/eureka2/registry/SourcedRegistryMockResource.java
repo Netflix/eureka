@@ -24,17 +24,17 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
 /**
- * Provides {@link SourcedEurekaRegistry} mock with a set of helper methods to control it.
+ * Provides {@link EurekaRegistry} mock with a set of helper methods to control it.
  *
  * @author Tomasz Bak
  */
 public class SourcedRegistryMockResource extends ExternalResource {
 
-    private final SourcedEurekaRegistry<InstanceInfo> registry = Mockito.mock(SourcedEurekaRegistry.class);
+    private final EurekaRegistry<InstanceInfo> registry = Mockito.mock(EurekaRegistry.class);
     private volatile ReplaySubject<ChangeNotification<InstanceInfo>> fullRegistrySubject = ReplaySubject.create();
     private final Map<Interest, ReplaySubject<ChangeNotification<InstanceInfo>>> notificationSubjects = new HashMap<>();
 
-    public SourcedEurekaRegistry<InstanceInfo> registry() {
+    public EurekaRegistry<InstanceInfo> registry() {
         return registry;
     }
 

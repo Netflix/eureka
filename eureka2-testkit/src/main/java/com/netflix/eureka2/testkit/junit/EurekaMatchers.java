@@ -1,6 +1,5 @@
 package com.netflix.eureka2.testkit.junit;
 
-import java.util.Arrays;
 import java.util.List;
 
 import com.netflix.eureka2.interests.ChangeNotification;

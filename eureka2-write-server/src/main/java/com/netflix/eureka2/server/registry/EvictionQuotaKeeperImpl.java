@@ -1,14 +1,10 @@
 package com.netflix.eureka2.server.registry;
 
-import javax.inject.Inject;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.config.EurekaRegistryConfig;
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
 import org.slf4j.Logger;
@@ -17,8 +13,6 @@ import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Producer;
 import rx.Subscriber;
-import rx.Subscription;
-import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 import rx.subjects.SerializedSubject;
 import rx.subjects.Subject;
@@ -48,56 +42,44 @@ public class EvictionQuotaKeeperImpl implements EvictionQuotaKeeper {
 
     private static final Logger logger = LoggerFactory.getLogger(EvictionQuotaKeeperImpl.class);
 
-    private final SourcedEurekaRegistry<InstanceInfo> registry;
+    protected final Semaphore quotaRequests = new Semaphore(0);
+
+    private final EurekaRegistrationProcessor<InstanceInfo> registrationProcessor;
     private final EurekaRegistryConfig config;
 
-    private final Semaphore quotaRequests = new Semaphore(0);
-    private final Subject<Long, Long> quotaSubject = new SerializedSubject<>(PublishSubject.<Long>create());
+    private final Subscriber<Integer> sizeSubscriber;
 
-    private final Subscription interestSubscription;
+    private final Subject<Long, Long> quotaSubject = new SerializedSubject<>(PublishSubject.<Long>create());
 
     private final AtomicReference<EvictionState> evictionStateRef = new AtomicReference<>();
 
-    @Inject
-    public EvictionQuotaKeeperImpl(final SourcedEurekaRegistry registry, EurekaRegistryConfig config) {
-        this.registry = registry;
+    public EvictionQuotaKeeperImpl(final EurekaRegistrationProcessor registrationProcessor, EurekaRegistryConfig config) {
+        this.registrationProcessor = registrationProcessor;
         this.config = config;
+        this.sizeSubscriber = new Subscriber<Integer>() {
+            @Override
+            public void onCompleted() {
+                logger.info("Interest subscription completed with onCompleted. Registry updates will no longer be handled");
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                logger.error("Interest subscription completed with an error. Registry updates will no longer be handled", e);
+            }
+
+            @Override
+            public void onNext(Integer registrySize) {
+                evaluate();
+            }
+        };
 
         /**
-         * Registry size change should trigger state evaluation, as it may generate eviction permits.
+         * Size changes of the registration processor should trigger state evaluation, as it may generate eviction permits
          */
-        interestSubscription = this.registry.forInterest(Interests.forFullRegistry())
-                .skipWhile(new Func1<ChangeNotification<InstanceInfo>, Boolean>() {
-                    @Override
-                    public Boolean call(ChangeNotification<InstanceInfo> notification) {
-                        // Skip first snapshot buffer
-                        return notification.isDataNotification();
-                    }
-                })
-                .map(new Func1<ChangeNotification<InstanceInfo>, Integer>() {
-                    @Override
-                    public Integer call(ChangeNotification<InstanceInfo> notification) {
-                        return registry.size();
-                    }
-                })
-                .distinctUntilChanged()
+        this.registrationProcessor.sizeObservable()
                 .retryWhen(new RetryStrategyFunc(30, TimeUnit.SECONDS))
-                .subscribe(new Subscriber<Integer>() {
-                    @Override
-                    public void onCompleted() {
-                        logger.info("Interest subscription completed with onCompleted. Registry updates will no longer be handled");
-                    }
+                .subscribe(sizeSubscriber);
 
-                    @Override
-                    public void onError(Throwable e) {
-                        logger.error("Interest subscription completed with an error. Registry updates will no longer be handled", e);
-                    }
-
-                    @Override
-                    public void onNext(Integer registrySize) {
-                        evaluate();
-                    }
-                });
     }
 
     @Override
@@ -118,7 +100,7 @@ public class EvictionQuotaKeeperImpl implements EvictionQuotaKeeper {
     }
 
     public void shutdown() {
-        interestSubscription.unsubscribe();
+        sizeSubscriber.unsubscribe();
     }
 
     /**
@@ -135,7 +117,7 @@ public class EvictionQuotaKeeperImpl implements EvictionQuotaKeeper {
                 return;
             }
             if (evictionStateRef.get() == null) {
-                evictionStateRef.set(new EvictionState());
+                evictionStateRef.set(new EvictionState(registrationProcessor.size()));
             }
         }
         EvictionState evictionState = evictionStateRef.get();
@@ -149,15 +131,14 @@ public class EvictionQuotaKeeperImpl implements EvictionQuotaKeeper {
      */
     class EvictionState {
         private final int steadyStateRegistrySize;
-        private final int minRegistrySize;
 
-        EvictionState() {
-            this.steadyStateRegistrySize = registry.size();
-            this.minRegistrySize = registry.size() * config.getEvictionAllowedPercentageDrop() / 100;
+        EvictionState(int steadyStateRegistrySize) {
+            this.steadyStateRegistrySize = steadyStateRegistrySize;
         }
 
         public boolean isEvictionAllowed() {
-            return registry.size() > (steadyStateRegistrySize * config.getEvictionAllowedPercentageDrop() / 100);
+            int potentialSize = registrationProcessor.size() - 1;
+            return potentialSize * 100.0 / steadyStateRegistrySize >= (100.0 - config.getEvictionAllowedPercentageDrop());
         }
     }
 }

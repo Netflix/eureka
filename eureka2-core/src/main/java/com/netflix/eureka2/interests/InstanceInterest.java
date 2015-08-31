@@ -21,4 +21,9 @@ public class InstanceInterest extends AbstractPatternInterest<InstanceInfo> {
     protected String getValue(InstanceInfo data) {
         return data.getId();
     }
+
+    @Override
+    public boolean isAtomicInterest() {
+        return true;
+    }
 }

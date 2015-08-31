@@ -1,5 +1,6 @@
 package com.netflix.eureka2.server.service.overrides;
 
+import com.netflix.eureka2.registry.ChangeNotificationObservable;
 import com.netflix.eureka2.registry.EurekaRegistrationProcessorStub;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Source.Origin;
@@ -9,7 +10,6 @@ import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
-import rx.subjects.PublishSubject;
 
 /**
 * @author Tomasz Bak
@@ -24,27 +24,28 @@ public class InstanceStatusOverridesServiceTest {
     private final EurekaRegistrationProcessorStub registrationDelegate = new EurekaRegistrationProcessorStub();
     private final InMemoryStatusOverridesRegistry overridesSource = new InMemoryStatusOverridesRegistry();
     private final InstanceStatusOverridesService overridesService = new InstanceStatusOverridesService(overridesSource);
-    private final PublishSubject<InstanceInfo> registrationSubject = PublishSubject.create();
+
+    private final ChangeNotificationObservable dataStream = ChangeNotificationObservable.create();
 
     @Before
     public void setUp() throws Exception {
         overridesService.addOutboundHandler(registrationDelegate);
-        overridesService.register(FIRST_INSTANCE_INFO.getId(), registrationSubject, SOURCE).subscribe();
+        overridesService.connect(FIRST_INSTANCE_INFO.getId(), SOURCE, dataStream).subscribe();
     }
 
     @Test
     public void testRegistrationPassesThroughIfNoOverridePresent() throws Exception {
         // First registration
-        registrationSubject.onNext(FIRST_INSTANCE_INFO);
+        dataStream.register(FIRST_INSTANCE_INFO);
         registrationDelegate.verifyRegisteredWith(FIRST_INSTANCE_INFO);
 
         // Now update
         InstanceInfo update = new Builder().withInstanceInfo(FIRST_INSTANCE_INFO).withStatus(Status.DOWN).build();
-        registrationSubject.onNext(update);
+        dataStream.register(update);
         registrationDelegate.verifyRegisteredWith(update);
 
         // Now complete
-        registrationSubject.onCompleted();
+        dataStream.onCompleted();
         registrationDelegate.verifyRegistrationCompleted();
     }
 
@@ -54,7 +55,7 @@ public class InstanceStatusOverridesServiceTest {
         InstanceInfo unsetOOS = new Builder().withInstanceInfo(FIRST_INSTANCE_INFO).withStatus(Status.UP).build();
 
         // First registration
-        registrationSubject.onNext(FIRST_INSTANCE_INFO);
+        dataStream.register(FIRST_INSTANCE_INFO);
         overridesSource.setOutOfService(FIRST_INSTANCE_INFO).subscribe();
 
         registrationDelegate.verifyRegisteredWith(setOOS);
