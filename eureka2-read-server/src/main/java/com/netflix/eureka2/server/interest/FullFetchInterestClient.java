@@ -16,11 +16,9 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
-import com.netflix.eureka2.utils.rx.RxFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -84,25 +82,7 @@ public class FullFetchInterestClient extends AbstractInterestClient implements H
         if (isShutdown.get()) {
             return Observable.error(new IllegalStateException("InterestHandler has shutdown"));
         }
-        return registry.forInterest(interest)
-                // convert bufferstart/bufferends to just a single buffersentinel
-                .map(new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
-                    @Override
-                    public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
-                        if (notification.isStreamStateNotification()) {
-                            StreamStateNotification<InstanceInfo> n = (StreamStateNotification) notification;
-                            switch (n.getBufferState()) {
-                                case BufferEnd:
-                                    return ChangeNotification.bufferSentinel();
-                                case BufferStart:
-                                default:
-                                    return null;
-                            }
-                        }
-                        return notification;
-                    }
-                })
-                .filter(RxFunctions.filterNullValuesFunc());
+        return registry.forInterest(interest);
     }
 
     @Override

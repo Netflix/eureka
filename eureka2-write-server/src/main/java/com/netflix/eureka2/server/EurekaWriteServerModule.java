@@ -103,16 +103,6 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
     protected void bindRegistryComponents() {
         bind(EurekaRegistryView.class).to(EurekaRegistry.class);
         bind(EurekaRegistry.class).to(EurekaRegistryImpl.class).asEagerSingleton();
-        /**
-        bind(EurekaRegistry.class)
-                .annotatedWith(Names.named(com.netflix.eureka2.Names.DELEGATE))
-                .to(SourcedEurekaRegistryImpl.class).asEagerSingleton();
-        bind(EurekaRegistrationProcessor.class)
-                .annotatedWith(Names.named(com.netflix.eureka2.Names.REGISTRY))
-                .to(SourcedEurekaRegistryImpl.class);
-        bind(EurekaRegistry.class).to(SourcedEurekaRegistryImpl.class);
-        bind(EurekaRegistryView.class).to(SourcedEurekaRegistryImpl.class);
-         */
     }
 
     protected void bindBootstrapComponents() {

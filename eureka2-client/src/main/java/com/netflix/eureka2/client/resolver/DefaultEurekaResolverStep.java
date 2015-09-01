@@ -119,8 +119,14 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
 
 
         @Override
-        public Observable<Void> connect(Source source, Observable<ChangeNotification<InstanceInfo>> registrationUpdates) {
-            throw new IllegalStateException("method not supported");
+        public Observable<Void> connect(Source source, final Observable<ChangeNotification<InstanceInfo>> registrationUpdates) {
+            return Observable.<Void>never()
+                    .doOnSubscribe(new Action0() {
+                        @Override
+                        public void call() {
+                            registrationUpdates.subscribe(relay);
+                        }
+                    });
         }
 
         @Override
@@ -140,7 +146,8 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
 
         @Override
         public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Source.SourceMatcher sourceMatcher) {
-            return Observable.error(new UnsupportedOperationException("Not supported"));
+            return Observable.never();
+
         }
 
         @Override

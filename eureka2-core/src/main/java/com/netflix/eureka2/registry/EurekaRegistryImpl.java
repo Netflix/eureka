@@ -109,6 +109,7 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
 
                 switch (notification.getKind()) {
                     case Add:
+                    case Modify:
                         ChangeNotification<InstanceInfo>[] notifications = internalStore.update(instanceInfo, source);
                         if (notifications.length != 0) {
                             metrics.setRegistrySize(internalStore.size());

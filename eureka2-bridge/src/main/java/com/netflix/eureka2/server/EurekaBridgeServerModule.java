@@ -1,6 +1,5 @@
 package com.netflix.eureka2.server;
 
-import com.google.inject.Scopes;
 import com.netflix.eureka2.metric.server.BridgeServerMetricFactory;
 import com.netflix.eureka2.metric.server.SpectatorBridgeServerMetricFactory;
 import com.netflix.eureka2.metric.server.SpectatorWriteServerMetricFactory;

@@ -17,22 +17,19 @@
 package com.netflix.eureka2.server.registry;
 
 import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.List;
 
 import com.google.inject.Inject;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.channel.ServiceChannel;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
-import rx.functions.Func1;
 
 /**
  * Registry implemented on top of eureka-client. It does not story anything, just
@@ -54,6 +51,7 @@ import rx.functions.Func1;
  */
 @Singleton
 public class EurekaReadServerRegistryView implements EurekaRegistryView<InstanceInfo> {
+    private static final Logger logger = LoggerFactory.getLogger(EurekaReadServerRegistryView.class);
 
     private final EurekaInterestClient interestClient;
 
@@ -77,7 +75,7 @@ public class EurekaReadServerRegistryView implements EurekaRegistryView<Instance
      */
     @Override
     public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
-        return interestClient.forInterest(interest).flatMap(bufferStartEndDelineateFun(interest));
+        return interestClient.forInterest(interest);
     }
 
     @Override
@@ -88,37 +86,5 @@ public class EurekaReadServerRegistryView implements EurekaRegistryView<Instance
     @Override
     public String toString() {
         return interestClient.toString();
-    }
-
-    static Func1<ChangeNotification<InstanceInfo>, Observable<ChangeNotification<InstanceInfo>>> bufferStartEndDelineateFun(Interest<InstanceInfo> interest) {
-
-        final ChangeNotification<InstanceInfo> bufferStartNotification = StreamStateNotification.bufferStartNotification(interest);
-        final ChangeNotification<InstanceInfo> bufferEndNotification = StreamStateNotification.bufferEndNotification(interest);
-
-        final List<ChangeNotification<InstanceInfo>> buffer = new ArrayList<>();
-        return new Func1<ChangeNotification<InstanceInfo>, Observable<ChangeNotification<InstanceInfo>>>() {
-            @Override
-            public Observable<ChangeNotification<InstanceInfo>> call(ChangeNotification<InstanceInfo> notification) {
-                if (notification.getKind() != Kind.BufferSentinel) {
-                    buffer.add(notification);
-                    return Observable.empty();
-                }
-                if (buffer.isEmpty()) {
-                    return Observable.empty();
-                }
-                Observable<ChangeNotification<InstanceInfo>> result;
-                if (buffer.size() == 1) {
-                    result = Observable.just(buffer.get(0));
-                } else {
-                    List<ChangeNotification<InstanceInfo>> batch = new ArrayList<>(2 + buffer.size());
-                    batch.add(bufferStartNotification);
-                    batch.addAll(buffer);
-                    batch.add(bufferEndNotification);
-                    result = Observable.from(batch);
-                }
-                buffer.clear();
-                return result;
-            }
-        };
     }
 }

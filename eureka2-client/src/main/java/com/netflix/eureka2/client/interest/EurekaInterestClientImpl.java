@@ -15,6 +15,8 @@ import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.rx.RxFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
@@ -35,6 +37,7 @@ import rx.schedulers.Schedulers;
  * @author David Liu
  */
 public class EurekaInterestClientImpl extends AbstractInterestClient {
+    private static final Logger logger = LoggerFactory.getLogger(EurekaInterestClientImpl.class);
 
     private final InterestTracker interestTracker;
     private final RetryableConnection<InterestChannel> retryableConnection;

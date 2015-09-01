@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
+import rx.functions.Action1;
 import rx.functions.Func1;
 
 import java.util.HashMap;
@@ -67,11 +68,11 @@ public class ClientInterestChannel extends AbstractClientChannel<InterestChannel
         super(STATE.Idle, client, metrics);
         this.selfSource = new Source(Source.Origin.INTERESTED, "clientInterestChannel", generationId);
         this.registry = registry;
-        this.channelSubscriber = new LoggingSubscriber<>(logger);
+        this.channelSubscriber = new LoggingSubscriber<>(logger, "channel");
         this.channelInterestStream = createInterestStream();
 
         Observable<Void> evictionOb = channelFunctions.setUpPrevChannelEviction(selfSource, registry);
-        evictionOb.subscribe(channelSubscriber);
+        evictionOb.subscribe(new LoggingSubscriber<Void>(logger, "eviction"));
 
         logger.info("created new {} with source {}", this.getClass().getSimpleName(), selfSource);
     }
@@ -96,20 +97,28 @@ public class ClientInterestChannel extends AbstractClientChannel<InterestChannel
                     }
                 });
 
-        return Observable.create(new Observable.OnSubscribe<Void>() {
-            @Override
-            public void call(Subscriber<? super Void> subscriber) {
-                if (STATE.Closed == state.get()) {
-                    subscriber.onError(CHANNEL_CLOSED_EXCEPTION);
-                } else if (moveToState(STATE.Idle, STATE.Open)) {
-                    logger.debug("First time registration: {}", newInterest);
-                    registry.connect(selfSource, channelInterestStream).subscribe(channelSubscriber);
-                } else {
-                    logger.debug("Channel changes: {}", newInterest);
-                }
-                subscriber.onCompleted();
-            }
-        }).concatWith(serverRequest);
+        return Observable
+                .create(new Observable.OnSubscribe<Void>() {
+                    @Override
+                    public void call(Subscriber<? super Void> subscriber) {
+                        if (STATE.Closed == state.get()) {
+                            subscriber.onError(CHANNEL_CLOSED_EXCEPTION);
+                        } else if (moveToState(STATE.Idle, STATE.Open)) {
+                            logger.debug("First time registration: {}", newInterest);
+                            registry.connect(selfSource, channelInterestStream).subscribe(channelSubscriber);
+                        } else {
+                            logger.debug("Channel changes: {}", newInterest);
+                        }
+                        subscriber.onCompleted();
+                    }
+                })
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        logger.warn("Error connecting interestChannel to registry", throwable);
+                    }
+                })
+                .concatWith(serverRequest);
     }
 
     @Override

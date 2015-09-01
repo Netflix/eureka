@@ -31,6 +31,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
 
     private final Observable<Void> control;
     private final Observable<ChangeNotification<InstanceInfo>> data;
+    private final Subscriber<Void> controlSubscriber;
     private final Subscriber<Void> channelSubscriber;
 
     private volatile Source selfSource;
@@ -40,7 +41,8 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
                                    MessageConnection transport,
                                    RegistrationChannelMetrics metrics) {
         super(STATE.Idle, transport, metrics);
-        this.channelSubscriber = new LoggingSubscriber<>(logger);
+        this.channelSubscriber = new LoggingSubscriber<>(logger, "channel");
+        this.controlSubscriber = new LoggingSubscriber<>(logger, "control");
 
         Observable<RegistrationMessage> input = connectInputToLifecycle(transport.incoming())
                 .filter(new Func1<Object, Boolean>() {
@@ -54,6 +56,25 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
                     }
                 })
                 .cast(RegistrationMessage.class)
+                .doOnNext(new Action1<RegistrationMessage>() {
+                    @Override
+                    public void call(RegistrationMessage message) {
+                        sendAckOnTransport().subscribe(new Subscriber<Void>() {
+                            @Override
+                            public void onCompleted() {
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+                                logger.warn("Failed to send ack for register operation for instanceInfo {}", cachedInstanceInfo);
+                            }
+
+                            @Override
+                            public void onNext(Void aVoid) {
+                            }
+                        });
+                    }
+                })
                 .replay(1)
                 .refCount();
 
@@ -131,7 +152,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
     }
 
     private void start() {
-        control.subscribe(channelSubscriber);
+        control.subscribe(controlSubscriber);
     }
 
     @Override
@@ -143,6 +164,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
     protected void _close() {
         STATE from = moveToState(STATE.Closed);
         if (from != STATE.Closed) {  // if this is the first/only close
+            controlSubscriber.unsubscribe();
             channelSubscriber.unsubscribe();
             cachedInstanceInfo = null;
             super._close();

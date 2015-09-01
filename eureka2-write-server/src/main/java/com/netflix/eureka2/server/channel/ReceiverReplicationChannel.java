@@ -39,6 +39,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<Replicati
     private final Observable<ChangeNotification<InstanceInfo>> data;
 
     private final SelfInfoResolver selfIdentityService;
+    private final Subscriber<Void> controlSubscriber;
     private final Subscriber<Void> channelSubscriber;
     private final ConcurrentHashMap<String, InstanceInfo> idsVsInstance = new ConcurrentHashMap<>();
 
@@ -50,7 +51,8 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<Replicati
                                     ReplicationChannelMetrics metrics) {
         super(STATE.Idle, transport, metrics);
         this.selfIdentityService = selfIdentityService;
-        this.channelSubscriber = new LoggingSubscriber<>(logger);
+        this.channelSubscriber = new LoggingSubscriber<>(logger, "channel");
+        this.controlSubscriber = new LoggingSubscriber<>(logger, "control");
 
         Observable<Object> input = connectInputToLifecycle(transport.incoming()).replay(1).refCount();
 
@@ -103,7 +105,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<Replicati
                             close();  // close this channel
                         } else {  // else setup eviction of prev channel's data
                             Observable<Void> evictionOb = channelFunctions.setUpPrevChannelEviction(replicationSource, registry);
-                            evictionOb.subscribe(channelSubscriber);
+                            evictionOb.subscribe(new LoggingSubscriber<Void>(logger, "eviction"));
                             registry.connect(replicationSource, data).subscribe(channelSubscriber);
                         }
                     }
@@ -117,7 +119,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<Replicati
     }
 
     public void start() {
-        control.subscribe(channelSubscriber);
+        control.subscribe(controlSubscriber);
     }
 
     @Override
@@ -129,6 +131,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<Replicati
     protected void _close() {
         STATE from = moveToState(STATE.Closed);
         if (from != STATE.Closed) {  // if this is the first/only close
+            controlSubscriber.unsubscribe();
             channelSubscriber.unsubscribe();
             idsVsInstance.clear();
             super._close();

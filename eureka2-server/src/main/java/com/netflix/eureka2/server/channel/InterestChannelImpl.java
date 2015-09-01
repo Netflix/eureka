@@ -45,7 +45,7 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
     private final Source selfSource;
     private final ServerInterestChannelMetrics metrics;
 
-    private final EurekaRegistryView<InstanceInfo> registryView;
+    private final EurekaRegistryView<InstanceInfo> registryView;  // keep reference of for IDE debugging
     private final InterestNotificationMultiplexer notificationMultiplexer;
     private final ChannelSubscriptionMonitor channelSubscriptionMonitor;
 
@@ -56,7 +56,7 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
         this.notificationMultiplexer = new InterestNotificationMultiplexer(registry);
         this.channelSubscriptionMonitor = new ChannelSubscriptionMonitor(metrics);
         this.selfSource = new Source(Source.Origin.INTERESTED, "serverInterestChannel");
-        this.channelSubscriber = new LoggingSubscriber<>(logger);
+        this.channelSubscriber = new LoggingSubscriber<>(logger, "channel");
 
         connectInputToLifecycle(transport.incoming())
                 .doOnNext(new Action1<Object>() {
