@@ -91,7 +91,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<Replicati
                 })
                 .take(1)
                 .cast(ReplicationHello.class)
-                .flatMap(new Func1<ReplicationHello, Observable<Source>>() {
+                .concatMap(new Func1<ReplicationHello, Observable<Source>>() {
                     @Override
                     public Observable<Source> call(ReplicationHello replicationHello) {
                         return processHello(replicationHello);
@@ -142,17 +142,17 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<Replicati
      * @return the replicationSource if this is not a replication loop, null otherwise
      */
     private Observable<Source> processHello(final ReplicationHello hello) {
-        logger.debug("Replication hello message: {}", hello);
-
-        if(!moveToState(STATE.Idle, STATE.Handshake)) {
-            return Observable.error(state.get() == STATE.Closed ? CHANNEL_CLOSED_EXCEPTION : HANDSHAKE_FINISHED_EXCEPTION);
-        }
-
-        replicationSource = hello.getSource();
-
-        return selfIdentityService.resolve().take(1).flatMap(new Func1<InstanceInfo, Observable<Source>>() {
+        return selfIdentityService.resolve().take(1).concatMap(new Func1<InstanceInfo, Observable<Source>>() {
             @Override
             public Observable<Source> call(InstanceInfo instanceInfo) {
+                logger.debug("Replication hello message: {}", hello);
+
+                if(!moveToState(STATE.Idle, STATE.Handshake)) {
+                    return Observable.error(state.get() == STATE.Closed ? CHANNEL_CLOSED_EXCEPTION : HANDSHAKE_FINISHED_EXCEPTION);
+                }
+
+                replicationSource = hello.getSource();
+
                 boolean replicationLoop = instanceInfo.getId().equals(hello.getSource().getName());
 
                 Source replySource = new Source(Source.Origin.REPLICATED, instanceInfo.getId(), hello.getSource().getId());

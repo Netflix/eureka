@@ -201,7 +201,7 @@ public class ChangeNotificationsTest {
         PublishSubject<ChangeNotification<String>> notificationSubject = PublishSubject.create();
 
         ExtTestSubscriber<List<ChangeNotification<String>>> testSubscriber = new ExtTestSubscriber<>();
-        notificationSubject.compose(ChangeNotifications.<String>buffers()).subscribe(testSubscriber);
+        notificationSubject.compose(ChangeNotifications.<String>buffers(true)).subscribe(testSubscriber);
 
         // Emit batch of two
         notificationSubject.onNext(ADD_A);

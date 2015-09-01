@@ -44,7 +44,6 @@ import static org.hamcrest.Matchers.is;
 
 import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -226,25 +225,25 @@ public class InterestBatchHintsIntegrationTest extends AbstractBatchHintsIntegra
 
         assertThat(createdInterestChannels.size(), is(1));
         assertThat(createdInterestChannels.get(0), instanceOf(Sourced.class));
-        Source firstSource = ((Sourced) createdInterestChannels.get(0)).getSource();
+        Source firstSource = (createdInterestChannels.get(0)).getSource();
         verifyRegistryContentContainOnlySource(registry, firstSource);
 
         serverConnectionLifecycle.onError(new Exception("test channel failure"));
 
         Thread.sleep(200); // give it a bit of time
-        verify(registry, never()).evictAll(Matchers.any(Source.SourceMatcher.class));
+        verify(registry, times(1)).evictAll(Matchers.any(Source.SourceMatcher.class));  // channel1's eviction event
 
         incomingSubject2.onNext(newBufferStart(interest));
         Thread.sleep(200); // give it a bit of time
-        verify(registry, never()).evictAll(Matchers.any(Source.SourceMatcher.class));
+        verify(registry, times(1)).evictAll(Matchers.any(Source.SourceMatcher.class));  // still channel1's event
 
         incomingSubject2.onNext(newBufferEnd(interest));
         Thread.sleep(2000); // give it a bit of time
-        verify(registry, times(1)).evictAll(Matchers.any(Source.SourceMatcher.class));
+        verify(registry, times(2)).evictAll(Matchers.any(Source.SourceMatcher.class));  // channel2's eviction event
 
         assertThat(createdInterestChannels.size(), is(2));
         assertThat(createdInterestChannels.get(1), instanceOf(Sourced.class));
-        Source secondSource = ((Sourced) createdInterestChannels.get(1)).getSource();
+        Source secondSource = (createdInterestChannels.get(1)).getSource();
         verifyRegistryContentContainOnlySource(registry, secondSource);
     }
 

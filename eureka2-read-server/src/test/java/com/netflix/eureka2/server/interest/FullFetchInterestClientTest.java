@@ -79,6 +79,7 @@ public class FullFetchInterestClientTest {
 
         PublishSubject<ChangeNotification<InstanceInfo>> interestStream = PublishSubject.create();
         registry.connect(SOURCE, interestStream).subscribe();
+        testScheduler.triggerActions();
 
         interestStream.onNext(BUFFER_BEGIN);
         interestStream.onNext(new SourcedChangeNotification<>(ADD_INSTANCE_1, SOURCE));
@@ -87,9 +88,11 @@ public class FullFetchInterestClientTest {
         interestStream.onNext(BUFFER_END);
         testScheduler.triggerActions();
 
-        assertThat(testSubscriber.takeNext(), is((bufferingChangeNotification())));
+        assertThat(testSubscriber.takeNext(), is((bufferStartNotification())));
+        assertThat(testSubscriber.takeNext(), is((bufferEndNotification())));
+        assertThat(testSubscriber.takeNext(), is((bufferStartNotification())));
         assertThat(testSubscriber.takeNext().getData(), is(equalTo(ADD_INSTANCE_1.getData())));
         assertThat(testSubscriber.takeNext().getData(), is(equalTo(ADD_INSTANCE_2.getData())));
-        assertThat(testSubscriber.takeNext(), is((bufferingChangeNotification())));
+        assertThat(testSubscriber.takeNext(), is((bufferEndNotification())));
     }
 }

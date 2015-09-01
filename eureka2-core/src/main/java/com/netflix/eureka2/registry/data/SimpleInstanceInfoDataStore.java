@@ -8,8 +8,8 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Not thread safe, assume concurrency is taken care of by external wrappers
@@ -22,7 +22,7 @@ public class SimpleInstanceInfoDataStore implements MultiSourcedDataStore<Instan
     protected final EurekaRegistryMetrics metrics;
 
     public SimpleInstanceInfoDataStore(EurekaRegistryMetrics metrics) {
-        this.dataMap = new HashMap<>();
+        this.dataMap = new ConcurrentHashMap<>();  // concurrentHashMap as we have concurrent reads
         this.metrics = metrics;
     }
 
