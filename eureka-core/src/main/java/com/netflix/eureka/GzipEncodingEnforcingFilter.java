@@ -34,7 +34,7 @@ public class GzipEncodingEnforcingFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
-        if (httpRequest.getMethod() == "GET") {
+        if ("GET".equals(httpRequest.getMethod())) {
             String acceptEncoding = httpRequest.getHeader(HttpHeaders.ACCEPT_ENCODING);
             if (acceptEncoding == null) {
                 chain.doFilter(addGzipAcceptEncoding(httpRequest), response);
