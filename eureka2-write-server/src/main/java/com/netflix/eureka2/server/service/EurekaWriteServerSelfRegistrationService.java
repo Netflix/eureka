@@ -9,14 +9,12 @@ import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
-import com.netflix.eureka2.utils.rx.LoggingSubscriber;
+import com.netflix.eureka2.utils.rx.SettableSubscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Notification;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Action0;
-import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.subjects.ReplaySubject;
 
@@ -29,17 +27,16 @@ public class EurekaWriteServerSelfRegistrationService extends SelfRegistrationSe
     private static final Logger logger = LoggerFactory.getLogger(EurekaWriteServerSelfRegistrationService.class);
 
     private final EurekaRegistrationProcessor<InstanceInfo> registrationProcessor;
-    private final Subscriber<Void> localSubscriber;
+    private final SettableSubscriber<InstanceInfo> settableSubscriber;
 
     private volatile Observable<ChangeNotification<InstanceInfo>> data;
-    private volatile Observable<Void> control;
     private volatile Source selfSource;
 
     @Inject
     public EurekaWriteServerSelfRegistrationService(SelfInfoResolver resolver, EurekaRegistrationProcessor registrationProcessor) {
         super(resolver);
         this.registrationProcessor = registrationProcessor;
-        this.localSubscriber = new LoggingSubscriber<>(logger);
+        this.settableSubscriber = new SettableSubscriber<>();
     }
 
     @PostConstruct
@@ -54,6 +51,13 @@ public class EurekaWriteServerSelfRegistrationService extends SelfRegistrationSe
         final ReplaySubject<InstanceInfo> lastInstanceInfoSubject = ReplaySubject.createWithSize(1);
 
         data = input
+                .lift(new Observable.Operator<InstanceInfo, InstanceInfo>() {
+                    @Override
+                    public Subscriber<? super InstanceInfo> call(Subscriber<? super InstanceInfo> subscriber) {
+                        settableSubscriber.setWrapped(subscriber);
+                        return settableSubscriber;
+                    }
+                })
                 .materialize()
                 .concatMap(new Func1<Notification<InstanceInfo>, Observable<? extends ChangeNotification<InstanceInfo>>>() {
                     @Override
@@ -76,34 +80,21 @@ public class EurekaWriteServerSelfRegistrationService extends SelfRegistrationSe
                     }
                 });
 
-        control = input
+        return input
                 .take(1)
-                .doOnNext(new Action1<InstanceInfo>() {
+                .switchMap(new Func1<InstanceInfo, Observable<? extends Void>>() {
                     @Override
-                    public void call(InstanceInfo instanceInfo) {
+                    public Observable<? extends Void> call(InstanceInfo instanceInfo) {
                         selfSource = new Source(Source.Origin.LOCAL, instanceInfo.getId());
                         logger.info("registering self InstanceInfo {}", instanceInfo);
-                        registrationProcessor.connect(instanceInfo.getId(), selfSource, data).subscribe(localSubscriber);
                         input.subscribe(lastInstanceInfoSubject);
+                        return registrationProcessor.connect(instanceInfo.getId(), selfSource, data);
                     }
-                })
-                .ignoreElements()
-                .cast(Void.class);
-
-        return Observable.<Void>empty()
-                .doOnSubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        control.subscribe(localSubscriber);
-                    }
-                })
-                .share();
+                });
     }
 
     @Override
     public void cleanUpResources() {
-        if (!localSubscriber.isUnsubscribed()) {
-            localSubscriber.unsubscribe();
-        }
+        settableSubscriber.setOnComplete();
     }
 }

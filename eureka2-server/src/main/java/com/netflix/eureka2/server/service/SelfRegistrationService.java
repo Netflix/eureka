@@ -38,11 +38,11 @@ public abstract class SelfRegistrationService implements SelfInfoResolver {
     public void shutdown() {
         logger.info("Shutting down the self registration service");
 
+        cleanUpResources();
+
         if (!localSubscriber.isUnsubscribed()) {
             localSubscriber.unsubscribe();
         }
-
-        cleanUpResources();
     }
 
     @Override

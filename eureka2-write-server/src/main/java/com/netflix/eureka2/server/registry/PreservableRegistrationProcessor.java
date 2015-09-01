@@ -46,7 +46,6 @@ public class PreservableRegistrationProcessor implements EurekaRegistrationProce
     private final Source selfSource;
 
     // for eviction use
-    private final EurekaRegistryConfig registryConfig;
     private final QuotaSubscriber quotaSubscriber;
 
     private volatile EvictionQuotaKeeper evictionQuotaKeeper;
@@ -67,7 +66,6 @@ public class PreservableRegistrationProcessor implements EurekaRegistrationProce
 
     public PreservableRegistrationProcessor(EurekaRegistry registry, EurekaRegistryConfig registryConfig, QuotaSubscriber quotaSubscriber) {
         this.registry = registry;
-        this.registryConfig = registryConfig;
         this.quotaSubscriber = quotaSubscriber;
 
         this.selfSource = registry.getSource();
