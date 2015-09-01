@@ -70,6 +70,7 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.EurekaJerseyClient;
 import com.netflix.discovery.shared.EurekaJerseyClient.EurekaJerseyClientBuilder;
+import com.netflix.discovery.util.ThresholdLevelsMetric;
 import com.netflix.eventbus.spi.EventBus;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Counter;
@@ -82,6 +83,8 @@ import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static com.netflix.discovery.EurekaClientNames.METRIC_REGISTRY_PREFIX;
 
 /**
  * The class that is instrumental for interactions with <tt>Eureka Server</tt>.
@@ -185,10 +188,13 @@ public class DiscoveryClient implements EurekaClient {
     private String appPathIdentifier;
     private boolean isRegisteredWithDiscovery = false;
     private ApplicationInfoManager.StatusChangeListener statusChangeListener;
-    
+
+    private InstanceInfoReplicator instanceInfoReplicator;
+
     private volatile long lastSuccessfulRegistryFetchTimestamp = -1;
     private volatile long lastSuccessfulHeartbeatTimestamp = -1;
-    private InstanceInfoReplicator instanceInfoReplicator;
+    private final ThresholdLevelsMetric heartbeatStalenessMonitor;
+    private final ThresholdLevelsMetric registryStalenessMonitor;
 
     private enum Action {
         Register, Cancel, Renew, Refresh, Refresh_Delta
@@ -406,6 +412,8 @@ public class DiscoveryClient implements EurekaClient {
         } catch (Throwable e) {
             logger.warn("Cannot register timers", e);
         }
+        this.heartbeatStalenessMonitor = new ThresholdLevelsMetric(this, "lastHeartbeatSec_", new long[]{15L, 30L, 60L, 120L, 240L, 480L});
+        this.registryStalenessMonitor = new ThresholdLevelsMetric(this, "lastUpdateSec_", new long[]{15L, 30L, 60L, 120L, 240L, 480L});
 
         // This is a bit of hack to allow for existing code using DiscoveryManager.getInstance()
         // to work with DI'd DiscoveryClient
@@ -847,6 +855,8 @@ public class DiscoveryClient implements EurekaClient {
         if (discoveryJerseyClient != null) {
             discoveryJerseyClient.destroyResources();
         }
+        heartbeatStalenessMonitor.shutdown();
+        registryStalenessMonitor.shutdown();
     }
 
     /**
@@ -2122,15 +2132,19 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
-    @com.netflix.servo.annotations.Monitor(name = "lastSuccessfulHeartbeatTimePeriod",
+    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "lastSuccessfulHeartbeatTimePeriod",
             description = "How much time has passed from last successful heartbeat", type = DataSourceType.GAUGE)
     public long getLastSuccessfulHeartbeatTimePeriod() {
-        return lastSuccessfulHeartbeatTimestamp < 0 ? 0 : System.currentTimeMillis() - lastSuccessfulHeartbeatTimestamp;
+        long delay = lastSuccessfulHeartbeatTimestamp < 0 ? 0 : System.currentTimeMillis() - lastSuccessfulHeartbeatTimestamp;
+        heartbeatStalenessMonitor.update(delay);
+        return delay;
     }
 
-    @com.netflix.servo.annotations.Monitor(name = "lastSuccessfulRegistryFetchTimePeriod",
+    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "lastSuccessfulRegistryFetchTimePeriod",
             description = "How much time has passed from last successful local registry update", type = DataSourceType.GAUGE)
     public long getLastSuccessfulRegistryFetchTimePeriod() {
-        return lastSuccessfulRegistryFetchTimestamp < 0 ? 0 : System.currentTimeMillis() - lastSuccessfulRegistryFetchTimestamp;
+        long delay = lastSuccessfulRegistryFetchTimestamp < 0 ? 0 : System.currentTimeMillis() - lastSuccessfulRegistryFetchTimestamp;
+        registryStalenessMonitor.update(delay);
+        return delay;
     }
 }
