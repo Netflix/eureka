@@ -81,6 +81,7 @@ import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.netflix.discovery.EurekaClientNames.METRIC_REGISTRATION_PREFIX;
 import static com.netflix.discovery.EurekaClientNames.METRIC_REGISTRY_PREFIX;
 
 /**
@@ -402,8 +403,8 @@ public class DiscoveryClient implements EurekaClient {
         } catch (Throwable e) {
             logger.warn("Cannot register timers", e);
         }
-        this.heartbeatStalenessMonitor = new ThresholdLevelsMetric(this, "lastHeartbeatSec_", new long[]{15L, 30L, 60L, 120L, 240L, 480L});
-        this.registryStalenessMonitor = new ThresholdLevelsMetric(this, "lastUpdateSec_", new long[]{15L, 30L, 60L, 120L, 240L, 480L});
+        this.heartbeatStalenessMonitor = new ThresholdLevelsMetric(this, METRIC_REGISTRATION_PREFIX + "lastHeartbeatSec_", new long[]{15L, 30L, 60L, 120L, 240L, 480L});
+        this.registryStalenessMonitor = new ThresholdLevelsMetric(this, METRIC_REGISTRY_PREFIX + "lastUpdateSec_", new long[]{15L, 30L, 60L, 120L, 240L, 480L});
 
         // This is a bit of hack to allow for existing code using DiscoveryManager.getInstance()
         // to work with DI'd DiscoveryClient
@@ -2121,7 +2122,7 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
-    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "lastSuccessfulHeartbeatTimePeriod",
+    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRATION_PREFIX + "lastSuccessfulHeartbeatTimePeriod",
             description = "How much time has passed from last successful heartbeat", type = DataSourceType.GAUGE)
     public long getLastSuccessfulHeartbeatTimePeriod() {
         long delay = lastSuccessfulHeartbeatTimestamp < 0 ? 0 : System.currentTimeMillis() - lastSuccessfulHeartbeatTimestamp;
