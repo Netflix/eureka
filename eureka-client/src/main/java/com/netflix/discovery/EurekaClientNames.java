@@ -31,6 +31,8 @@ public final class EurekaClientNames {
      */
     public static final String METRIC_PREFIX = "eurekaClient.";
 
+    public static final String METRIC_REGISTRATION_PREFIX = METRIC_PREFIX + "registration.";
+
     public static final String METRIC_REGISTRY_PREFIX = METRIC_PREFIX + "registry.";
 
     private EurekaClientNames() {

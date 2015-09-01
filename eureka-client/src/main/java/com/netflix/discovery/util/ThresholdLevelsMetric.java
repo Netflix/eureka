@@ -16,7 +16,6 @@
 
 package com.netflix.discovery.util;
 
-import com.netflix.discovery.EurekaClientNames;
 import com.netflix.servo.DefaultMonitorRegistry;
 import com.netflix.servo.monitor.LongGauge;
 import com.netflix.servo.monitor.MonitorConfig;
@@ -42,7 +41,7 @@ public class ThresholdLevelsMetric {
         this.levels = levels;
         this.gauges = new LongGauge[levels.length];
         for (int i = 0; i < levels.length; i++) {
-            String name = EurekaClientNames.METRIC_REGISTRY_PREFIX + prefix + String.format("%05d", levels[i]);
+            String name = prefix + String.format("%05d", levels[i]);
             MonitorConfig config = new MonitorConfig.Builder(name)
                     .withTag("class", owner.getClass().getName())
                     .build();
