@@ -63,7 +63,7 @@ public class KafkaAuditService implements AuditService {
     private final Worker worker;
     private final KafkaAuditServiceConfig config;
 
-    /* Access from test */ volatile Producer<String, byte[]> kafkaProducer;
+    /* Access from test */ volatile Producer<String, String> kafkaProducer;
     private final ConcurrentLinkedQueue<AuditRecord> auditRecordQueue = new ConcurrentLinkedQueue<>();
 
     private final AtomicBoolean processorScheduled = new AtomicBoolean();
@@ -72,19 +72,21 @@ public class KafkaAuditService implements AuditService {
         public void call() {
             processorScheduled.set(false);
             while (!auditRecordQueue.isEmpty()) {
-                Producer<String, byte[]> currentKafkaProducer = kafkaProducer;
+                Producer<String, String> currentKafkaProducer = kafkaProducer;
                 if (currentKafkaProducer != null) {
                     AuditRecord record = auditRecordQueue.peek();
                     try {
-                        ProducerRecord<String, byte[]> message = new ProducerRecord<>(topic, Json.toByteArrayJson(record));
+                        ProducerRecord<String, String> message = new ProducerRecord<>(topic, Json.toStringJson(record));
                         kafkaProducer.send(message);
                         auditRecordQueue.poll();
                     } catch (Exception e) {
                         logger.error("Kafka message send error; reconnecting", e);
-                        kafkaProducer = null;
-                        scheduleReconnect();
+                        disconnectFromKafka();
+                        scheduleKafkaReconnect();
                         return;
                     }
+                } else {
+                    return;
                 }
             }
         }
@@ -121,17 +123,14 @@ public class KafkaAuditService implements AuditService {
 
     @PostConstruct
     public void start() {
-        reconnect();
+        reconnectToKafka();
     }
 
     @PreDestroy
     public void stop() {
         worker.unsubscribe();
         serverSource.close();
-        if (kafkaProducer != null) {
-            kafkaProducer.close();
-            kafkaProducer = null;
-        }
+        disconnectFromKafka();
     }
 
     @Override
@@ -148,30 +147,41 @@ public class KafkaAuditService implements AuditService {
         return Observable.empty();
     }
 
-    private void reconnect() {
+    private void scheduleKafkaReconnect() {
+        worker.schedule(new Action0() {
+            @Override
+            public void call() {
+                reconnectToKafka();
+            }
+        }, config.getRetryIntervalMs(), TimeUnit.MILLISECONDS);
+    }
+
+    private void reconnectToKafka() {
         List<InetSocketAddress> addresses = serverSource.latestSnapshot();
         if (addresses.isEmpty()) {
-            scheduleReconnect();
+            scheduleKafkaReconnect();
         } else {
             kafkaProducer = createKafkaProducer(addresses);
             scheduleQueueProcessing();
         }
     }
 
-    private void scheduleReconnect() {
-        worker.schedule(new Action0() {
-            @Override
-            public void call() {
-                reconnect();
+    private void disconnectFromKafka() {
+        if (kafkaProducer != null) {
+            try {
+                kafkaProducer.close();
+            } catch (Exception e) {
+                logger.warn("Kafka producer shutdown failure; possible resource leak", e);
             }
-        }, config.getRetryIntervalMs(), TimeUnit.MILLISECONDS);
+            kafkaProducer = null;
+        }
     }
 
     private void scheduleQueueProcessing() {
         worker.schedule(processorAction);
     }
 
-    private static Producer<String, byte[]> createKafkaProducer(List<InetSocketAddress> addresses) {
+    private static Producer<String, String> createKafkaProducer(List<InetSocketAddress> addresses) {
         StringBuilder sb = new StringBuilder();
         for (InetSocketAddress server : addresses) {
             sb.append(server.getHostString()).append(':').append(server.getPort()).append(',');

@@ -21,4 +21,9 @@ public class ApplicationInterest extends AbstractPatternInterest<InstanceInfo> {
     protected String getValue(InstanceInfo data) {
         return data.getApp();
     }
+
+    @Override
+    public boolean isAtomicInterest() {
+        return true;
+    }
 }

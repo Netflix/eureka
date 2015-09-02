@@ -10,12 +10,18 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.EmptyRegistryInterest;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.MultipleInterests;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.interests.SourcedChangeNotification;
+import com.netflix.eureka2.interests.StreamStateNotification;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.utils.rx.RxFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action0;
+import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.schedulers.Schedulers;
 
@@ -31,17 +37,18 @@ import rx.schedulers.Schedulers;
  * @author David Liu
  */
 public class EurekaInterestClientImpl extends AbstractInterestClient {
+    private static final Logger logger = LoggerFactory.getLogger(EurekaInterestClientImpl.class);
 
     private final InterestTracker interestTracker;
     private final RetryableConnection<InterestChannel> retryableConnection;
 
     @Inject
-    public EurekaInterestClientImpl(SourcedEurekaRegistry<InstanceInfo> registry,
+    public EurekaInterestClientImpl(EurekaRegistry<InstanceInfo> registry,
                                     ChannelFactory<InterestChannel> channelFactory) {
         this(registry, channelFactory, DEFAULT_RETRY_WAIT_MILLIS, Schedulers.computation());
     }
 
-    /* visible for testing*/ EurekaInterestClientImpl(final SourcedEurekaRegistry<InstanceInfo> registry,
+    /* visible for testing*/ EurekaInterestClientImpl(final EurekaRegistry<InstanceInfo> registry,
                                                       ChannelFactory<InterestChannel> channelFactory,
                                                       int retryWaitMillis,
                                                       Scheduler scheduler) {
@@ -61,7 +68,6 @@ public class EurekaInterestClientImpl extends AbstractInterestClient {
 
         this.retryableConnection = retryableConnectionFactory.singleOpConnection(opStream, executeOnChannel);
 
-        registryEvictionSubscribe(retryableConnection);
         lifecycleSubscribe(retryableConnection);
     }
 
@@ -94,9 +100,33 @@ public class EurekaInterestClientImpl extends AbstractInterestClient {
             }
         });
 
+        // strip source from the notifications
+        // convert bufferstart/bufferends to just a single buffersentinel
+        Observable<ChangeNotification<InstanceInfo>> registrySteam = registry.forInterest(interest)
+                .map(new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
+                    @Override
+                    public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
+                        if (notification instanceof SourcedChangeNotification) {
+                            return ((SourcedChangeNotification) notification).toBaseNotification();
+                        } else if (notification instanceof StreamStateNotification) {
+                            StreamStateNotification<InstanceInfo> n = (StreamStateNotification) notification;
+                            switch (n.getBufferState()) {
+                                case BufferEnd:
+                                    return ChangeNotification.bufferSentinel();
+                                case BufferStart:
+                                default:
+                                    return null;
+                            }
+                        } else {
+                            return notification;
+                        }
+                    }
+                })
+                .filter(RxFunctions.filterNullValuesFunc());
+
         Observable toReturn = appendInterest
                 .cast(ChangeNotification.class)
-                .mergeWith(registry.forInterest(interest))
+                .mergeWith(registrySteam)
                 .doOnUnsubscribe(new Action0() {
                     @Override
                     public void call() {

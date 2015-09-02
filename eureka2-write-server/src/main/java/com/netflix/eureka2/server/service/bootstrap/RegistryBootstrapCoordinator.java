@@ -8,9 +8,9 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.health.AbstractHealthStatusProvider;
 import com.netflix.eureka2.health.SubsystemDescriptor;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Source.Origin;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import com.netflix.eureka2.server.config.BootstrapConfig;
@@ -35,14 +35,14 @@ public class RegistryBootstrapCoordinator extends AbstractHealthStatusProvider<R
 
     private final BootstrapConfig config;
     private final RegistryBootstrapService registryBootstrapService;
-    private final SourcedEurekaRegistry<InstanceInfo> registry;
+    private final EurekaRegistry<InstanceInfo> registry;
 
     private Subscription bootstrapSubscription;
 
     @Inject
     public RegistryBootstrapCoordinator(BootstrapConfig config,
                                         RegistryBootstrapService registryBootstrapService,
-                                        SourcedEurekaRegistry registry) {
+                                        EurekaRegistry registry) {
         super(Status.STARTING, DESCRIPTOR);
         this.config = config;
         this.registryBootstrapService = registryBootstrapService;

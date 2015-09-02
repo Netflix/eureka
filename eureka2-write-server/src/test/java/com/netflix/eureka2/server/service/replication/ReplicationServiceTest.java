@@ -23,7 +23,7 @@ import java.util.Map;
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.WriteServerConfig;
@@ -57,7 +57,7 @@ public class ReplicationServiceTest {
     private static final Server ADDRESS3 = new Server("host3", 789);
 
     private final WriteServerConfig config = aWriteServerConfig().build();
-    private final SourcedEurekaRegistry<InstanceInfo> eurekaRegistry = mock(SourcedEurekaRegistry.class);
+    private final EurekaRegistry<InstanceInfo> eurekaRegistry = mock(EurekaRegistry.class);
     private final SelfInfoResolver selfIdentityService = mock(SelfInfoResolver.class);
     private final ReplicationPeerAddressesProvider peerAddressProvider = mock(ReplicationPeerAddressesProvider.class);
 

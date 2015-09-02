@@ -1,7 +1,6 @@
 package com.netflix.eureka2.integration.examples;
 
 import com.netflix.eureka2.example.client.SimpleApp;
-import com.netflix.eureka2.integration.IntegrationTestClassSetup;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster;
@@ -18,7 +17,7 @@ import static com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResour
  * @author Tomasz Bak
  */
 @Category({IntegrationTest.class, LongRunningTest.class})
-public class SimpleAppIntegrationTest extends IntegrationTestClassSetup {
+public class SimpleAppIntegrationTest {
 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource = anEurekaDeploymentResource(1, 1).build();

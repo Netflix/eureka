@@ -5,14 +5,14 @@ import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.ChangeNotifications;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.resolver.ClusterAddress;
 import com.netflix.eureka2.server.resolver.EurekaClusterResolver;
@@ -21,9 +21,9 @@ import org.slf4j.LoggerFactory;
 import rx.Notification;
 import rx.Observable;
 import rx.Scheduler;
+import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
-import rx.functions.Func2;
 import rx.schedulers.Schedulers;
 
 /**
@@ -48,7 +48,7 @@ public class BackupClusterBootstrapService implements RegistryBootstrapService {
     }
 
     @Override
-    public Observable<Void> loadIntoRegistry(final SourcedEurekaRegistry<InstanceInfo> registry, final Source source) {
+    public Observable<Void> loadIntoRegistry(final EurekaRegistry<InstanceInfo> registry, final Source source) {
         return bootstrapResolver.clusterTopologyChanges()
                 .compose(ChangeNotifications.<ClusterAddress>buffers())
                 .compose(ChangeNotifications.snapshots(CLUSTER_ADDRESS_IDENTITY))
@@ -68,7 +68,7 @@ public class BackupClusterBootstrapService implements RegistryBootstrapService {
      * This method is called recursively by retry logic.  The provided cluster address list will always hold at
      * least 1 item.
      */
-    private Observable<Void> loadRegistryFromAnyAvailableServer(final List<ClusterAddress> clusterAddresses, final SourcedEurekaRegistry<InstanceInfo> registry, final Source source) {
+    private Observable<Void> loadRegistryFromAnyAvailableServer(final List<ClusterAddress> clusterAddresses, final EurekaRegistry<InstanceInfo> registry, final Source source) {
         ClusterAddress firstEndpoint = clusterAddresses.get(0);
         Server firstServer = new Server(firstEndpoint.getHostName(), firstEndpoint.getInterestPort());
 
@@ -83,65 +83,55 @@ public class BackupClusterBootstrapService implements RegistryBootstrapService {
         });
     }
 
-    private Observable<Void> loadRegistryFromServer(final Server server, final SourcedEurekaRegistry<InstanceInfo> registry, final Source source) {
+    private Observable<Void> loadRegistryFromServer(final Server server, final EurekaRegistry<InstanceInfo> registry, final Source source) {
         logger.info("Bootstrapping registry from server {}...", server);
-        return createLightEurekaInterestClient(server).forInterest(Interests.forFullRegistry())
-                .flatMap(new Func1<ChangeNotification<InstanceInfo>, Observable<Integer>>() {
+
+        final AtomicLong loaded = new AtomicLong();
+        Observable<ChangeNotification<InstanceInfo>> notifications = createLightEurekaInterestClient(server)
+                .forInterest(Interests.forFullRegistry())
+                .doOnNext(new Action1<ChangeNotification<InstanceInfo>>() {
                     @Override
-                    public Observable<Integer> call(final ChangeNotification<InstanceInfo> notification) {
+                    public void call(ChangeNotification<InstanceInfo> notification) {
                         if (notification.isDataNotification()) {
-                            Observable<Boolean> requestObserver;
-                            switch (notification.getKind()) {
-                                case Add:
-                                case Modify:
-                                    requestObserver = registry.register(notification.getData(), source);
-                                    break;
-                                case Delete:
-                                    requestObserver = registry.unregister(notification.getData(), source);
-                                    break;
-                                default:
-                                    throw new IllegalStateException("Unexpected enum value " + notification.getKind());
-                            }
-                            return requestObserver
-                                    .ignoreElements()
-                                    .cast(Void.class)
-                                    .materialize()
-                                    .map(new Func1<Notification<Void>, Integer>() {
-                                        @Override
-                                        public Integer call(Notification<Void> modifyResult) {
-                                            switch (modifyResult.getKind()) {
-                                                case OnCompleted:
-                                                    return notification.getKind() == Kind.Delete ? -1 : 1;
-                                                case OnError:
-                                                    return 0;
-                                            }
-                                            return 0;
-                                        }
-                                    });
+                            loaded.incrementAndGet();
                         }
-                        return Observable.empty();
                     }
-                }).reduce(0, new Func2<Integer, Integer, Integer>() {
+                })
+                .doOnError(new Action1<Throwable>() {
                     @Override
-                    public Integer call(Integer accumulator, Integer change) {
-                        return accumulator + change;
+                    public void call(Throwable throwable) {
+                        logger.error("Bootstrapping from server " + server + " failed", throwable);
                     }
-                }).doOnError(new Action1<Throwable>() {
+                })
+                .doOnCompleted(new Action0() {
                     @Override
-                    public void call(Throwable error) {
-                        logger.error("Bootstrapping from server " + server + " failed", error);
+                    public void call() {
+                        logger.error("Bootstrapping from server " + server + " completed");
                     }
-                }).flatMap(new Func1<Integer, Observable<Void>>() {
+                })
+                .materialize()
+                .concatMap(new Func1<Notification<ChangeNotification<InstanceInfo>>, Observable<? extends ChangeNotification<InstanceInfo>>>() {
                     @Override
-                    public Observable<Void> call(Integer loaded) {
-                        if (loaded == 0) {
+                    public Observable<? extends ChangeNotification<InstanceInfo>> call(Notification<ChangeNotification<InstanceInfo>> rxNotification) {
+                        switch (rxNotification.getKind()) {
+                            case OnNext:
+                                return Observable.just(rxNotification.getValue());
+                            case OnError:
+                            case OnCompleted:
+                            default: // should never get here
+                        }
+
+                        if (loaded.get() == 0) {
                             logger.info("Loaded 0 entries from peer; will retry on another server if available");
                             return Observable.error(new Exception("Loaded 0 entries from peer"));
+                        } else {
+                            logger.info("Loaded {} entries from {} peer; actual registry size at the moment is {}", loaded.get(), server, registry.size());
+                            return Observable.empty();
                         }
-                        logger.info("Loaded {} entries from {} peer; actual registry size at the moment is {}", loaded, server, registry.size());
-                        return Observable.empty();
                     }
                 });
+
+        return registry.connect(source, notifications);
     }
 
     /**

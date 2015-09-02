@@ -204,7 +204,7 @@ public class AwsDataCenterInfo extends DataCenterInfo {
                 ", accountId='" + accountId + '\'' +
                 ", publicAddress=" + publicAddress +
                 ", privateAddress=" + privateAddress +
-                "} " + super.toString();
+                '}';
     }
 
     public static final class Builder extends DataCenterInfoBuilder<AwsDataCenterInfo> {

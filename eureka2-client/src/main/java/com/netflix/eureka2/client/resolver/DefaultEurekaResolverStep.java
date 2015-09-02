@@ -10,25 +10,20 @@ import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
 import com.netflix.eureka2.client.functions.InterestFunctions;
-import com.netflix.eureka2.client.interest.BatchingRegistry;
-import com.netflix.eureka2.client.interest.BatchingRegistryImpl;
 import com.netflix.eureka2.client.interest.EurekaInterestClientImpl;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.StreamStateNotification;
-import com.netflix.eureka2.registry.MultiSourcedDataHolder;
+import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.data.MultiSourcedDataHolder;
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.NetworkAddress;
 import com.netflix.eureka2.registry.selector.ServiceSelector;
-import com.netflix.eureka2.utils.rx.RxFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action0;
-import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
@@ -103,48 +98,35 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
                 throw new IllegalArgumentException("Cannot build client for discovery without read server resolver");
             }
 
-            BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new BatchingRegistryImpl<>();
-            SourcedEurekaRegistry<InstanceInfo> registry = new PassThroughRegistry(remoteBatchingRegistry);
+            EurekaRegistry<InstanceInfo> registry = new PassThroughRegistry();
 
             ClientChannelFactory<InterestChannel> channelFactory
-                    = new InterestChannelFactory(RESOLVER_CLIENT_ID, transportConfig, serverResolver, registry, remoteBatchingRegistry, clientMetricFactory);
+                    = new InterestChannelFactory(RESOLVER_CLIENT_ID, transportConfig, serverResolver, registry, clientMetricFactory);
 
             return new EurekaInterestClientImpl(registry, channelFactory);
         }
     }
 
 
-    static class PassThroughRegistry implements SourcedEurekaRegistry<InstanceInfo> {
+    static class PassThroughRegistry implements EurekaRegistry<InstanceInfo> {
 
-        private final BatchingRegistry<InstanceInfo> remoteBatchingRegistry;
         private final Subject<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>> relay = PublishSubject.create();
-
-        PassThroughRegistry(BatchingRegistry<InstanceInfo> remoteBatchingRegistry) {
-            this.remoteBatchingRegistry = remoteBatchingRegistry;
-        }
 
         @Override
         public int size() {
             return 0;
         }
 
-        @Override
-        public Observable<Void> register(String id, Observable<InstanceInfo> registrationUpdates, Source source) {
-            throw new IllegalStateException("method not supported");
-        }
 
         @Override
-        public Observable<Boolean> register(InstanceInfo instanceInfo, Source source) {
-            logger.info("Adding {}", instanceInfo);
-            relay.onNext(new ChangeNotification<>(ChangeNotification.Kind.Add, instanceInfo));
-            return Observable.just(true);
-        }
-
-        @Override
-        public Observable<Boolean> unregister(InstanceInfo instanceInfo, Source source) {
-            logger.info("Removing {}", instanceInfo);
-            relay.onNext(new ChangeNotification<>(ChangeNotification.Kind.Delete, instanceInfo));
-            return Observable.just(true);
+        public Observable<Void> connect(Source source, final Observable<ChangeNotification<InstanceInfo>> registrationUpdates) {
+            return Observable.<Void>never()
+                    .doOnSubscribe(new Action0() {
+                        @Override
+                        public void call() {
+                            registrationUpdates.subscribe(relay);
+                        }
+                    });
         }
 
         @Override
@@ -159,24 +141,13 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
 
         @Override
         public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
-            return relay.mergeWith(
-                    remoteBatchingRegistry.forInterest(interest)
-                            .map(new Func1<StreamStateNotification.BufferState, ChangeNotification<InstanceInfo>>() {
-                                @Override
-                                public ChangeNotification<InstanceInfo> call(StreamStateNotification.BufferState state) {
-                                    if (state == StreamStateNotification.BufferState.BufferEnd) {
-                                        return new StreamStateNotification<>(state, interest);
-                                    }
-                                    return null;
-                                }
-                            })
-                            .filter(RxFunctions.filterNullValuesFunc())
-            );
+            return relay;
         }
 
         @Override
         public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest, Source.SourceMatcher sourceMatcher) {
-            return Observable.error(new UnsupportedOperationException("Not supported"));
+            return Observable.never();
+
         }
 
         @Override
@@ -185,27 +156,25 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
         }
 
         @Override
-        public Observable<Long> evictAllExcept(Source.SourceMatcher retainMatcher) {
-            return Observable.just(0l);
-        }
-
-        @Override
-        public Observable<? extends MultiSourcedDataHolder<InstanceInfo>> getHolders() {
+        public Observable<MultiSourcedDataHolder<InstanceInfo>> getHolders() {
             return Observable.error(new UnsupportedOperationException("Not supported"));
         }
 
         @Override
         public Observable<Void> shutdown() {
-            remoteBatchingRegistry.shutdown();
             relay.onCompleted();
             return Observable.empty();
         }
 
         @Override
         public Observable<Void> shutdown(Throwable cause) {
-            remoteBatchingRegistry.shutdown();
             relay.onError(cause);
             return Observable.empty();
+        }
+
+        @Override
+        public Source getSource() {
+            return null;
         }
     }
 }

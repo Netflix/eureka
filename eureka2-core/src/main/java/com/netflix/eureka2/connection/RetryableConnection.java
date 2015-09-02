@@ -3,6 +3,8 @@ package com.netflix.eureka2.connection;
 import rx.Observable;
 import rx.functions.Action0;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * Provides the following:
  * - channelObservable that emits the latest active channel being used by the connection
@@ -18,6 +20,8 @@ public class RetryableConnection<CHANNEL> {
     private final Observable<Void> initObservable;
     private final Action0 shutdownHook;
 
+    private final AtomicBoolean closed;
+
     public RetryableConnection(Observable<CHANNEL> channelObservable,
                                Observable<Void> retryableLifecycle,
                                Observable<Void> initObservable,
@@ -26,6 +30,7 @@ public class RetryableConnection<CHANNEL> {
         this.retryableLifecycle = retryableLifecycle;
         this.initObservable = initObservable;
         this.shutdownHook = shutdownHook;
+        this.closed = new AtomicBoolean(false);
     }
 
     public Observable<CHANNEL> getChannelObservable() {
@@ -41,6 +46,9 @@ public class RetryableConnection<CHANNEL> {
     }
 
     public void close() {
-        shutdownHook.call();
+        boolean alreadyClosed = closed.getAndSet(true);
+        if (!alreadyClosed) {
+            shutdownHook.call();
+        }
     }
 }

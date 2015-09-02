@@ -102,6 +102,10 @@ public enum SampleInstanceInfo {
         return builder;
     }
 
+    /**
+     * return an interator that creates new InstanceInfos based on the template, where the template will define the
+     * appName and vipAddress for all the IsntanceInfos
+     */
     public static Iterator<InstanceInfo> collectionOf(final String baseName, final InstanceInfo template) {
         final AwsDataCenterInfo templateDataCenter = (AwsDataCenterInfo) template.getDataCenterInfo();
         final AtomicInteger idx = new AtomicInteger();

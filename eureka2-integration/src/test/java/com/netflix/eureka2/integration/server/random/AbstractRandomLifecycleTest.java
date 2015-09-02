@@ -1,10 +1,7 @@
 package com.netflix.eureka2.integration.server.random;
 
-import com.netflix.eureka2.integration.IntegrationTestClassSetup;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +14,7 @@ import static org.hamcrest.number.OrderingComparison.lessThanOrEqualTo;
 /**
  * @author David Liu
  */
-public abstract class AbstractRandomLifecycleTest extends IntegrationTestClassSetup {
+public abstract class AbstractRandomLifecycleTest {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractRandomLifecycleTest.class);
 

@@ -52,6 +52,12 @@ allprojects {
             maven { url 'http://oss.jfrog.org/oss-snapshot-local' }
         }
     }
+
+    // Until eureka-ui is released, snapshot repo dependency is always required.
+    repositories {
+        maven { url 'http://oss.jfrog.org/oss-snapshot-local' }
+    }
+
 }
 
 subprojects {

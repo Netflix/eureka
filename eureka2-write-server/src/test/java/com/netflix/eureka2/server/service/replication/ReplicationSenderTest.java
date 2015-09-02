@@ -11,21 +11,24 @@ import com.netflix.eureka2.channel.ReplicationChannel;
 import com.netflix.eureka2.channel.TestChannelFactory;
 import com.netflix.eureka2.channel.TestSenderReplicationChannel;
 import com.netflix.eureka2.channel.TestSenderReplicationChannel.ReplicationItem;
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
 import com.netflix.eureka2.protocol.common.AddInstance;
 import com.netflix.eureka2.protocol.common.DeleteInstance;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
+import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.SenderReplicationChannel;
 import com.netflix.eureka2.server.channel.SenderReplicationChannelFactory;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
+import com.netflix.eureka2.utils.rx.NoOpSubscriber;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -66,10 +69,12 @@ public class ReplicationSenderTest {
 
     private final TestScheduler testScheduler = Schedulers.test();
 
-    private final SourcedEurekaRegistry<InstanceInfo> registry =
-            new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics(), testScheduler);
+    private final EurekaRegistry<InstanceInfo> registry =
+            new EurekaRegistryImpl(new IndexRegistryImpl<InstanceInfo>(), EurekaRegistryMetricFactory.registryMetrics(), testScheduler);
     private final Source localSource = new Source(Source.Origin.LOCAL);
 
+    private ReplaySubject<ChangeNotification<InstanceInfo>> localContentSubject;
+    private Subscriber<Void> localContentSubscriber;
     private List<InstanceInfo> registryContent;
     private List<String> registryIds;
 
@@ -86,6 +91,13 @@ public class ReplicationSenderTest {
                 SampleInstanceInfo.CliServer.build(),
                 SampleInstanceInfo.CliServer.build()
         );
+
+        localContentSubject = ReplaySubject.create();
+        for (InstanceInfo instanceInfo : registryContent) {
+            localContentSubject.onNext(new ChangeNotification<>(ChangeNotification.Kind.Add, instanceInfo));
+        }
+        localContentSubscriber = new NoOpSubscriber<>();
+
         registryIds = new ArrayList<>();
         for (InstanceInfo instanceInfo : registryContent) {
             registryIds.add(instanceInfo.getId());
@@ -95,10 +107,8 @@ public class ReplicationSenderTest {
         factory = new TestChannelFactory<>(mockFactory);
         handler = spy(new ReplicationSenderImpl(factory, RETRY_WAIT_MILLIS, registry, SELF_INFO, testScheduler));
 
-        for (InstanceInfo instanceInfo : registryContent) {
-            registry.register(instanceInfo, localSource).subscribe();
-            testScheduler.triggerActions();
-        }
+        registry.connect(localSource, localContentSubject).subscribe(localContentSubscriber);
+        testScheduler.triggerActions();
 
         Source senderSource = new Source(Source.Origin.REPLICATED, SELF_INFO.getId(), 0);
         hello = new ReplicationHello(senderSource, registry.size());
@@ -106,6 +116,7 @@ public class ReplicationSenderTest {
 
     @After
     public void tearDown() throws Exception {
+        localContentSubscriber.unsubscribe();
         handler.shutdown();
         registry.shutdown();
     }
@@ -139,10 +150,10 @@ public class ReplicationSenderTest {
         assertThat(testChannel.operations.iterator().next().getSource().getName(), equalTo(hello.getSource().getName()));
         assertThat(testChannel.replicationItems.size(), is(0));
 
-        registry.unregister(registryContent.get(0), localSource).subscribe();
+        localContentSubject.onNext(new ChangeNotification<>(ChangeNotification.Kind.Delete, registryContent.get(0)));
         testScheduler.triggerActions();
 
-        registry.unregister(registryContent.get(1), localSource).subscribe();
+        localContentSubject.onNext(new ChangeNotification<>(ChangeNotification.Kind.Delete, registryContent.get(1)));
         testScheduler.triggerActions();
 
         assertThat(testChannel.replicationItems.size(), is(0));
@@ -176,10 +187,10 @@ public class ReplicationSenderTest {
 
         assertThat(ids, containsInAnyOrder(registryIds.toArray()));
 
-        registry.unregister(registryContent.get(0), localSource).subscribe();
+        localContentSubject.onNext(new ChangeNotification<>(ChangeNotification.Kind.Delete, registryContent.get(0)));
         testScheduler.triggerActions();
 
-        registry.unregister(registryContent.get(1), localSource).subscribe();
+        localContentSubject.onNext(new ChangeNotification<>(ChangeNotification.Kind.Delete, registryContent.get(1)));
         testScheduler.triggerActions();
 
         assertThat(testChannel.replicationItems.size(), is(7));
@@ -334,8 +345,8 @@ public class ReplicationSenderTest {
         assertThat(testChannel.closeCalled, is(true));
 
         // do some more registers, they should not go to the channel
-        registry.register(SampleInstanceInfo.ZuulServer.build(), localSource).subscribe();
-        registry.register(SampleInstanceInfo.ZuulServer.build(), localSource).subscribe();
+        localContentSubject.onNext(new ChangeNotification<>(ChangeNotification.Kind.Add, SampleInstanceInfo.ZuulServer.build()));
+        localContentSubject.onNext(new ChangeNotification<>(ChangeNotification.Kind.Add, SampleInstanceInfo.ZuulServer.build()));
         testScheduler.triggerActions();
 
         // Verify that no new channel is created

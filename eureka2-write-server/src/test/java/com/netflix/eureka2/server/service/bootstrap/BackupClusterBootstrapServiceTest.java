@@ -3,14 +3,15 @@ package com.netflix.eureka2.server.service.bootstrap;
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.StreamStateNotification;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
+import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Source.Origin;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.resolver.ClusterAddress;
 import com.netflix.eureka2.server.resolver.EurekaClusterResolver;
@@ -50,7 +51,8 @@ public class BackupClusterBootstrapServiceTest {
 
     private RegistryBootstrapService bootstrapService;
 
-    private final SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics(), testScheduler);
+    private final EurekaRegistry<InstanceInfo> registry = new EurekaRegistryImpl(
+            new IndexRegistryImpl<InstanceInfo>(), EurekaRegistryMetricFactory.registryMetrics(), testScheduler);
 
     @Before
     public void setUp() throws Exception {

@@ -82,6 +82,14 @@ public final class Json {
         }
     }
 
+    public static <T> String toStringJson(T value) {
+        try {
+            return MAPPER.writeValueAsString(value);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Value of type " + value.getClass().getName() + " could not be serialized into JSON", e);
+        }
+    }
+
     public static <T> byte[] toByteArrayJson(T value) {
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();

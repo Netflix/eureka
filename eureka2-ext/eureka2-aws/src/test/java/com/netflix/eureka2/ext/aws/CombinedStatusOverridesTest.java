@@ -2,8 +2,8 @@ package com.netflix.eureka2.ext.aws;
 
 import com.amazonaws.services.autoscaling.AmazonAutoScaling;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
-import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
+import com.netflix.eureka2.registry.ChangeNotificationObservable;
+import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.registry.EurekaRegistrationProcessorStub;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
@@ -23,7 +23,6 @@ import org.junit.Test;
 import rx.Observable;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
-import rx.subjects.PublishSubject;
 
 import java.util.concurrent.TimeUnit;
 
@@ -59,7 +58,7 @@ public class CombinedStatusOverridesTest {
     private final AwsConfiguration config = mock(AwsConfiguration.class);
 
     private final EurekaRegistrationProcessorStub registrationDelegate = new EurekaRegistrationProcessorStub();
-    private final PublishSubject<InstanceInfo> registrationSubject = PublishSubject.create();
+    private final ChangeNotificationObservable dataStream = ChangeNotificationObservable.create();
 
     private final MockS3Service mockS3Service = new MockS3Service();
     private final MockAutoScalingService mockAutoScalingService = new MockAutoScalingService();
@@ -95,14 +94,12 @@ public class CombinedStatusOverridesTest {
 
         RegistrationChannelProcessorProvider combined = new RegistrationChannelProcessorProvider(
                 registrationDelegate,
-                optionalOverridesService,
-                keeper,
-                EurekaRegistryMetricFactory.registryMetrics()
+                optionalOverridesService
         );
 
         processor = combined.get();
 
-        processor.register(SEED.getId(), registrationSubject, SOURCE).subscribe();
+        processor.connect(SEED.getId(), SOURCE, dataStream).subscribe();
     }
 
     @After
@@ -115,7 +112,7 @@ public class CombinedStatusOverridesTest {
     @Test
     public void testOOSInAsgButNotInS3() throws Exception {
         // initial register
-        registrationSubject.onNext(SEED);
+        dataStream.register(SEED);
         registrationDelegate.verifyRegisteredWith(NOT_OOS);
 
         mockAutoScalingService.disableAsg(SEED.getAsg());
@@ -127,7 +124,7 @@ public class CombinedStatusOverridesTest {
     @Test
     public void testOOSInS3ButNotInAsg() throws Exception {
         // initial register
-        registrationSubject.onNext(SEED);
+        dataStream.register(SEED);
         registrationDelegate.verifyRegisteredWith(NOT_OOS);
 
         s3Overrides.setOutOfService(SEED).subscribe();
@@ -139,7 +136,7 @@ public class CombinedStatusOverridesTest {
     @Test
     public void testOOSInBoth() throws Exception {
         // initial register
-        registrationSubject.onNext(SEED);
+        dataStream.register(SEED);
         registrationDelegate.verifyRegisteredWith(NOT_OOS);
 
         s3Overrides.setOutOfService(SEED).subscribe();

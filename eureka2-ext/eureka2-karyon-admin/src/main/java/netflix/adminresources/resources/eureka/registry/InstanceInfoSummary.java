@@ -38,8 +38,13 @@ public class InstanceInfoSummary {
         this.status = instanceInfo.getStatus();
         this.vipAddress = instanceInfo.getVipAddress();
         NetworkAddress networkAddress = IP_ADDRESS_SELECTOR.returnAddress(instanceInfo.getDataCenterInfo().getAddresses());
-        this.ipAddress = networkAddress.getIpAddress();
-        this.hostName = networkAddress.getHostName();
+        if (networkAddress == null) {
+            this.ipAddress = null;
+            this.hostName = null;
+        } else {
+            this.ipAddress = networkAddress.getIpAddress();
+            this.hostName = networkAddress.getHostName();
+        }
     }
 
     public String getApplication() {

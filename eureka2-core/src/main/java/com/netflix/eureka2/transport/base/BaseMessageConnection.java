@@ -16,13 +16,12 @@
 
 package com.netflix.eureka2.transport.base;
 
+import java.net.SocketAddress;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.transport.Acknowledgement;
@@ -48,8 +47,6 @@ import rx.subjects.Subject;
 public class BaseMessageConnection implements MessageConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseMessageConnection.class);
-
-    private static final Pattern NETTY_CHANNEL_NAME_RE = Pattern.compile("\\[.*=>\\s*(.*)\\]");
 
     private final String name;
     private final ObservableConnection<Object, Object> connection;
@@ -118,11 +115,8 @@ public class BaseMessageConnection implements MessageConnection {
     }
 
     private String descriptiveName(String name) {
-        String endpointName = connection.getChannel().toString();
-        Matcher matcher = NETTY_CHANNEL_NAME_RE.matcher(endpointName);
-        if (matcher.matches()) {
-            endpointName = matcher.group(1);
-        }
+        SocketAddress remoteAddress = connection.getChannel().remoteAddress();
+        String endpointName = remoteAddress == null ? "<no-remote>" : remoteAddress.toString();
         return name + "=>" + endpointName;
     }
 
@@ -183,23 +177,43 @@ public class BaseMessageConnection implements MessageConnection {
     // TODO: Return always the same observable
     @Override
     public Observable<Object> incoming() {
-        return connection.getInput().filter(new Func1<Object, Boolean>() {
-            @Override
-            public Boolean call(Object message) {
-                return !(message instanceof Acknowledgement);
-            }
-        }).doOnNext(new Action1<Object>() {
-            @Override
-            public void call(Object o) {
-                metrics.incrementIncomingMessageCounter(o.getClass(), 1);
-            }
-        }).doOnTerminate(new Action0() {
-            @Override
-            public void call() {
-                // always close with an exception here as the underlying connection never onError
-                shutdown(new IllegalStateException("{connection=" + name + "}: connection input onCompleted"));
-            }
-        });
+        return incoming(true);
+    }
+
+    // TODO update interface
+    public Observable<Object> incoming(final boolean terminateWithExceptionAlways) {
+        final Exception onErrorException = new IllegalStateException("{connection=" + name + "}: connection input onErrored");
+        final Exception onCompleteException = new IllegalStateException("{connection=" + name + "}: connection input onCompleted");
+        return connection.getInput()
+                .filter(new Func1<Object, Boolean>() {
+                    @Override
+                    public Boolean call(Object message) {
+                        return !(message instanceof Acknowledgement);
+                    }
+                })
+                .doOnNext(new Action1<Object>() {
+                    @Override
+                    public void call(Object o) {
+                        metrics.incrementIncomingMessageCounter(o.getClass(), 1);
+                    }
+                })
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        shutdown(onErrorException);
+                    }
+                })
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        if (terminateWithExceptionAlways) {
+                            // if configured so, always close with an exception here as the underlying connection never onError
+                            shutdown(onCompleteException);
+                        } else {
+                            shutdown();
+                        }
+                    }
+                });
     }
 
     @Override
@@ -304,14 +318,19 @@ public class BaseMessageConnection implements MessageConnection {
     }
 
     private Observable<Void> writeWhenSubscribed(final Object message, final PendingAck ack) {
-        return connection.writeAndFlush(message)
-                .doOnCompleted(new Action0() {
+        return connection
+                .writeAndFlush(message)
+                .doOnSubscribe(new Action0() {
                     @Override
                     public void call() {
                         pendingAckQueue.add(ack);
                         metrics.incrementPendingAckCounter();
                         metrics.incrementOutgoingMessageCounter(message.getClass(), 1);
-
+                    }
+                })
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
                         // Connection might be closed when we serve this request, and since
                         // pendingAckQueue and closed variables are not changed together atomically, we check
                         // close status after adding item to pendingAckQueue, and optionally drain it.

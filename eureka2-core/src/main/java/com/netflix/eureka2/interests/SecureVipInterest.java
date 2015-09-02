@@ -22,4 +22,9 @@ public class SecureVipInterest extends AbstractPatternInterest<InstanceInfo> {
     protected String getValue(InstanceInfo data) {
         return data.getSecureVipAddress();
     }
+
+    @Override
+    public boolean isAtomicInterest() {
+        return true;
+    }
 }

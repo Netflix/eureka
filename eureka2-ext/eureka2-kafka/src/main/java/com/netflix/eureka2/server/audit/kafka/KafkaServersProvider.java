@@ -32,11 +32,6 @@ import com.netflix.eureka2.utils.StreamedDataCollector;
 import rx.functions.Func1;
 
 /**
- * This class creates observable of Kafka addresses that can be set
- * depending on the provided configuration either directly from a property value
- * ({@link KafkaAuditConfig#kafkaServerList}) or Eureka registry
- * ({@link KafkaAuditConfig#KAFKA_VIP_KEY}).
- *
  * @author Tomasz Bak
  */
 public class KafkaServersProvider implements Provider<StreamedDataCollector<InetSocketAddress>> {

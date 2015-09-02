@@ -20,8 +20,23 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 
 /**
+ * {@link SelfInfoResolver} provides observable of the local node's {@link InstanceInfo} objects.
+ * Apart of the standard {@link InstanceInfo} data, Eureka sets meta-data that indicate what is
+ * the server type (write or read), or identity of the write cluster (for read nodes).
+ *
  * @author David Liu
  */
 public interface SelfInfoResolver {
+
+    /**
+     * Meta annotation key which value denotes Eureka's write cluster id.
+     */
+    String META_EUREKA_WRITE_CLUSTER_ID = "eureka2.writeClusterId";
+
+    /**
+     * Meta annotation key for Eureka server type (write/read).
+     */
+    String META_EUREKA_SERVER_TYPE = "eureka2.serverType";
+
     Observable<InstanceInfo> resolve();
 }

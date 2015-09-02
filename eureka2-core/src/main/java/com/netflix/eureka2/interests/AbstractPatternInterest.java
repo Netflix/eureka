@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 /**
  * @author Tomasz Bak
  */
-public abstract class AbstractPatternInterest<T> extends Interest<T> {
+public abstract class AbstractPatternInterest<T> implements Interest<T> {
 
     private final String pattern;
     private final Operator operator;

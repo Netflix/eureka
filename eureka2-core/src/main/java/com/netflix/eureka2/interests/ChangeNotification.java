@@ -29,6 +29,10 @@ public class ChangeNotification<T> {
         return _isDataNotification(kind);
     }
 
+    public boolean isStreamStateNotification() {
+        return !_isDataNotification(kind);
+    }
+
     public Kind getKind() {
         return kind;
     }

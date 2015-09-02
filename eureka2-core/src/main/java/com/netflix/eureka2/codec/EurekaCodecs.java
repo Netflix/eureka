@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.Set;
 
 import com.netflix.eureka2.codec.json.EurekaJsonCodec;
+import com.netflix.eureka2.codec.json.MultiSourcedDataHolderJsonCodec;
+import com.netflix.eureka2.registry.data.MultiSourcedDataHolder;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 
 /**
@@ -23,6 +25,22 @@ public final class EurekaCodecs {
         switch (codecType) {
             case Json:
                 return new EurekaJsonCodec<>((Set) Collections.singleton(InstanceInfo.class));
+        }
+        throw new IllegalArgumentException(codecType + " not supported yet");
+    }
+
+    public static EurekaCodec<MultiSourcedDataHolder<InstanceInfo>> getMultiSourcedDataHolderCodec(CodecType codecType) {
+        switch (codecType) {
+            case Json:
+                return new MultiSourcedDataHolderJsonCodec(false);
+        }
+        throw new IllegalArgumentException(codecType + " not supported yet");
+    }
+
+    public static EurekaCodec<MultiSourcedDataHolder<InstanceInfo>> getCompactMultiSourcedDataHolderCodec(CodecType codecType) {
+        switch (codecType) {
+            case Json:
+                return new MultiSourcedDataHolderJsonCodec(true);
         }
         throw new IllegalArgumentException(codecType + " not supported yet");
     }

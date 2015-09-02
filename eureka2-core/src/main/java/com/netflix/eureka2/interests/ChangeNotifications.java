@@ -74,7 +74,13 @@ public final class ChangeNotifications {
         }
     };
 
+    private static final ChangeNotification[] EMPTY_CHANGE_NOTIFICATIONS = new ChangeNotification[0];
+
     private ChangeNotifications() {
+    }
+
+    public static <T> ChangeNotification<T>[] emptyChangeNotifications() {
+        return EMPTY_CHANGE_NOTIFICATIONS;
     }
 
     public static Identity<InstanceInfo, String> instanceInfoIdentity() {
@@ -184,18 +190,23 @@ public final class ChangeNotifications {
         };
     }
 
+    public static <T> Transformer<ChangeNotification<T>, List<ChangeNotification<T>>> buffers() {
+        return buffers(false);
+    }
+
     /**
      * Convert change notification stream with buffering sentinels into stream of lists, where each
-     * list element contains a batch of data delineated by the markers. Only non-empty lists are
-     * issued, which means that for two successive BufferSentinels from the stream, the second
-     * one will be swallowed.
+     * list element contains a batch of data delineated by the markers.
+     *
+     * if emitEmpty is false, then only non-empty lists are issued, which means that for two successive
+     * BufferSentinels from the stream, the second one will be swallowed.
      *
      * an onComplete on the change notification stream is considered as another (the last) BufferSentinel.
      * an onError will not return any partial buffered data.
      *
      * @return observable of non-empty list objects
      */
-    public static <T> Transformer<ChangeNotification<T>, List<ChangeNotification<T>>> buffers() {
+    public static <T> Transformer<ChangeNotification<T>, List<ChangeNotification<T>>> buffers(final boolean emitEmpty) {
         return new Transformer<ChangeNotification<T>, List<ChangeNotification<T>>>() {
             @Override
             public Observable<List<ChangeNotification<T>>> call(Observable<ChangeNotification<T>> notifications) {
@@ -205,7 +216,7 @@ public final class ChangeNotifications {
                 return notifications
                         .filter(RxFunctions.filterNullValuesFunc())
                         .materialize()
-                                // concatMap as the internal observables all onComplete immediately
+                        // concatMap as the internal observables all onComplete immediately
                         .concatMap(new Func1<Notification<ChangeNotification<T>>, Observable<List<ChangeNotification<T>>>>() {
                             @Override
                             public Observable<List<ChangeNotification<T>>> call(Notification<ChangeNotification<T>> rxNotification) {
@@ -229,6 +240,12 @@ public final class ChangeNotifications {
                                 }
 
                                 return Observable.empty();
+                            }
+                        })
+                        .filter(new Func1<List<ChangeNotification<T>>, Boolean>() {
+                            @Override
+                            public Boolean call(List<ChangeNotification<T>> notificationList) {
+                                return emitEmpty || !notificationList.isEmpty();
                             }
                         });
             }

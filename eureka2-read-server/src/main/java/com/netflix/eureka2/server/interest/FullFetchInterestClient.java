@@ -16,7 +16,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
 import org.slf4j.Logger;
@@ -49,12 +49,12 @@ public class FullFetchInterestClient extends AbstractInterestClient implements H
     private final FullFetchInterestClientHealth healthProvider;
 
     @Inject
-    public FullFetchInterestClient(SourcedEurekaRegistry<InstanceInfo> registry,
+    public FullFetchInterestClient(EurekaRegistry<InstanceInfo> registry,
                                    ChannelFactory<InterestChannel> channelFactory) {
         this(registry, channelFactory, DEFAULT_RETRY_WAIT_MILLIS);
     }
 
-    /* visible for testing*/ FullFetchInterestClient(final SourcedEurekaRegistry<InstanceInfo> registry,
+    /* visible for testing*/ FullFetchInterestClient(final EurekaRegistry<InstanceInfo> registry,
                                                      ChannelFactory<InterestChannel> channelFactory,
                                                      int retryWaitMillis) {
         super(registry, retryWaitMillis, Schedulers.computation());
@@ -73,7 +73,6 @@ public class FullFetchInterestClient extends AbstractInterestClient implements H
 
         this.retryableConnection = retryableConnectionFactory.zeroOpConnection(executeOnChannel);
 
-        registryEvictionSubscribe(retryableConnection);
         lifecycleSubscribe(retryableConnection);
         bootstrapUploadSubscribe();
     }

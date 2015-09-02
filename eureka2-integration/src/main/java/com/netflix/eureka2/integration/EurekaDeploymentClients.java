@@ -11,11 +11,14 @@ import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Source.Origin;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
-import com.netflix.eureka2.utils.rx.NoOpSubscriber;
+import com.netflix.eureka2.utils.rx.LoggingSubscriber;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.Observable;
 import rx.functions.Action1;
 
 import static com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo.collectionOf;
@@ -30,6 +33,7 @@ import static org.junit.Assert.assertTrue;
  * @author Tomasz Bak
  */
 public class EurekaDeploymentClients {
+    private static final Logger logger = LoggerFactory.getLogger(EurekaDeploymentClients.class);
 
     private static final int TIMEOUT_SEC = 30;
 
@@ -42,14 +46,18 @@ public class EurekaDeploymentClients {
     public void fillUpRegistryOfServer(int serverIdx, int count, InstanceInfo instanceTemplate) throws Exception {
         Iterator<InstanceInfo> instanceIt = collectionOf(instanceTemplate.getApp(), instanceTemplate);
         Source source = new Source(Origin.LOCAL, "write" + serverIdx);
-        SourcedEurekaRegistry<InstanceInfo> eurekaServerRegistry = eurekaDeployment.getWriteCluster().getServer(serverIdx).getEurekaServerRegistry();
+        EurekaRegistry<InstanceInfo> eurekaServerRegistry = eurekaDeployment.getWriteCluster().getServer(serverIdx).getEurekaServerRegistry();
 
         final Set<String> expectedInstances = new HashSet<>();
+        final Set<ChangeNotification<InstanceInfo>> instanceInfosToAdd = new HashSet<>();
         for (int i = 0; i < count; i++) {
             InstanceInfo next = instanceIt.next();
-            eurekaServerRegistry.register(next, source).subscribe(new NoOpSubscriber<Boolean>());
+            instanceInfosToAdd.add(new ChangeNotification<>(Kind.Add, next));
             expectedInstances.add(next.getId());
         }
+
+        Observable<ChangeNotification<InstanceInfo>> dataStream = Observable.from(instanceInfosToAdd);
+        eurekaServerRegistry.connect(source, dataStream).subscribe(new LoggingSubscriber<Void>(logger));
 
         final CountDownLatch latch = new CountDownLatch(expectedInstances.size());
 
@@ -74,7 +82,7 @@ public class EurekaDeploymentClients {
     }
 
     public void verifyWriteServerRegistryContent(int writeServerIdx, String appName, int count) throws InterruptedException {
-        SourcedEurekaRegistry<InstanceInfo> registry = registryOf(writeServerIdx);
+        EurekaRegistry<InstanceInfo> registry = registryOf(writeServerIdx);
 
         final CountDownLatch latch = new CountDownLatch(count);
 
@@ -92,7 +100,7 @@ public class EurekaDeploymentClients {
     }
 
     public void verifyWriteServerHasNoInstance(int writeServerIdx, String appName) throws InterruptedException {
-        SourcedEurekaRegistry<InstanceInfo> registry = registryOf(writeServerIdx);
+        EurekaRegistry<InstanceInfo> registry = registryOf(writeServerIdx);
 
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -111,7 +119,7 @@ public class EurekaDeploymentClients {
         assertFalse("Unexpected items in the registry found", latch.await(1, TimeUnit.SECONDS));
     }
 
-    private SourcedEurekaRegistry<InstanceInfo> registryOf(int writeServerIdx) {
+    private EurekaRegistry<InstanceInfo> registryOf(int writeServerIdx) {
         EmbeddedWriteServer server = eurekaDeployment.getWriteCluster().getServer(writeServerIdx);
         return server.getEurekaServerRegistry();
     }

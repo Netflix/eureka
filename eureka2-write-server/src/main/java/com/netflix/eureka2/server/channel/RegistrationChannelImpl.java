@@ -2,168 +2,71 @@ package com.netflix.eureka2.server.channel;
 
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.channel.RegistrationChannel.STATE;
+import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
-import com.netflix.eureka2.protocol.EurekaProtocolError;
 import com.netflix.eureka2.protocol.registration.Register;
-import com.netflix.eureka2.protocol.registration.Unregister;
-import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
+import com.netflix.eureka2.protocol.registration.RegistrationMessage;
+import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
-import com.netflix.eureka2.utils.ExceptionUtils;
+import com.netflix.eureka2.utils.rx.LoggingSubscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Action1;
-import rx.subjects.BehaviorSubject;
+import rx.functions.Func1;
 
 /**
- * @author Nitesh Kant
+ * Note that
+ *
+ * @author David Liu
  */
 public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> implements RegistrationChannel, Sourced {
 
     private static final Logger logger = LoggerFactory.getLogger(RegistrationChannelImpl.class);
-    private static final Exception CONNECTION_TERMINATED = ExceptionUtils.trimStackTraceof(new Exception("Registration connection terminated without unregister request"));
 
-    private final Source selfSource;
-    private final EurekaRegistrationProcessor<InstanceInfo> registrationProcessor;
+    private final Observable<Void> control;
+    private final Observable<ChangeNotification<InstanceInfo>> data;
+    private final Subscriber<Void> controlSubscriber;
+    private final Subscriber<Void> channelSubscriber;
 
-    private final BehaviorSubject<InstanceInfo> registrationSubject = BehaviorSubject.create();
-    private volatile InstanceInfo lastInstanceInfo;
+    private volatile Source selfSource;
+    private volatile InstanceInfo cachedInstanceInfo;
 
-    public RegistrationChannelImpl(EurekaRegistrationProcessor registrationProcessor,
+    public RegistrationChannelImpl(final EurekaRegistrationProcessor<InstanceInfo> registrationProcessor,
                                    MessageConnection transport,
                                    RegistrationChannelMetrics metrics) {
         super(STATE.Idle, transport, metrics);
-        this.registrationProcessor = registrationProcessor;
+        this.channelSubscriber = new LoggingSubscriber<>(logger, "channel");
+        this.controlSubscriber = new LoggingSubscriber<>(logger, "control");
 
-        selfSource = new Source(Source.Origin.LOCAL);
-
-        subscribeToTransportInput(new Action1<Object>() {
-            @Override
-            public void call(Object message) {
-                if (message instanceof Register) {
-                    InstanceInfo instanceInfo = ((Register) message).getInstanceInfo();
-                    register(instanceInfo).subscribe(new Subscriber<Void>() {
-                        @Override
-                        public void onCompleted() {
-                        }
-
-                        @Override
-                        public void onError(Throwable e) {
-                            logger.warn("Error calling register", e);
-                        }
-
-                        @Override
-                        public void onNext(Void aVoid) {
-                        }
-                    });
-                } else if (message instanceof Unregister) {
-                    unregister().subscribe(new Subscriber<Void>() {
-                        @Override
-                        public void onCompleted() {
-                        }
-
-                        @Override
-                        public void onError(Throwable e) {
-                            logger.warn("Error calling unregister", e);
-                        }
-
-                        @Override
-                        public void onNext(Void aVoid) {
-                        }
-                    });
-                } else {
-                    sendErrorOnTransport(new EurekaProtocolError("Unexpected message " + message));
-                }
-            }
-        });
-
-        transport.lifecycleObservable().subscribe(new Subscriber<Void>() {
-            @Override
-            public void onCompleted() {
-                evictIfPresent();
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                evictIfPresent();
-            }
-
-            @Override
-            public void onNext(Void aVoid) {
-                // No op
-            }
-
-            private void evictIfPresent() {
-                if (state.get() == STATE.Registered) {
-                    logger.info("Connection terminated without unregister; adding instance {} to eviction queue", lastInstanceInfo.getId());
-                    registrationSubject.onError(CONNECTION_TERMINATED);
-                }
-            }
-        });
-    }
-
-    @Override
-    public Source getSource() {
-        return selfSource;
-    }
-
-    /**
-     * Cases:
-     * 1. channel state is Idle. Call register on the registry and
-     *   1a. if successful, ack on the channel. If the ack fails, we ignore the failure and let the client deal with it
-     *   2b. if unsuccessful, send error on the transport and close the channel (client need to reconnect back)
-     * 2. channel state is Registered. This is the same as case 1.
-     * 3. channel state is Closed. send ChannelClosedException on the transport and re-close the channel.
-     *
-     */
-    @Override
-    public Observable<Void> register(final InstanceInfo instanceInfo) {
-        if (moveToState(STATE.Idle, STATE.Registered)) {
-            return firstRegistration(instanceInfo);
-        }
-        if (getState() == STATE.Registered) {
-            return registrationUpdate(instanceInfo);
-        }
-        STATE currentState = getState();
-        if (STATE.Closed == currentState) {
-            // Since channel is already closed and hence the transport, we don't need to send an error on transport.
-            return Observable.error(CHANNEL_CLOSED_EXCEPTION);
-        } else {
-            final Exception exception = new IllegalStateException("Unknown state error when registering, current state: " + currentState);
-            return sendErrorOnTransport(exception).doOnTerminate(new Action0() {
-                @Override
-                public void call() {
-                    close(exception);
-                }
-            });
-        }
-    }
-
-    private Observable<Void> firstRegistration(final InstanceInfo instanceInfo) {
-        logger.debug("Registering service in registry: {}", instanceInfo);
-        registrationSubject.onNext(instanceInfo);
-        lastInstanceInfo = instanceInfo;
-
-        return registrationProcessor.register(instanceInfo.getId(), registrationSubject, selfSource)
-                .ignoreElements()
-                .cast(Void.class)
-                .doOnError(new Action1<Throwable>() {
+        Observable<RegistrationMessage> input = connectInputToLifecycle(transport.incoming())
+                .filter(new Func1<Object, Boolean>() {
                     @Override
-                    public void call(Throwable throwable) {
-                        sendErrorOnTransport(throwable).subscribe(new Subscriber<Void>() {
+                    public Boolean call(Object message) {
+                        boolean isKnown = message instanceof RegistrationMessage;
+                        if (!isKnown) {
+                            logger.warn("Unrecognized discovery protocol message of type " + message.getClass());
+                        }
+                        return isKnown;
+                    }
+                })
+                .cast(RegistrationMessage.class)
+                .doOnNext(new Action1<RegistrationMessage>() {
+                    @Override
+                    public void call(RegistrationMessage message) {
+                        sendAckOnTransport().subscribe(new Subscriber<Void>() {
                             @Override
                             public void onCompleted() {
-                                close();
                             }
 
                             @Override
                             public void onError(Throwable e) {
-                                close(e);
+                                logger.warn("Failed to send ack for register operation for instanceInfo {}", cachedInstanceInfo);
                             }
 
                             @Override
@@ -172,72 +75,112 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
                         });
                     }
                 })
-                .doOnCompleted(new Action0() {
+                .replay(1)
+                .refCount();
+
+        data = input
+                .concatMap(new Func1<RegistrationMessage, Observable<? extends ChangeNotification<InstanceInfo>>>() {  // TODO switchable to map instead?
                     @Override
-                    public void call() {
-                        sendAckOnTransport().subscribe(new Subscriber<Void>() {
-                            @Override
-                            public void onCompleted() {
-                            }
+                    public Observable<? extends ChangeNotification<InstanceInfo>> call(RegistrationMessage message) {
+                        if (STATE.Closed == state.get()) {
+                            return Observable.error(CHANNEL_CLOSED_EXCEPTION);
+                        }
 
-                            @Override
-                            public void onError(Throwable e) {
-                                logger.warn("Failed to send ack for register operation for instanceInfo {}", instanceInfo.getId());
-                            }
-
-                            @Override
-                            public void onNext(Void aVoid) {
-                            }
-                        });
+                        STATE currState = state.get();
+                        switch (currState) {
+                            case Idle:
+                                if (message instanceof Register) {  // first time registration
+                                    moveToState(STATE.Idle, STATE.Registered);
+                                    cachedInstanceInfo = ((Register) message).getInstanceInfo();
+                                    return Observable.just(new ChangeNotification<>(ChangeNotification.Kind.Add, cachedInstanceInfo));
+                                } else { // can only be Unregister, and we've never registered in the first place
+                                    // this code should not be reachable as the control would have terminated before now, here for safeguarding
+                                    return Observable.<ChangeNotification<InstanceInfo>>empty()
+                                            .doOnCompleted(new Action0() {
+                                                @Override
+                                                public void call() {
+                                                    close();
+                                                }
+                                            });
+                                }
+                            case Registered:
+                                if (message instanceof Register) {  // this is an update
+                                    cachedInstanceInfo = ((Register) message).getInstanceInfo();
+                                    return Observable.just(new ChangeNotification<>(ChangeNotification.Kind.Add, cachedInstanceInfo));
+                                } else { // can only be Unregister
+                                    return Observable.just(new ChangeNotification<>(ChangeNotification.Kind.Delete, cachedInstanceInfo))
+                                            .doOnCompleted(new Action0() {
+                                                @Override
+                                                public void call() {
+                                                    close();
+                                                }
+                                            });
+                                }
+                            case Closed:
+                            default:
+                                return Observable.<ChangeNotification<InstanceInfo>>empty()
+                                        .doOnCompleted(new Action0() {
+                                            @Override
+                                            public void call() {
+                                                close();
+                                            }
+                                        });
+                        }
                     }
                 });
+
+        control = input
+                .take(1)
+                .doOnNext(new Action1<RegistrationMessage>() {
+                    @Override
+                    public void call(RegistrationMessage message) {
+                        if (message instanceof Register) {
+                            String instanceId = ((Register) message).getInstanceInfo().getId();
+                            selfSource = new Source(Source.Origin.LOCAL, instanceId);
+                            registrationProcessor.connect(instanceId, selfSource, data).subscribe(channelSubscriber);
+                        } else {
+                            String errorMsg = "Illegal initial registration message, should start with Register but was " + message;
+                            logger.warn(errorMsg);
+                            close(new IllegalArgumentException(errorMsg));
+                        }
+                    }
+                })
+                .ignoreElements()
+                .cast(Void.class);
+
+        start();
     }
 
-    private Observable<Void> registrationUpdate(InstanceInfo instanceInfo) {
-        logger.debug("Registration update: {}", instanceInfo);
-        registrationSubject.onNext(instanceInfo);
-        return Observable.empty();
+    private void start() {
+        control.subscribe(controlSubscriber);
     }
 
-    /**
-     * Cases:
-     * 1. channel state is Registered. Call unregister on the registry, and
-     *   1a. if successful, ack on the channel and close the channel regardless of the ack result
-     *   1b. if unsuccessful, send error on the transport. TODO should we optimize and close the channel here?
-     * 2. channel state is Idle. This is a no-op so just ack on transport and close the channel
-     * 3. channel state is Closed. This is a no-op so just ack on transport and close the channel
-     *
-     * Note that acks can fail often if the client walks away immediately after sending an unregister
-     *
-     */
     @Override
-    public Observable<Void> unregister() {
-        STATE currentState = moveToState(STATE.Closed);
-        switch (currentState) {
-            case Registered:
-                logger.info("Unregistering service in registry: {}", lastInstanceInfo.getId());
-                registrationSubject.onCompleted();
-                break;
-            case Closed:
-                logger.info("Unregister on an already closed channel. This is a no-op");
-                return Observable.empty();  // no need to send ack on transport as channel is already closed
-            case Idle:
-                logger.info("Unregistered an Idle channel, This is a no-op");
-                break;
-        }
-        return sendAckOnTransport().doOnTerminate(new Action0() {
-            @Override
-            public void call() {
-                close();
-            }
-        });
+    public Source getSource() {
+        return selfSource;
     }
 
     @Override
     protected void _close() {
-        STATE previousState = moveToState(STATE.Closed);
-        if (previousState != STATE.Closed) {
+        STATE from = moveToState(STATE.Closed);
+        if (from != STATE.Closed) {  // if this is the first/only close
+            controlSubscriber.unsubscribe();
+            channelSubscriber.unsubscribe();
+            cachedInstanceInfo = null;
             super._close();
         }
+    }
+
+
+    // FIXME interface need to change
+    @Override
+    public Observable<Void> register(InstanceInfo instanceInfo) {
+        return null;
+    }
+
+    // FIXME interface need to change
+    @Override
+    public Observable<Void> unregister() {
+        return null;
     }
 }

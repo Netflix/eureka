@@ -9,6 +9,10 @@ import com.netflix.eureka2.registry.Sourced;
 public class SourcedChangeNotification<T> extends ChangeNotification<T> implements Sourced {
     private final Source source;
 
+    public SourcedChangeNotification(ChangeNotification<T> notification, Source source) {
+        this(notification.getKind(), notification.getData(), source);
+    }
+
     public SourcedChangeNotification(Kind kind, T data, Source source) {
         super(kind, data);
         this.source = source;

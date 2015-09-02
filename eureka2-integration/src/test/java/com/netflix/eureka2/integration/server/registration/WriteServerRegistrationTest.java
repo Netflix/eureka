@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.integration.IntegrationTestClassSetup;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
@@ -22,6 +21,7 @@ import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource.anEurekaDeploymentResource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -29,10 +29,10 @@ import static org.hamcrest.Matchers.is;
  * @author David Liu
  */
 @Category(IntegrationTest.class)
-public class WriteServerRegistrationTest extends IntegrationTestClassSetup {
+public class WriteServerRegistrationTest {
 
     @Rule
-    public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(1, 0);
+    public final EurekaDeploymentResource eurekaDeploymentResource = anEurekaDeploymentResource(1, 0).build();
 
 
     @Test(timeout = 60000)
@@ -47,7 +47,6 @@ public class WriteServerRegistrationTest extends IntegrationTestClassSetup {
                 seedBuilder.withAppGroup("CCC").build()
         );
 
-        // Subscribe to second write server
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
         interestClient.forInterest(Interests.forApplications(infos.get(0).getApp())).filter(dataOnlyFilter()).subscribe(testSubscriber);
 

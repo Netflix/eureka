@@ -8,6 +8,7 @@ import com.netflix.eureka2.server.resolver.ClusterAddress;
 import com.netflix.eureka2.testkit.cli.ClusterTopology;
 import com.netflix.eureka2.testkit.cli.Context;
 import com.netflix.eureka2.testkit.cli.Session;
+import com.netflix.eureka2.testkit.cli.SessionDescriptor;
 import rx.Observable;
 
 /**
@@ -45,6 +46,6 @@ public class ConnectWriteNodeCommand extends AbstractConnectClusterCommand {
                 .withClientId("interestWriteServerClient")
                 .withServerResolver(ServerResolvers.fromHostname(writeNodeAddress.getHostName()).withPort(writeNodeAddress.getInterestPort()))
                 .build();
-        return Observable.just(new Session(context, registrationClient, interestClient));
+        return Observable.just(new Session(SessionDescriptor.writeNode(nodeIdx), registrationClient, interestClient));
     }
 }

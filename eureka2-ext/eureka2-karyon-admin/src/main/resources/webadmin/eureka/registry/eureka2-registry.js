@@ -12,8 +12,8 @@ $(document).ready(function () {
             {"sTitle": "Instance Id", "mDataProp": "instanceId", sDefaultContent: '-', bSortable: false},
             {"sTitle": "Status", "mDataProp": "status", sDefaultContent: '-'},
             {"sTitle": "IP Address", "mDataProp": "ipAddress", sDefaultContent: '-', bSortable: false},
-            {"sTitle": "VIP", "mDataProp": "vipAddress", sDefaultContent: '-'},
-            {"sTitle": "Hostname", "mDataProp": "hostname", sDefaultContent: '-'}
+            {"sTitle": "Hostname", "mDataProp": "hostName", sDefaultContent: '-'},
+            {"sTitle": "VIP", "mDataProp": "vipAddress", sDefaultContent: '-'}
         ],
       "sAjaxSource": source,
         "fnServerData"   : function (sSource, aoData, fnCallback) {

@@ -22,7 +22,7 @@ import com.netflix.eureka2.registry.instance.Delta;
 /**
  * @author Tomasz Bak
  */
-public class UpdateInstanceInfo<T> implements InterestSetNotification {
+public class UpdateInstanceInfo implements InterestSetNotification {
 
     private final DeltaDTO<?> deltaDTO;
 
