@@ -1850,6 +1850,7 @@ public class DiscoveryClient implements EurekaClient {
      */
     void refreshInstanceInfo() {
         applicationInfoManager.refreshDataCenterInfoIfRequired();
+        applicationInfoManager.refreshLeaseInfoIfRequired();
 
         InstanceStatus status;
         try {

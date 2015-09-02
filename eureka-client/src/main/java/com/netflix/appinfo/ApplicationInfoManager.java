@@ -158,8 +158,27 @@ public class ApplicationInfoManager {
         }
     }
 
+    public void refreshLeaseInfoIfRequired() {
+        LeaseInfo leaseInfo = instanceInfo.getLeaseInfo();
+        if (leaseInfo == null) {
+            return;
+        }
+        int currentLeaseDuration = config.getLeaseExpirationDurationInSeconds();
+        int currentLeaseRenewal = config.getLeaseRenewalIntervalInSeconds();
+        if (leaseInfo.getDurationInSecs() != currentLeaseDuration || leaseInfo.getRenewalIntervalInSecs() != currentLeaseRenewal) {
+            LeaseInfo newLeaseInfo = LeaseInfo.Builder
+                    .newBuilder()
+                    .setRenewalIntervalInSecs(currentLeaseRenewal)
+                    .setDurationInSecs(currentLeaseDuration)
+                    .build();
+            instanceInfo.setLeaseInfo(newLeaseInfo);
+            instanceInfo.setIsDirty();
+        }
+    }
+
     public static interface StatusChangeListener {
         String getId();
+
         void notify(StatusChangeEvent statusChangeEvent);
     }
 }
