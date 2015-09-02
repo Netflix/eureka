@@ -1,4 +1,4 @@
-package com.netflix.discovery.converters;
+package com.netflix.discovery.util;
 
 import java.util.List;
 import java.util.Map;
@@ -11,6 +11,8 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 
 /**
+ * For test use.
+ *
  * @author Tomasz Bak
  */
 public final class EurekaEntityComparators {
@@ -44,6 +46,34 @@ public final class EurekaEntityComparators {
 
         return first.getMetadata().equals(second.getMetadata());
     }
+
+    public static boolean subsetOf(DataCenterInfo first, DataCenterInfo second) {
+        if (first == second) {
+            return true;
+        }
+        if (first == null || first == null && second != null) {
+            return false;
+        }
+        if (first.getClass() != second.getClass()) {
+            return false;
+        }
+        if (first instanceof AmazonInfo) {
+            return subsetOf((AmazonInfo) first, (AmazonInfo) second);
+        }
+        return first.getName() == second.getName();
+    }
+
+    public static boolean subsetOf(AmazonInfo first, AmazonInfo second) {
+        if (first == second) {
+            return true;
+        }
+        if (first == null || first == null && second != null) {
+            return false;
+        }
+
+        return first.getMetadata().entrySet().containsAll(second.getMetadata().entrySet());
+    }
+
 
     public static boolean equal(LeaseInfo first, LeaseInfo second) {
         if (first == second) {
@@ -124,9 +154,6 @@ public final class EurekaEntityComparators {
         if (!equal(first.getMetadata(), second.getMetadata())) {
             return false;
         }
-        if (first.getMetadata() != null ? !first.getMetadata().equals(second.getMetadata()) : second.getMetadata() != null) {
-            return false;
-        }
         if (first.getHealthCheckUrls() != null ? !first.getHealthCheckUrls().equals(second.getHealthCheckUrls()) : second.getHealthCheckUrls() != null) {
             return false;
         }
@@ -134,9 +161,6 @@ public final class EurekaEntityComparators {
             return false;
         }
         if (first.getSecureVipAddress() != null ? !first.getSecureVipAddress().equals(second.getSecureVipAddress()) : second.getSecureVipAddress() != null) {
-            return false;
-        }
-        if (first.getSID() != null ? !first.getSID().equals(second.getSID()) : second.getSID() != null) {
             return false;
         }
         if (first.getStatus() != null ? !first.getStatus().equals(second.getStatus()) : second.getStatus() != null) {
@@ -157,6 +181,54 @@ public final class EurekaEntityComparators {
         return true;
     }
 
+
+    public static boolean equalMini(InstanceInfo first, InstanceInfo second) {
+        if (first == second) {
+            return true;
+        }
+        if (first == null || first == null && second != null) {
+            return false;
+        }
+
+        if (first.getPort() != second.getPort()) {
+            return false;
+        }
+        if (first.getSecurePort() != second.getSecurePort()) {
+            return false;
+        }
+        if (first.getActionType() != second.getActionType()) {
+            return false;
+        }
+        if (first.getAppName() != null ? !first.getAppName().equals(second.getAppName()) : second.getAppName() != null) {
+            return false;
+        }
+        if (first.getASGName() != null ? !first.getASGName().equals(second.getASGName()) : second.getASGName() != null) {
+            return false;
+        }
+        if (!subsetOf(first.getDataCenterInfo(), second.getDataCenterInfo())) {
+            return false;
+        }
+        if (first.getHostName() != null ? !first.getHostName().equals(second.getHostName()) : second.getHostName() != null) {
+            return false;
+        }
+        if (first.getIPAddr() != null ? !first.getIPAddr().equals(second.getIPAddr()) : second.getIPAddr() != null) {
+            return false;
+        }
+        if (first.getVIPAddress() != null ? !first.getVIPAddress().equals(second.getVIPAddress()) : second.getVIPAddress() != null) {
+            return false;
+        }
+        if (first.getSecureVipAddress() != null ? !first.getSecureVipAddress().equals(second.getSecureVipAddress()) : second.getSecureVipAddress() != null) {
+            return false;
+        }
+        if (first.getStatus() != null ? !first.getStatus().equals(second.getStatus()) : second.getStatus() != null) {
+            return false;
+        }
+        if (first.getLastUpdatedTimestamp()!= second.getLastUpdatedTimestamp()) {
+            return false;
+        }
+        return true;
+    }
+
     public static boolean equal(Application first, Application second) {
         if (first == second) {
             return true;
@@ -168,8 +240,19 @@ public final class EurekaEntityComparators {
         if (first.getName() != null ? !first.getName().equals(second.getName()) : second.getName() != null) {
             return false;
         }
-        if (first.getInstances() != null ? !first.getInstances().equals(second.getInstances()) : second.getInstances() != null) {
+        List<InstanceInfo> firstInstanceInfos = first.getInstances();
+        List<InstanceInfo> secondInstanceInfos = second.getInstances();
+        if (firstInstanceInfos == null && secondInstanceInfos == null) {
+            return true;
+        }
+        if (firstInstanceInfos == null || secondInstanceInfos == null || firstInstanceInfos.size() != secondInstanceInfos.size()) {
             return false;
+        }
+        for (InstanceInfo firstInstanceInfo : firstInstanceInfos) {
+            InstanceInfo secondInstanceInfo = second.getByInstanceId(firstInstanceInfo.getId());
+            if (!equal(firstInstanceInfo, secondInstanceInfo)) {
+                return false;
+            }
         }
 
         return true;
@@ -190,8 +273,9 @@ public final class EurekaEntityComparators {
         if (firstApps == null || secondApps == null || firstApps.size() != secondApps.size()) {
             return false;
         }
-        for (int i = 0; i < firstApps.size(); i++) {
-            if (!equal(firstApps.get(i), secondApps.get(i))) {
+        for (Application firstApp : firstApps) {
+            Application secondApp = second.getRegisteredApplications(firstApp.getName());
+            if (!equal(firstApp, secondApp)) {
                 return false;
             }
         }

@@ -19,6 +19,14 @@ ext {
     junit_version='4.10'
     mockserverVersion='3.9.2'
     jetty_version='7.2.0.v20101020'
+    jacksonVersion='2.4.3'
+    woodstoxVersion='4.4.1'
+}
+
+idea {
+    project {
+        languageLevel = '1.7'
+    }
 }
 
 subprojects {

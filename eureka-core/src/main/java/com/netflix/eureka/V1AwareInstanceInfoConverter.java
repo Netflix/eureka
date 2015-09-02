@@ -19,7 +19,6 @@ package com.netflix.eureka;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.converters.Converters.InstanceInfoConverter;
-import com.netflix.discovery.converters.StringCache;
 
 /**
  * Support for {@link Version#V1}. {@link Version#V2} introduces a new status
@@ -29,10 +28,6 @@ import com.netflix.discovery.converters.StringCache;
  *
  */
 public class V1AwareInstanceInfoConverter extends InstanceInfoConverter {
-
-    public V1AwareInstanceInfoConverter(StringCache cache) {
-        super(cache);
-    }
 
     @Override
     public String getStatus(InstanceInfo info) {
@@ -54,5 +49,4 @@ public class V1AwareInstanceInfoConverter extends InstanceInfoConverter {
             return super.getStatus(info);
         }
     }
-
 }

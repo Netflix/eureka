@@ -298,6 +298,5 @@ public class EurekaClientServerRestIntegrationTest {
         when(eurekaServerConfig.getPeerNodeTotalConnections()).thenReturn(1);
         when(eurekaServerConfig.getPeerNodeTotalConnectionsPerHost()).thenReturn(1);
         when(eurekaServerConfig.getPeerNodeConnectionIdleTimeoutSeconds()).thenReturn(1000);
-
     }
 }

@@ -16,6 +16,8 @@
 
 package com.netflix.eureka.resources;
 
+import com.netflix.appinfo.EurekaAccept;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
@@ -35,9 +37,12 @@ public class SecureVIPResource extends AbstractVIPResource {
 
     @GET
     @Path("{svipAddress}")
-    public Response statusUpdate(@PathParam("version") String version, @PathParam("svipAddress") String svipAddress,
-                                 @HeaderParam("Accept") final String acceptHeader) {
-        return getVipResponse(version, svipAddress, acceptHeader, ResponseCache.Key.EntityType.SVIP);
+    public Response statusUpdate(@PathParam("version") String version,
+                                 @PathParam("svipAddress") String svipAddress,
+                                 @HeaderParam("Accept") final String acceptHeader,
+                                 @HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept) {
+        return getVipResponse(version, svipAddress, acceptHeader,
+                EurekaAccept.fromString(eurekaAccept), ResponseCache.Key.EntityType.SVIP);
     }
 
 }

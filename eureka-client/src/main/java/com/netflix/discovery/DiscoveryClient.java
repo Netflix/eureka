@@ -56,6 +56,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.netflix.appinfo.ApplicationInfoManager;
+import com.netflix.appinfo.EurekaAccept;
 import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.appinfo.HealthCheckCallback;
 import com.netflix.appinfo.HealthCheckCallbackToHandlerBridge;
@@ -63,6 +64,8 @@ import com.netflix.appinfo.HealthCheckHandler;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.discovery.converters.wrappers.CodecWrappers;
+import com.netflix.discovery.provider.DiscoveryJerseyProvider;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.EurekaJerseyClient;
@@ -123,6 +126,8 @@ public class DiscoveryClient implements EurekaClient {
 
     private static final Pattern REDIRECT_PATH_REGEX = Pattern.compile("(.*/v2/)apps(/.*)?$");
 
+    protected static EurekaClientConfig clientConfig;
+
     // Timers
     private static final String PREFIX = "DiscoveryClient_";
     private final com.netflix.servo.monitor.Timer GET_SERVICE_URLS_DNS_TIMER = Monitors
@@ -147,33 +152,46 @@ public class DiscoveryClient implements EurekaClient {
     private final Counter REREGISTER_COUNTER = Monitors.newCounter(PREFIX
             + "Reregister");
 
-    private final Provider<BackupRegistry> backupRegistryProvider;
-
     // instance variables
-    private volatile HealthCheckHandler healthCheckHandler;
+    /**
+     * A scheduler to be used for the following 3 tasks:
+     * - updating service urls
+     * - scheduling a TimedSuperVisorTask
+     */
+    private final ScheduledExecutorService scheduler;
+    // additional executors for executing hearbeat and cacheRefresh tasks
+    private final ThreadPoolExecutor heartbeatExecutor;
+    private final ThreadPoolExecutor cacheRefreshExecutor;
+
     private final Provider<HealthCheckHandler> healthCheckHandlerProvider;
     private final Provider<HealthCheckCallback> healthCheckCallbackProvider;
     private final AtomicReference<List<String>> eurekaServiceUrls = new AtomicReference<List<String>>();
     private final AtomicReference<Applications> localRegionApps = new AtomicReference<Applications>();
-    private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<String, Applications>();
     private final Lock fetchRegistryUpdateLock = new ReentrantLock();
     // monotonically increasing generation counter to ensure stale threads do not reset registry to an older version
     private final AtomicLong fetchRegistryGeneration;
-
     private final ApplicationInfoManager applicationInfoManager;
     private final InstanceInfo instanceInfo;
-    private String appPathIdentifier;
-    private boolean isRegisteredWithDiscovery = false;
+    private final EurekaAccept clientAccept;
     private EurekaJerseyClient discoveryJerseyClient;
-    private AtomicReference<String> lastQueryRedirect = new AtomicReference<String>();
-    private AtomicReference<String> lastRegisterRedirect = new AtomicReference<String>();
-    private ApacheHttpClient4 discoveryApacheClient;
-    protected static EurekaClientConfig clientConfig;
     private final AtomicReference<String> remoteRegionsToFetch;
     private final InstanceRegionChecker instanceRegionChecker;
+    private final AtomicReference<String> lastQueryRedirect = new AtomicReference<String>();
+    private final AtomicReference<String> lastRegisterRedirect = new AtomicReference<String>();
+    private final ApacheHttpClient4 discoveryApacheClient;
+    private final EventBus eventBus;
+    private final Provider<BackupRegistry> backupRegistryProvider;
+
+    private volatile HealthCheckHandler healthCheckHandler;
+    private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<String, Applications>();
     private volatile InstanceInfo.InstanceStatus lastRemoteInstanceStatus = InstanceInfo.InstanceStatus.UNKNOWN;
 
+    private String appPathIdentifier;
+    private boolean isRegisteredWithDiscovery = false;
     private ApplicationInfoManager.StatusChangeListener statusChangeListener;
+
+    private InstanceInfoReplicator instanceInfoReplicator;
+
     private volatile long lastSuccessfulRegistryFetchTimestamp = -1;
     private volatile long lastSuccessfulHeartbeatTimestamp = -1;
     private final ThresholdLevelsMetric heartbeatStalenessMonitor;
@@ -182,21 +200,6 @@ public class DiscoveryClient implements EurekaClient {
     private enum Action {
         Register, Cancel, Renew, Refresh, Refresh_Delta
     }
-
-    /**
-     * A scheduler to be used for the following 3 tasks:
-     * - updating service urls
-     * - scheduling a TimedSuperVisorTask
-     */
-    private final ScheduledExecutorService scheduler;
-
-    private InstanceInfoReplicator instanceInfoReplicator;
-
-    // additional executors for executing hearbeat and cacheRefresh tasks
-    private final ThreadPoolExecutor heartbeatExecutor;
-    private final ThreadPoolExecutor cacheRefreshExecutor;
-
-    private final EventBus eventBus;
 
     public static class DiscoveryClientOptionalArgs {
         @Inject(optional = true)
@@ -341,6 +344,13 @@ public class DiscoveryClient implements EurekaClient {
                     .withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost())
                     .withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections())
                     .withConnectionIdleTimeout(clientConfig.getEurekaConnectionIdleTimeoutSeconds());
+
+            DiscoveryJerseyProvider discoveryJerseyProvider = new DiscoveryJerseyProvider(
+                    CodecWrappers.getEncoder(clientConfig.getEncoderName()),
+                    CodecWrappers.resolveDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept())
+            );
+
+            clientAccept = EurekaAccept.fromString(clientConfig.getClientDataAccept());
 
             if (eurekaServiceUrls.get().get(0).startsWith("https://") &&
                     "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
@@ -1828,6 +1838,7 @@ public class DiscoveryClient implements EurekaClient {
     private ClientResponse getUrl(String fullServiceUrl) {
         ClientResponse cr = discoveryApacheClient.resource(fullServiceUrl)
                 .accept(MediaType.APPLICATION_JSON_TYPE)
+                .header(EurekaAccept.HTTP_X_EUREKA_ACCEPT, clientAccept.name())
                 .get(ClientResponse.class);
 
         return cr;

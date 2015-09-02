@@ -32,7 +32,10 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.netflix.discovery.converters.EurekaJacksonCodec;
+import com.netflix.discovery.converters.wrappers.CodecWrappers;
+import com.netflix.discovery.converters.wrappers.CodecWrappers.LegacyJacksonJson;
+import com.netflix.discovery.converters.wrappers.DecoderWrapper;
+import com.netflix.discovery.converters.wrappers.EncoderWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * A custom provider implementation for Jersey that dispatches to the
  * implementation that serializes/deserializes objects sent to and from eureka
  * server.
- *
+ * <p/>
  * <p>
  * This implementation allows users to plugin their own
  * serialization/deserialization mechanism by reading the annotation provided by
@@ -48,19 +51,43 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  * @author Karthik Ranganathan
- *
  */
 @Provider
 @Produces("*/*")
 @Consumes("*/*")
 public class DiscoveryJerseyProvider implements MessageBodyWriter,
         MessageBodyReader {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(DiscoveryJerseyProvider.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DiscoveryJerseyProvider.class);
 
-    // Cache the serializers so that they don't have to be instantiated every
-    // time/
+    // Cache the serializers so that they don't have to be instantiated every time
     private static ConcurrentHashMap<Class, ISerializer> serializers = new ConcurrentHashMap<Class, ISerializer>();
+
+    private final EncoderWrapper encoder;
+    private final DecoderWrapper decoder;
+
+    public DiscoveryJerseyProvider() {
+        this(null, null);
+    }
+
+    public DiscoveryJerseyProvider(EncoderWrapper encoder, DecoderWrapper decoder) {
+        this.encoder = encoder == null ? CodecWrappers.getEncoder(LegacyJacksonJson.class) : encoder;
+        this.decoder = decoder == null ? CodecWrappers.getDecoder(LegacyJacksonJson.class) : decoder;
+
+        if (encoder instanceof CodecWrappers.JacksonJsonMini) {
+            throw new UnsupportedOperationException("Encoder: " + encoder.codecName() + "is not supported for the client");
+        }
+
+        LOGGER.info("Using encoding codec {}", this.encoder.codecName());
+        LOGGER.info("Using decoding codec {}", this.decoder.codecName());
+    }
+
+    public EncoderWrapper getEncoder() {
+        return encoder;
+    }
+
+    public DecoderWrapper getDecoder() {
+        return decoder;
+    }
 
     /*
      * (non-Javadoc)
@@ -89,29 +116,28 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter,
                            MultivaluedMap headers, InputStream inputStream)
             throws IOException, WebApplicationException {
 
-        // Use Jackson for JSON
-        if (mediaType.equals(MediaType.APPLICATION_JSON_TYPE)) {
+        if (decoder.support(mediaType)) {
             try {
-                return EurekaJacksonCodec.getInstance().readValue(serializableClass, inputStream);
+                return decoder.decode(inputStream, serializableClass);
             } catch (Error e) {
-                LOGGER.error("Unexpected error occured during de-serialization of discovery data, doing connection "
+                LOGGER.error("Unexpected error occurred during de-serialization of discovery data, doing connection "
                         + "cleanup.", e);
                 inputStream.close();
                 throw e;
             }
         }
 
-        // XML encoded with XStream
+        // default to XML encoded with XStream
         ISerializer serializer = getSerializer(serializableClass);
         if (null != serializer) {
             try {
                 return serializer.read(inputStream, serializableClass, mediaType);
             } catch (Error e) { // See issue: https://github.com/Netflix/eureka/issues/72 on why we catch Error here.
-                LOGGER.error("Unexpected error occured during de-serialization of discovery data, doing connection "
+                LOGGER.error("Unexpected error occurred during de-serialization of discovery data, doing connection "
                         + "cleanup.", e);
                 if (null != inputStream) {
                     inputStream.close();
-                    LOGGER.error("Unexpected error occured during de-serialization of discovery data, done connection "
+                    LOGGER.error("Unexpected error occurred during de-serialization of discovery data, done connection "
                             + "cleanup.", e);
                 }
                 throw e;
@@ -164,9 +190,9 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter,
                         MultivaluedMap headers, OutputStream outputStream)
             throws IOException, WebApplicationException {
 
-        if (mediaType.equals(MediaType.APPLICATION_JSON_TYPE)) {
-            EurekaJacksonCodec.getInstance().writeTo(serializableObject, outputStream);
-        } else {
+        if (encoder.support(mediaType)) {
+            encoder.encode(serializableObject, outputStream);
+        } else {  // default
             ISerializer serializer = getSerializer(serializableClass);
             if (null != serializer) {
                 serializer.write(serializableObject, outputStream, mediaType);
@@ -181,8 +207,7 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter,
     /**
      * Checks for the {@link java.io.Serializable} annotation for the given class.
      *
-     * @param serializableClass
-     *            The class to be serialized/deserialized.
+     * @param serializableClass The class to be serialized/deserialized.
      * @return true if the annotation is present, false otherwise.
      */
     private boolean checkForAnnotation(Class serializableClass) {
@@ -201,16 +226,15 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter,
     /**
      * Gets the {@link Serializer} implementation for serializing/ deserializing
      * objects.
-     *
-     * <p>
+     * <p/>
+     * <p/>
      * The implementation is cached after the first time instantiation and then
      * returned.
-     * <p>
+     * <p/>
      *
-     * @param serializableClass
-     *            - The class that is to be serialized/deserialized.
+     * @param serializableClass - The class that is to be serialized/deserialized.
      * @return The {@link Serializer} implementation for serializing/
-     *         deserializing objects.
+     * deserializing objects.
      */
     @Nullable
     private static ISerializer getSerializer(@SuppressWarnings("rawtypes") Class serializableClass) {

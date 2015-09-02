@@ -86,8 +86,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
 
     private static final int REGISTRY_SYNC_RETRY_MS = 30000;
 
-    private static final Logger logger = LoggerFactory
-            .getLogger(PeerAwareInstanceRegistryImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(PeerAwareInstanceRegistryImpl.class);
 
     private static final EurekaServerConfig EUREKA_SERVER_CONFIG = EurekaServerConfigurationManager
             .getInstance().getConfiguration();
@@ -100,8 +99,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     public enum Action {
         Heartbeat, Register, Cancel, StatusUpdate, DeleteStatusOverride;
 
-        private com.netflix.servo.monitor.Timer timer = Monitors.newTimer(this
-                .name());
+        private com.netflix.servo.monitor.Timer timer = Monitors.newTimer(this.name());
 
         public com.netflix.servo.monitor.Timer getTimer() {
             return this.timer;
@@ -115,8 +113,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         }
     };
 
-    private final MeasuredRate numberOfReplicationsLastMin = new MeasuredRate(
-            1000 * 60 * 1);
+    private final MeasuredRate numberOfReplicationsLastMin = new MeasuredRate(1000 * 60 * 1);
 
 
     private final PeerEurekaNodes peerEurekaNodes;

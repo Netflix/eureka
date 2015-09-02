@@ -28,8 +28,13 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.netflix.config.DynamicBooleanProperty;
 import com.netflix.config.DynamicIntProperty;
+import com.netflix.discovery.converters.jackson.StringInterningAmazonInfoBuilder;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +50,7 @@ import org.slf4j.LoggerFactory;
  * @author Karthik Ranganathan, Greg Kim
  *
  */
+@JsonDeserialize(builder = StringInterningAmazonInfoBuilder.class)
 public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
     private Map<String, String> metadata = new HashMap<String, String>();
@@ -252,11 +258,22 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
         }
     }
 
-    /*
-     * (non-Javadoc)
+    public AmazonInfo() {
+    }
+
+    /**
+     * Constructor provided for deserialization framework. It is expected that {@link AmazonInfo} will be built
+     * programmatically using {@link AmazonInfo.Builder}.
      *
-     * @see com.netflix.appinfo.DataCenterInfo#getName()
+     * @param name this value is ignored, as it is always set to "Amazon"
      */
+    @JsonCreator
+    public AmazonInfo(
+            @JsonProperty("name") String name,
+            @JsonProperty("metadata") HashMap<String, String> metadata) {
+        this.metadata = metadata;
+    }
+
     @Override
     public Name getName() {
         return Name.Amazon;
@@ -267,6 +284,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
      *
      * @return the map of AWS metadata as specified by {@link MetaDataKey}.
      */
+    @JsonProperty("metadata")
     public Map<String, String> getMetadata() {
         return metadata;
     }
@@ -293,6 +311,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
     }
 
     @Override
+    @JsonIgnore
     public String getId() {
         return get(MetaDataKey.instanceId);
     }

@@ -12,6 +12,9 @@ dependencies {
     compile "org.apache.httpcomponents:httpclient:${apacheHttpClientVersion}"
     compile "com.google.inject:guice:${guiceVersion}"
     compile "com.netflix.governator:governator-annotations:${governatorVersion}"
+    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${jacksonVersion}"
+    // Prefered jackson Stax serializer. Default Oracle has issues (adds empty namespace) and is slower
+    compile "org.codehaus.woodstox:woodstox-core-asl:${woodstoxVersion}"
     runtime "org.codehaus.jettison:jettison:${jettisonVersion}"
 
     testCompile project(':eureka-test-utils')

@@ -144,12 +144,18 @@ public class InstanceInfoGenerator {
         String unsecureURL = "http://" + hostName + ":8080";
         String secureURL = "https://" + hostName + ":8081";
 
+        long now = System.currentTimeMillis();
         LeaseInfo leaseInfo = LeaseInfo.Builder.newBuilder()
-                .setDurationInSecs(RENEW_INTERVAL)
+                .setDurationInSecs(3 * RENEW_INTERVAL)
                 .setRenewalIntervalInSecs(RENEW_INTERVAL)
+                .setServiceUpTimestamp(now - RENEW_INTERVAL)
+                .setRegistrationTimestamp(now)
+                .setEvictionTimestamp(now + 3 * RENEW_INTERVAL)
+                .setRenewalTimestamp(now + RENEW_INTERVAL)
                 .build();
 
         Builder builder = InstanceInfo.Builder.newBuilder()
+                .setActionType(ActionType.ADDED)
                 .setAppGroupName("AppGroup" + appIndex)
                 .setAppName("App" + appIndex)
                 .setHostName(hostName)

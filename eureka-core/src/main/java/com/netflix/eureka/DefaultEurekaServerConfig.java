@@ -573,6 +573,18 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     }
 
     @Override
+    public String getJsonCodecName() {
+        return configInstance.getStringProperty(
+                namespace + "jsonCodecName", null).get();
+    }
+
+    @Override
+    public String getXmlCodecName() {
+        return configInstance.getStringProperty(
+                namespace + "xmlCodecName", null).get();
+    }
+
+    @Override
     public boolean isRateLimiterEnabled() {
         return rateLimiterEnabled.get();
     }
