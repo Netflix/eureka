@@ -156,7 +156,7 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
         }
 
         @Override
-        public Observable<? extends MultiSourcedDataHolder<InstanceInfo>> getHolders() {
+        public Observable<MultiSourcedDataHolder<InstanceInfo>> getHolders() {
             return Observable.error(new UnsupportedOperationException("Not supported"));
         }
 

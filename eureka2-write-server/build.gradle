@@ -23,6 +23,7 @@ configurations {
 
 dependencies {
     compile project(':eureka2-server')
+    compile "com.netflix.eureka-ui:eureka2-write-ui:${eureka_ui_version}"
     testCompile project(':eureka2-test-utils')
 }
 

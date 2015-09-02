@@ -7,6 +7,7 @@ import com.netflix.eureka2.server.resolver.ClusterAddress;
 import com.netflix.eureka2.testkit.cli.ClusterTopology;
 import com.netflix.eureka2.testkit.cli.Context;
 import com.netflix.eureka2.testkit.cli.Session;
+import com.netflix.eureka2.testkit.cli.SessionDescriptor;
 import rx.Observable;
 
 /**
@@ -40,6 +41,6 @@ public class ConnectReadNodeCommand extends AbstractConnectClusterCommand {
                 .withClientId("interestReadServerClient")
                 .withServerResolver(ServerResolvers.fromHostname(readNodeAddress.getHostName()).withPort(readNodeAddress.getInterestPort()))
                 .build();
-        return Observable.just(new Session(context, null, interestClient));
+        return Observable.just(new Session(SessionDescriptor.readNode(nodeIdx), null, interestClient));
     }
 }

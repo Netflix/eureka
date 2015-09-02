@@ -4,13 +4,16 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
@@ -34,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.netflix.eureka2.utils.ExtCollections.asSet;
+import static java.util.Arrays.asList;
 
 /**
  * Map Eureka 2.x domain model to Eureka 1.x abstractions.
@@ -43,6 +47,8 @@ import static com.netflix.eureka2.utils.ExtCollections.asSet;
 public final class Eureka1ModelConverters {
 
     private static final Logger logger = LoggerFactory.getLogger(Eureka1ModelConverters.class);
+
+    public static final String EUREKA2_SERVICE_PORT_KEY_PREFIX = "eureka2.servicePort.";
 
     private static final AddressSelector ADDRESS_SELECTOR = AddressSelector.selectBy()
             .protocolType(ProtocolType.IPv4).publicIp(true).or().any();
@@ -95,8 +101,8 @@ public final class Eureka1ModelConverters {
         builder.addMetadata(MetaDataKey.instanceType, v2DataCenterInfo.getInstanceType());
 
         builder.addMetadata(MetaDataKey.localIpv4, v2DataCenterInfo.getPrivateAddress() == null
-                ? ""
-                : v2DataCenterInfo.getPrivateAddress().getIpAddress()
+                        ? ""
+                        : v2DataCenterInfo.getPrivateAddress().getIpAddress()
         );
 
         builder.addMetadata(MetaDataKey.publicHostname, v2DataCenterInfo.getPublicAddress() == null
@@ -233,6 +239,10 @@ public final class Eureka1ModelConverters {
         return toEureka1xApplications(toEureka1xInstanceInfos(v2Instances));
     }
 
+    public static Applications toEureka1xApplicationsFromV2Collection(InstanceInfo... v2Instances) {
+        return toEureka1xApplications(toEureka1xInstanceInfos(asList(v2Instances)));
+    }
+
     public static Applications toEureka1xApplications(Collection<com.netflix.appinfo.InstanceInfo> v1Instances) {
         Map<String, Application> applicationMap = new HashMap<>();
         for (com.netflix.appinfo.InstanceInfo v1Instance : v1Instances) {
@@ -303,14 +313,117 @@ public final class Eureka1ModelConverters {
                 .withAsg(v1InstanceInfo.getASGName())
                 .withVipAddress(v1InstanceInfo.getVIPAddress())
                 .withSecureVipAddress(v1InstanceInfo.getSecureVipAddress())
-                .withPorts(asSet(new ServicePort(v1InstanceInfo.getPort(), false), new ServicePort(v1InstanceInfo.getSecurePort(), true)))
                 .withStatus(tuEureka2xStatus(v1InstanceInfo.getStatus()))
                 .withHomePageUrl(v1InstanceInfo.getHomePageUrl())
                 .withStatusPageUrl(v1InstanceInfo.getStatusPageUrl())
                 .withHealthCheckUrls(new HashSet<>(v1InstanceInfo.getHealthCheckUrls()))
                 .withMetaData(v1InstanceInfo.getMetadata())
                 .withDataCenterInfo(toEureka2xDataCenterInfo(v1InstanceInfo.getDataCenterInfo()));
+
+        HashSet<ServicePort> servicePorts = toServicePortSet(v1InstanceInfo.getMetadata());
+        if (servicePorts == null) {
+            servicePorts = asSet(new ServicePort(v1InstanceInfo.getPort(), false), new ServicePort(v1InstanceInfo.getSecurePort(), true));
+        }
+        builder.withPorts(servicePorts);
         return builder.build();
+    }
+
+    /**
+     * Eureka2 has more rich description of service ports, which is mostly lost during conversion to Eureka1 model.
+     * If there is a need to preserve full service port information it may be mapped as meta data, and restored
+     * from it.
+     */
+    public static Map<String, String> toServicePortMap(Set<ServicePort> servicePorts) {
+        int idx = 0;
+        Map<String, String> serviceMap = new HashMap<>();
+        for (ServicePort servicePort : servicePorts) {
+            String keyPrefix = EUREKA2_SERVICE_PORT_KEY_PREFIX + idx + '.';
+            if (servicePort.getName() != null) {
+                serviceMap.put(keyPrefix + "name", servicePort.getName());
+            }
+            serviceMap.put(keyPrefix + "port", Integer.toString(servicePort.getPort()));
+            if (servicePort.isSecure()) {
+                serviceMap.put(keyPrefix + "secure", Boolean.toString(servicePort.isSecure()));
+            }
+            if (servicePort.getAddressLabels() != null && !servicePort.getAddressLabels().isEmpty()) {
+                StringBuilder lb = new StringBuilder();
+                for (String label : servicePort.getAddressLabels()) {
+                    lb.append(label).append(',');
+                }
+                serviceMap.put(keyPrefix + "addressLabels", lb.substring(0, lb.length() - 1));
+            }
+            idx++;
+        }
+        return serviceMap;
+    }
+
+    /**
+     * Extracts service port information from the provided meta data (see {@link #toServicePortMap(Set)}).
+     *
+     * @return null if no service port is defined or set of {@link ServicePort} objects
+     */
+    public static HashSet<ServicePort> toServicePortSet(Map<String, String> metaData) {
+        int idx = 0;
+        HashSet<ServicePort> servicePorts = null;
+        while (true) {
+            String keyPrefix = EUREKA2_SERVICE_PORT_KEY_PREFIX + idx + '.';
+            idx++;
+
+            // Port
+            String portStr = metaData.get(keyPrefix + "port");
+            if (portStr == null) {
+                logger.debug("Incomplete service port metadata; key {} missing", keyPrefix + "port");
+                break;
+            }
+            int port;
+            try {
+                port = Integer.parseInt(portStr);
+            } catch (Exception ignored) {
+                logger.debug("Cannot parse service port value {}", portStr);
+                continue;
+            }
+
+            // Name
+            String name = metaData.get(keyPrefix + "name");
+
+            // Secure
+            String secureStr = metaData.get(keyPrefix + "secure");
+            boolean secure = secureStr != null && Boolean.parseBoolean(secureStr);
+
+            // Labels
+            String labelStr = metaData.get(keyPrefix + "addressLabels");
+            Set<String> labels = null;
+            if (labelStr != null) {
+                labels = new HashSet<>();
+                Collections.addAll(labels, labelStr.split(","));
+            }
+            if (servicePorts == null) {
+                servicePorts = new HashSet<>();
+            }
+            servicePorts.add(new ServicePort(name, port, secure, labels));
+        }
+        return servicePorts;
+    }
+
+    /**
+     * Remove all service port map related entries from the given Eureka1 instance info object.
+     *
+     * @return true if meta data were modified, false otherwise
+     */
+    public static boolean removeServicePortMapEntries(Map<String, String> metaData) {
+        if (metaData == null || metaData.isEmpty()) {
+            return false;
+        }
+        boolean matched = false;
+        Iterator<String> entryIt = metaData.keySet().iterator();
+        while (entryIt.hasNext()) {
+            String key = entryIt.next();
+            if (key.startsWith(EUREKA2_SERVICE_PORT_KEY_PREFIX)) {
+                matched = true;
+                entryIt.remove();
+            }
+        }
+        return matched;
     }
 
     private static String relativeUrlOf(String absoluteUrl) {

@@ -16,19 +16,15 @@
 
 package com.netflix.eureka2.server.audit.kafka;
 
-import java.util.ServiceLoader;
-
-import com.google.inject.Module;
 import com.netflix.eureka2.server.audit.AuditRecord;
 import com.netflix.eureka2.server.audit.kafka.config.KafkaAuditServiceConfig;
-import com.netflix.eureka2.server.spi.ExtAbstractModule;
 import com.netflix.eureka2.testkit.data.builder.SampleAuditRecord;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static com.netflix.eureka2.server.audit.kafka.config.bean.KafkaAuditServiceConfigBean.*;
-import static org.junit.Assert.assertTrue;
+import static com.netflix.eureka2.server.audit.kafka.config.bean.KafkaAuditServiceConfigBean.anKafkaAuditServiceConfig;
 
 /**
  * @author Tomasz Bak
@@ -37,10 +33,11 @@ public class KafkaAuditServiceTest {
 
     private KafkaAuditService auditService;
 
+    @Before
     public void setUpAuditService() throws Exception {
         KafkaAuditServiceConfig config = anKafkaAuditServiceConfig()
                 .withKafkaServerList("localhost:7101")
-                .withKafkaTopic("myTopic")
+                .withKafkaTopic("eureka_audit")
                 .build();
         KafkaServersProvider kafkaServersProvider = new KafkaServersProvider(null, config);
         auditService = new KafkaAuditService(null, config, kafkaServersProvider);
@@ -54,29 +51,12 @@ public class KafkaAuditServiceTest {
         }
     }
 
-    // TODO obsolete as we now use governator profiles for loading
-    @Ignore
-    @Test(timeout = 60000)
-    public void testServiceLoadBootstrapping() throws Exception {
-        ServiceLoader<ExtAbstractModule> loader = ServiceLoader.load(ExtAbstractModule.class);
-        boolean matched = false;
-        for (Module module : loader) {
-            if (module instanceof KafkaAuditServiceModule) {
-                matched = true;
-                break;
-            }
-        }
-        assertTrue("Module KafkaAuditServiceModule not found by service loader", matched);
-    }
-
     /**
      * TODO: move this to integration test package, once we have one
      */
-    @Test(timeout = 60000)
+    @Test(timeout = 600000)
     @Ignore
     public void testSourcePersistence() throws Exception {
-        setUpAuditService();
-
         AuditRecord auditRecord = SampleAuditRecord.ZuulServerAdd.build();
         for (int i = 0; i < 100; i++) {
             auditService.write(auditRecord);

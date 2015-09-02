@@ -47,8 +47,14 @@ import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotifica
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotificationOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -847,27 +853,6 @@ public class EurekaRegistryImplTest {
         assertThat(holders.size(), is(2));
         for (MultiSourcedDataHolder<InstanceInfo> holder : holders) {
             assertThat(holder.size(), is(2));  // 2 copies each
-        }
-
-        TestSubscriber<ChangeNotification<InstanceInfo>> interestSubscriber = new TestSubscriber<>();
-        registry.forInterest(Interests.forFullRegistry()).subscribe(interestSubscriber);
-        assertThat(interestSubscriber.getOnNextEvents().size(), is(4));  // 2 data + 2 bufferMarker
-
-        TestSubscriber<Long> evictionSubscriber = new TestSubscriber<>();
-        registry.evictAll(Source.matcherFor(replicatedSource)).subscribe(evictionSubscriber);
-        testScheduler.triggerActions();
-
-        assertThat(interestSubscriber.getOnNextEvents().size(), is(4));  // should have no notifications generated
-
-        evictionSubscriber.awaitTerminalEvent(5, TimeUnit.SECONDS);
-        evictionSubscriber.assertCompleted();
-        assertThat(evictionSubscriber.getOnNextEvents().size(), is(1));
-        assertThat(evictionSubscriber.getOnNextEvents().get(0), is(2l));
-
-        holders = internalStore.values();
-        assertThat(holders.size(), is(2));
-        for (MultiSourcedDataHolder<InstanceInfo> holder : holders) {
-            assertThat(holder.size(), is(1));  // 1 copy each now
         }
     }
 }

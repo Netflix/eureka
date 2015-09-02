@@ -1,5 +1,7 @@
 package com.netflix.eureka2.server.config;
 
+import javax.annotation.Nullable;
+
 import com.netflix.archaius.annotations.DefaultValue;
 import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
 
@@ -15,6 +17,7 @@ public interface EurekaInstanceInfoConfig {
     /**
      * @return the unique identifier for this instance. if null, an uuid will be used
      */
+    @Nullable
     String getUniqueId();
 
     @DefaultValue(DEFAULT_EUREKA_APPLICATION_NAME)

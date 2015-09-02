@@ -1,6 +1,10 @@
 package com.netflix.eureka2.eureka1.utils;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.netflix.appinfo.AmazonInfo;
@@ -13,6 +17,7 @@ import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.registry.instance.ServicePort;
 import com.netflix.eureka2.registry.selector.ServiceSelector;
 import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -20,12 +25,9 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xApplicationsFromV2Collection;
-import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xDataCenterInfo;
-import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xInstanceInfo;
-import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xStatus;
-import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka2xDataCenterInfo;
-import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka2xInstanceInfo;
+import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.*;
+import static com.netflix.eureka2.utils.ExtCollections.asSet;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
@@ -40,8 +42,6 @@ import static org.mockito.Mockito.when;
  */
 @SuppressWarnings("unchecked")
 public class Eureka1ModelConvertersTest {
-
-    public static final int APPLICATION_CLUSTER_SIZE = 3;
 
     private final EurekaRegistry<InstanceInfo> registry = mock(EurekaRegistry.class);
     private final ReplaySubject<ChangeNotification<InstanceInfo>> notificationSubject = ReplaySubject.create();
@@ -139,6 +139,24 @@ public class Eureka1ModelConvertersTest {
     }
 
     @Test
+    public void testConversionToEureka2xInstanceInfoWithMetaEncodedServicePorts() throws Exception {
+        // First v2 -> v1
+        InstanceInfo v2InstanceInfo = SampleInstanceInfo.WebServer.build();
+        com.netflix.appinfo.InstanceInfo v1InstanceInfo = toEureka1xInstanceInfo(v2InstanceInfo);
+        v1InstanceInfo.getMetadata().put(EUREKA2_SERVICE_PORT_KEY_PREFIX + "0.name", "serviceA");
+        v1InstanceInfo.getMetadata().put(EUREKA2_SERVICE_PORT_KEY_PREFIX + "0.port", "8888");
+
+        // Now v1 -> v2, and check that resulting v2 record
+        InstanceInfo mappedV2InstanceInfo = toEureka2xInstanceInfo(v1InstanceInfo);
+
+        HashSet<ServicePort> ports = mappedV2InstanceInfo.getPorts();
+        assertThat(ports.size(), is(equalTo(1)));
+
+        ServicePort port = ports.iterator().next();
+        assertThat(port.getName(), is(equalTo("serviceA")));
+    }
+
+    @Test
     public void testConversionToEureka1xApplications() throws Exception {
         List<InstanceInfo> v2InstanceInfos = SampleInstanceInfo.WebServer.clusterOf(2);
 
@@ -147,6 +165,32 @@ public class Eureka1ModelConvertersTest {
         assertThat(applications.getAppsHashCode(), is(notNullValue()));
         assertThat(applications.getRegisteredApplications().size(), is(equalTo(1)));
         assertThat(applications.getRegisteredApplications().get(0).getInstances().size(), is(equalTo(2)));
+    }
+
+    @Test
+    public void testServicePortMappingToMetaData() throws Exception {
+        InstanceInfo instanceInfo = SampleInstanceInfo.WebServer.builder()
+                .withPorts(
+                        new ServicePort("http", 80, false, asSet("private")),
+                        new ServicePort("https", 443, true, asSet("public", "private"))
+                )
+                .build();
+
+        Map<String, String> servicePortMap = toServicePortMap(instanceInfo.getPorts());
+        Collection<ServicePort> servicePorts = toServicePortSet(servicePortMap);
+
+        assertThat(servicePorts, containsInAnyOrder(instanceInfo.getPorts().toArray()));
+    }
+
+    @Test
+    public void testServicePortMapCleanup() throws Exception {
+        Map<String, String> servicePortMap = new HashMap<>();
+        servicePortMap.put("keyX", "valueX");
+        servicePortMap.put(EUREKA2_SERVICE_PORT_KEY_PREFIX + "0.name", "serviceA");
+
+        assertThat(removeServicePortMapEntries(servicePortMap), is(true));
+        assertThat(servicePortMap.containsKey("keyX"), is(true));
+        assertThat(removeServicePortMapEntries(servicePortMap), is(false));
     }
 
     private static void verifyDataCenterInfoMapping(AmazonInfo v1DataCenterInfo, AwsDataCenterInfo v2DataCenterInfo) {

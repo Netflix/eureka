@@ -17,6 +17,7 @@ import com.netflix.eureka2.server.service.selfinfo.PeriodicDataCenterInfoResolve
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolverChain;
 import com.netflix.eureka2.server.service.selfinfo.StatusInfoResolver;
+import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import rx.Observable;
 import rx.functions.Func1;
@@ -49,6 +50,9 @@ public class EurekaReadServerSelfInfoResolver implements SelfInfoResolver {
                             }
                         })
                 ),
+                new ChainableSelfInfoResolver(Observable.just(InstanceInfo.anInstanceInfo()
+                                .withMetaData(META_EUREKA_SERVER_TYPE, ServerType.Read.name())
+                )),
                 new PeriodicDataCenterInfoResolver(config.getEurekaInstance(), config.getEurekaTransport())
         );
 

@@ -9,6 +9,7 @@ import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.testkit.cli.ClusterTopology;
 import com.netflix.eureka2.testkit.cli.Context;
 import com.netflix.eureka2.testkit.cli.Session;
+import com.netflix.eureka2.testkit.cli.SessionDescriptor;
 import rx.Observable;
 
 /**
@@ -44,6 +45,6 @@ public class ConnectCanonicalCommand extends AbstractConnectClusterCommand {
                 .withClientId("interestWriteClusterClient")
                 .withServerResolver(readClusterResolver)
                 .build();
-        return Observable.just(new Session(context, registrationClient, interestClient));
+        return Observable.just(new Session(SessionDescriptor.canonical(), registrationClient, interestClient));
     }
 }

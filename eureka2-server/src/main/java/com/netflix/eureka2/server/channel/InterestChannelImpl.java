@@ -12,8 +12,8 @@ import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics.ChannelSub
 import com.netflix.eureka2.protocol.EurekaProtocolError;
 import com.netflix.eureka2.protocol.common.AddInstance;
 import com.netflix.eureka2.protocol.common.DeleteInstance;
-import com.netflix.eureka2.protocol.interest.InterestRegistration;
 import com.netflix.eureka2.protocol.common.StreamStateUpdate;
+import com.netflix.eureka2.protocol.interest.InterestRegistration;
 import com.netflix.eureka2.protocol.interest.UnregisterInterestSet;
 import com.netflix.eureka2.protocol.interest.UpdateInstanceInfo;
 import com.netflix.eureka2.registry.EurekaRegistryView;
@@ -135,6 +135,14 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
                 .flatMap(new Func1<ChangeNotification<InstanceInfo>, Observable<Void>>() { // TODO concatMap once backpressure is properly working
                     @Override
                     public Observable<Void> call(ChangeNotification<InstanceInfo> notification) {
+                        if (logger.isDebugEnabled()) {
+                            if (notification.isDataNotification()) {
+                                logger.debug("Sending notification of kind {} for instance {} to the client", notification.getKind(), notification.getData().getId());
+                            } else {
+                                StreamStateNotification<InstanceInfo> streamStateNotification = (StreamStateNotification<InstanceInfo>) notification;
+                                logger.debug("Sending buffer sentinel {} to the client", streamStateNotification.getBufferState());
+                            }
+                        }
                         return handleChangeNotification(notification);
                     }
                 })
