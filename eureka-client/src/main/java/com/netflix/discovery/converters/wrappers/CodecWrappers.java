@@ -90,6 +90,8 @@ public final class CodecWrappers {
             return new XStreamJson();
         } else if (getCodecName(JacksonXml.class).equals(name)) {
             return new JacksonXml();
+        } else if (getCodecName(JacksonXmlMini.class).equals(name)) {
+            return new JacksonXmlMini();
         } else if (getCodecName(XStreamXml.class).equals(name)) {
             return new XStreamXml();
         } else {
@@ -174,6 +176,41 @@ public final class CodecWrappers {
     public static class JacksonXml implements EncoderDecoderWrapper {
 
         protected final EurekaJacksonCodecNG codec = new EurekaJacksonCodecNG();
+
+        @Override
+        public String codecName() {
+            return CodecWrappers.getCodecName(this.getClass());
+        }
+
+        @Override
+        public boolean support(MediaType mediaType) {
+            return mediaType.equals(MediaType.APPLICATION_XML_TYPE);
+        }
+
+        @Override
+        public <T> String encode(T object) throws IOException {
+            return codec.getXmlMapper().writeValueAsString(object);
+        }
+
+        @Override
+        public <T> void encode(T object, OutputStream outputStream) throws IOException {
+            codec.writeTo(object, outputStream, MediaType.APPLICATION_XML_TYPE);
+        }
+
+        @Override
+        public <T> T decode(String textValue, Class<T> type) throws IOException {
+            return codec.getXmlMapper().readValue(textValue, type);
+        }
+
+        @Override
+        public <T> T decode(InputStream inputStream, Class<T> type) throws IOException {
+            return codec.getXmlMapper().readValue(inputStream, type);
+        }
+    }
+
+    public static class JacksonXmlMini implements EncoderDecoderWrapper {
+
+        protected final EurekaJacksonCodecNG codec = new EurekaJacksonCodecNG(KeyFormatter.defaultKeyFormatter(), true);
 
         @Override
         public String codecName() {
