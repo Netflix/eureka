@@ -9,7 +9,7 @@ import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.SourcedRegistryMockResource;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -40,7 +40,7 @@ public class Eureka2FullFetchWithDeltaViewTest {
     @Rule
     public final SourcedRegistryMockResource registryMockResource = new SourcedRegistryMockResource();
 
-    private final SourcedEurekaRegistry<InstanceInfo> registry = registryMockResource.registry();
+    private final EurekaRegistry<InstanceInfo> registry = registryMockResource.registry();
 
     private Eureka2FullFetchWithDeltaView view;
 

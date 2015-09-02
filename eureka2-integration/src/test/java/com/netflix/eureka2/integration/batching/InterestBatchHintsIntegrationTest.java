@@ -4,13 +4,8 @@ import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
-import com.netflix.eureka2.client.interest.BatchAwareIndexRegistry;
-import com.netflix.eureka2.client.interest.BatchingRegistry;
-import com.netflix.eureka2.client.interest.BatchingRegistryImpl;
 import com.netflix.eureka2.client.interest.EurekaInterestClientImpl;
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.IndexRegistry;
-import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
@@ -18,9 +13,10 @@ import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.protocol.common.InterestSetNotification;
 import com.netflix.eureka2.protocol.interest.SampleAddInstance;
+import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
-import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.transport.MessageConnection;
@@ -48,7 +44,6 @@ import static org.hamcrest.Matchers.is;
 
 import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -70,20 +65,13 @@ public class InterestBatchHintsIntegrationTest extends AbstractBatchHintsIntegra
     private ClientChannelFactory<InterestChannel> channelFactory;
     private List<InterestChannel> createdInterestChannels;
 
-    private SourcedEurekaRegistryImpl registry;
-    private BatchingRegistry<InstanceInfo> remoteBatchingRegistry;
-    private IndexRegistry<InstanceInfo> localIndexRegistry;
-    private IndexRegistry<InstanceInfo> compositeIndexRegistry;
+    private EurekaRegistry<InstanceInfo> registry;
     private EurekaInterestClient interestClient;
 
     @Before
     public void setUp() {
         testSubscriber = new ExtTestSubscriber<>();
-        remoteBatchingRegistry = new BatchingRegistryImpl<>();
-        localIndexRegistry = new IndexRegistryImpl<>();
-        compositeIndexRegistry = new BatchAwareIndexRegistry<>(localIndexRegistry, remoteBatchingRegistry);
-
-        registry = spy(new SourcedEurekaRegistryImpl(compositeIndexRegistry, EurekaRegistryMetricFactory.registryMetrics()));
+        registry = spy(new EurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics()));
 
         incomingSubject = ReplaySubject.create();
         serverConnectionLifecycle = ReplaySubject.create();
@@ -100,7 +88,6 @@ public class InterestBatchHintsIntegrationTest extends AbstractBatchHintsIntegra
         final InterestChannelFactory realChannelFactory = new InterestChannelFactory(
                 transport,
                 registry,
-                remoteBatchingRegistry,
                 EurekaClientMetricFactory.clientMetrics()
         );
 
@@ -238,25 +225,25 @@ public class InterestBatchHintsIntegrationTest extends AbstractBatchHintsIntegra
 
         assertThat(createdInterestChannels.size(), is(1));
         assertThat(createdInterestChannels.get(0), instanceOf(Sourced.class));
-        Source firstSource = ((Sourced) createdInterestChannels.get(0)).getSource();
+        Source firstSource = (createdInterestChannels.get(0)).getSource();
         verifyRegistryContentContainOnlySource(registry, firstSource);
 
         serverConnectionLifecycle.onError(new Exception("test channel failure"));
 
         Thread.sleep(200); // give it a bit of time
-        verify(registry, never()).evictAll(Matchers.any(Source.SourceMatcher.class));
+        verify(registry, times(1)).evictAll(Matchers.any(Source.SourceMatcher.class));  // channel1's eviction event
 
         incomingSubject2.onNext(newBufferStart(interest));
         Thread.sleep(200); // give it a bit of time
-        verify(registry, never()).evictAll(Matchers.any(Source.SourceMatcher.class));
+        verify(registry, times(1)).evictAll(Matchers.any(Source.SourceMatcher.class));  // still channel1's event
 
         incomingSubject2.onNext(newBufferEnd(interest));
         Thread.sleep(2000); // give it a bit of time
-        verify(registry, times(1)).evictAll(Matchers.any(Source.SourceMatcher.class));
+        verify(registry, times(2)).evictAll(Matchers.any(Source.SourceMatcher.class));  // channel2's eviction event
 
         assertThat(createdInterestChannels.size(), is(2));
         assertThat(createdInterestChannels.get(1), instanceOf(Sourced.class));
-        Source secondSource = ((Sourced) createdInterestChannels.get(1)).getSource();
+        Source secondSource = (createdInterestChannels.get(1)).getSource();
         verifyRegistryContentContainOnlySource(registry, secondSource);
     }
 

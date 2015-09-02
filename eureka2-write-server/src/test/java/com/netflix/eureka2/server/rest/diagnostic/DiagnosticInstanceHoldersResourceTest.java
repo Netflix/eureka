@@ -2,10 +2,10 @@ package com.netflix.eureka2.server.rest.diagnostic;
 
 import javax.ws.rs.core.MediaType;
 
-import com.netflix.eureka2.registry.MultiSourcedDataHolder;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Source.Origin;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.data.MultiSourcedDataHolder;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rxnetty.HttpResponseUtils;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
@@ -16,13 +16,15 @@ import io.reactivex.netty.protocol.http.client.HttpClientRequest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import rx.Observable;
 
 import static com.netflix.eureka2.server.config.bean.EurekaServerTransportConfigBean.anEurekaServerTransportConfig;
 import static com.netflix.eureka2.server.rest.diagnostic.DiagnosticInstanceHoldersResource.PATH_DIAGNOSTIC_ENTRYHOLDERS;
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -51,7 +53,7 @@ public class DiagnosticInstanceHoldersResourceTest {
 
     private DiagnosticInstanceHoldersResource resource;
 
-    private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
+    private final EurekaRegistry<InstanceInfo> registry = mock(EurekaRegistry.class);
 
     @Before
     public void setUp() throws Exception {
@@ -59,7 +61,13 @@ public class DiagnosticInstanceHoldersResourceTest {
         httpServer.connectHttpEndpoint(PATH_DIAGNOSTIC_ENTRYHOLDERS, resource);
         httpServer.start();
 
-        when(registry.getHolders()).thenReturn(Observable.just(WEB_SERVER_HOLDER, BACKEND_SERVER_HOLDER));
+        when(registry.getHolders())
+                .thenAnswer(new Answer<Observable<MultiSourcedDataHolder<InstanceInfo>>>() {
+                    @Override
+                    public Observable<MultiSourcedDataHolder<InstanceInfo>> answer(InvocationOnMock invocation) throws Throwable {
+                        return Observable.just(WEB_SERVER_HOLDER, BACKEND_SERVER_HOLDER);
+                    }
+                });
     }
 
     @After

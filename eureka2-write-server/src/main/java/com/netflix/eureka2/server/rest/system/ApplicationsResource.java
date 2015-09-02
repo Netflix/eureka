@@ -27,7 +27,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.Json;
 import io.netty.buffer.ByteBuf;
@@ -50,10 +50,10 @@ public class ApplicationsResource implements RequestHandler<ByteBuf, ByteBuf> {
 
     private static final Pattern APPLICATIONS_RE = Pattern.compile(PATH_APPLICATIONS);
 
-    private final SourcedEurekaRegistry<InstanceInfo> registry;
+    private final EurekaRegistry<InstanceInfo> registry;
 
     @Inject
-    public ApplicationsResource(SourcedEurekaRegistry registry) {
+    public ApplicationsResource(EurekaRegistry registry) {
         this.registry = registry;
     }
 

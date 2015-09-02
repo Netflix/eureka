@@ -21,7 +21,7 @@ import com.netflix.eureka2.registry.instance.InstanceInfo;
 /**
  * @author Tomasz Bak
  */
-public class Register {
+public class Register implements RegistrationMessage {
     private final InstanceInfo instanceInfo;
 
     // For serialization frameworks

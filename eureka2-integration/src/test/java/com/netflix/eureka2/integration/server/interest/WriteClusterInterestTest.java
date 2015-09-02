@@ -29,7 +29,7 @@ import static org.hamcrest.Matchers.is;
 public class WriteClusterInterestTest {
 
     @Rule
-    public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(2, 0);
+    public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(1, 0);
 
     @Test(timeout = 60000)
     public void testSubscriptionToInterestChannelGetsAllUpdates() throws Exception {
@@ -45,7 +45,7 @@ public class WriteClusterInterestTest {
         // Subscribe to get current registry content
         Observable<ChangeNotification<InstanceInfo>> notifications =
                 subscriberClient.forInterest(Interests.forApplications(firstRecord.getApp())).filter(dataOnlyFilter());
-        Iterator<ChangeNotification<InstanceInfo>> notificationIterator = iteratorFrom(5, TimeUnit.SECONDS, notifications);
+        Iterator<ChangeNotification<InstanceInfo>> notificationIterator = iteratorFrom(10, TimeUnit.SECONDS, notifications);
 
         assertThat(notificationIterator.next(), is(addChangeNotificationOf(firstRecord)));
 

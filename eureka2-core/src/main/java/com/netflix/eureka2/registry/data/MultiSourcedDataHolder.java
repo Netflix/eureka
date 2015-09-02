@@ -1,9 +1,10 @@
-package com.netflix.eureka2.registry;
+package com.netflix.eureka2.registry.data;
 
 import java.util.Collection;
 
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.SourcedChangeNotification;
+import com.netflix.eureka2.registry.Source;
 
 /**
  * A holder object that maintains copies of the same data (as defined by some metric, such as id) that are
@@ -27,6 +28,11 @@ public interface MultiSourcedDataHolder<V> {
      * @return the number of copies of data currently in this holder
      */
     int size();
+
+    /**
+     * @return whether this holder contains zero copies
+     */
+    public boolean isEmpty();
 
     /**
      * @return the view copy of the data, if exists
@@ -56,13 +62,15 @@ public interface MultiSourcedDataHolder<V> {
     /**
      * @param source the source to update
      * @param data the data copy
+     * @return an array of changeNotifications generated from storing the data, empty array if no notifications
      */
-    void update(Source source, V data);
+    ChangeNotification<V>[] update(Source source, V data);
 
     /**
      * @param source the source to delete
+     * @return an array of changeNotifications generated from removing the data, empty array if no notifications
      */
-    boolean remove(Source source);
+    ChangeNotification<V>[] remove(Source source);
 
     final class Snapshot<V> {
         private final SourcedChangeNotification<V> notification;

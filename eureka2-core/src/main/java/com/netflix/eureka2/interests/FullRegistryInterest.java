@@ -3,7 +3,7 @@ package com.netflix.eureka2.interests;
 /**
  * @author Nitesh Kant
  */
-public class FullRegistryInterest<T> extends Interest<T> {
+public class FullRegistryInterest<T> implements Interest<T> {
 
     private static final FullRegistryInterest<?> DEFAULT_INSTANCE = new FullRegistryInterest<>();
 
@@ -15,6 +15,11 @@ public class FullRegistryInterest<T> extends Interest<T> {
 
     @Override
     public boolean matches(T data) {
+        return true;
+    }
+
+    @Override
+    public boolean isAtomicInterest() {
         return true;
     }
 

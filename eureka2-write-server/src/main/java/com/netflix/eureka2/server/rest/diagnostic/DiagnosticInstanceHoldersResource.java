@@ -27,9 +27,9 @@ import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.codec.EurekaCodec;
 import com.netflix.eureka2.codec.EurekaCodecs;
 import com.netflix.eureka2.codec.RxNettyCodecUtils;
-import com.netflix.eureka2.registry.MultiSourcedDataHolder;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.data.MultiSourcedDataHolder;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpHeaders.Names;
@@ -64,10 +64,10 @@ public class DiagnosticInstanceHoldersResource implements RequestHandler<ByteBuf
 
     private final EurekaCodec<MultiSourcedDataHolder<InstanceInfo>> fullCodec = EurekaCodecs.getMultiSourcedDataHolderCodec(CodecType.Json);
     private final EurekaCodec<MultiSourcedDataHolder<InstanceInfo>> compactCodec = EurekaCodecs.getCompactMultiSourcedDataHolderCodec(CodecType.Json);
-    private final SourcedEurekaRegistry<InstanceInfo> registry;
+    private final EurekaRegistry<InstanceInfo> registry;
 
     @Inject
-    public DiagnosticInstanceHoldersResource(SourcedEurekaRegistry registry) {
+    public DiagnosticInstanceHoldersResource(EurekaRegistry registry) {
         this.registry = registry;
     }
 

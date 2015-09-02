@@ -11,21 +11,20 @@ import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.channel.TestChannelFactory;
 import com.netflix.eureka2.channel.TestInterestChannel;
 import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.channel.ClientInterestChannel;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
-import com.netflix.eureka2.client.channel.InterestChannelImpl;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.FullRegistryInterest;
-import com.netflix.eureka2.interests.IndexRegistry;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
-import com.netflix.eureka2.registry.MultiSourcedDataHolder;
+import com.netflix.eureka2.registry.EurekaRegistryImpl;
+import com.netflix.eureka2.registry.data.MultiSourcedDataHolder;
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
@@ -80,7 +79,7 @@ public class EurekaInterestClientImplTest {
     private List<InstanceInfo> allInfos;
 
     private TestScheduler testScheduler;
-    private SourcedEurekaRegistry<InstanceInfo> registry;
+    private EurekaRegistry<InstanceInfo> registry;
 
     private ChannelFactory<InterestChannel> mockFactory;
     private TestChannelFactory<InterestChannel> factory;
@@ -125,12 +124,8 @@ public class EurekaInterestClientImplTest {
 
         testScheduler = Schedulers.test();
 
-        BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new BatchingRegistryImpl<>();
-        IndexRegistry<InstanceInfo> indexRegistry = new BatchAwareIndexRegistry<>(new IndexRegistryImpl<InstanceInfo>(), remoteBatchingRegistry);
-        SourcedEurekaRegistry<InstanceInfo> delegateRegistry = new SourcedEurekaRegistryImpl(
-                indexRegistry, EurekaRegistryMetricFactory.registryMetrics(),
-                testScheduler
-        );
+        EurekaRegistry<InstanceInfo> delegateRegistry = new EurekaRegistryImpl(
+                new IndexRegistryImpl<InstanceInfo>(), EurekaRegistryMetricFactory.registryMetrics(), testScheduler);
         registry = delegateRegistry;
 
         mockFactory = mock(InterestChannelFactory.class);
@@ -268,7 +263,11 @@ public class EurekaInterestClientImplTest {
                 .withStatus(InstanceInfo.Status.OUT_OF_SERVICE)
                 .build();
 
-        registry.register(update, channel1.getSource()).subscribe();
+        Observable<ChangeNotification<InstanceInfo>> updateOb = Observable.just(
+                new ChangeNotification<>(ChangeNotification.Kind.Add, update)
+        );
+
+        registry.connect(channel1.getSource(), updateOb).subscribe();
         testScheduler.triggerActions();
 
         assertThat(newSubscriber.takeNext(), is(modifyChangeNotificationOf(update)));
@@ -443,8 +442,7 @@ public class EurekaInterestClientImplTest {
     // -----------------------------------------------------------------------------
 
     private InterestChannel createInterestChannel() {
-        BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new BatchingRegistryImpl<>();
-        return spy(new InterestChannelImpl(registry, remoteBatchingRegistry, transportClient, 0, mock(InterestChannelMetrics.class)));
+        return spy(new ClientInterestChannel(registry, transportClient, 0, mock(InterestChannelMetrics.class)));
     }
 
     private TestInterestChannel newAlwaysSuccessChannel(Integer id) {
@@ -536,8 +534,10 @@ public class EurekaInterestClientImplTest {
     }
 
     private void registerAll(List<InstanceInfo> infos, Source source) {
+        ReplaySubject<ChangeNotification<InstanceInfo>> dataStream = ReplaySubject.create();
+        registry.connect(source, dataStream).subscribe();
         for (InstanceInfo info : infos) {
-            registry.register(info, source).subscribe();
+            dataStream.onNext(new ChangeNotification<>(ChangeNotification.Kind.Add, info));
             testScheduler.triggerActions();
         }
     }

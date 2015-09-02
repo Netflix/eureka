@@ -1,46 +1,52 @@
 /*
- * Copyright 2014 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+* Copyright 2014 Netflix, Inc.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 
 package com.netflix.eureka2.server.channel;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.channel.ReplicationChannel.STATE;
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
 import com.netflix.eureka2.protocol.common.AddInstance;
 import com.netflix.eureka2.protocol.common.DeleteInstance;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.transport.MessageConnection;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import rx.Observable;
+import rx.observers.TestSubscriber;
 import rx.subjects.PublishSubject;
+import rx.subjects.ReplaySubject;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyObject;
 import static org.mockito.Mockito.mock;
@@ -49,7 +55,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * @author Tomasz Bak
+ * @author David Liu
  */
 public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTest {
 
@@ -57,7 +63,9 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
     private final PublishSubject<Void> transportLifeCycle = PublishSubject.create();
 
     private final SelfInfoResolver SelfIdentityService = mock(SelfInfoResolver.class);
-    private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
+    private final EurekaRegistry<InstanceInfo> registry = mock(EurekaRegistry.class);
+    private final ExtTestSubscriber<ChangeNotification<InstanceInfo>> dataSubscriber = new ExtTestSubscriber<>();
+    private final TestSubscriber<Void> lifecycleSubscriber = new TestSubscriber<>();
 
     private ReceiverReplicationChannel replicationChannel;
     private final PublishSubject<Object> incomingSubject = PublishSubject.create();
@@ -75,6 +83,23 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         when(transport.acknowledge()).thenReturn(Observable.<Void>empty());
 
         when(SelfIdentityService.resolve()).thenReturn(Observable.just(RECEIVER_INFO));
+
+        final ReplaySubject<ChangeNotification<InstanceInfo>> dataSubject = ReplaySubject.create();
+        when(registry.connect(any(Source.class), any(Observable.class))).thenAnswer(new Answer<Observable<Void>>() {
+            @Override
+            public Observable<Void> answer(InvocationOnMock invocation) throws Throwable {
+                Observable<ChangeNotification<InstanceInfo>> dataStream = (Observable<ChangeNotification<InstanceInfo>>) invocation.getArguments()[1];
+                dataStream.subscribe(dataSubject);
+                dataSubject.subscribe(dataSubscriber);
+                return Observable.never();
+            }
+        });
+        when(registry.forInterest(any(Interest.class), any(Source.SourceMatcher.class))).thenAnswer(new Answer<Observable<ChangeNotification<InstanceInfo>>>() {
+            @Override
+            public Observable<ChangeNotification<InstanceInfo>> answer(InvocationOnMock invocation) throws Throwable {
+                return dataSubject;
+            }
+        });
 
         replicationChannel = new ReceiverReplicationChannel(transport, SelfIdentityService, registry, channelMetrics);
     }
@@ -99,46 +124,45 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
     public void testHandlesRegistration() throws Exception {
         handshakeAndRegister(APP_INFO);
 
-        // Capture registration on the registry and verify the arguments
-        verify(registry, times(1)).register(infoCaptor.capture(), sourceCaptor.capture());
-        verifyInstanceAndSourceCaptures(APP_INFO, SENDER_ID);
+        ChangeNotification<InstanceInfo> notification = dataSubscriber.takeNext(2, TimeUnit.SECONDS);
+        assertThat(notification.getKind(), is(ChangeNotification.Kind.Add));
+        assertThat(notification.getData(), is(APP_INFO));
+        assertThat(((Sourced)notification).getSource(), is(replicationChannel.getSource()));
     }
 
     @Test(timeout = 60000)
     public void testHandlesRegisterThatIsAnUpdate() throws Exception {
         handshakeAndRegister(APP_INFO);
 
+        ChangeNotification<InstanceInfo> notification = dataSubscriber.takeNext(2, TimeUnit.SECONDS);
+        assertThat(notification.getKind(), is(ChangeNotification.Kind.Add));
+        assertThat(notification.getData(), is(APP_INFO));
+
         // Now update the record
         InstanceInfo infoUpdate = new InstanceInfo.Builder().withInstanceInfo(APP_INFO).withApp("myNewName").build();
-
-        when(registry.register(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(false));
         incomingSubject.onNext(new AddInstance(infoUpdate));
 
-        verify(registry, times(2)).register(infoCaptor.capture(), sourceCaptor.capture());
-
-        List<InstanceInfo> capturedInfos = new ArrayList<>();
-        // reset the versions in the captured to -1 as they will have been stamped by the channel
-        for (InstanceInfo captured : infoCaptor.getAllValues()) {
-            capturedInfos.add(new InstanceInfo.Builder().withInstanceInfo(captured).build());
-        }
-
-        assertThat(capturedInfos, contains(APP_INFO, infoUpdate));
-
-        // Verify
-        verifyInstanceAndSourceCaptures(infoUpdate, SENDER_ID);
+        notification = dataSubscriber.takeNext(2, TimeUnit.SECONDS);
+        assertThat(notification.getKind(), is(ChangeNotification.Kind.Add));
+        assertThat(notification.getData(), is(infoUpdate));
+        assertThat(((Sourced) notification).getSource(), is(replicationChannel.getSource()));
     }
 
     @Test(timeout = 60000)
     public void testHandlesUnregister() throws Exception {
         handshakeAndRegister(APP_INFO);
 
+        ChangeNotification<InstanceInfo> notification = dataSubscriber.takeNext(2, TimeUnit.SECONDS);
+        assertThat(notification.getKind(), is(ChangeNotification.Kind.Add));
+        assertThat(notification.getData(), is(APP_INFO));
+
         // Now remove the record
-        when(registry.unregister(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(true));
         incomingSubject.onNext(new DeleteInstance(APP_INFO.getId()));
 
-        // Capture remove on the registry and verify the arguments
-        verify(registry, times(1)).unregister(infoCaptor.capture(), sourceCaptor.capture());
-        verifyInstanceAndSourceCaptures(APP_INFO, SENDER_ID);
+        notification = dataSubscriber.takeNext(2, TimeUnit.SECONDS);
+        assertThat(notification.getKind(), is(ChangeNotification.Kind.Delete));
+        assertThat(notification.getData(), is(APP_INFO));
+        assertThat(((Sourced) notification).getSource(), is(replicationChannel.getSource()));
     }
 
     @Test(timeout = 60000)
@@ -146,17 +170,14 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         ReplicationHello hello = new ReplicationHello(RECEIVER_SOURCE, 0);
         incomingSubject.onNext(hello);
 
-        incomingSubject.onNext(new AddInstance(APP_INFO));
-        incomingSubject.onNext(new AddInstance(APP_INFO));  // this is an update
-        incomingSubject.onNext(new DeleteInstance(APP_INFO.getId()));
-        verify(transport, times(3)).onError(ReceiverReplicationChannel.REPLICATION_LOOP_EXCEPTION);
+        replicationChannel.asLifecycleObservable().subscribe(lifecycleSubscriber);
+        lifecycleSubscriber.assertCompleted();
     }
 
     @Test(timeout = 60000)
     public void testMetrics() throws Exception {
         // Idle -> Handshake -> Connected
-        ReplicationHello hello = new ReplicationHello(RECEIVER_SOURCE, 0);
-        incomingSubject.onNext(hello);
+        incomingSubject.onNext(HELLO);
 
         verify(channelMetrics, times(1)).incrementStateCounter(STATE.Handshake);
         verify(channelMetrics, times(1)).incrementStateCounter(STATE.Connected);
@@ -169,14 +190,6 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
 
     protected void handshakeAndRegister(InstanceInfo info) {
         incomingSubject.onNext(HELLO);
-
-        when(registry.register(any(InstanceInfo.class), any(Source.class))).thenReturn(Observable.just(false));
         incomingSubject.onNext(new AddInstance(info));
-    }
-
-    private void verifyInstanceAndSourceCaptures(InstanceInfo info, String senderId) {
-        assertThat(infoCaptor.getValue().getId(), is(equalTo(info.getId())));
-        assertThat(sourceCaptor.getValue().getId(), is(equalTo(replicationChannel.getSource().getId())));
-        assertThat(replicationChannel.getSource().getName().contains(senderId), is(true));
     }
 }

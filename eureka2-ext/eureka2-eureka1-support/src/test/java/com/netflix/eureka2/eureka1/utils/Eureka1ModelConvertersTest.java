@@ -14,7 +14,7 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.registry.instance.ServicePort;
@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
 @SuppressWarnings("unchecked")
 public class Eureka1ModelConvertersTest {
 
-    private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
+    private final EurekaRegistry<InstanceInfo> registry = mock(EurekaRegistry.class);
     private final ReplaySubject<ChangeNotification<InstanceInfo>> notificationSubject = ReplaySubject.create();
 
     @Before

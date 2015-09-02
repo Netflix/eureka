@@ -3,10 +3,13 @@ package com.netflix.eureka2.interests;
 import java.util.Iterator;
 
 import com.netflix.eureka2.utils.rx.PauseableSubject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.functions.Action0;
+import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
@@ -67,6 +70,7 @@ import rx.subjects.Subject;
  * @author Nitesh Kant
  */
 public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<T>> {
+    private static final Logger logger = LoggerFactory.getLogger(Index.class);
 
     private final Interest<T> interest;
     private final Subject<ChangeNotification<T>, ChangeNotification<T>> dataSourceSubject;
@@ -101,7 +105,15 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
 
         this.interest = interest;
         this.dataSourceSubject = dataSourceSubject;
-        this.dataSourceSubject.subscribe(initStateHolder);// It is important to ALWAYS update init state first otherwise, we will lose data (see class javadoc)
+        this.dataSourceSubject
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        logger.info("ERROR ", throwable);
+                        throwable.printStackTrace();
+                    }
+                })
+                .subscribe(initStateHolder);// It is important to ALWAYS update init state first otherwise, we will lose data (see class javadoc)
     }
 
     public Interest getInterest() {
@@ -134,7 +146,16 @@ public class Index<T> extends Subject<ChangeNotification<T>, ChangeNotification<
         dataSource.filter(new Func1<ChangeNotification<T>, Boolean>() {
             @Override
             public Boolean call(ChangeNotification<T> notification) {
-                return interest.matches(notification.getData());
+                if (notification.isDataNotification()) {
+                    return interest.matches(notification.getData());
+                } else {  // is streamState
+                    // FIXME this need to have more logic to have finergrained returns.
+                    // Essentially, we need to know here whether the streamStateNotification is relevant for the
+                    // interest expressed (e.g. if interests equal, or if the notification is for FullRegistry.
+                    // Issue is if we had an instance level interest and a notification for an app comes through,
+                    // how would we know whether the instance is contained in the app?
+                    return true;
+                }
             }
         }).subscribe(index);
         return index;

@@ -26,7 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.service.EurekaWriteServerSelfInfoResolver;
 import com.netflix.eureka2.utils.Json;
@@ -56,10 +56,10 @@ public class ClusterTopologyResource implements RequestHandler<ByteBuf, ByteBuf>
     private static final Pattern CLUSTER_TOPOLOGY_RE = Pattern.compile(PATH_CLUSTER_TOPOLOGY);
 
     private final EurekaWriteServerSelfInfoResolver selfInfoResolver;
-    private final SourcedEurekaRegistry<InstanceInfo> registry;
+    private final EurekaRegistry<InstanceInfo> registry;
 
     @Inject
-    public ClusterTopologyResource(EurekaWriteServerSelfInfoResolver selfInfoResolver, SourcedEurekaRegistry registry) {
+    public ClusterTopologyResource(EurekaWriteServerSelfInfoResolver selfInfoResolver, EurekaRegistry registry) {
         this.selfInfoResolver = selfInfoResolver;
         this.registry = registry;
     }

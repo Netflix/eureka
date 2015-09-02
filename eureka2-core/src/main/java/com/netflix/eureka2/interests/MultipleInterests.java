@@ -28,7 +28,7 @@ import java.util.Set;
  *
  * @author Tomasz Bak
  */
-public class MultipleInterests<T> extends Interest<T> {
+public class MultipleInterests<T> implements Interest<T> {
 
     private final Set<Interest<T>> interests;
 
@@ -58,6 +58,11 @@ public class MultipleInterests<T> extends Interest<T> {
                 return true;
             }
         }
+        return false;
+    }
+
+    @Override
+    public boolean isAtomicInterest() {
         return false;
     }
 

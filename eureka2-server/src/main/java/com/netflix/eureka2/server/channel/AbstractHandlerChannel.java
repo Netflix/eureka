@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Action1;
 
 /**
  * An abstract {@link com.netflix.eureka2.channel.ServiceChannel} implementation for common methods.
@@ -33,10 +32,6 @@ public abstract class AbstractHandlerChannel<STATE extends Enum<STATE>> extends 
     @Override
     protected void _close() {
         transport.shutdown(); // Idempotent so we can call it even if it is already shutdown.
-    }
-
-    protected void subscribeToTransportInput(final Action1<Object> onNext) {
-        connectInputToLifecycle(transport.incoming(), onNext);
     }
 
     protected <T> Observable<Void> sendOnTransport(T message) {

@@ -3,7 +3,7 @@ package com.netflix.eureka2.server.rest.system;
 import javax.ws.rs.core.MediaType;
 
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rxnetty.HttpResponseUtils;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
@@ -37,7 +37,7 @@ public class ClusterTopologyResourceTest {
 
     private final EurekaHttpServer httpServer = new EurekaHttpServer(anEurekaServerTransportConfig().withHttpPort(0).build());
 
-    private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
+    private final EurekaRegistry<InstanceInfo> registry = mock(EurekaRegistry.class);
 
     private final EurekaWriteServerSelfInfoResolver selfInfoResolver = mock(EurekaWriteServerSelfInfoResolver.class);
 

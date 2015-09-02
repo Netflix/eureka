@@ -5,9 +5,6 @@ import java.util.Collection;
 import java.util.List;
 
 import com.netflix.eureka2.channel.InterestChannel.STATE;
-import com.netflix.eureka2.client.interest.BatchAwareIndexRegistry;
-import com.netflix.eureka2.client.interest.BatchingRegistry;
-import com.netflix.eureka2.client.interest.BatchingRegistryImpl;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.IndexRegistry;
 import com.netflix.eureka2.interests.IndexRegistryImpl;
@@ -20,8 +17,8 @@ import com.netflix.eureka2.protocol.common.DeleteInstance;
 import com.netflix.eureka2.protocol.common.InterestSetNotification;
 import com.netflix.eureka2.protocol.interest.SampleAddInstance;
 import com.netflix.eureka2.protocol.common.StreamStateUpdate;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
+import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -29,9 +26,7 @@ import com.netflix.eureka2.testkit.data.builder.SampleInterest;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 import rx.Observable;
@@ -57,7 +52,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author David Liu
  */
-public class InterestChannelImplTest {
+public class ClientInterestChannelTest {
 
     private final TestScheduler testScheduler = Schedulers.test();
 
@@ -67,13 +62,12 @@ public class InterestChannelImplTest {
 
     protected TransportClient transportClient = mock(TransportClient.class);
 
-    protected BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new BatchingRegistryImpl<>();
-    protected IndexRegistry<InstanceInfo> indexRegistry = new BatchAwareIndexRegistry<>(new IndexRegistryImpl<InstanceInfo>(), remoteBatchingRegistry);
-    protected SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(indexRegistry, registryMetrics(), testScheduler);
+    protected IndexRegistry<InstanceInfo> indexRegistry = new IndexRegistryImpl<>();
+    protected EurekaRegistry<InstanceInfo> registry = new EurekaRegistryImpl(indexRegistry, registryMetrics(), testScheduler);
 
     protected InterestChannelMetrics interestChannelMetrics = mock(InterestChannelMetrics.class);
 
-    protected InterestChannelImpl channel;
+    protected ClientInterestChannel channel;
 
     protected Interest<InstanceInfo> sampleInterestZuul = SampleInterest.ZuulApp.build();
     protected Observable<AddInstance> sampleAddMessagesZuul = SampleAddInstance.newMessages(SampleAddInstance.ZuulAdd, 2);
@@ -83,18 +77,6 @@ public class InterestChannelImplTest {
 
     protected Interest<InstanceInfo> sampleInterestAll = Interests.forFullRegistry();
 
-    @BeforeClass
-    public static void setUpClass() {
-        System.setProperty("eureka.hacks.interestChannel.bufferHintDelayMs", "10");
-        System.setProperty("eureka.hacks.interestChannel.maxBufferHintDelayMs", "100");
-    }
-
-    @AfterClass
-    public static void tearDownClass() {
-        System.clearProperty("eureka.hacks.interestChannel.bufferHintDelayMs");
-        System.clearProperty("eureka.hacks.interestChannel.maxBufferHintDelayMs");
-    }
-
     @Before
     public void setup() throws Throwable {
         when(serverConnection.incoming()).thenReturn(incomingSubject);
@@ -103,7 +85,7 @@ public class InterestChannelImplTest {
         when(serverConnection.lifecycleObservable()).thenReturn(serverConnectionLifecycle);
         when(transportClient.connect()).thenReturn(Observable.just(serverConnection));
 
-        channel = new InterestChannelImpl(registry, remoteBatchingRegistry, transportClient, 0, interestChannelMetrics);
+        channel = new ClientInterestChannel(registry, transportClient, 0, interestChannelMetrics);
     }
 
     @After
@@ -226,8 +208,8 @@ public class InterestChannelImplTest {
         channel.channelInterestStream.subscribe(networkInterestSubscriber);
 
         // a subscriber that subscribes to the registry before it has any data
-        TestSubscriber<ChangeNotification<InstanceInfo>> registrySubscriber1 = new TestSubscriber<>();
-        registry.forInterest(interest).subscribe(registrySubscriber1);
+        TestSubscriber<ChangeNotification<InstanceInfo>> registrySubscriber = new TestSubscriber<>();
+        registry.forInterest(interest).subscribe(registrySubscriber);
 
         // Issue batch of data
         incomingSubject.onNext(new StreamStateUpdate(StreamStateNotification.bufferStartNotification(interest)));
@@ -243,17 +225,19 @@ public class InterestChannelImplTest {
         assertThat(networkInterestSubscriber.getOnNextEvents().get(2), is(addChangeNotificationOf(original2)));
         assertThat(networkInterestSubscriber.getOnNextEvents().get(3), is(bufferEndNotification()));
 
-        // FIXME remove once we fix buffer hint issue
-        Thread.sleep(200);  // sleep for the buffer hint delay
-
         // check the returns from the registry
-        assertThat(registrySubscriber1.getOnNextEvents().size(), is(3));
+
+        assertThat(registrySubscriber.getOnNextEvents().size(), is(6));
+        // first two are bufferStart and bufferEnd of the "LOCAL" source
+        assertThat(registrySubscriber.getOnNextEvents().get(0), is(bufferStartNotification()));
+        assertThat(registrySubscriber.getOnNextEvents().get(1), is(bufferEndNotification()));
+        assertThat(registrySubscriber.getOnNextEvents().get(2), is(bufferStartNotification()));
         List<InstanceInfo> received = Arrays.asList(
-                registrySubscriber1.getOnNextEvents().get(0).getData(),
-                registrySubscriber1.getOnNextEvents().get(1).getData()
+                registrySubscriber.getOnNextEvents().get(3).getData(),
+                registrySubscriber.getOnNextEvents().get(4).getData()
         );
         assertThat(received, containsInAnyOrder(original1, original2));
-        assertThat(registrySubscriber1.getOnNextEvents().get(2), is(bufferingChangeNotification()));
+        assertThat(registrySubscriber.getOnNextEvents().get(5), is(bufferEndNotification()));
     }
 
     @Test(timeout = 60000)

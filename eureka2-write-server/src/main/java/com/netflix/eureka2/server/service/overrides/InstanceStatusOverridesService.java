@@ -3,7 +3,8 @@ package com.netflix.eureka2.server.service.overrides;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.utils.rx.RxFunctions;
@@ -40,42 +41,55 @@ public class InstanceStatusOverridesService implements OverridesService {
     }
 
     @Override
-    public Observable<Void> register(String id, Observable<InstanceInfo> registrationUpdates, Source source) {
-        Observable<InstanceInfo> sharedUpdates = registrationUpdates.cache(1);
+    public Observable<Void> connect(String id, Source source, Observable<ChangeNotification<InstanceInfo>> registrationUpdates) {
+        Observable<ChangeNotification<InstanceInfo>> sharedUpdates = registrationUpdates.cache(1);
 
         Observable<Boolean> asgOverrides = sharedUpdates
                 .take(1)
-                .concatMap(new Func1<InstanceInfo, Observable<Boolean>>() {
+                .concatMap(new Func1<ChangeNotification<InstanceInfo>, Observable<? extends Boolean>>() {
                     @Override
-                    public Observable<Boolean> call(InstanceInfo instanceInfo) {
-                        return overridesRegistry.shouldApplyOutOfService(instanceInfo);
+                    public Observable<? extends Boolean> call(ChangeNotification<InstanceInfo> notification) {
+                        if (notification.isDataNotification() && notification.getKind() != ChangeNotification.Kind.Delete) {
+                            InstanceInfo instanceInfo = notification.getData();
+                            return overridesRegistry.shouldApplyOutOfService(instanceInfo);
+                        }
+                        return Observable.just(false);
                     }
                 });
 
-        Observable<InstanceInfo> overriddenUpdates = RxFunctions.combineWithOptional(
+        Observable<ChangeNotification<InstanceInfo>> overriddenUpdates = RxFunctions.combineWithOptional(
                 sharedUpdates,
                 asgOverrides,
-                new Func2<InstanceInfo, Boolean, InstanceInfo>() {
+                new Func2<ChangeNotification<InstanceInfo>, Boolean, ChangeNotification<InstanceInfo>>() {
                     @Override
-                    public InstanceInfo call(InstanceInfo instanceInfo, Boolean shouldApply) {
-                        if (!shouldApply || instanceInfo.getStatus() == InstanceInfo.Status.DOWN) {
-                            return instanceInfo;
+                    public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification, Boolean shouldApply) {
+                        if (notification.isDataNotification()) {
+                            if (shouldApply && notification.getData().getStatus() != InstanceInfo.Status.DOWN) {
+                                logger.debug("Adding override for instanceId {}", notification.getData().getId());
+                                InstanceInfo newInfo = new InstanceInfo.Builder()
+                                        .withInstanceInfo(notification.getData())
+                                        .withStatus(InstanceInfo.Status.OUT_OF_SERVICE)
+                                        .build();
+                                return new ChangeNotification<>(notification.getKind(), newInfo);
+                            }
                         }
-                        return new InstanceInfo.Builder().withInstanceInfo(instanceInfo).withStatus(InstanceInfo.Status.OUT_OF_SERVICE).build();
+
+                        // else
+                        return notification;
                     }
                 });
 
-        return delegate.register(id, overriddenUpdates, source);
+        return delegate.connect(id, source, overriddenUpdates);
     }
 
     @Override
-    public Observable<Boolean> register(final InstanceInfo instanceInfo, final Source source) {
-        throw new IllegalStateException("method not implemented");
+    public Observable<Integer> sizeObservable() {
+        return delegate.sizeObservable();
     }
 
     @Override
-    public Observable<Boolean> unregister(final InstanceInfo instanceInfo, final Source source) {
-        throw new IllegalStateException("method not implemented");
+    public int size() {
+        return delegate.size();
     }
 
     @Override

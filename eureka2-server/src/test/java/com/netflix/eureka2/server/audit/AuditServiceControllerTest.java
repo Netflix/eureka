@@ -3,7 +3,7 @@ package com.netflix.eureka2.server.audit;
 import com.google.inject.util.Providers;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
@@ -30,7 +30,7 @@ public class AuditServiceControllerTest {
     private static final InstanceInfo SELF_INFO = SampleInstanceInfo.EurekaWriteServer.build();
     private static final ChangeNotification<InstanceInfo> SOME_APP_ADD = SampleChangeNotification.DiscoveryAdd.newNotification();
 
-    private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
+    private final EurekaRegistry<InstanceInfo> registry = mock(EurekaRegistry.class);
     private final AuditService auditService = mock(AuditService.class);
     private final SelfInfoResolver selfInfoResolver = mock(SelfInfoResolver.class);
 

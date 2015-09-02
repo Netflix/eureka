@@ -2,16 +2,17 @@ package com.netflix.eureka2.interests;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.Sourced;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.netflix.eureka2.utils.ExtCollections.concat;
-import static com.netflix.eureka2.utils.ExtCollections.singletonIterator;
 
 /**
  * An {@link Index.InitStateHolder} implementation for {@link InstanceInfo}.
@@ -24,7 +25,12 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
 
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfoInitStateHolder.class);
 
-    protected final ConcurrentHashMap<String, ChangeNotification<InstanceInfo>> notificationMap;
+    protected final ConcurrentMap<String, ChangeNotification<InstanceInfo>> notificationMap;
+
+    protected final String defaultSourceKey = Source.Origin.LOCAL.name();
+    protected final ConcurrentMap<String, ChangeNotification<InstanceInfo>> bufferStarts;
+    protected final ConcurrentMap<String, ChangeNotification<InstanceInfo>> bufferEnds;
+
     protected final ChangeNotification<InstanceInfo> bufferStartNotification;
     protected final ChangeNotification<InstanceInfo> bufferEndNotification;
     protected final ChangeNotification<InstanceInfo> bufferUnknownNotification;
@@ -34,26 +40,49 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
         this.bufferStartNotification = new StreamStateNotification<>(BufferState.BufferStart, interest);
         this.bufferEndNotification = new StreamStateNotification<>(BufferState.BufferEnd, interest);
         this.bufferUnknownNotification = new StreamStateNotification<>(BufferState.Unknown, interest);
+
         notificationMap = new ConcurrentHashMap<>();
+        bufferStarts = new ConcurrentHashMap<>();
+        bufferEnds = new ConcurrentHashMap<>();
 
         while (initialRegistry.hasNext()) {
-            ChangeNotification<InstanceInfo> next = initialRegistry.next();
-            notificationMap.put(next.getData().getId(), next); // Always Kind.Add
+            addNotification(initialRegistry.next());
         }
-
     }
 
     @Override
     public void addNotification(ChangeNotification<InstanceInfo> notification) {
-        String id = notification.getData().getId();
-        ChangeNotification<InstanceInfo> current = notificationMap.get(id);
+        if (notification.isDataNotification()) {
+            String id = notification.getData().getId();
+            ChangeNotification<InstanceInfo> current = notificationMap.get(id);
 
-        ChangeNotification<InstanceInfo> updated = processNext(current, notification);
-        if (updated != null) {
-            notificationMap.put(id, updated);
-        } else if (current != null) {
-            notificationMap.remove(id);
-        }
+            ChangeNotification<InstanceInfo> updated = processNext(current, notification);
+            if (updated != null) {
+                notificationMap.put(id, updated);
+            } else if (current != null) {
+                notificationMap.remove(id);
+            }
+        } else if (notification instanceof StreamStateNotification) {
+            StreamStateNotification<InstanceInfo> stateNotification = (StreamStateNotification<InstanceInfo>) notification;
+            String sourceKey = defaultSourceKey;
+            if (notification instanceof Sourced) {
+                sourceKey = getSourceKey(((Sourced) notification).getSource());
+            } else {
+                // can remove after we verify
+                logger.warn("No source available for the notification {}", notification);
+            }
+            switch (stateNotification.getBufferState()) {
+                case BufferStart:
+                    bufferStarts.put(sourceKey, notification);
+                    bufferEnds.remove(sourceKey);
+                    break;
+                case BufferEnd:
+                    bufferEnds.put(sourceKey, notification);
+                    break;
+                default:
+                    // not possible
+            }
+        } // else, no-op
     }
 
     @Override
@@ -63,16 +92,10 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
 
     @Override
     public Iterator<ChangeNotification<InstanceInfo>> _newIterator() {
-        if (notificationMap.isEmpty()) {
-            return concat(
-                    singletonIterator(bufferStartNotification),
-                    singletonIterator(bufferEndNotification)
-            );
-        }
         return concat(
-                singletonIterator(bufferStartNotification),
+                bufferStarts.values().iterator(),
                 notificationMap.values().iterator(),
-                singletonIterator(bufferEndNotification)
+                bufferEnds.values().iterator()
         );
     }
 
@@ -87,11 +110,11 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
                 if (current == null) {
                     logger.info("Invalid change notification sequence - " +
                                     "'Modify' ChangeNotification without proceeding 'Add' notification;" +
-                                    "for client view consistency converted to 'Add': {}",
-                            update
+                                    "for client view consistency converted to 'Add': {}", update
                     );
                 }
 
+                // need to turn the modify notification to an add notification (for the init state holder)
                 if (update instanceof Sourced) {
                     return new SourcedChangeNotification<>(Kind.Add, update.getData(), ((Sourced) update).getSource());
                 } else {
@@ -99,5 +122,17 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
                 }
         }
         return null;
+    }
+
+    // compute the key to use to store streamstate notifications in the buffer marker hashmaps
+    // for LOCAL, it's just the origin type.
+    // for others, it's a combination of the origin type plus the name (but not the id)
+    private static String getSourceKey(Source source) {
+        switch (source.getOrigin()) {
+            case LOCAL:
+                return source.getOrigin().name();
+            default:
+                return source.getOriginNamePair();
+        }
     }
 }

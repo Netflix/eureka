@@ -1,10 +1,11 @@
-package com.netflix.eureka2.registry;
+package com.netflix.eureka2.registry.data;
 
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
-import com.netflix.eureka2.registry.NotifyingInstanceInfoHolder.DataStore;
+import com.netflix.eureka2.registry.data.MultiSourcedInstanceInfoHolder.HolderStore;
 
 import java.util.Collection;
 
@@ -17,9 +18,9 @@ import static org.hamcrest.Matchers.*;
  *
  * @author David Liu
  */
-public class NotifyingInstanceInfoHolderDataStoreTest {
+public class MultiSourcedInstanceInfoHolderHolderStoreTest {
 
-    private final DataStore dataStore = new DataStore();
+    private final HolderStore dataStore = new HolderStore();
 
     private final Source source1 = new Source(Source.Origin.REPLICATED, "replicationSourceId");
     private final Source source2 = new Source(Source.Origin.LOCAL);

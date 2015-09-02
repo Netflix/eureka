@@ -23,7 +23,7 @@ import javax.inject.Singleton;
 import com.google.inject.Provider;
 import com.netflix.eureka2.interests.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import org.slf4j.Logger;
@@ -41,13 +41,13 @@ public class AuditServiceController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuditServiceController.class);
 
-    private final SourcedEurekaRegistry<InstanceInfo> registry;
+    private final EurekaRegistry<InstanceInfo> registry;
     private final AuditService auditService;
     private final Provider<SelfInfoResolver> serverIdentity;
 
     @Inject
     public AuditServiceController(
-            SourcedEurekaRegistry registry,
+            EurekaRegistry registry,
             AuditService auditService,
             Provider<SelfInfoResolver> serverIdentity) {
         this.registry = registry;

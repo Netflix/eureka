@@ -1,6 +1,8 @@
 package com.netflix.eureka2.testkit.data.builder;
 
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.SourcedChangeNotification;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
 
@@ -81,6 +83,14 @@ public enum SampleChangeNotification {
 
     public abstract ChangeNotification<InstanceInfo> newNotification();
     public abstract ChangeNotification<InstanceInfo> newNotification(InstanceInfo seed);
+
+    public ChangeNotification<InstanceInfo> newNotification(Source source) {
+        return new SourcedChangeNotification<>(newNotification(), source);
+    }
+
+    public ChangeNotification<InstanceInfo> newNotification(InstanceInfo seed, Source source) {
+        return new SourcedChangeNotification<>(newNotification(seed), source);
+    }
 
     public static Observable<ChangeNotification<InstanceInfo>> newAddNotifications(SampleChangeNotification type, int n) {
         Collection<ChangeNotification<InstanceInfo>> result = new ArrayList<>();

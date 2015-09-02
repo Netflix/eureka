@@ -1,6 +1,7 @@
 package com.netflix.eureka2.server.service.overrides;
 
-import com.netflix.eureka2.registry.EurekaRegistrationProcessor;
+import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import rx.Observable;
@@ -28,20 +29,9 @@ public class NoOpOverridesService implements OverridesService {
         this.delegate = delegate;
     }
 
-
     @Override
-    public Observable<Void> register(String id, Observable<InstanceInfo> registrationUpdates, Source source) {
-        return delegate.register(id, registrationUpdates, source);
-    }
-
-    @Override
-    public Observable<Boolean> register(InstanceInfo registrant, Source source) {
-        return delegate.register(registrant, source);
-    }
-
-    @Override
-    public Observable<Boolean> unregister(InstanceInfo registrant, Source source) {
-        return delegate.unregister(registrant, source);
+    public Observable<Void> connect(String id, Source source, Observable<ChangeNotification<InstanceInfo>> registrationUpdates) {
+        return delegate.connect(id, source, registrationUpdates);
     }
 
     @Override
@@ -52,5 +42,15 @@ public class NoOpOverridesService implements OverridesService {
     @Override
     public Observable<Void> shutdown(Throwable cause) {
         return delegate.shutdown(cause);
+    }
+
+    @Override
+    public Observable<Integer> sizeObservable() {
+        return null;
+    }
+
+    @Override
+    public int size() {
+        return 0;
     }
 }

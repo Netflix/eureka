@@ -13,19 +13,15 @@ import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
-import com.netflix.eureka2.client.interest.BatchAwareIndexRegistry;
-import com.netflix.eureka2.client.interest.BatchingRegistry;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
-import com.netflix.eureka2.interests.IndexRegistryImpl;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
+import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.AbstractEurekaServer;
 import com.netflix.eureka2.server.EurekaReadServerConfigurationModule;
 import com.netflix.eureka2.server.EurekaReadServerModule;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.interest.FullFetchBatchingRegistry;
 import com.netflix.eureka2.server.interest.FullFetchInterestClient;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
@@ -70,19 +66,13 @@ public class EmbeddedReadServerBuilder extends EmbeddedServerBuilder<EurekaServe
                 .withServerResolver(registrationResolver)
                 .build();
 
-        // TODO We need to better encapsulate EurekaInterestClient construction
-        BatchingRegistry<InstanceInfo> remoteBatchingRegistry = new FullFetchBatchingRegistry<>();
-        BatchAwareIndexRegistry<InstanceInfo> indexRegistry = new BatchAwareIndexRegistry<>(
-                new IndexRegistryImpl<InstanceInfo>(), remoteBatchingRegistry);
-
         BasicEurekaTransportConfig transportConfig = new BasicEurekaTransportConfig.Builder().build();
-        SourcedEurekaRegistry<InstanceInfo> registry = new SourcedEurekaRegistryImpl(indexRegistry, registryMetrics());
+        EurekaRegistry<InstanceInfo> registry = new EurekaRegistryImpl(registryMetrics());
         ClientChannelFactory<InterestChannel> channelFactory = new InterestChannelFactory(
                 serverId,
                 transportConfig,
                 interestResolver,
                 registry,
-                remoteBatchingRegistry,
                 clientMetrics()
         );
 

@@ -5,7 +5,7 @@ import java.util.Set;
 
 import com.netflix.eureka2.codec.json.EurekaJsonCodec;
 import com.netflix.eureka2.codec.json.MultiSourcedDataHolderJsonCodec;
-import com.netflix.eureka2.registry.MultiSourcedDataHolder;
+import com.netflix.eureka2.registry.data.MultiSourcedDataHolder;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 
 /**

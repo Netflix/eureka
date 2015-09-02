@@ -13,8 +13,8 @@ import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.server.channel.SenderReplicationChannelFactory;
 import com.netflix.eureka2.server.config.WriteServerConfig;
@@ -47,7 +47,7 @@ public class ReplicationSenderImpl implements ReplicationSender {
 
     public ReplicationSenderImpl(final WriteServerConfig config,
                                  final Server address,
-                                 final SourcedEurekaRegistry<InstanceInfo> registry,
+                                 final EurekaRegistry<InstanceInfo> registry,
                                  final InstanceInfo selfInfo,
                                  final WriteServerMetricFactory metricFactory) {
         this(new SenderReplicationChannelFactory(config.getEurekaTransport(), address, metricFactory),
@@ -61,7 +61,7 @@ public class ReplicationSenderImpl implements ReplicationSender {
     /*visible for testing*/ ReplicationSenderImpl(
             final ChannelFactory<ReplicationChannel> channelFactory,
             final long retryWaitMillis,
-            final SourcedEurekaRegistry<InstanceInfo> registry,
+            final EurekaRegistry<InstanceInfo> registry,
             final InstanceInfo selfInfo,
             Scheduler scheduler) {
         this.stateRef = new AtomicReference<>(STATE.Idle);
@@ -144,9 +144,9 @@ public class ReplicationSenderImpl implements ReplicationSender {
 
 
     protected static class ReplicateFunc implements Func1<ReplicationChannel, Observable<Void>> {
-        private final SourcedEurekaRegistry<InstanceInfo> registry;
+        private final EurekaRegistry<InstanceInfo> registry;
 
-        public ReplicateFunc(SourcedEurekaRegistry<InstanceInfo> registry) {
+        public ReplicateFunc(EurekaRegistry<InstanceInfo> registry) {
             this.registry = registry;
         }
 

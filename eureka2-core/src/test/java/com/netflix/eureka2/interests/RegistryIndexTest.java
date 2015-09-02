@@ -2,9 +2,9 @@ package com.netflix.eureka2.interests;
 
 import com.netflix.eureka2.interests.ChangeNotification.Kind;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
+import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
-import com.netflix.eureka2.registry.SourcedEurekaRegistryImpl;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Rule;
@@ -12,6 +12,7 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.subjects.ReplaySubject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +41,7 @@ public class RegistryIndexTest {
     private InstanceInfo zuulServer;
     private InstanceInfo cliServer;
 
-    private SourcedEurekaRegistry<InstanceInfo> registry;
+    private EurekaRegistry<InstanceInfo> registry;
     private Source localSource;
 
     @Rule
@@ -56,7 +57,7 @@ public class RegistryIndexTest {
             zuulServer = zuulServerBuilder.build();
             cliServer = cliServerBuilder.build();
 
-            registry = new SourcedEurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics());
+            registry = new EurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics());
             localSource = new Source(Source.Origin.LOCAL);
         }
 
@@ -97,8 +98,11 @@ public class RegistryIndexTest {
     private List<ChangeNotification<InstanceInfo>> doTestWithIndex(Interest<InstanceInfo> interest, final int expectedCount) throws Exception {
         final List<ChangeNotification<InstanceInfo>> notifications = new ArrayList<>();
 
+        final ReplaySubject<ChangeNotification<InstanceInfo>> dataStream = ReplaySubject.create();
+        registry.connect(localSource, dataStream).subscribe();
+
         final CountDownLatch expectedLatch = new CountDownLatch(expectedCount);
-        registry.register(discoveryServer, localSource).toBlocking().firstOrDefault(null);
+        dataStream.onNext(new ChangeNotification<>(Kind.Add, discoveryServer));
         registry.forInterest(interest)
                 .filter(dataOnlyFilter())
                 .map(new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {  // transform from source version to base version for testing equals
@@ -120,11 +124,11 @@ public class RegistryIndexTest {
                     }
                 });
 
-        registry.register(zuulServer, localSource).toBlocking().firstOrDefault(null);
-        registry.unregister(discoveryServer, localSource).toBlocking().firstOrDefault(null);
-        registry.register(cliServer, localSource).toBlocking().firstOrDefault(null);
+        dataStream.onNext(new ChangeNotification<>(Kind.Add, zuulServer));
+        dataStream.onNext(new ChangeNotification<>(Kind.Delete, discoveryServer));
+        dataStream.onNext(new ChangeNotification<>(Kind.Add, cliServer));
         InstanceInfo newCliServer = cliServerBuilder.withStatus(InstanceInfo.Status.DOWN).build();
-        registry.register(newCliServer, localSource).toBlocking().firstOrDefault(null);
+        dataStream.onNext(new ChangeNotification<>(Kind.Add, newCliServer));
 
         assertThat(expectedLatch.await(1, TimeUnit.MINUTES), equalTo(true));
 

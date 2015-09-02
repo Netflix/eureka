@@ -177,23 +177,43 @@ public class BaseMessageConnection implements MessageConnection {
     // TODO: Return always the same observable
     @Override
     public Observable<Object> incoming() {
-        return connection.getInput().filter(new Func1<Object, Boolean>() {
-            @Override
-            public Boolean call(Object message) {
-                return !(message instanceof Acknowledgement);
-            }
-        }).doOnNext(new Action1<Object>() {
-            @Override
-            public void call(Object o) {
-                metrics.incrementIncomingMessageCounter(o.getClass(), 1);
-            }
-        }).doOnTerminate(new Action0() {
-            @Override
-            public void call() {
-                // always close with an exception here as the underlying connection never onError
-                shutdown(new IllegalStateException("{connection=" + name + "}: connection input onCompleted"));
-            }
-        });
+        return incoming(true);
+    }
+
+    // TODO update interface
+    public Observable<Object> incoming(final boolean terminateWithExceptionAlways) {
+        final Exception onErrorException = new IllegalStateException("{connection=" + name + "}: connection input onErrored");
+        final Exception onCompleteException = new IllegalStateException("{connection=" + name + "}: connection input onCompleted");
+        return connection.getInput()
+                .filter(new Func1<Object, Boolean>() {
+                    @Override
+                    public Boolean call(Object message) {
+                        return !(message instanceof Acknowledgement);
+                    }
+                })
+                .doOnNext(new Action1<Object>() {
+                    @Override
+                    public void call(Object o) {
+                        metrics.incrementIncomingMessageCounter(o.getClass(), 1);
+                    }
+                })
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        shutdown(onErrorException);
+                    }
+                })
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        if (terminateWithExceptionAlways) {
+                            // if configured so, always close with an exception here as the underlying connection never onError
+                            shutdown(onCompleteException);
+                        } else {
+                            shutdown();
+                        }
+                    }
+                });
     }
 
     @Override

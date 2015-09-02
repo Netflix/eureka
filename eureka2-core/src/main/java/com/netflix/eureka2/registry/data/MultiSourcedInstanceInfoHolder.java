@@ -1,4 +1,4 @@
-package com.netflix.eureka2.registry;
+package com.netflix.eureka2.registry.data;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -7,14 +7,15 @@ import java.util.Map;
 import java.util.Set;
 
 import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.interests.ChangeNotifications;
 import com.netflix.eureka2.interests.SourcedChangeNotification;
 import com.netflix.eureka2.interests.SourcedModifyNotification;
 import com.netflix.eureka2.metric.EurekaRegistryMetrics;
+import com.netflix.eureka2.registry.Source;
 import com.netflix.eureka2.registry.instance.Delta;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.subjects.Subject;
 
 /**
  * This holder maintains the data copies in a list ordered by write time. It also maintains a consistent "snapshot"
@@ -30,26 +31,20 @@ import rx.subjects.Subject;
  *
  * @author David Liu
  */
-public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<InstanceInfo> {
+public class MultiSourcedInstanceInfoHolder implements MultiSourcedDataHolder<InstanceInfo> {
 
-    private static final Logger logger = LoggerFactory.getLogger(NotifyingInstanceInfoHolder.class);
+    private static final Logger logger = LoggerFactory.getLogger(MultiSourcedInstanceInfoHolder.class);
 
-    private final Subject<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>> notificationSubject;  // subject for all changes in the registry
-
-    private final DataStore dataStore;
+    private final HolderStore holderStore;
     private final String id;
     private final EurekaRegistryMetrics metrics;
 
     private Snapshot<InstanceInfo> snapshot;
 
-    public NotifyingInstanceInfoHolder(
-            Subject<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>> notificationSubject,
-            String id,
-            EurekaRegistryMetrics metrics) {
-        this.notificationSubject = notificationSubject;
+    public MultiSourcedInstanceInfoHolder(String id, EurekaRegistryMetrics metrics) {
         this.id = id;
         this.metrics = metrics;
-        this.dataStore = new DataStore();
+        this.holderStore = new HolderStore();
     }
 
     @Override
@@ -59,7 +54,12 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
 
     @Override
     public int size() {
-        return dataStore.size();
+        return holderStore.size();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return holderStore.isEmpty();
     }
 
     @Override
@@ -72,7 +72,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
 
     @Override
     public InstanceInfo get(Source source) {
-        return dataStore.getExact(source);
+        return holderStore.getExact(source);
     }
 
     @Override
@@ -93,7 +93,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
 
     @Override
     public Collection<Source> getAllSources() {
-        return dataStore.getAllSources();
+        return holderStore.getAllSources();
     }
 
     /**
@@ -103,32 +103,33 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
      *   promote the new update to the snapshot and generate notification regardless of whether they diff;
      * - else no-op.
      */
+    @SuppressWarnings("unchecked")
     @Override
-    public void update(final Source source, final InstanceInfo data) {
-        if (dataStore.getMatching(source) == null) {
+    public ChangeNotification<InstanceInfo>[] update(final Source source, final InstanceInfo data) {
+        if (holderStore.getMatching(source) == null) {
             metrics.incrementRegistrationCounter(source.getOrigin());
         }
-        dataStore.put(source, data);
+        holderStore.put(source, data);
 
         Snapshot<InstanceInfo> currSnapshot = snapshot;
         Snapshot<InstanceInfo> newSnapshot = new Snapshot<>(source, data);
 
         if (currSnapshot == null) {  // real add to the head
             snapshot = newSnapshot;
-            notificationSubject.onNext(newSnapshot.getNotification());
+            return new SourcedChangeNotification[] {newSnapshot.getNotification()};
         } else if ((currSnapshot.getSource().getOrigin() != Source.Origin.LOCAL) &&
                 (source.getOrigin() == Source.Origin.LOCAL)) {  // promote new update from local to snapshot
             snapshot = newSnapshot;
-            notificationSubject.onNext(newSnapshot.getNotification());
+            return new SourcedChangeNotification[] {newSnapshot.getNotification()};
         } else {
             if (matches(currSnapshot.getSource(), newSnapshot.getSource())) {  // modify to current snapshot
                 snapshot = newSnapshot;
 
                 Set<Delta<?>> delta = newSnapshot.getData().diffOlder(currSnapshot.getData());
                 if (!delta.isEmpty()) {
-                    ChangeNotification<InstanceInfo> modifyNotification
+                    SourcedModifyNotification<InstanceInfo> modifyNotification
                             = new SourcedModifyNotification<>(newSnapshot.getData(), delta, newSnapshot.getSource());
-                    notificationSubject.onNext(modifyNotification);
+                    return new SourcedModifyNotification[] {modifyNotification};
                 } else {
                     logger.debug("No-change update for {}#{}", currSnapshot.getSource(), currSnapshot.getData().getId());
                 }
@@ -141,6 +142,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
         }
 
         logger.debug("Updated instance {} for source {}", data.getId(), source);
+        return ChangeNotifications.emptyChangeNotifications();
     }
 
     /**
@@ -150,9 +152,10 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
      *   notification with LOCAL source followed by an Add notification with the new source.
      * - else no-op.
      */
+    @SuppressWarnings("unchecked")
     @Override
-    public boolean remove(final Source source) {
-        InstanceInfo removed = dataStore.remove(source);
+    public ChangeNotification<InstanceInfo>[] remove(final Source source) {
+        InstanceInfo removed = holderStore.remove(source);
         Snapshot<InstanceInfo> currSnapshot = snapshot;
 
         if (removed == null) {  // nothing removed, no-op
@@ -161,16 +164,13 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
             metrics.incrementUnregistrationCounter(source.getOrigin());
 
             if (matches(source, currSnapshot.getSource())) {  // remove of current snapshot
-                Map.Entry<Source, InstanceInfo> newHead = dataStore.nextEntry();
+                Map.Entry<Source, InstanceInfo> newHead = holderStore.nextEntry();
                 if (newHead == null) {  // removed last copy
                     snapshot = null;
                     ChangeNotification<InstanceInfo> deleteNotification
                             = new SourcedChangeNotification<>(ChangeNotification.Kind.Delete, removed, source);
-                    notificationSubject.onNext(deleteNotification);
 
-                    // remove self from the holder datastore if empty
-                    logger.debug("Removed last copy of instance {} for source {}", removed.getId(), source);
-                    return true;
+                    return new ChangeNotification[] {deleteNotification};
                 } else {  // promote the newHead as the snapshot and publish a modify notification
                     Snapshot<InstanceInfo> newSnapshot = new Snapshot<>(newHead.getKey(), newHead.getValue());
                     snapshot = newSnapshot;
@@ -178,17 +178,17 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
                     if (source.getOrigin() == Source.Origin.LOCAL && snapshot.getSource().getOrigin() != Source.Origin.LOCAL) {
                         ChangeNotification<InstanceInfo> deleteNotification
                                 = new SourcedChangeNotification<>(ChangeNotification.Kind.Delete, removed, source);
-                        notificationSubject.onNext(deleteNotification);
 
                         ChangeNotification<InstanceInfo> addNotification
                                 = new SourcedChangeNotification<>(ChangeNotification.Kind.Add, snapshot.getData(), snapshot.getSource());
-                        notificationSubject.onNext(addNotification);
+
+                        return new ChangeNotification[] {deleteNotification, addNotification};
                     } else {
                         Set<Delta<?>> delta = newSnapshot.getData().diffOlder(currSnapshot.getData());
                         if (!delta.isEmpty()) {
                             ChangeNotification<InstanceInfo> modifyNotification
                                     = new SourcedModifyNotification<>(newSnapshot.getData(), delta, newSnapshot.getSource());
-                            notificationSubject.onNext(modifyNotification);
+                            return new ChangeNotification[] {modifyNotification};
                         } else {
                             logger.debug("No-change update for {}#{}", currSnapshot.getSource(), currSnapshot.getData().getId());
                         }
@@ -199,7 +199,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
                 logger.debug("Removed non-head of instance {} for source {}", removed.getId(), source);
             }
         }
-        return false;
+        return ChangeNotifications.emptyChangeNotifications();
     }
 
     @Override
@@ -207,7 +207,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
         return "NotifyingInstanceInfoHolder{" +
                 ", id='" + id + '\'' +
                 ", snapshot=" + snapshot +
-                ", dataStore=" + dataStore +
+                ", dataStore=" + holderStore +
                 '}';
     }
 
@@ -224,7 +224,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
                     .append(", source=").append(snapshot.getSource()).append('}');
         }
 
-        sb.append(", dataStore={size=").append(dataStore.size()).append('}');
+        sb.append(", dataStore={size=").append(holderStore.size()).append('}');
         sb.append('}');
 
         return sb.toString();
@@ -250,7 +250,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
      * Assume access to this is synchronized.
      * All access to the dataStore first route through the sourceMap for the authoritative source to use
      */
-    /* visible for testing */ static class DataStore {
+    /* visible for testing */ static class HolderStore {
         protected final Map<String, Source> sourceMap = new HashMap<>();
         protected final LinkedHashMap<Source, InstanceInfo> dataMap = new LinkedHashMap<>();  // for ordering
 
@@ -313,6 +313,10 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
             return dataMap.size();
         }
 
+        public boolean isEmpty() {
+            return dataMap.isEmpty();
+        }
+
         public Map.Entry<Source, InstanceInfo> nextEntry() {
             if (dataMap.isEmpty()) {
                 return null;
@@ -332,7 +336,7 @@ public class NotifyingInstanceInfoHolder implements MultiSourcedDataHolder<Insta
          * @return the matching key for sources, where the sources are matched on origin:name only.
          */
         private String sourceKey(Source source) {
-            return source.getOrigin().name() + source.getName();
+            return source.getOriginNamePair();
         }
     }
 }

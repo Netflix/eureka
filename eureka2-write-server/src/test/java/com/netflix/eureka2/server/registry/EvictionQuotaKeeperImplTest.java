@@ -4,18 +4,14 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.ChangeNotification.Kind;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.SourcedEurekaRegistry;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Subscriber;
+import rx.subjects.BehaviorSubject;
 import rx.subjects.PublishSubject;
 
-import static com.netflix.eureka2.server.config.bean.EurekaServerRegistryConfigBean.anEurekaServerRegistryConfig;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -27,26 +23,22 @@ import static org.mockito.Mockito.when;
  */
 public class EvictionQuotaKeeperImplTest {
 
-    private static final int ALLOWED_PERCENTAGE_DROP = 80;
+    private static final int ALLOWED_PERCENTAGE_DROP = 20;
 
-    private static final ChangeNotification<InstanceInfo> ADD_NOTIFICATION = new ChangeNotification<>(Kind.Add, SampleInstanceInfo.WebServer.build());
-
-    private final SourcedEurekaRegistry<InstanceInfo> registry = mock(SourcedEurekaRegistry.class);
+    private final EurekaRegistryConfig config = mock(EurekaRegistryConfig.class);
+    private final EurekaRegistrationProcessor<InstanceInfo> registrationProcessor = mock(EurekaRegistrationProcessor.class);
     private final PublishSubject<ChangeNotification<InstanceInfo>> interestSubject = PublishSubject.create();
+    private final QuotaSubscriber quotaSubscriber = new QuotaSubscriber();
+    private final BehaviorSubject<Integer> sizeSubject = BehaviorSubject.create();
 
     private EvictionQuotaKeeperImpl evictionQuotaProvider;
 
-    private final QuotaSubscriber quotaSubscriber = new QuotaSubscriber();
-
     @Before
     public void setUp() throws Exception {
-        when(registry.forInterest(Interests.forFullRegistry())).thenReturn(interestSubject);
+        when(registrationProcessor.sizeObservable()).thenReturn(sizeSubject);
+        when(config.getEvictionAllowedPercentageDrop()).thenReturn(ALLOWED_PERCENTAGE_DROP);
 
-        EurekaRegistryConfig config = anEurekaServerRegistryConfig()
-                .withEvictionAllowedPercentageDrop(ALLOWED_PERCENTAGE_DROP)
-                .build();
-
-        evictionQuotaProvider = new EvictionQuotaKeeperImpl(registry, config);
+        evictionQuotaProvider = new EvictionQuotaKeeperImpl(registrationProcessor, config);
         evictionQuotaProvider.quota().subscribe(quotaSubscriber);
 
         // Emit buffer sentinel to mark end of available registry content
@@ -62,7 +54,7 @@ public class EvictionQuotaKeeperImplTest {
 
     @Test
     public void testEvictionOfOneItem() throws Exception {
-        when(registry.size()).thenReturn(10);
+        setSize(10);
 
         quotaSubscriber.doRequest(1);
         assertThat(quotaSubscriber.getGrantedCount(), is(equalTo(1L)));
@@ -71,36 +63,53 @@ public class EvictionQuotaKeeperImplTest {
     @Test
     public void testDelayedEvictionOfOneItemUntilRegistrySizeIncreases() throws Exception {
         // Consume quota limit
-        when(registry.size()).thenReturn(10);
+        setSize(10);
         quotaSubscriber.doRequest(2);
         assertThat(quotaSubscriber.getGrantedCount(), is(equalTo(2L)));
 
         // Request eviction outside of available quota
-        when(registry.size()).thenReturn(8);
+        // note that we don't onNext the sizeSubject here to not trigger permit re-evaluations
+        when(registrationProcessor.size()).thenReturn(8);
         quotaSubscriber.doRequest(1);
         assertThat(quotaSubscriber.getGrantedCount(), is(equalTo(2L)));
 
         // Now trigger notification caused by registry update
-        when(registry.size()).thenReturn(9);
-        interestSubject.onNext(ADD_NOTIFICATION);
+        setSize(9);
         assertThat(quotaSubscriber.getGrantedCount(), is(equalTo(3L)));
     }
 
     @Test
-    public void testEvictionStateIsResetWhenRegistrySizeIsRestored() throws Exception {
-        // Trigger eviction
-        when(registry.size()).thenReturn(10);
-        quotaSubscriber.doRequest(2);
-        assertThat(quotaSubscriber.getGrantedCount(), is(equalTo(2L)));
+    public void testEvictionStatePolicy() {
+        EvictionQuotaKeeperImpl.EvictionState evictionState =
+                new EvictionQuotaKeeperImpl(registrationProcessor, config).new EvictionState(10);
 
-        // Trigger quota evaluation. We keep current registry size == 10, as if there were no evictions
-        interestSubject.onNext(ADD_NOTIFICATION);
-        assertThat(quotaSubscriber.getGrantedCount(), is(equalTo(2L)));
+        // good to evict
+        when(config.getEvictionAllowedPercentageDrop()).thenReturn(20);  // 20% eviction
+        when(registrationProcessor.size()).thenReturn(10);
+        assertThat(evictionState.isEvictionAllowed(), is(true));
 
-        // Now when old eviction state is discarded, shrink registry and repeat eviction test
-        when(registry.size()).thenReturn(5);
-        quotaSubscriber.doRequest(1);
-        assertThat(quotaSubscriber.getGrantedCount(), is(equalTo(3L)));
+        // configured to not evict at all
+        when(config.getEvictionAllowedPercentageDrop()).thenReturn(0);  // 0 eviction
+        when(registrationProcessor.size()).thenReturn(10);
+        assertThat(evictionState.isEvictionAllowed(), is(false));
+
+        // curr size too low to evict
+        when(config.getEvictionAllowedPercentageDrop()).thenReturn(20);  // 20% eviction
+        when(registrationProcessor.size()).thenReturn(7);
+        assertThat(evictionState.isEvictionAllowed(), is(false));
+
+        // unary size test
+        evictionState =
+                new EvictionQuotaKeeperImpl(registrationProcessor, config).new EvictionState(1);
+        when(config.getEvictionAllowedPercentageDrop()).thenReturn(20);  // 20% eviction
+        when(registrationProcessor.size()).thenReturn(1);
+        assertThat(evictionState.isEvictionAllowed(), is(false));
+    }
+
+
+    private void setSize(int size) {
+        when(registrationProcessor.size()).thenReturn(size);
+        sizeSubject.onNext(size);
     }
 
     static class QuotaSubscriber extends Subscriber<Long> {

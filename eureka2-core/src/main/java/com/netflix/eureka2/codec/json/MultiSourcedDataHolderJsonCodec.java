@@ -8,8 +8,8 @@ import java.util.Collection;
 import java.util.List;
 
 import com.netflix.eureka2.codec.EurekaCodec;
-import com.netflix.eureka2.registry.MultiSourcedDataHolder;
 import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.registry.data.MultiSourcedDataHolder;
 import com.netflix.eureka2.registry.instance.InstanceInfo;
 import org.codehaus.jackson.annotate.JsonAutoDetect.Visibility;
 import org.codehaus.jackson.annotate.JsonMethod;

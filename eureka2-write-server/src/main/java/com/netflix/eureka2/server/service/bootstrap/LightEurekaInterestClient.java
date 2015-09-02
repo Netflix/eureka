@@ -98,6 +98,7 @@ public class LightEurekaInterestClient {
                                             return ackObservable;
                                         }
                                         ChangeNotification<InstanceInfo> notification = toChangeNotification((InterestSetNotification) message);
+                                        logger.info("SAW {}", notification);
                                         return notification == null ? ackObservable : ackObservable.concatWith(Observable.just(notification));
                                     }
                                 });
