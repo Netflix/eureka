@@ -67,6 +67,9 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
             String sourceKey = defaultSourceKey;
             if (notification instanceof Sourced) {
                 sourceKey = getSourceKey(((Sourced) notification).getSource());
+            } else {
+                // can remove after we verify
+                logger.warn("No source available for the notification {}", notification);
             }
             switch (stateNotification.getBufferState()) {
                 case BufferStart:
