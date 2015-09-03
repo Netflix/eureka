@@ -45,7 +45,7 @@ import rx.subjects.PublishSubject;
  */
 public class InterestNotificationMultiplexer {
 
-    private final EurekaRegistryView<InstanceInfo> eurekaRegistry;
+    private final EurekaRegistryView<InstanceInfo> eurekaRegistryView;
 
     private final Map<Interest<InstanceInfo>, BreakerSwitchOperator> subscriptionBreakers = new HashMap<>();
 
@@ -53,7 +53,7 @@ public class InterestNotificationMultiplexer {
     private final Observable<ChangeNotification<InstanceInfo>> aggregatedStream = Observable.merge(upgrades);
 
     public InterestNotificationMultiplexer(EurekaRegistryView<InstanceInfo> eurekaRegistry) {
-        this.eurekaRegistry = eurekaRegistry;
+        this.eurekaRegistryView = eurekaRegistry;
     }
 
     /**
@@ -90,7 +90,7 @@ public class InterestNotificationMultiplexer {
 
     private void subscribeToInterest(Interest<InstanceInfo> newInterest) {
         BreakerSwitchOperator<ChangeNotification<InstanceInfo>> breaker = new BreakerSwitchOperator<>();
-        upgrades.onNext(eurekaRegistry.forInterest(newInterest).lift(breaker));
+        upgrades.onNext(eurekaRegistryView.forInterest(newInterest).lift(breaker));
         subscriptionBreakers.put(newInterest, breaker);
     }
 

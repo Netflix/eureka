@@ -64,20 +64,22 @@ public class EurekaClientIntegrationTest {
 
         EurekaRegistrationClient registrationClient = eurekaDeploymentResource.registrationClientToWriteCluster();
 
-        // First register
-        InstanceInfo info = SampleInstanceInfo.ZuulServer.build();
-        registrationClient.register(Observable.just(info)).subscribe();
+        try {
+            // First register
+            InstanceInfo info = SampleInstanceInfo.ZuulServer.build();
+            registrationClient.register(Observable.just(info)).subscribe();
 
-        // Now check that we get the notification from the read server
-        Observable<ChangeNotification<InstanceInfo>> notifications = interestClient
-                .forInterest(Interests.forVips(info.getVipAddress()))
-                .filter(dataOnlyFilter());
-        Iterator<ChangeNotification<InstanceInfo>> notificationIt = RxBlocking.iteratorFrom(5, TimeUnit.HOURS, notifications);
+            // Now check that we get the notification from the read server
+            Observable<ChangeNotification<InstanceInfo>> notifications = interestClient
+                    .forInterest(Interests.forVips(info.getVipAddress()))
+                    .filter(dataOnlyFilter());
+            Iterator<ChangeNotification<InstanceInfo>> notificationIt = RxBlocking.iteratorFrom(5, TimeUnit.HOURS, notifications);
 
-        assertThat(notificationIt.next(), is(addChangeNotificationOf(info)));
-
-        registrationClient.shutdown();
-        interestClient.shutdown();
+            assertThat(notificationIt.next(), is(addChangeNotificationOf(info)));
+        } finally {
+            registrationClient.shutdown();
+            interestClient.shutdown();
+        }
     }
 
     @Test(timeout = 60000)
@@ -87,12 +89,16 @@ public class EurekaClientIntegrationTest {
                 .withServerResolver(ServerResolvers.fromDnsName("cluster.domain.name").withPort(12102))
                 .build();
 
-        ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
+        try {
+            ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
 
-        RegistrationObservable result = registrationClient.register(Observable.just(SampleInstanceInfo.CliServer.build()));
-        result.initialRegistrationResult().subscribe(testSubscriber);
-        result.subscribe();  // start the registration
+            RegistrationObservable result = registrationClient.register(Observable.just(SampleInstanceInfo.CliServer.build()));
+            result.initialRegistrationResult().subscribe(testSubscriber);
+            result.subscribe();  // start the registration
 
-        testSubscriber.assertOnCompleted(10, TimeUnit.SECONDS);
+            testSubscriber.assertOnCompleted(10, TimeUnit.SECONDS);
+        } finally {
+            registrationClient.shutdown();
+        }
     }
 }

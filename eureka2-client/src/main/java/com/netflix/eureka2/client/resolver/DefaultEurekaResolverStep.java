@@ -37,7 +37,7 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultEurekaResolverStep.class);
 
-    public static final String RESOLVER_CLIENT_ID = "resolverClient";
+    public static final String RESOLVER_CLIENT_ID = "liteResolverClient";
 
     private final ServiceSelector serviceSelector = ServiceSelector.selectBy()
             .serviceLabel(Names.INTEREST).protocolType(NetworkAddress.ProtocolType.IPv4).publicIp(true)

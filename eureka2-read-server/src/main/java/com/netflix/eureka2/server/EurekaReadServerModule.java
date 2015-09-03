@@ -17,7 +17,6 @@
 package com.netflix.eureka2.server;
 
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.registry.EurekaRegistryView;
@@ -60,7 +59,7 @@ public class EurekaReadServerModule extends AbstractEurekaServerModule {
 
     protected void bindClients() {
         bind(EurekaRegistrationClient.class).toProvider(EurekaRegistrationClientProvider.class);
-        bind(EurekaInterestClient.class).toProvider(EurekaInterestClientProvider.class);
+        bind(EurekaInterestClient.class).toProvider(FullFetchInterestClientProvider.class);
     }
 
     protected void bindRegistryComponents() {
