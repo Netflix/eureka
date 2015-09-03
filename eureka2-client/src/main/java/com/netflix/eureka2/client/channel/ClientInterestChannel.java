@@ -1,16 +1,16 @@
 package com.netflix.eureka2.client.channel;
 
 import com.netflix.eureka2.channel.AbstractClientChannel;
-import com.netflix.eureka2.channel.ChannelFunctions;
+import com.netflix.eureka2.utils.functions.ChannelFunctions;
 import com.netflix.eureka2.channel.InterestChannel;
-import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
 import com.netflix.eureka2.protocol.common.InterestSetNotification;
 import com.netflix.eureka2.protocol.interest.InterestRegistration;
 import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.utils.rx.LoggingSubscriber;

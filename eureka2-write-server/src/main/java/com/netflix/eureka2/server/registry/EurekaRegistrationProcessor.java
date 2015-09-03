@@ -1,8 +1,8 @@
 package com.netflix.eureka2.server.registry;
 
 import com.netflix.eureka2.EurekaCloseable;
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.Source;
 import rx.Observable;
 
 /**

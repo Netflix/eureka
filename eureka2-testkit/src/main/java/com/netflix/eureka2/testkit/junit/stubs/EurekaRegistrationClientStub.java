@@ -7,7 +7,7 @@ import java.util.Map;
 
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.junit.stubs.EurekaRegistrationClientStub.RegistrationTracker.State;
 import rx.Observable;
 import rx.Observable.OnSubscribe;

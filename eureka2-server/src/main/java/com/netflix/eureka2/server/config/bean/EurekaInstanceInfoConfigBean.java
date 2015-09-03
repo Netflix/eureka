@@ -1,6 +1,6 @@
 package com.netflix.eureka2.server.config.bean;
 
-import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
+import com.netflix.eureka2.model.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.config.EurekaInstanceInfoConfig;
 
 /**

@@ -2,10 +2,10 @@ package com.netflix.eureka2.codec.json;
 
 import java.io.ByteArrayOutputStream;
 
-import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.Source.Origin;
-import com.netflix.eureka2.registry.data.MultiSourcedDataHolder;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.Source.Origin;
+import com.netflix.eureka2.registry.MultiSourcedDataHolder;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Test;
 

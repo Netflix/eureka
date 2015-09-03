@@ -18,7 +18,7 @@ package com.netflix.eureka2.metric;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.netflix.eureka2.registry.Source.Origin;
+import com.netflix.eureka2.model.Source.Origin;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.ExtendedRegistry;
 

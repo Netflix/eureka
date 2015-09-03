@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.junit.stubs.EurekaRegistrationClientStub;
 import org.junit.Test;
@@ -12,7 +12,7 @@ import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
 import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xInstanceInfo;
-import static com.netflix.eureka2.registry.instance.InstanceInfo.anInstanceInfo;
+import static com.netflix.eureka2.model.instance.InstanceInfo.anInstanceInfo;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;

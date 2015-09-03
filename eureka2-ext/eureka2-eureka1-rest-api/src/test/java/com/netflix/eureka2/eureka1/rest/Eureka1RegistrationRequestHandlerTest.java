@@ -9,7 +9,7 @@ import com.netflix.eureka2.eureka1.rest.codec.Eureka1DataCodec.EncodingFormat;
 import com.netflix.eureka2.eureka1.rest.codec.XStreamEureka1DataCodec;
 import com.netflix.eureka2.eureka1.rest.registry.Eureka1RegistryProxy;
 import com.netflix.eureka2.eureka1.rest.registry.Eureka1RegistryProxy.Result;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import io.netty.buffer.ByteBuf;

@@ -18,7 +18,7 @@ package com.netflix.eureka2.server.rest.system;
 
 import java.util.List;
 
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 
 /**
  * @author Tomasz Bak

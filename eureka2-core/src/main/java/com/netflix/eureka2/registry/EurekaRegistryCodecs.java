@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 
 /**
  * Provides encoders/decoders for Eureka registry data persistence. Its primary usage is

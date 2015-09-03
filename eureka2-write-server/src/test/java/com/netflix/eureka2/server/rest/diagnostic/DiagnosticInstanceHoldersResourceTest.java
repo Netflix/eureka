@@ -3,10 +3,10 @@ package com.netflix.eureka2.server.rest.diagnostic;
 import javax.ws.rs.core.MediaType;
 
 import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.Source.Origin;
-import com.netflix.eureka2.registry.data.MultiSourcedDataHolder;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.Source.Origin;
+import com.netflix.eureka2.registry.MultiSourcedDataHolder;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.rxnetty.HttpResponseUtils;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;

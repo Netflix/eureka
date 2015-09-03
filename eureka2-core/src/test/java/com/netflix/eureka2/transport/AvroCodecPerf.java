@@ -1,7 +1,7 @@
 package com.netflix.eureka2.transport;
 
 import com.netflix.eureka2.codec.CodecType;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import io.netty.channel.embedded.EmbeddedChannel;
 

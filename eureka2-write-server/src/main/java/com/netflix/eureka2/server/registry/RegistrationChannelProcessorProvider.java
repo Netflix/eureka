@@ -5,7 +5,7 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import com.google.inject.Inject;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.server.service.overrides.OverridesService;
 
 /**

@@ -1,6 +1,6 @@
 package com.netflix.eureka2.server.resolver;
 
-import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import rx.Observable;
 
 /**

@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.integration.EurekaDeploymentClients;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;

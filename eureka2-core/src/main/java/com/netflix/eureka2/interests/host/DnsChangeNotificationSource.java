@@ -21,9 +21,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.ChangeNotification.Kind;
-import com.netflix.eureka2.interests.ChangeNotificationSource;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
+import com.netflix.eureka2.model.notification.ChangeNotificationSource;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.utils.rx.ResourceObservable;
 import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceLoader;

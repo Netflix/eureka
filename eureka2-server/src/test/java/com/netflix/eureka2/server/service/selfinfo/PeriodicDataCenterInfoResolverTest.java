@@ -3,9 +3,9 @@ package com.netflix.eureka2.server.service.selfinfo;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
-import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.datacenter.DataCenterInfo;
+import com.netflix.eureka2.model.datacenter.LocalDataCenterInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaInstanceInfoConfig;
 import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;

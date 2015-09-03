@@ -1,8 +1,8 @@
 package com.netflix.eureka2.server.service.bootstrap;
 
-import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import rx.Observable;
 
 /**

@@ -4,7 +4,7 @@ protocol RegistrationProtocol {
     import idl "eureka-common-model.avdl";
 
     record Register {
-        com.netflix.eureka2.registry.instance.InstanceInfo instanceInfo;
+        com.netflix.eureka2.model.instance.InstanceInfo instanceInfo;
     }
 
     record Unregister {

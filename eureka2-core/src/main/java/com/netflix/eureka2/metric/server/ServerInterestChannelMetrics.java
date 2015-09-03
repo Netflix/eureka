@@ -11,7 +11,7 @@ import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.interests.VipInterest;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 
 /**
  * @author Tomasz Bak

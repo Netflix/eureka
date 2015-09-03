@@ -2,14 +2,14 @@ package com.netflix.eureka2.server.channel;
 
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.channel.RegistrationChannel.STATE;
-import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
 import com.netflix.eureka2.protocol.registration.Register;
 import com.netflix.eureka2.protocol.registration.RegistrationMessage;
 import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
-import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.Sourced;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.Sourced;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.utils.rx.LoggingSubscriber;
 import org.slf4j.Logger;

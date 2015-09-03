@@ -2,7 +2,7 @@ package com.netflix.eureka2.testkit.data.builder;
 
 import java.util.Iterator;
 
-import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
+import com.netflix.eureka2.model.datacenter.AwsDataCenterInfo;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.containsString;

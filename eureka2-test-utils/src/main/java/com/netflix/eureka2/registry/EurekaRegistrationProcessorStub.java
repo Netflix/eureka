@@ -1,7 +1,8 @@
 package com.netflix.eureka2.registry;
 
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import rx.Observable;

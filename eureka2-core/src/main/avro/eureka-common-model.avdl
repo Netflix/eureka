@@ -12,7 +12,7 @@ protocol EurekaTransportModel {
     }
 
     record AddInstance {
-        com.netflix.eureka2.registry.instance.InstanceInfo instanceInfo;
+        com.netflix.eureka2.model.instance.InstanceInfo instanceInfo;
     }
 
     record DeleteInstance {
@@ -20,7 +20,7 @@ protocol EurekaTransportModel {
     }
 
     record StreamStateUpdate {
-        com.netflix.eureka2.interests.StreamStateNotification$.BufferState state;
+        com.netflix.eureka2.model.notification.StreamStateNotification$.BufferState state;
         union {
             com.netflix.eureka2.interests.ApplicationInterest,
             com.netflix.eureka2.interests.FullRegistryInterest,
@@ -32,14 +32,14 @@ protocol EurekaTransportModel {
         } interest;
     }
 
-    @namespace("com.netflix.eureka2.registry.Source$")
+    @namespace("com.netflix.eureka2.model.Source$")
     enum Origin {
         LOCAL, REPLICATED, BOOTSTRAP, INTERESTED
     }
 
-    @namespace("com.netflix.eureka2.registry")
+    @namespace("com.netflix.eureka2.model")
     record Source {
-        com.netflix.eureka2.registry.Source$.Origin origin;
+        com.netflix.eureka2.model.Source$.Origin origin;
         union {null, string} name;
         union {null, long} id;
     }

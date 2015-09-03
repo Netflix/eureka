@@ -1,5 +1,6 @@
 package com.netflix.eureka2.registry;
 
+import com.netflix.eureka2.model.Source;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;

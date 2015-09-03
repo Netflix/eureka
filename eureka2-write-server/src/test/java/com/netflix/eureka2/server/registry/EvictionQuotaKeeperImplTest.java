@@ -3,8 +3,8 @@ package com.netflix.eureka2.server.registry;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.netflix.eureka2.config.EurekaRegistryConfig;
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

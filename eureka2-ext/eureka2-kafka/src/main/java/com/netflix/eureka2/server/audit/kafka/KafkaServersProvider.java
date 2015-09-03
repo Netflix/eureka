@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.registry.selector.ServiceSelector;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.selector.ServiceSelector;
 import com.netflix.eureka2.server.audit.kafka.config.KafkaAuditServiceConfig;
 import com.netflix.eureka2.server.spi.ExtensionContext;
 import com.netflix.eureka2.utils.StreamedDataCollector;

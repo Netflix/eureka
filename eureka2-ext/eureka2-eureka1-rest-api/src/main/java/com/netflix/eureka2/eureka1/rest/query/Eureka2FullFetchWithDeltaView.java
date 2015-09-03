@@ -11,9 +11,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.ChangeNotifications;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.utils.functions.ChangeNotifications;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -26,9 +26,9 @@ import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1
 import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xInstanceInfo;
 import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xInstanceInfos;
 import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.v1InstanceIdentityComparator;
-import static com.netflix.eureka2.interests.ChangeNotifications.emitAndAggregateChanges;
-import static com.netflix.eureka2.interests.ChangeNotifications.collapseAndExtract;
-import static com.netflix.eureka2.interests.ChangeNotifications.instanceInfoIdentity;
+import static com.netflix.eureka2.utils.functions.ChangeNotifications.emitAndAggregateChanges;
+import static com.netflix.eureka2.utils.functions.ChangeNotifications.collapseAndExtract;
+import static com.netflix.eureka2.utils.functions.ChangeNotifications.instanceInfoIdentity;
 
 /**
  * A special view of full registry, which provides both full {@link Applications} data

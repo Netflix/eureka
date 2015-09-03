@@ -1,7 +1,7 @@
 package com.netflix.eureka2.utils.rx;
 
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
 import org.junit.Rule;
 import org.junit.Test;

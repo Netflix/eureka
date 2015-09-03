@@ -5,10 +5,10 @@ import com.google.inject.Singleton;
 import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.datacenter.AwsDataCenterInfo;
 import rx.Observable;
 import rx.functions.Action1;
 

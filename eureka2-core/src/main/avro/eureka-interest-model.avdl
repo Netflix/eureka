@@ -6,7 +6,7 @@ protocol EurekaInterestModel {
         Equals, Like
     }
 
-    @namespace("com.netflix.eureka2.interests.StreamStateNotification$")
+    @namespace("com.netflix.eureka2.model.notification.StreamStateNotification$")
     enum BufferState {
         Unknown, BufferStart, BufferEnd
     }

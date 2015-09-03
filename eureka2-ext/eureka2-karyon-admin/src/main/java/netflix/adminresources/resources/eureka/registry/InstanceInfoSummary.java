@@ -1,10 +1,10 @@
 package netflix.adminresources.resources.eureka.registry;
 
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
-import com.netflix.eureka2.registry.instance.NetworkAddress;
-import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
-import com.netflix.eureka2.registry.selector.AddressSelector;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo.Status;
+import com.netflix.eureka2.model.instance.NetworkAddress;
+import com.netflix.eureka2.model.instance.NetworkAddress.ProtocolType;
+import com.netflix.eureka2.model.selector.AddressSelector;
 
 /**
  * Representation of an instance info fields rendered on the web admin UI tab.

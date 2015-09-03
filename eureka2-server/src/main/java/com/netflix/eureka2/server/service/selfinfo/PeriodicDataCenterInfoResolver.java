@@ -3,10 +3,10 @@ package com.netflix.eureka2.server.service.selfinfo;
 import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
-import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.registry.selector.AddressSelector;
+import com.netflix.eureka2.model.datacenter.DataCenterInfo;
+import com.netflix.eureka2.model.datacenter.LocalDataCenterInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.selector.AddressSelector;
 import com.netflix.eureka2.server.config.EurekaInstanceInfoConfig;
 import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import org.slf4j.Logger;

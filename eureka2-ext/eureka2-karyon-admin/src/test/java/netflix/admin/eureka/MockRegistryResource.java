@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
+import com.netflix.eureka2.model.instance.InstanceInfo.Status;
 import netflix.adminresources.resources.eureka.registry.InstanceInfoSummary;
 import org.junit.rules.ExternalResource;
 

@@ -1,6 +1,6 @@
 package com.netflix.eureka2.interests.host;
 
-import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
