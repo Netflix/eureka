@@ -4,7 +4,7 @@ import javax.ws.rs.core.MediaType;
 
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.rxnetty.HttpResponseUtils;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;

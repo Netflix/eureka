@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 
 /**
  * @author David Liu

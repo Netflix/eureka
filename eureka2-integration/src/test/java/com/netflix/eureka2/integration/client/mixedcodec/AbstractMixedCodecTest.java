@@ -2,15 +2,15 @@ package com.netflix.eureka2.integration.client.mixedcodec;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import rx.Observable;
 import rx.Subscription;
 
-import static com.netflix.eureka2.interests.ChangeNotifications.dataOnlyFilter;
+import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
 import static org.hamcrest.MatcherAssert.assertThat;

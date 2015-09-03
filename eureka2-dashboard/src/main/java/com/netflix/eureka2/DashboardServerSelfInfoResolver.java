@@ -5,9 +5,9 @@ import javax.inject.Singleton;
 import java.util.HashSet;
 
 import com.netflix.eureka2.config.EurekaDashboardConfig;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.registry.instance.InstanceInfo.Builder;
-import com.netflix.eureka2.registry.instance.ServicePort;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo.Builder;
+import com.netflix.eureka2.model.instance.ServicePort;
 import com.netflix.eureka2.server.service.selfinfo.CachingSelfInfoResolver;
 import com.netflix.eureka2.server.service.selfinfo.ChainableSelfInfoResolver;
 import com.netflix.eureka2.server.service.selfinfo.ConfigSelfInfoResolver;

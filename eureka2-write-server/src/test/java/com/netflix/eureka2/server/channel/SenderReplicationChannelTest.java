@@ -3,8 +3,8 @@ package com.netflix.eureka2.server.channel;
 import java.util.Collections;
 
 import com.netflix.eureka2.channel.ReplicationChannel.STATE;
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
 import com.netflix.eureka2.protocol.common.AddInstance;
 import com.netflix.eureka2.protocol.common.DeleteInstance;

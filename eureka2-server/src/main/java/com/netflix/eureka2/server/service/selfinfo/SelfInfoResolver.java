@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.server.service.selfinfo;
 
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import rx.Observable;
 
 /**

@@ -3,7 +3,7 @@ package com.netflix.eureka2.server.config;
 import javax.annotation.Nullable;
 
 import com.netflix.archaius.annotations.DefaultValue;
-import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
+import com.netflix.eureka2.model.datacenter.LocalDataCenterInfo.DataCenterType;
 
 /**
  * @author Tomasz Bak

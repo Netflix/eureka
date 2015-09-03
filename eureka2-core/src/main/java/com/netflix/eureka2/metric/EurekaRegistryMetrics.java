@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.metric;
 
-import com.netflix.eureka2.registry.Source.Origin;
+import com.netflix.eureka2.model.Source.Origin;
 
 /**
  * @author Tomasz Bak

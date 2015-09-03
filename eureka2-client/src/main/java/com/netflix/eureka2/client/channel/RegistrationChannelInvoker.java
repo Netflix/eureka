@@ -4,7 +4,7 @@ import java.util.concurrent.Callable;
 
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.utils.SerializedTaskInvoker;
 import rx.Observable;
 

@@ -1,9 +1,9 @@
 package com.netflix.eureka2.protocol.interest;
 
-import com.netflix.eureka2.registry.datacenter.DataCenterInfo;
-import com.netflix.eureka2.registry.instance.Delta;
-import com.netflix.eureka2.registry.instance.InstanceInfoField;
-import com.netflix.eureka2.registry.instance.ServicePort;
+import com.netflix.eureka2.model.datacenter.DataCenterInfo;
+import com.netflix.eureka2.model.instance.Delta;
+import com.netflix.eureka2.model.instance.InstanceInfoField;
+import com.netflix.eureka2.model.instance.ServicePort;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;

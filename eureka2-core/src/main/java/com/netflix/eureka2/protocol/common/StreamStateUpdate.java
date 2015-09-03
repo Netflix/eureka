@@ -1,9 +1,9 @@
 package com.netflix.eureka2.protocol.common;
 
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.StreamStateNotification;
-import com.netflix.eureka2.interests.StreamStateNotification.BufferState;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.StreamStateNotification;
+import com.netflix.eureka2.model.notification.StreamStateNotification.BufferState;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 
 /**
  * @author Tomasz Bak

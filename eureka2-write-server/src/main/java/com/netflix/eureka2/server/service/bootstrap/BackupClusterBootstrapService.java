@@ -8,12 +8,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.netflix.eureka2.Server;
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.ChangeNotifications;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.utils.functions.ChangeNotifications;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.server.resolver.ClusterAddress;
 import com.netflix.eureka2.server.resolver.EurekaClusterResolver;
 import org.slf4j.Logger;

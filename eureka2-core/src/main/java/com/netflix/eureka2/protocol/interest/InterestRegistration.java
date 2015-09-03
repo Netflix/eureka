@@ -19,7 +19,7 @@ package com.netflix.eureka2.protocol.interest;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.interests.MultipleInterests;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 
 import java.util.Arrays;
 import java.util.Set;

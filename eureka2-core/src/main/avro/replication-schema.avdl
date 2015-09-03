@@ -4,12 +4,12 @@ protocol ReplicationProtocol {
     import idl "eureka-common-model.avdl";
 
     record ReplicationHello {
-        com.netflix.eureka2.registry.Source source;
+        com.netflix.eureka2.model.Source source;
         int registrySize;
     }
 
     record ReplicationHelloReply {
-        com.netflix.eureka2.registry.Source source;
+        com.netflix.eureka2.model.Source source;
         boolean sendSnapshot;
     }
 

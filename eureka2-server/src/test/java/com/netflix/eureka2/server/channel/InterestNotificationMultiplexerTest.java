@@ -16,15 +16,15 @@
 
 package com.netflix.eureka2.server.channel;
 
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.interests.ModifyNotification;
+import com.netflix.eureka2.model.notification.ModifyNotification;
 import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.registry.instance.Delta;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.Delta;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleDelta;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.After;

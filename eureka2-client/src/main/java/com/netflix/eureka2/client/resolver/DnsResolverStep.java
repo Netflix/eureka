@@ -1,8 +1,8 @@
 package com.netflix.eureka2.client.resolver;
 
 import com.netflix.eureka2.Server;
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.interests.host.DnsResolver;
 import rx.Observable;
 import rx.Scheduler;

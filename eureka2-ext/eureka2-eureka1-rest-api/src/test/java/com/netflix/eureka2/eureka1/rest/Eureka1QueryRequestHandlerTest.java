@@ -6,7 +6,7 @@ import java.util.List;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.eureka1.rest.query.Eureka2RegistryViewCache;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.rxnetty.HttpResponseUtils;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;

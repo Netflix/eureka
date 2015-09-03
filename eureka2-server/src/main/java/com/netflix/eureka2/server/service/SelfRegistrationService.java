@@ -2,7 +2,7 @@ package com.netflix.eureka2.server.service;
 
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.utils.rx.LoggingSubscriber;
 import com.netflix.eureka2.utils.rx.RetryStrategyFunc;

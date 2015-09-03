@@ -4,11 +4,11 @@ package com.netflix.eureka2.testkit.data.builder;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.netflix.eureka2.registry.instance.NetworkAddress;
-import com.netflix.eureka2.registry.instance.NetworkAddress.NetworkAddressBuilder;
-import com.netflix.eureka2.registry.instance.NetworkAddress.ProtocolType;
+import com.netflix.eureka2.model.instance.NetworkAddress;
+import com.netflix.eureka2.model.instance.NetworkAddress.NetworkAddressBuilder;
+import com.netflix.eureka2.model.instance.NetworkAddress.ProtocolType;
 
-import static com.netflix.eureka2.registry.instance.NetworkAddress.NetworkAddressBuilder.aNetworkAddress;
+import static com.netflix.eureka2.model.instance.NetworkAddress.NetworkAddressBuilder.aNetworkAddress;
 
 /**
  * @author Tomasz Bak

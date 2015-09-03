@@ -1,9 +1,9 @@
 package com.netflix.eureka2.registry;
 
-import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.registry.data.MultiSourcedDataHolder;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

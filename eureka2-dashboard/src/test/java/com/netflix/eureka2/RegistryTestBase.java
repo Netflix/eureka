@@ -4,10 +4,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.datacenter.AwsDataCenterInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
 import org.junit.Before;
 import org.mockito.Mock;

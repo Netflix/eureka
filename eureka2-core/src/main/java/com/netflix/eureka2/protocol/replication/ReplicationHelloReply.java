@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.protocol.replication;
 
-import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.model.Source;
 
 /**
  * @author Tomasz Bak

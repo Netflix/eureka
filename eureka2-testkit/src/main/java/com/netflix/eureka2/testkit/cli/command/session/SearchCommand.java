@@ -3,9 +3,9 @@ package com.netflix.eureka2.testkit.cli.command.session;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.cli.Command;
 import com.netflix.eureka2.testkit.cli.Context;
 import rx.Notification;

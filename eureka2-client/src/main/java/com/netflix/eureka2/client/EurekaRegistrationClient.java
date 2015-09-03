@@ -17,7 +17,7 @@
 package com.netflix.eureka2.client;
 
 import com.netflix.eureka2.client.registration.RegistrationObservable;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import rx.Observable;
 
 /**

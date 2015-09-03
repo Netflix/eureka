@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.protocol.replication;
 
-import com.netflix.eureka2.registry.Source;
+import com.netflix.eureka2.model.Source;
 
 /**
  * Hello message send by replication client (source), to identify itself and report the registry size.

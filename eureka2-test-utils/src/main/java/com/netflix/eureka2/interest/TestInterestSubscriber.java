@@ -1,8 +1,8 @@
 package com.netflix.eureka2.interest;
 
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.ChangeNotification.Kind;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 
 import static org.hamcrest.Matchers.equalTo;

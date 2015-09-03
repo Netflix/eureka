@@ -1,6 +1,6 @@
 package com.netflix.eureka2.channel;
 
-import com.netflix.eureka2.registry.Sourced;
+import com.netflix.eureka2.model.Sourced;
 
 /**
  * @author Tomasz Bak

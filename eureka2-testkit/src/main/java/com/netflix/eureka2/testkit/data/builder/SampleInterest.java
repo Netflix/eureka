@@ -18,7 +18,7 @@ package com.netflix.eureka2.testkit.data.builder;
 
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 
 /**
  * @author Tomasz Bak

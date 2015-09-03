@@ -5,17 +5,17 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 import com.netflix.eureka2.Server;
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.ChangeNotifications;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.registry.selector.ServiceSelector;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.utils.functions.ChangeNotifications;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.selector.ServiceSelector;
 import rx.Observable.Transformer;
 import rx.functions.Func1;
 
 /**
  * A collection of functions that can be applied to an Eureka interest stream.
  * For more generic versions of some of these functions that may not be InstanceInfo specific,
- * see {@link com.netflix.eureka2.interests.ChangeNotifications}.
+ * see {@link com.netflix.eureka2.utils.functions.ChangeNotifications}.
  *
  * Typical usages will be:
  *   Observable<ChangeNotification<InstanceInfo>>.buffers().collapse() to return collapsed lists of InstanceInfo updates

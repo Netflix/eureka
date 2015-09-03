@@ -21,11 +21,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.registry.EurekaRegistryView;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.utils.rx.BreakerSwitchOperator;
 import rx.Observable;
 import rx.subjects.PublishSubject;

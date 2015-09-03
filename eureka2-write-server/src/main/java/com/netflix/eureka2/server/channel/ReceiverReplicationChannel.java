@@ -1,19 +1,19 @@
 package com.netflix.eureka2.server.channel;
 
-import com.netflix.eureka2.channel.ChannelFunctions;
+import com.netflix.eureka2.utils.functions.ChannelFunctions;
 import com.netflix.eureka2.channel.ReplicationChannel;
-import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
 import com.netflix.eureka2.protocol.common.InterestSetNotification;
 import com.netflix.eureka2.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.utils.rx.LoggingSubscriber;
-import com.netflix.eureka2.utils.rx.RxFunctions;
+import com.netflix.eureka2.utils.functions.RxFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;

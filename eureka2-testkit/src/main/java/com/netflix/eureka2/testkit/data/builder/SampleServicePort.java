@@ -19,7 +19,7 @@ package com.netflix.eureka2.testkit.data.builder;
 import java.util.HashSet;
 
 import com.netflix.eureka2.Names;
-import com.netflix.eureka2.registry.instance.ServicePort;
+import com.netflix.eureka2.model.instance.ServicePort;
 import com.netflix.eureka2.transport.EurekaTransports;
 import com.netflix.eureka2.utils.ExtCollections;
 

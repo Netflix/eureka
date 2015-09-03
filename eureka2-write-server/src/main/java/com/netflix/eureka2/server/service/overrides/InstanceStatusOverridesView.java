@@ -1,6 +1,6 @@
 package com.netflix.eureka2.server.service.overrides;
 
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import rx.Observable;
 
 /**

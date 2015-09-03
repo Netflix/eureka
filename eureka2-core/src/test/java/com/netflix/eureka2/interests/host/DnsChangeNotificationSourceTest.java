@@ -2,8 +2,8 @@ package com.netflix.eureka2.interests.host;
 
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.interests.ChangeNotification;
-import com.netflix.eureka2.interests.ChangeNotification.Kind;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.junit.categories.ExternalConnectionTest;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import org.junit.Test;

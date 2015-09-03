@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.health.EurekaHealthStatusAggregator;
 import com.netflix.eureka2.health.HealthStatusUpdate;
-import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
+import com.netflix.eureka2.model.instance.InstanceInfo.Status;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import netflix.karyon.health.HealthCheckHandler;
 import org.slf4j.Logger;

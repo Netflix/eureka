@@ -8,7 +8,7 @@ import com.netflix.eureka2.health.AbstractHealthStatusProvider;
 import com.netflix.eureka2.health.HealthStatusProvider;
 import com.netflix.eureka2.health.HealthStatusUpdate;
 import com.netflix.eureka2.health.SubsystemDescriptor;
-import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
+import com.netflix.eureka2.model.instance.InstanceInfo.Status;
 import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.server.module.EurekaHealthStatusModule;
 import com.netflix.governator.Governator;

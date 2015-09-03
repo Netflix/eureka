@@ -1,7 +1,7 @@
 package com.netflix.eureka2.interests;
 
 import com.netflix.eureka2.interests.Interest.Operator;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 
 /**
  * A factory to create instances of {@link Interest}.

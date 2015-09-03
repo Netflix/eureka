@@ -1,6 +1,6 @@
 package com.netflix.eureka2.health;
 
-import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
+import com.netflix.eureka2.model.instance.InstanceInfo.Status;
 
 /**
  * @author Tomasz Bak

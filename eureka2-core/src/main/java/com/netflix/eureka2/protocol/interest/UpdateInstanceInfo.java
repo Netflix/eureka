@@ -17,7 +17,7 @@
 package com.netflix.eureka2.protocol.interest;
 
 import com.netflix.eureka2.protocol.common.InterestSetNotification;
-import com.netflix.eureka2.registry.instance.Delta;
+import com.netflix.eureka2.model.instance.Delta;
 
 /**
  * @author Tomasz Bak

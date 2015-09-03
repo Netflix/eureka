@@ -6,7 +6,7 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.server.service.overrides.InstanceStatusOverridesView;
 import com.netflix.eureka2.server.service.overrides.InstanceStatusOverridesSource;
 import org.slf4j.Logger;

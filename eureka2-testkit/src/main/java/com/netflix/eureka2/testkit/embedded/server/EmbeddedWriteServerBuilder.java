@@ -8,7 +8,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
 import com.netflix.eureka2.Server;
-import com.netflix.eureka2.interests.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.server.AbstractEurekaServer;
 import com.netflix.eureka2.server.EurekaWriteServerConfigurationModule;
 import com.netflix.eureka2.server.EurekaWriteServerModule;

@@ -2,11 +2,11 @@ package com.netflix.eureka2.server.service.overrides;
 
 import com.netflix.eureka2.registry.ChangeNotificationObservable;
 import com.netflix.eureka2.registry.EurekaRegistrationProcessorStub;
-import com.netflix.eureka2.registry.Source;
-import com.netflix.eureka2.registry.Source.Origin;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
-import com.netflix.eureka2.registry.instance.InstanceInfo.Builder;
-import com.netflix.eureka2.registry.instance.InstanceInfo.Status;
+import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.Source.Origin;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo.Builder;
+import com.netflix.eureka2.model.instance.InstanceInfo.Status;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;

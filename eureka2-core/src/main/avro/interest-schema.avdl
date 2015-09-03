@@ -13,13 +13,13 @@ protocol InterestProtocol {
     record EnumDeltaDTO {
         string id;
         string fieldName;
-        union { null, com.netflix.eureka2.registry.instance.InstanceInfo$.Status } value;
+        union { null, com.netflix.eureka2.model.instance.InstanceInfo$.Status } value;
     }
     @namespace("com.netflix.eureka2.protocol.interest.DeltaDTO$")
     record SetServicePortDeltaDTO {
         string id;
         string fieldName;
-        union { null, @java-class("java.util.HashSet") array<com.netflix.eureka2.registry.instance.ServicePort> } value;
+        union { null, @java-class("java.util.HashSet") array<com.netflix.eureka2.model.instance.ServicePort> } value;
     }
     @namespace("com.netflix.eureka2.protocol.interest.DeltaDTO$")
     record SetStringDeltaDTO {
@@ -41,8 +41,8 @@ protocol InterestProtocol {
         string fieldName;
         union {
             null,
-            com.netflix.eureka2.registry.datacenter.BasicDataCenterInfo,
-            com.netflix.eureka2.registry.datacenter.AwsDataCenterInfo
+            com.netflix.eureka2.model.datacenter.BasicDataCenterInfo,
+            com.netflix.eureka2.model.datacenter.AwsDataCenterInfo
          } value;
     }
 

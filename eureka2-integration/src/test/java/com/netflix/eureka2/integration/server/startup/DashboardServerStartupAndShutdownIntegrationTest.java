@@ -5,7 +5,7 @@ import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
-import com.netflix.eureka2.registry.datacenter.LocalDataCenterInfo.DataCenterType;
+import com.netflix.eureka2.model.datacenter.LocalDataCenterInfo.DataCenterType;
 import com.netflix.eureka2.server.resolver.EurekaClusterResolvers.ResolverType;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;

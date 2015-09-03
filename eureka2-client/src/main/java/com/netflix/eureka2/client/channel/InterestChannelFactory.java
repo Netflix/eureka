@@ -6,7 +6,7 @@ import com.netflix.eureka2.client.transport.TransportClients;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.registry.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.transport.TransportClient;
 
 import java.util.concurrent.atomic.AtomicLong;
