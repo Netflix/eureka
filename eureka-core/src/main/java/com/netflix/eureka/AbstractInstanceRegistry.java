@@ -115,7 +115,11 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     }
 
     public long getLocalRegistrySize() {
-        return registry.size();
+        long total = 0;
+        for (Map<String, Lease<InstanceInfo>> entry : registry.values()) {
+            total += entry.size();
+        }
+        return total;
     }
 
     /**
@@ -315,7 +319,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         }
         if (leaseToRenew == null) {
             RENEW_NOT_FOUND.increment(isReplication);
-            logger.warn("DS: Registry: lease doesn't exist, registering resource: {} - {}", appName ,id);
+            logger.warn("DS: Registry: lease doesn't exist, registering resource: {} - {}", appName, id);
             return false;
         } else {
             InstanceInfo instanceInfo = leaseToRenew.getHolder();
@@ -403,7 +407,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             overriddenInstanceStatusMap.put(id, overriddenStatus);
             InstanceInfo instanceInfo = this.getInstanceByAppAndId(appName, id, false);
             instanceInfo.setOverriddenStatus(overriddenStatus);
-             logger.info("Set the overridden status for instance (appname:{}, id:{}} and the value is {} ",
+            logger.info("Set the overridden status for instance (appname:{}, id:{}} and the value is {} ",
                     appName, id, overriddenStatus.name());
         }
     }
@@ -1245,7 +1249,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         // currently in SERVICE
         if (
                 (!InstanceStatus.UP.equals(r.getStatus()))
-                && (!InstanceStatus.OUT_OF_SERVICE.equals(r.getStatus()))) {
+                        && (!InstanceStatus.OUT_OF_SERVICE.equals(r.getStatus()))) {
             logger.debug("Trusting the instance status {} from replica or instance for instance {}",
                     r.getStatus(), r.getId());
             return r.getStatus();
@@ -1280,8 +1284,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             // Allow server to have its way when the status is UP or OUT_OF_SERVICE
             if (
                     (existingStatus != null)
-                    && (InstanceStatus.OUT_OF_SERVICE.equals(existingStatus)
-                    || InstanceStatus.UP.equals(existingStatus))) {
+                            && (InstanceStatus.OUT_OF_SERVICE.equals(existingStatus)
+                            || InstanceStatus.UP.equals(existingStatus))) {
                 logger.debug("There is already an existing lease with status {}  for instance {}",
                         existingLease.getHolder().getStatus().name(),
                         existingLease.getHolder().getId());

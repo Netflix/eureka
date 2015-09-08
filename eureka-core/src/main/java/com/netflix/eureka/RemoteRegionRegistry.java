@@ -83,7 +83,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
         this.fetchRegistryTimer = Monitors.newTimer(this.remoteRegionURL.toString() + "_FetchRegistry");
 
         EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
-                .withUserAgent("Java EurekaClient (remote region)")
+                .withUserAgent("Java-EurekaClient-RemoteRegion")
                 .withConnectionTimeout(EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs())
                 .withReadTimeout(EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs())
                 .withMaxConnectionsPerHost(EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost())

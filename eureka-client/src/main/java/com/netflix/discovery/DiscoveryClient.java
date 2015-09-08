@@ -338,7 +338,7 @@ public class DiscoveryClient implements EurekaClient {
             }
 
             EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
-                    .withUserAgent("Java EurekaClient")
+                    .withUserAgent("Java-EurekaClient")
                     .withConnectionTimeout(clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000)
                     .withReadTimeout(clientConfig.getEurekaServerReadTimeoutSeconds() * 1000)
                     .withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost())
