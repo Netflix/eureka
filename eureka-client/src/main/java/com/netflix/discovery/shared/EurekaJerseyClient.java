@@ -12,6 +12,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.netflix.discovery.converters.wrappers.CodecWrappers;
 import com.netflix.discovery.provider.DiscoveryJerseyProvider;
 import com.netflix.servo.monitor.BasicCounter;
 import com.netflix.servo.monitor.BasicTimer;
@@ -118,6 +119,9 @@ public class EurekaJerseyClient {
         private int connectionTimeout;
         private int readTimeout;
         private int connectionIdleTimeout;
+        private String encoderName;
+        private String decoderName;
+        private String clientDataAccept;
 
         public EurekaJerseyClientBuilder withClientName(String clientName) {
             this.clientName = clientName;
@@ -173,6 +177,17 @@ public class EurekaJerseyClient {
             return this;
         }
 
+        public EurekaJerseyClientBuilder withEncoder(String encoderName) {
+            this.encoderName = encoderName;
+            return this;
+        }
+
+        public EurekaJerseyClientBuilder withDecoder(String decoderName, String clientDataAccept) {
+            this.decoderName = decoderName;
+            this.clientDataAccept = clientDataAccept;
+            return this;
+        }
+
         public EurekaJerseyClient build() {
             MyDefaultApacheHttpClient4Config config = new MyDefaultApacheHttpClient4Config();
             try {
@@ -197,6 +212,12 @@ public class EurekaJerseyClient {
                 if (proxyHost != null) {
                     addProxyConfiguration(cm);
                 }
+
+                DiscoveryJerseyProvider discoveryJerseyProvider = new DiscoveryJerseyProvider(
+                        CodecWrappers.getEncoder(encoderName),
+                        CodecWrappers.resolveDecoder(decoderName, clientDataAccept)
+                );
+                getSingletons().add(discoveryJerseyProvider);
 
                 // Common properties to all clients
                 cm.setDefaultMaxPerRoute(maxConnectionsPerHost);

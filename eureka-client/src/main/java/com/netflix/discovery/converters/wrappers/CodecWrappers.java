@@ -1,18 +1,19 @@
 package com.netflix.discovery.converters.wrappers;
 
-import com.netflix.appinfo.EurekaAccept;
-import com.netflix.discovery.converters.EurekaJacksonCodec;
-import com.netflix.discovery.converters.JsonXStream;
-import com.netflix.discovery.converters.KeyFormatter;
-import com.netflix.discovery.converters.XmlXStream;
-import com.netflix.discovery.converters.jackson.EurekaJacksonCodecNG;
-
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.netflix.appinfo.EurekaAccept;
+import com.netflix.discovery.converters.EurekaJacksonCodec;
+import com.netflix.discovery.converters.JsonXStream;
+import com.netflix.discovery.converters.KeyFormatter;
+import com.netflix.discovery.converters.XmlXStream;
+import com.netflix.discovery.converters.jackson.EurekaJsonJacksonCodec;
+import com.netflix.discovery.converters.jackson.EurekaXmlJacksonCodec;
 
 /**
  * @author David Liu
@@ -105,11 +106,11 @@ public final class CodecWrappers {
 
     public static class JacksonJson implements EncoderDecoderWrapper {
 
-        protected final EurekaJacksonCodecNG codec = new EurekaJacksonCodecNG();
+        protected final EurekaJsonJacksonCodec codec = new EurekaJsonJacksonCodec();
 
         @Override
         public String codecName() {
-            return CodecWrappers.getCodecName(this.getClass());
+            return getCodecName(this.getClass());
         }
 
         @Override
@@ -119,32 +120,32 @@ public final class CodecWrappers {
 
         @Override
         public <T> String encode(T object) throws IOException {
-            return codec.getJsonMapper().writeValueAsString(object);
+            return codec.getObjectMapper().writeValueAsString(object);
         }
 
         @Override
         public <T> void encode(T object, OutputStream outputStream) throws IOException {
-            codec.writeTo(object, outputStream, MediaType.APPLICATION_JSON_TYPE);
+            codec.writeTo(object, outputStream);
         }
 
         @Override
         public <T> T decode(String textValue, Class<T> type) throws IOException {
-            return codec.getJsonMapper().readValue(textValue, type);
+            return codec.getObjectMapper().readValue(textValue, type);
         }
 
         @Override
         public <T> T decode(InputStream inputStream, Class<T> type) throws IOException {
-            return codec.getJsonMapper().readValue(inputStream, type);
+            return codec.getObjectMapper().readValue(inputStream, type);
         }
     }
 
     public static class JacksonJsonMini implements EncoderDecoderWrapper {
 
-        protected final EurekaJacksonCodecNG codec = new EurekaJacksonCodecNG(KeyFormatter.defaultKeyFormatter(), true);
+        protected final EurekaJsonJacksonCodec codec = new EurekaJsonJacksonCodec(KeyFormatter.defaultKeyFormatter(), true);
 
         @Override
         public String codecName() {
-            return CodecWrappers.getCodecName(this.getClass());
+            return getCodecName(this.getClass());
         }
 
         @Override
@@ -154,32 +155,32 @@ public final class CodecWrappers {
 
         @Override
         public <T> String encode(T object) throws IOException {
-            return codec.getJsonMapper().writeValueAsString(object);
+            return codec.getObjectMapper().writeValueAsString(object);
         }
 
         @Override
         public <T> void encode(T object, OutputStream outputStream) throws IOException {
-            codec.writeTo(object, outputStream, MediaType.APPLICATION_JSON_TYPE);
+            codec.writeTo(object, outputStream);
         }
 
         @Override
         public <T> T decode(String textValue, Class<T> type) throws IOException {
-            return codec.getJsonMapper().readValue(textValue, type);
+            return codec.getObjectMapper().readValue(textValue, type);
         }
 
         @Override
         public <T> T decode(InputStream inputStream, Class<T> type) throws IOException {
-            return codec.getJsonMapper().readValue(inputStream, type);
+            return codec.getObjectMapper().readValue(inputStream, type);
         }
     }
 
     public static class JacksonXml implements EncoderDecoderWrapper {
 
-        protected final EurekaJacksonCodecNG codec = new EurekaJacksonCodecNG();
+        protected final EurekaXmlJacksonCodec codec = new EurekaXmlJacksonCodec();
 
         @Override
         public String codecName() {
-            return CodecWrappers.getCodecName(this.getClass());
+            return getCodecName(this.getClass());
         }
 
         @Override
@@ -189,32 +190,32 @@ public final class CodecWrappers {
 
         @Override
         public <T> String encode(T object) throws IOException {
-            return codec.getXmlMapper().writeValueAsString(object);
+            return codec.getObjectMapper().writeValueAsString(object);
         }
 
         @Override
         public <T> void encode(T object, OutputStream outputStream) throws IOException {
-            codec.writeTo(object, outputStream, MediaType.APPLICATION_XML_TYPE);
+            codec.writeTo(object, outputStream);
         }
 
         @Override
         public <T> T decode(String textValue, Class<T> type) throws IOException {
-            return codec.getXmlMapper().readValue(textValue, type);
+            return codec.getObjectMapper().readValue(textValue, type);
         }
 
         @Override
         public <T> T decode(InputStream inputStream, Class<T> type) throws IOException {
-            return codec.getXmlMapper().readValue(inputStream, type);
+            return codec.getObjectMapper().readValue(inputStream, type);
         }
     }
 
     public static class JacksonXmlMini implements EncoderDecoderWrapper {
 
-        protected final EurekaJacksonCodecNG codec = new EurekaJacksonCodecNG(KeyFormatter.defaultKeyFormatter(), true);
+        protected final EurekaXmlJacksonCodec codec = new EurekaXmlJacksonCodec(KeyFormatter.defaultKeyFormatter(), true);
 
         @Override
         public String codecName() {
-            return CodecWrappers.getCodecName(this.getClass());
+            return getCodecName(this.getClass());
         }
 
         @Override
@@ -224,22 +225,22 @@ public final class CodecWrappers {
 
         @Override
         public <T> String encode(T object) throws IOException {
-            return codec.getXmlMapper().writeValueAsString(object);
+            return codec.getObjectMapper().writeValueAsString(object);
         }
 
         @Override
         public <T> void encode(T object, OutputStream outputStream) throws IOException {
-            codec.writeTo(object, outputStream, MediaType.APPLICATION_XML_TYPE);
+            codec.writeTo(object, outputStream);
         }
 
         @Override
         public <T> T decode(String textValue, Class<T> type) throws IOException {
-            return codec.getXmlMapper().readValue(textValue, type);
+            return codec.getObjectMapper().readValue(textValue, type);
         }
 
         @Override
         public <T> T decode(InputStream inputStream, Class<T> type) throws IOException {
-            return codec.getXmlMapper().readValue(inputStream, type);
+            return codec.getObjectMapper().readValue(inputStream, type);
         }
     }
 
@@ -249,7 +250,7 @@ public final class CodecWrappers {
 
         @Override
         public String codecName() {
-            return CodecWrappers.getCodecName(this.getClass());
+            return getCodecName(this.getClass());
         }
 
         @Override
@@ -284,7 +285,7 @@ public final class CodecWrappers {
 
         @Override
         public String codecName() {
-            return CodecWrappers.getCodecName(this.getClass());
+            return getCodecName(this.getClass());
         }
 
         @Override

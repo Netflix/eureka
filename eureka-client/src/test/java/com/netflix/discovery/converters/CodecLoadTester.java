@@ -12,7 +12,9 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.converters.jackson.EurekaJacksonCodecNG;
+import com.netflix.discovery.converters.jackson.AbstractEurekaJacksonCodec;
+import com.netflix.discovery.converters.jackson.EurekaJsonJacksonCodec;
+import com.netflix.discovery.converters.jackson.EurekaXmlJacksonCodec;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.InstanceInfoGenerator;
@@ -28,8 +30,12 @@ public class CodecLoadTester {
 
     private final EntityBodyConverter xstreamCodec = new EntityBodyConverter();
     private final EurekaJacksonCodec legacyJacksonCodec = new EurekaJacksonCodec();
-    private final EurekaJacksonCodecNG jacksonCodecNG = new EurekaJacksonCodecNG();
-    private final EurekaJacksonCodecNG jacksonCodecNgCompact = new EurekaJacksonCodecNG(KeyFormatter.defaultKeyFormatter(), true);
+
+    private final EurekaJsonJacksonCodec jsonCodecNG = new EurekaJsonJacksonCodec();
+    private final EurekaJsonJacksonCodec jsonCodecNgCompact = new EurekaJsonJacksonCodec(KeyFormatter.defaultKeyFormatter(), true);
+
+    private final EurekaXmlJacksonCodec xmlCodecNG = new EurekaXmlJacksonCodec();
+    private final EurekaXmlJacksonCodec xmlCodecNgCompact = new EurekaXmlJacksonCodec(KeyFormatter.defaultKeyFormatter(), true);
 
     static class FirstHolder {
         Applications value;
@@ -223,13 +229,18 @@ public class CodecLoadTester {
         return new Func0<Object>() {
             @Override
             public int call(Object object) {
-                EurekaJacksonCodecNG codec = compact ? jacksonCodecNgCompact : jacksonCodecNG;
+                AbstractEurekaJacksonCodec codec;
+                if (mediaType.equals(MediaType.APPLICATION_JSON_TYPE)) {
+                    codec = compact ? jsonCodecNgCompact : jsonCodecNG;
+                } else {
+                    codec = compact ? xmlCodecNgCompact : xmlCodecNG;
+                }
                 ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
                 try {
-                    codec.writeTo(object, captureStream, mediaType);
+                    codec.writeTo(object, captureStream);
                     byte[] bytes = captureStream.toByteArray();
                     InputStream source = new ByteArrayInputStream(bytes);
-                    Applications readValue = (Applications) codec.readValue(object.getClass(), source, mediaType);
+                    Applications readValue = (Applications) codec.getObjectMapper().readValue(source, object.getClass());
                     secondHolder.value = readValue;
 
                     return bytes.length;
@@ -258,7 +269,7 @@ public class CodecLoadTester {
 
 //        runApplicationsLoadTest(loop, legacyJacksonAction);
 
-        runApplicationsLoadTest(loop, createJacksonNgAction(MediaType.APPLICATION_XML_TYPE, false));
+        runApplicationsLoadTest(loop, createJacksonNgAction(MediaType.APPLICATION_JSON_TYPE, false));
 
         long executionTime = System.currentTimeMillis() - start;
         System.out.printf("Execution time: %d[ms]\n", executionTime);
