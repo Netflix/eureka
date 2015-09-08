@@ -64,8 +64,6 @@ import com.netflix.appinfo.HealthCheckHandler;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
-import com.netflix.discovery.converters.wrappers.CodecWrappers;
-import com.netflix.discovery.provider.DiscoveryJerseyProvider;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.EurekaJerseyClient;
@@ -338,17 +336,14 @@ public class DiscoveryClient implements EurekaClient {
             }
 
             EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
-                    .withUserAgent("Java EurekaClient")
+                    .withUserAgent("Java-EurekaClient")
                     .withConnectionTimeout(clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000)
                     .withReadTimeout(clientConfig.getEurekaServerReadTimeoutSeconds() * 1000)
                     .withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost())
                     .withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections())
-                    .withConnectionIdleTimeout(clientConfig.getEurekaConnectionIdleTimeoutSeconds());
-
-            DiscoveryJerseyProvider discoveryJerseyProvider = new DiscoveryJerseyProvider(
-                    CodecWrappers.getEncoder(clientConfig.getEncoderName()),
-                    CodecWrappers.resolveDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept())
-            );
+                    .withConnectionIdleTimeout(clientConfig.getEurekaConnectionIdleTimeoutSeconds())
+                    .withEncoder(clientConfig.getEncoderName())
+                    .withDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept());
 
             clientAccept = EurekaAccept.fromString(clientConfig.getClientDataAccept());
 

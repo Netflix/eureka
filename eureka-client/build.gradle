@@ -1,4 +1,5 @@
 apply plugin: 'nebula-test-jar'
+apply plugin: 'provided-base'
 
 dependencies {
     compile "com.netflix.netflix-commons:netflix-eventbus:0.1.2"
@@ -12,9 +13,16 @@ dependencies {
     compile "org.apache.httpcomponents:httpclient:${apacheHttpClientVersion}"
     compile "com.google.inject:guice:${guiceVersion}"
     compile "com.netflix.governator:governator-annotations:${governatorVersion}"
-    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${jacksonVersion}"
+
+    compile "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+    compile "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+    compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+
+    // Eureka client uses JSON encoding by default
+    provided "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${jacksonVersion}"
     // Prefered jackson Stax serializer. Default Oracle has issues (adds empty namespace) and is slower
-    compile "org.codehaus.woodstox:woodstox-core-asl:${woodstoxVersion}"
+    provided "org.codehaus.woodstox:woodstox-core-asl:${woodstoxVersion}"
+
     runtime "org.codehaus.jettison:jettison:${jettisonVersion}"
 
     testCompile project(':eureka-test-utils')

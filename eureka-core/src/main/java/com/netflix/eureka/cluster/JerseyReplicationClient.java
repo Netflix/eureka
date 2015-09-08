@@ -50,7 +50,7 @@ public class JerseyReplicationClient extends JerseyEurekaHttpClient implements H
             String jerseyClientName = "Discovery-PeerNodeClient-" + hostname;
             EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
                     .withClientName(jerseyClientName)
-                    .withUserAgent("Java EurekaClient (replication)")
+                    .withUserAgent("Java-EurekaClient-Replication")
                     .withConnectionTimeout(config.getPeerNodeConnectTimeoutMs())
                     .withReadTimeout(config.getPeerNodeReadTimeoutMs())
                     .withMaxConnectionsPerHost(config.getPeerNodeTotalConnectionsPerHost())

@@ -9,7 +9,8 @@ import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.LeaseInfo;
-import com.netflix.discovery.converters.jackson.EurekaJacksonCodecNG;
+import com.netflix.discovery.converters.jackson.EurekaJsonJacksonCodec;
+import com.netflix.discovery.converters.jackson.EurekaXmlJacksonCodec;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.EurekaEntityComparators;
@@ -23,22 +24,19 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Tomasz Bak
  */
-public class EurekaJacksonCodecNGTest {
+public class EurekaJsonAndXmlJacksonCodecTest {
 
     private final InstanceInfoGenerator infoGenerator = InstanceInfoGenerator.newBuilder(4, 2).withMetaData(true).build();
     private final Iterator<InstanceInfo> infoIterator = infoGenerator.serviceIterator();
 
-    private final EurekaJacksonCodecNG codec = new EurekaJacksonCodecNG();
-    private final EurekaJacksonCodecNG compactCodec = new EurekaJacksonCodecNG(KeyFormatter.defaultKeyFormatter(), true);
-
     @Test
     public void testAmazonInfoEncodeDecodeWithJson() throws Exception {
-        doAmazonInfoEncodeDecodeTest(codec.getJsonMapper());
+        doAmazonInfoEncodeDecodeTest(new EurekaJsonJacksonCodec().getObjectMapper());
     }
 
     @Test
     public void testAmazonInfoEncodeDecodeWithXml() throws Exception {
-        doAmazonInfoEncodeDecodeTest(codec.getXmlMapper());
+        doAmazonInfoEncodeDecodeTest(new EurekaXmlJacksonCodec().getObjectMapper());
     }
 
     private void doAmazonInfoEncodeDecodeTest(ObjectMapper mapper) throws Exception {
@@ -51,12 +49,12 @@ public class EurekaJacksonCodecNGTest {
 
     @Test
     public void testAmazonInfoCompactEncodeDecodeWithJson() throws Exception {
-        doAmazonInfoCompactEncodeDecodeTest(compactCodec.getJsonMapper());
+        doAmazonInfoCompactEncodeDecodeTest(new EurekaJsonJacksonCodec(KeyFormatter.defaultKeyFormatter(), true).getObjectMapper());
     }
 
     @Test
     public void testAmazonInfoCompactEncodeDecodeWithXml() throws Exception {
-        doAmazonInfoCompactEncodeDecodeTest(compactCodec.getXmlMapper());
+        doAmazonInfoCompactEncodeDecodeTest(new EurekaXmlJacksonCodec(KeyFormatter.defaultKeyFormatter(), true).getObjectMapper());
     }
 
     private void doAmazonInfoCompactEncodeDecodeTest(ObjectMapper mapper) throws Exception {
@@ -70,12 +68,12 @@ public class EurekaJacksonCodecNGTest {
 
     @Test
     public void testMyDataCenterInfoEncodeDecodeWithJson() throws Exception {
-        doMyDataCenterInfoEncodeDecodeTest(codec.getJsonMapper());
+        doMyDataCenterInfoEncodeDecodeTest(new EurekaJsonJacksonCodec().getObjectMapper());
     }
 
     @Test
     public void testMyDataCenterInfoEncodeDecodeWithXml() throws Exception {
-        doMyDataCenterInfoEncodeDecodeTest(codec.getXmlMapper());
+        doMyDataCenterInfoEncodeDecodeTest(new EurekaXmlJacksonCodec().getObjectMapper());
     }
 
     private void doMyDataCenterInfoEncodeDecodeTest(ObjectMapper mapper) throws Exception {
@@ -93,12 +91,12 @@ public class EurekaJacksonCodecNGTest {
 
     @Test
     public void testLeaseInfoEncodeDecodeWithJson() throws Exception {
-        doLeaseInfoEncodeDecode(codec.getJsonMapper());
+        doLeaseInfoEncodeDecode(new EurekaJsonJacksonCodec().getObjectMapper());
     }
 
     @Test
     public void testLeaseInfoEncodeDecodeWithXml() throws Exception {
-        doLeaseInfoEncodeDecode(codec.getXmlMapper());
+        doLeaseInfoEncodeDecode(new EurekaXmlJacksonCodec().getObjectMapper());
     }
 
     private void doLeaseInfoEncodeDecode(ObjectMapper mapper) throws Exception {
@@ -111,12 +109,12 @@ public class EurekaJacksonCodecNGTest {
 
     @Test
     public void testInstanceInfoEncodeDecodeWithJson() throws Exception {
-        doInstanceInfoEncodeDecode(codec.getJsonMapper());
+        doInstanceInfoEncodeDecode(new EurekaJsonJacksonCodec().getObjectMapper());
     }
 
     @Test
     public void testInstanceInfoEncodeDecodeWithXml() throws Exception {
-        doInstanceInfoEncodeDecode(codec.getXmlMapper());
+        doInstanceInfoEncodeDecode(new EurekaXmlJacksonCodec().getObjectMapper());
     }
 
     private void doInstanceInfoEncodeDecode(ObjectMapper mapper) throws Exception {
@@ -129,12 +127,12 @@ public class EurekaJacksonCodecNGTest {
 
     @Test
     public void testInstanceInfoCompactEncodeDecodeWithJson() throws Exception {
-        doInstanceInfoCompactEncodeDecode(compactCodec.getJsonMapper());
+        doInstanceInfoCompactEncodeDecode(new EurekaJsonJacksonCodec(KeyFormatter.defaultKeyFormatter(), true).getObjectMapper());
     }
 
     @Test
     public void testInstanceInfoCompactEncodeDecodeWithXml() throws Exception {
-        doInstanceInfoCompactEncodeDecode(compactCodec.getXmlMapper());
+        doInstanceInfoCompactEncodeDecode(new EurekaXmlJacksonCodec(KeyFormatter.defaultKeyFormatter(), true).getObjectMapper());
     }
 
     private void doInstanceInfoCompactEncodeDecode(ObjectMapper mapper) throws Exception {
@@ -148,12 +146,18 @@ public class EurekaJacksonCodecNGTest {
 
     @Test
     public void testInstanceInfoIgnoredFieldsAreFilteredOutDuringDeserializationProcessWithJson() throws Exception {
-        doInstanceInfoIgnoredFieldsAreFilteredOutDuringDeserializationProcess(codec.getJsonMapper(), compactCodec.getJsonMapper());
+        doInstanceInfoIgnoredFieldsAreFilteredOutDuringDeserializationProcess(
+                new EurekaJsonJacksonCodec().getObjectMapper(),
+                new EurekaJsonJacksonCodec(KeyFormatter.defaultKeyFormatter(), true).getObjectMapper()
+        );
     }
 
     @Test
     public void testInstanceInfoIgnoredFieldsAreFilteredOutDuringDeserializationProcessWithXml() throws Exception {
-        doInstanceInfoIgnoredFieldsAreFilteredOutDuringDeserializationProcess(codec.getXmlMapper(), compactCodec.getXmlMapper());
+        doInstanceInfoIgnoredFieldsAreFilteredOutDuringDeserializationProcess(
+                new EurekaXmlJacksonCodec().getObjectMapper(),
+                new EurekaXmlJacksonCodec(KeyFormatter.defaultKeyFormatter(), true).getObjectMapper()
+        );
     }
 
     public void doInstanceInfoIgnoredFieldsAreFilteredOutDuringDeserializationProcess(ObjectMapper fullMapper, ObjectMapper compactMapper) throws Exception {
@@ -181,12 +185,12 @@ public class EurekaJacksonCodecNGTest {
 
     @Test
     public void testApplicationEncodeDecodeWithJson() throws Exception {
-        doApplicationEncodeDecode(codec.getJsonMapper());
+        doApplicationEncodeDecode(new EurekaJsonJacksonCodec().getObjectMapper());
     }
 
     @Test
     public void testApplicationEncodeDecodeWithXml() throws Exception {
-        doApplicationEncodeDecode(codec.getXmlMapper());
+        doApplicationEncodeDecode(new EurekaXmlJacksonCodec().getObjectMapper());
     }
 
     private void doApplicationEncodeDecode(ObjectMapper mapper) throws Exception {
@@ -201,12 +205,12 @@ public class EurekaJacksonCodecNGTest {
 
     @Test
     public void testApplicationsEncodeDecodeWithJson() throws Exception {
-        doApplicationsEncodeDecode(codec.getJsonMapper());
+        doApplicationsEncodeDecode(new EurekaJsonJacksonCodec().getObjectMapper());
     }
 
     @Test
     public void testApplicationsEncodeDecodeWithXml() throws Exception {
-        doApplicationsEncodeDecode(codec.getXmlMapper());
+        doApplicationsEncodeDecode(new EurekaXmlJacksonCodec().getObjectMapper());
     }
 
     private void doApplicationsEncodeDecode(ObjectMapper mapper) throws Exception {
