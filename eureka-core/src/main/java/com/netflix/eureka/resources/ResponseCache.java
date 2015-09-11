@@ -86,7 +86,7 @@ public class ResponseCache {
     private static final AtomicLong versionDeltaWithRegions = new AtomicLong(0);
     private static final String EMPTY_PAYLOAD = "";
 
-    private static final java.util.Timer timer = new java.util.Timer("Eureka -CacheFillTimer", true);
+    private static final java.util.Timer timer = new java.util.Timer("Eureka-CacheFillTimer", true);
 
     private final Timer serializeAllAppsTimer = Monitors
             .newTimer("serialize-all");
@@ -152,7 +152,7 @@ public class ResponseCache {
 
     private final boolean shouldUseReadOnlyResponseCache;
     private final AbstractInstanceRegistry registry;
-    private final ServerCodecs serverCodecs;
+    private volatile ServerCodecs serverCodecs;
 
     private static final ResponseCache s_instance = new ResponseCache();
 
@@ -182,6 +182,14 @@ public class ResponseCache {
                     "Cannot register the JMX monitor for the InstanceRegistry :",
                     e);
         }
+    }
+
+    /**
+     * Temporary measure to enable defining custom server side codecs until the server side code base is cleaned up
+     * and more DI friendly
+     */
+    public void setServerCodecs(ServerCodecs serverCodecs) {
+        this.serverCodecs = serverCodecs;
     }
 
     private TimerTask getCacheUpdateTask() {

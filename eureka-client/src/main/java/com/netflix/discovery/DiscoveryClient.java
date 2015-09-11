@@ -67,7 +67,7 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.EurekaJerseyClient;
-import com.netflix.discovery.shared.EurekaJerseyClient.EurekaJerseyClientBuilder;
+import com.netflix.discovery.shared.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
 import com.netflix.discovery.util.ThresholdLevelsMetric;
 import com.netflix.eventbus.spi.EventBus;
 import com.netflix.servo.annotations.DataSourceType;
@@ -171,14 +171,14 @@ public class DiscoveryClient implements EurekaClient {
     private final ApplicationInfoManager applicationInfoManager;
     private final InstanceInfo instanceInfo;
     private final EurekaAccept clientAccept;
-    private EurekaJerseyClient discoveryJerseyClient;
     private final AtomicReference<String> remoteRegionsToFetch;
     private final InstanceRegionChecker instanceRegionChecker;
     private final AtomicReference<String> lastQueryRedirect = new AtomicReference<String>();
     private final AtomicReference<String> lastRegisterRedirect = new AtomicReference<String>();
-    private final ApacheHttpClient4 discoveryApacheClient;
     private final EventBus eventBus;
     private final Provider<BackupRegistry> backupRegistryProvider;
+    private final ApacheHttpClient4 discoveryApacheClient;
+    private EurekaJerseyClient discoveryJerseyClient;
 
     private volatile HealthCheckHandler healthCheckHandler;
     private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<String, Applications>();
@@ -212,6 +212,9 @@ public class DiscoveryClient implements EurekaClient {
         @Inject(optional = true)
         private Collection<ClientFilter> additionalFilters;
 
+        @Inject(optional = true)
+        private EurekaJerseyClient eurekaJerseyClient;
+
         public DiscoveryClientOptionalArgs() {
         }
 
@@ -229,6 +232,10 @@ public class DiscoveryClient implements EurekaClient {
 
         public void setAdditionalFilters(Collection<ClientFilter> additionalFilters) {
             this.additionalFilters = additionalFilters;
+        }
+
+        public void setEurekaJerseyClient(EurekaJerseyClient eurekaJerseyClient) {
+            this.eurekaJerseyClient = eurekaJerseyClient;
         }
     }
 
@@ -289,13 +296,15 @@ public class DiscoveryClient implements EurekaClient {
     DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, DiscoveryClientOptionalArgs args,
                     Provider<BackupRegistry> backupRegistryProvider) {
         if (args != null) {
-            healthCheckHandlerProvider = args.healthCheckHandlerProvider;
-            healthCheckCallbackProvider = args.healthCheckCallbackProvider;
-            eventBus = args.eventBus;
+            this.healthCheckHandlerProvider = args.healthCheckHandlerProvider;
+            this.healthCheckCallbackProvider = args.healthCheckCallbackProvider;
+            this.eventBus = args.eventBus;
+            this.discoveryJerseyClient = args.eurekaJerseyClient;
         } else {
-            healthCheckCallbackProvider = null;
-            healthCheckHandlerProvider = null;
-            eventBus = null;
+            this.healthCheckCallbackProvider = null;
+            this.healthCheckHandlerProvider = null;
+            this.eventBus = null;
+            this.discoveryJerseyClient = null;
         }
 
         this.applicationInfoManager = applicationInfoManager;
@@ -335,33 +344,38 @@ public class DiscoveryClient implements EurekaClient {
                 logger.warn("Setting instanceInfo to a passed in null value");
             }
 
-            EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
-                    .withUserAgent("Java-EurekaClient")
-                    .withConnectionTimeout(clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000)
-                    .withReadTimeout(clientConfig.getEurekaServerReadTimeoutSeconds() * 1000)
-                    .withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost())
-                    .withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections())
-                    .withConnectionIdleTimeout(clientConfig.getEurekaConnectionIdleTimeoutSeconds())
-                    .withEncoder(clientConfig.getEncoderName())
-                    .withDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept());
-
             clientAccept = EurekaAccept.fromString(clientConfig.getClientDataAccept());
 
-            if (eurekaServiceUrls.get().get(0).startsWith("https://") &&
-                    "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
-                clientBuilder.withClientName("DiscoveryClient-HTTPClient-System")
-                        .withSystemSSLConfiguration();
-            } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
-                clientBuilder.withClientName("Proxy-DiscoveryClient-HTTPClient")
-                        .withProxy(
-                                clientConfig.getProxyHost(), clientConfig.getProxyPort(),
-                                clientConfig.getProxyUserName(), clientConfig.getProxyPassword()
-                        );
-            } else {
-                clientBuilder.withClientName("DiscoveryClient-HTTPClient");
+            if (discoveryJerseyClient == null) {  // if not injected, create one
+
+                EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
+                        .withUserAgent("Java-EurekaClient")
+                        .withConnectionTimeout(clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000)
+                        .withReadTimeout(clientConfig.getEurekaServerReadTimeoutSeconds() * 1000)
+                        .withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost())
+                        .withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections())
+                        .withConnectionIdleTimeout(clientConfig.getEurekaConnectionIdleTimeoutSeconds())
+                        .withEncoder(clientConfig.getEncoderName())
+                        .withDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept());
+
+                if (eurekaServiceUrls.get().get(0).startsWith("https://") &&
+                        "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
+                    clientBuilder.withClientName("DiscoveryClient-HTTPClient-System")
+                            .withSystemSSLConfiguration();
+                } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
+                    clientBuilder.withClientName("Proxy-DiscoveryClient-HTTPClient")
+                            .withProxy(
+                                    clientConfig.getProxyHost(), clientConfig.getProxyPort(),
+                                    clientConfig.getProxyUserName(), clientConfig.getProxyPassword()
+                            );
+                } else {
+                    clientBuilder.withClientName("DiscoveryClient-HTTPClient");
+                }
+                discoveryJerseyClient = clientBuilder.build();
             }
-            discoveryJerseyClient = clientBuilder.build();
+
             discoveryApacheClient = discoveryJerseyClient.getClient();
+
             remoteRegionsToFetch = new AtomicReference<String>(clientConfig.fetchRegistryForRemoteRegions());
             AzToRegionMapper azToRegionMapper;
             if (clientConfig.shouldUseDnsForFetchingServiceUrls()) {
@@ -379,8 +393,7 @@ public class DiscoveryClient implements EurekaClient {
             if (enableGZIPContentEncodingFilter) {
                 // compressed only if there exists a 'Content-Encoding' header
                 // whose value is "gzip"
-                discoveryApacheClient.addFilter(new GZIPContentEncodingFilter(
-                        false));
+                discoveryApacheClient.addFilter(new GZIPContentEncodingFilter(false));
             }
 
             // always enable client identity headers
@@ -851,6 +864,7 @@ public class DiscoveryClient implements EurekaClient {
         if (discoveryJerseyClient != null) {
             discoveryJerseyClient.destroyResources();
         }
+
         heartbeatStalenessMonitor.shutdown();
         registryStalenessMonitor.shutdown();
     }

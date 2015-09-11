@@ -20,15 +20,33 @@ class ServerCodecs {
     private final EncoderWrapper fullXmlEncoder;
     private final EncoderWrapper miniXmlEncoder;
 
+    private static EncoderWrapper getFullJsonEncoderWrapper(String name) {
+        EncoderWrapper temp = CodecWrappers.getEncoder(name);
+        return temp == null ? CodecWrappers.getEncoder(LegacyJacksonJson.class) : temp;
+    }
+
+    private static EncoderWrapper getFullXmlEncoderWrapper(String name) {
+        EncoderWrapper temp = CodecWrappers.getEncoder(name);
+        return temp == null ? CodecWrappers.getEncoder(XStreamXml.class) : temp;
+    }
+
     public ServerCodecs(EurekaServerConfig config) {
-        EncoderWrapper temp = CodecWrappers.getEncoder(config.getJsonCodecName());
-        fullJsonEncoder = temp == null ? CodecWrappers.getEncoder(LegacyJacksonJson.class) : temp;
+        this(
+                getFullJsonEncoderWrapper(config.getJsonCodecName()),
+                CodecWrappers.getEncoder(JacksonJsonMini.class),
+                getFullXmlEncoderWrapper(config.getXmlCodecName()),
+                CodecWrappers.getEncoder(JacksonXmlMini.class)
+        );
+    }
 
-        temp = CodecWrappers.getEncoder(config.getXmlCodecName());
-        fullXmlEncoder = temp == null ? CodecWrappers.getEncoder(XStreamXml.class) : temp;
-
-        miniJsonEncoder = CodecWrappers.getEncoder(JacksonJsonMini.class);
-        miniXmlEncoder = CodecWrappers.getEncoder(JacksonXmlMini.class);
+    public ServerCodecs(EncoderWrapper fullJsonEncoder,
+                        EncoderWrapper miniJsonEncoder,
+                        EncoderWrapper fullXmlEncoder,
+                        EncoderWrapper miniXmlEncoder) {
+        this.fullJsonEncoder = fullJsonEncoder;
+        this.miniJsonEncoder = miniJsonEncoder;
+        this.fullXmlEncoder = fullXmlEncoder;
+        this.miniXmlEncoder = miniXmlEncoder;
     }
 
     public EncoderWrapper getEncoder(ResponseCache.KeyType keyType, boolean compact) {
