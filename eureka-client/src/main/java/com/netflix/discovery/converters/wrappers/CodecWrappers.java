@@ -16,11 +16,27 @@ import com.netflix.discovery.converters.jackson.EurekaJsonJacksonCodec;
 import com.netflix.discovery.converters.jackson.EurekaXmlJacksonCodec;
 
 /**
+ * This is just a helper class during transition when multiple codecs are supported. One day this should all go away
+ * when there is only 1 type of json and xml codecs each.
+ *
+ * For adding custom codecs to Discovery, prefer creating a custom EurekaJerseyClient to added to DiscoveryClient
+ * either completely independently or via
+ * {@link com.netflix.discovery.shared.EurekaJerseyClientImpl.EurekaJerseyClientBuilder#withDecoderWrapper(DecoderWrapper)}
+ * and
+ * {@link com.netflix.discovery.shared.EurekaJerseyClientImpl.EurekaJerseyClientBuilder#withEncoderWrapper(EncoderWrapper)}
+ *
  * @author David Liu
  */
 public final class CodecWrappers {
 
     private static final Map<String, EncoderDecoderWrapper> CODECS = new ConcurrentHashMap<>();
+
+    /**
+     * For transition use: register a new codec wrapper.
+     */
+    public static void registerWrapper(EncoderDecoderWrapper wrapper) {
+        CODECS.put(wrapper.codecName(), wrapper);
+    }
 
     public static <T extends CodecWrapperBase> String getCodecName(Class<T> clazz) {
         return clazz.getSimpleName();

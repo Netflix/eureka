@@ -55,8 +55,7 @@ import org.slf4j.LoggerFactory;
 @Provider
 @Produces("*/*")
 @Consumes("*/*")
-public class DiscoveryJerseyProvider implements MessageBodyWriter,
-        MessageBodyReader {
+public class DiscoveryJerseyProvider implements MessageBodyWriter, MessageBodyReader {
     private static final Logger LOGGER = LoggerFactory.getLogger(DiscoveryJerseyProvider.class);
 
     // Cache the serializers so that they don't have to be instantiated every time

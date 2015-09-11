@@ -11,7 +11,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.EurekaIdentityHeaderFilter;
 import com.netflix.discovery.shared.EurekaJerseyClient;
-import com.netflix.discovery.shared.EurekaJerseyClient.EurekaJerseyClientBuilder;
+import com.netflix.discovery.shared.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
 import com.netflix.discovery.shared.JerseyEurekaHttpClient;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerIdentity;
