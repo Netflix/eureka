@@ -102,7 +102,6 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     private static final AtomicReference<EvictionTask> EVICTION_TASK = new AtomicReference<EvictionTask>();
 
-    private final ResponseCache responseCache;
 
     /**
      * Create a new, empty instance registry.
@@ -113,7 +112,6 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         deltaRetentionTimer.schedule(getDeltaRetentionTask(),
                 EUREKA_CONFIG.getDeltaRetentionTimerIntervalInMs(),
                 EUREKA_CONFIG.getDeltaRetentionTimerIntervalInMs());
-        responseCache = new ResponseCache();
     }
 
     public long getLocalRegistrySize() {
@@ -122,10 +120,6 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             total += entry.size();
         }
         return total;
-    }
-
-    public ResponseCache getResponseCache() {
-        return this.responseCache;
     }
 
     /**
@@ -1165,7 +1159,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     private void invalidateCache(String appName, @Nullable String vipAddress, @Nullable String secureVipAddress) {
         // invalidate cache
-        responseCache.invalidate(appName, vipAddress, secureVipAddress);
+        ResponseCache.getInstance().invalidate(appName, vipAddress, secureVipAddress);
     }
 
     private static final class RecentlyChangedItem {
