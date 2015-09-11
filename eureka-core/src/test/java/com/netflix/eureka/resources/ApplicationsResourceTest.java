@@ -45,7 +45,7 @@ public class ApplicationsResourceTest extends AbstractTester {
     }
 
     @Test
-    public void testFullAppsGet() throws Exception {
+    public void testFullAppsGetJson() throws Exception {
         Response response = applicationsResource.getContainers(
                 Version.V2.name(),
                 MediaType.APPLICATION_JSON,
@@ -64,6 +64,36 @@ public class ApplicationsResourceTest extends AbstractTester {
             Application decodedApp = decoded.getRegisteredApplications(application.getName());
             assertThat(EurekaEntityComparators.equal(application, decodedApp), is(true));
         }
+    }
+
+    @Test
+    public void testFullAppsGetGzipJsonHeaderType() throws Exception {
+        Response response = applicationsResource.getContainers(
+                Version.V2.name(),
+                MediaType.APPLICATION_JSON,
+                "gzip", // encoding
+                EurekaAccept.full.name(),
+                null,  // uriInfo
+                null  // remote regions
+        );
+
+        assertThat(response.getMetadata().getFirst("Content-Encoding").toString(), is("gzip"));
+        assertThat(response.getMetadata().getFirst("Content-Type").toString(), is(MediaType.APPLICATION_JSON));
+    }
+
+    @Test
+    public void testFullAppsGetGzipXmlHeaderType() throws Exception {
+        Response response = applicationsResource.getContainers(
+                Version.V2.name(),
+                MediaType.APPLICATION_XML,
+                "gzip", // encoding
+                EurekaAccept.full.name(),
+                null,  // uriInfo
+                null  // remote regions
+        );
+
+        assertThat(response.getMetadata().getFirst("Content-Encoding").toString(), is("gzip"));
+        assertThat(response.getMetadata().getFirst("Content-Type").toString(), is(MediaType.APPLICATION_XML));
     }
 
     @Test
