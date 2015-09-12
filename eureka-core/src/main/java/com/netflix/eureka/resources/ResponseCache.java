@@ -172,7 +172,9 @@ public class ResponseCache {
         }
 
         this.registry = registry;
-        this.serverCodecs = new ServerCodecs(eurekaConfig);
+        this.serverCodecs = new ServerCodecs.Builder()
+                .withEurekaServerConfig(eurekaConfig)
+                .build();
 
         try {
             Monitors.registerObject(this);
