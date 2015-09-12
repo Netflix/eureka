@@ -12,50 +12,31 @@ import com.netflix.eureka.EurekaServerConfig;
 /**
  * @author David Liu
  */
-class ServerCodecs {
+public class ServerCodecs {
 
-    private final EncoderWrapper fullJsonEncoder;
-    private final EncoderWrapper miniJsonEncoder;
+    protected final EncoderWrapper fullJsonEncoder;
+    protected final EncoderWrapper compactJsonEncoder;
 
-    private final EncoderWrapper fullXmlEncoder;
-    private final EncoderWrapper miniXmlEncoder;
+    protected final EncoderWrapper fullXmlEncoder;
+    protected final EncoderWrapper compactXmlEncoder;
 
-    private static EncoderWrapper getFullJsonEncoderWrapper(String name) {
-        EncoderWrapper temp = CodecWrappers.getEncoder(name);
-        return temp == null ? CodecWrappers.getEncoder(LegacyJacksonJson.class) : temp;
-    }
-
-    private static EncoderWrapper getFullXmlEncoderWrapper(String name) {
-        EncoderWrapper temp = CodecWrappers.getEncoder(name);
-        return temp == null ? CodecWrappers.getEncoder(XStreamXml.class) : temp;
-    }
-
-    public ServerCodecs(EurekaServerConfig config) {
-        this(
-                getFullJsonEncoderWrapper(config.getJsonCodecName()),
-                CodecWrappers.getEncoder(JacksonJsonMini.class),
-                getFullXmlEncoderWrapper(config.getXmlCodecName()),
-                CodecWrappers.getEncoder(JacksonXmlMini.class)
-        );
-    }
-
-    public ServerCodecs(EncoderWrapper fullJsonEncoder,
-                        EncoderWrapper miniJsonEncoder,
-                        EncoderWrapper fullXmlEncoder,
-                        EncoderWrapper miniXmlEncoder) {
+    protected ServerCodecs(EncoderWrapper fullJsonEncoder,
+                         EncoderWrapper compactJsonEncoder,
+                         EncoderWrapper fullXmlEncoder,
+                         EncoderWrapper compactXmlEncoder) {
         this.fullJsonEncoder = fullJsonEncoder;
-        this.miniJsonEncoder = miniJsonEncoder;
+        this.compactJsonEncoder = compactJsonEncoder;
         this.fullXmlEncoder = fullXmlEncoder;
-        this.miniXmlEncoder = miniXmlEncoder;
+        this.compactXmlEncoder = compactXmlEncoder;
     }
 
     public EncoderWrapper getEncoder(ResponseCache.KeyType keyType, boolean compact) {
         switch (keyType) {
             case JSON:
-                return compact ? miniJsonEncoder : fullJsonEncoder;
+                return compact ? compactJsonEncoder : fullJsonEncoder;
             case XML:
             default:
-                return compact ? miniXmlEncoder : fullXmlEncoder;
+                return compact ? compactXmlEncoder : fullXmlEncoder;
         }
     }
 
@@ -66,6 +47,65 @@ class ServerCodecs {
             case full:
             default:
                 return getEncoder(keyType, false);
+        }
+    }
+
+    public static class Builder {
+        private EncoderWrapper fullJsonEncoder;
+        private EncoderWrapper compactJsonEncoder;
+
+        private EncoderWrapper fullXmlEncoder;
+        private EncoderWrapper compactXmlEncoder;
+
+        public Builder withFullJsonEncoder(EncoderWrapper fullJsonEncoder) {
+            this.fullJsonEncoder = fullJsonEncoder;
+            return this;
+        }
+
+        public Builder withCompactJsonEncoder(EncoderWrapper compactJsonEncoder) {
+            this.compactJsonEncoder = compactJsonEncoder;
+            return this;
+        }
+
+        public Builder withFullXmlnEncoder(EncoderWrapper fullXmlEncoder) {
+            this.fullXmlEncoder = fullXmlEncoder;
+            return this;
+        }
+
+        public Builder withCompactXmlEncoder(EncoderWrapper compactXmlEncoder) {
+            this.compactXmlEncoder = compactXmlEncoder;
+            return this;
+        }
+
+        public Builder withEurekaServerConfig(EurekaServerConfig config) {
+            fullJsonEncoder = CodecWrappers.getEncoder(config.getJsonCodecName());
+            fullXmlEncoder = CodecWrappers.getEncoder(config.getXmlCodecName());
+            return this;
+        }
+
+        public ServerCodecs build() {
+            if (fullJsonEncoder == null) {
+                fullJsonEncoder = CodecWrappers.getEncoder(LegacyJacksonJson.class);
+            }
+
+            if (compactJsonEncoder == null) {
+                compactJsonEncoder = CodecWrappers.getEncoder(JacksonJsonMini.class);
+            }
+
+            if (fullXmlEncoder == null) {
+                fullXmlEncoder = CodecWrappers.getEncoder(XStreamXml.class);
+            }
+
+            if (compactXmlEncoder == null) {
+                compactXmlEncoder = CodecWrappers.getEncoder(JacksonXmlMini.class);
+            }
+
+            return new ServerCodecs(
+                    fullJsonEncoder,
+                    compactJsonEncoder,
+                    fullXmlEncoder,
+                    compactXmlEncoder
+            );
         }
     }
 }
