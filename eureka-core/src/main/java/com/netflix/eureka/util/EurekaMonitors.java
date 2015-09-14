@@ -181,7 +181,7 @@ public enum EurekaMonitors {
     public static void shutdown() {
         for (EurekaMonitors c : EurekaMonitors.values()) {
             DefaultMonitorRegistry.getInstance().unregister(
-                    Monitors.newObjectMonitor(c.name(), c));
+                    Monitors.newObjectMonitor(c.getName(), c));
         }
     }
 }
