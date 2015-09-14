@@ -27,6 +27,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -142,7 +143,7 @@ public class PeerEurekaNodeTest {
         expectRequestType(RequestType.Heartbeat);
 
         // Check that registry has instanceInfo from peer
-        verify(registry, times(1)).register(instanceInfoFromPeer, true);
+        verify(registry, timeout(1000).times(1)).register(instanceInfoFromPeer, true);
     }
 
     @Test
