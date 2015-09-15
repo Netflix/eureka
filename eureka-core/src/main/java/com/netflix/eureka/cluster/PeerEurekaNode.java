@@ -293,6 +293,7 @@ public class PeerEurekaNode {
         cancelProcessor.shutdown();
         statusProcessor.shutdown();
         asgStatusProcessor.shutdown();
+        replicationClient.shutdown();
     }
 
     /**

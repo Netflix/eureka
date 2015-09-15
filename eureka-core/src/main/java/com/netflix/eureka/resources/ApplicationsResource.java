@@ -24,6 +24,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
@@ -53,6 +54,7 @@ public class ApplicationsResource {
     private static final String HEADER_ACCEPT = "Accept";
     private static final String HEADER_ACCEPT_ENCODING = "Accept-Encoding";
     private static final String HEADER_CONTENT_ENCODING = "Content-Encoding";
+    private static final String HEADER_CONTENT_TYPE = "Content-Type";
     private static final String HEADER_GZIP_VALUE = "gzip";
     private static final String HEADER_JSON_VALUE = "json";
 
@@ -128,8 +130,10 @@ public class ApplicationsResource {
         }
         CurrentRequestVersion.set(Version.toEnum(version));
         KeyType keyType = KeyType.JSON;
+        String returnMediaType = MediaType.APPLICATION_JSON;
         if (acceptHeader == null || !acceptHeader.contains(HEADER_JSON_VALUE)) {
             keyType = KeyType.XML;
+            returnMediaType = MediaType.APPLICATION_XML;
         }
 
         Key cacheKey = new Key(Key.EntityType.Application,
@@ -139,9 +143,12 @@ public class ApplicationsResource {
 
         if (acceptEncoding != null && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
             return Response.ok(responseCache.getGZIP(cacheKey))
-                    .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE).build();
+                    .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE)
+                    .header(HEADER_CONTENT_TYPE, returnMediaType)
+                    .build();
         } else {
-            return Response.ok(responseCache.get(cacheKey)).build();
+            return Response.ok(responseCache.get(cacheKey))
+                    .build();
         }
     }
 
@@ -202,8 +209,10 @@ public class ApplicationsResource {
 
         CurrentRequestVersion.set(Version.toEnum(version));
         KeyType keyType = KeyType.JSON;
+        String returnMediaType = MediaType.APPLICATION_JSON;
         if (acceptHeader == null || !acceptHeader.contains(HEADER_JSON_VALUE)) {
             keyType = KeyType.XML;
+            returnMediaType = MediaType.APPLICATION_XML;
         }
 
         Key cacheKey = new Key(Key.EntityType.Application,
@@ -214,7 +223,9 @@ public class ApplicationsResource {
         if (acceptEncoding != null
                 && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
             return Response.ok(responseCache.getGZIP(cacheKey))
-                    .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE).build();
+                    .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE)
+                    .header(HEADER_CONTENT_TYPE, returnMediaType)
+                    .build();
         } else {
             return Response.ok(responseCache.get(cacheKey))
                     .build();
