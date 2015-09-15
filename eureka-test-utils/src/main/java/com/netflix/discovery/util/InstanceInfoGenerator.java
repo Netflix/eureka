@@ -18,7 +18,8 @@ import com.netflix.appinfo.LeaseInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 
-import static com.netflix.discovery.util.ApplicationFunctions.toApplicationMap;
+import static com.netflix.discovery.util.EurekaEntityFunctions.mergeApplications;
+import static com.netflix.discovery.util.EurekaEntityFunctions.toApplicationMap;
 
 /**
  * Test data generator.
@@ -29,7 +30,9 @@ public class InstanceInfoGenerator {
     public static final int RENEW_INTERVAL = 5;
 
     private final int instanceCount;
-    private final int applicationCount;
+    private final String[] appNames;
+    private final String zone;
+    private final boolean taggedId;
 
     private Iterator<InstanceInfo> currentIt;
     private Applications allApplications = new Applications();
@@ -38,7 +41,9 @@ public class InstanceInfoGenerator {
 
     InstanceInfoGenerator(InstanceInfoGeneratorBuilder builder) {
         this.instanceCount = builder.instanceCount;
-        this.applicationCount = builder.applicationCount;
+        this.appNames = builder.appNames;
+        this.zone = builder.zone == null ? "us-east-1c" : builder.zone;
+        this.taggedId = builder.taggedId;
         this.withMetaData = builder.includeMetaData;
         this.includeAsg = builder.includeAsg;
     }
@@ -54,8 +59,8 @@ public class InstanceInfoGenerator {
             next.setActionType(ActionType.ADDED);
             instanceBatch.add(next);
         }
-        Applications nextBatch = ApplicationFunctions.toApplications(toApplicationMap(instanceBatch));
-        allApplications = ApplicationFunctions.merge(allApplications, nextBatch);
+        Applications nextBatch = EurekaEntityFunctions.toApplications(toApplicationMap(instanceBatch));
+        allApplications = mergeApplications(allApplications, nextBatch);
         nextBatch.setAppsHashCode(allApplications.getAppsHashCode());
 
         return nextBatch;
@@ -65,7 +70,7 @@ public class InstanceInfoGenerator {
         return new Iterator<InstanceInfo>() {
 
             private int returned;
-            private final int[] appInstanceIds = new int[applicationCount];
+            private final int[] appInstanceIds = new int[appNames.length];
             private int currentApp;
 
             @Override
@@ -80,7 +85,7 @@ public class InstanceInfoGenerator {
                 }
                 InstanceInfo toReturn = generateInstanceInfo(currentApp, appInstanceIds[currentApp]);
                 appInstanceIds[currentApp]++;
-                currentApp = (currentApp + 1) % applicationCount;
+                currentApp = (currentApp + 1) % appNames.length;
                 returned++;
                 return toReturn;
             }
@@ -117,6 +122,16 @@ public class InstanceInfoGenerator {
         return applications;
     }
 
+    public List<InstanceInfo> toInstanceList() {
+        List<InstanceInfo> result = new ArrayList<>(instanceCount);
+        Iterator<InstanceInfo> it = serviceIterator();
+        while (it.hasNext()) {
+            InstanceInfo instanceInfo = it.next();
+            result.add(instanceInfo);
+        }
+        return result;
+    }
+
     public static InstanceInfo takeOne() {
         return newBuilder(1, 1).withMetaData(true).build().serviceIterator().next();
     }
@@ -125,16 +140,26 @@ public class InstanceInfoGenerator {
         return new InstanceInfoGeneratorBuilder(instanceCount, applicationCount);
     }
 
+    public static InstanceInfoGeneratorBuilder newBuilder(int instanceCount, String... appNames) {
+        return new InstanceInfoGeneratorBuilder(instanceCount, appNames);
+    }
+
     private InstanceInfo generateInstanceInfo(int appIndex, int appInstanceId) {
-        String hostName = "instance" + appInstanceId + ".application" + appIndex + ".com";
+        String appName = appNames[appIndex];
+        String hostName = "instance" + appInstanceId + '.' + appName + ".com";
         String publicIp = "20.0." + appIndex + '.' + appInstanceId;
         String privateIp = "192.168." + appIndex + '.' + appInstanceId;
+
+        String instanceId = String.format("i-%04d%04d", appIndex, appInstanceId);
+        if (taggedId) {
+            instanceId = instanceId + '_' + appName;
+        }
 
         AmazonInfo dataCenterInfo = AmazonInfo.Builder.newBuilder()
                 .addMetadata(MetaDataKey.accountId, "testAccountId")
                 .addMetadata(MetaDataKey.amiId, String.format("ami-%04d%04d", appIndex, appInstanceId))
-                .addMetadata(MetaDataKey.availabilityZone, "us-east1c")
-                .addMetadata(MetaDataKey.instanceId, String.format("i-%04d%04d", appIndex, appInstanceId))
+                .addMetadata(MetaDataKey.availabilityZone, zone)
+                .addMetadata(MetaDataKey.instanceId, instanceId)
                 .addMetadata(MetaDataKey.instanceType, "m2.xlarge")
                 .addMetadata(MetaDataKey.localIpv4, privateIp)
                 .addMetadata(MetaDataKey.publicHostname, hostName)
@@ -156,8 +181,8 @@ public class InstanceInfoGenerator {
 
         Builder builder = InstanceInfo.Builder.newBuilder()
                 .setActionType(ActionType.ADDED)
-                .setAppGroupName("AppGroup" + appIndex)
-                .setAppName("App" + appIndex)
+                .setAppGroupName(appName + "Group")
+                .setAppName(appName)
                 .setHostName(hostName)
                 .setIPAddr(publicIp)
                 .setPort(8080)
@@ -176,7 +201,7 @@ public class InstanceInfoGenerator {
                 .setIsCoordinatingDiscoveryServer(true)
                 .enablePort(PortType.UNSECURE, true);
         if (includeAsg) {
-            builder.setASGName("ASG" + appIndex);
+            builder.setASGName(appName + "ASG");
         }
         if (withMetaData) {
             builder.add("appKey" + appIndex, Integer.toString(appInstanceId));
@@ -187,14 +212,36 @@ public class InstanceInfoGenerator {
     public static class InstanceInfoGeneratorBuilder {
 
         private final int instanceCount;
-        private final int applicationCount;
+
+        private String[] appNames;
 
         private boolean includeMetaData;
         private boolean includeAsg = true;
+        private String zone;
+        private boolean taggedId;
 
         public InstanceInfoGeneratorBuilder(int instanceCount, int applicationCount) {
             this.instanceCount = instanceCount;
-            this.applicationCount = applicationCount;
+            String[] appNames = new String[applicationCount];
+            for (int i = 0; i < appNames.length; i++) {
+                appNames[i] = "application" + i;
+            }
+            this.appNames = appNames;
+        }
+
+        public InstanceInfoGeneratorBuilder(int instanceCount, String... appNames) {
+            this.instanceCount = instanceCount;
+            this.appNames = appNames;
+        }
+
+        public InstanceInfoGeneratorBuilder withZone(String zone) {
+            this.zone = zone;
+            return this;
+        }
+
+        public InstanceInfoGeneratorBuilder withTaggedId(boolean taggedId) {
+            this.taggedId = taggedId;
+            return this;
         }
 
         public InstanceInfoGeneratorBuilder withMetaData(boolean includeMetaData) {

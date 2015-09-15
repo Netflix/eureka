@@ -12,7 +12,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.EntityBodyConverter;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.discovery.util.ApplicationFunctions;
+import com.netflix.discovery.util.EurekaEntityFunctions;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -144,7 +144,7 @@ public class DiscoveryClientRedirectTest {
     public void testClientFallsBackToOriginalServerOnError() throws Exception {
         Applications fullFetchApps1 = dataGenerator.takeDelta(1);
         String fullFetchJson1 = toJson(fullFetchApps1);
-        Applications fullFetchApps2 = ApplicationFunctions.merge(fullFetchApps1, dataGenerator.takeDelta(1));
+        Applications fullFetchApps2 = EurekaEntityFunctions.mergeApplications(fullFetchApps1, dataGenerator.takeDelta(1));
         String fullFetchJson2 = toJson(fullFetchApps2);
 
         redirectServerMockClient.when(
