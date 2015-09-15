@@ -18,6 +18,7 @@ import com.netflix.eureka.EurekaServerIdentity;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.WebResource.Builder;
@@ -79,7 +80,7 @@ public class JerseyReplicationClient extends JerseyEurekaHttpClient implements H
     }
 
     @Override
-    protected ApacheHttpClient4 getJerseyApacheClient() {
+    protected Client getJerseyClient() {
         return jerseyApacheClient;
     }
 
@@ -97,7 +98,7 @@ public class JerseyReplicationClient extends JerseyEurekaHttpClient implements H
         String urlPath = "apps/" + appName + '/' + id;
         ClientResponse response = null;
         try {
-            WebResource webResource = getJerseyApacheClient().resource(serviceUrl)
+            WebResource webResource = getJerseyClient().resource(serviceUrl)
                     .path(urlPath)
                     .queryParam("status", info.getStatus().toString())
                     .queryParam("lastDirtyTimestamp", info.getLastDirtyTimestamp().toString());
