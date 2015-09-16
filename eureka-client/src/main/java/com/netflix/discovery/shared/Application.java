@@ -31,7 +31,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRootName;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.EurekaClientConfig;
@@ -67,7 +66,6 @@ public class Application {
     private volatile boolean isDirty = false;
 
     @XStreamImplicit
-    @JacksonXmlElementWrapper(useWrapping=false)
     private final Set<InstanceInfo> instances;
 
     private AtomicReference<List<InstanceInfo>> shuffledInstances = new AtomicReference<List<InstanceInfo>>();

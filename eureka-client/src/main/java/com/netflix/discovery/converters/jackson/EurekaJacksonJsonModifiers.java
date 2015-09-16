@@ -11,20 +11,15 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.KeyFormatter;
-import com.netflix.discovery.converters.jackson.ApplicationsBeanSerializers.ApplicationsJsonBeanSerializer;
-import com.netflix.discovery.converters.jackson.ApplicationsBeanSerializers.ApplicationsXmlBeanSerializer;
 import com.netflix.discovery.converters.jackson.InstanceInfoBeanDeserializers.InstanceInfoJsonBeanDeserializer;
-import com.netflix.discovery.converters.jackson.InstanceInfoBeanDeserializers.InstanceInfoXmlBeanDeserializer;
-import com.netflix.discovery.converters.jackson.InstanceInfoBeanSerializers.InstanceInfoJsonBeanSerializer;
-import com.netflix.discovery.converters.jackson.InstanceInfoBeanSerializers.InstanceInfoXmlBeanSerializer;
 import com.netflix.discovery.shared.Applications;
 
 /**
  * @author Tomasz Bak
  */
-final class EurekaJacksonModifiers {
+final class EurekaJacksonJsonModifiers {
 
-    private EurekaJacksonModifiers() {
+    private EurekaJacksonJsonModifiers() {
     }
 
     public static BeanDeserializerModifier createJsonDeserializerModifier(final KeyFormatter keyFormatter, final boolean compactMode) {
@@ -42,21 +37,6 @@ final class EurekaJacksonModifiers {
         };
     }
 
-    public static BeanDeserializerModifier createXmlDeserializerModifier(final KeyFormatter keyFormatter, final boolean compactMode) {
-        return new BeanDeserializerModifier() {
-            @Override
-            public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc, JsonDeserializer<?> deserializer) {
-                if (beanDesc.getType().getRawClass().isAssignableFrom(Applications.class)) {
-                    return new ApplicationsBeanDeserializer((BeanDeserializerBase) deserializer, keyFormatter);
-                }
-                if (beanDesc.getType().getRawClass().isAssignableFrom(InstanceInfo.class)) {
-                    return new InstanceInfoXmlBeanDeserializer((BeanDeserializerBase) deserializer, compactMode);
-                }
-                return super.modifyDeserializer(config, beanDesc, deserializer);
-            }
-        };
-    }
-
     public static BeanSerializerModifier createJsonSerializerModifier(final KeyFormatter keyFormatter) {
         return new BeanSerializerModifier() {
             @Override
@@ -67,22 +47,6 @@ final class EurekaJacksonModifiers {
                 }
                 if (beanDesc.getBeanClass().isAssignableFrom(InstanceInfo.class)) {
                     return new InstanceInfoJsonBeanSerializer((BeanSerializerBase) serializer);
-                }
-                return serializer;
-            }
-        };
-    }
-
-    public static BeanSerializerModifier createXmlSerializerModifier(final KeyFormatter keyFormatter) {
-        return new BeanSerializerModifier() {
-            @Override
-            public JsonSerializer<?> modifySerializer(SerializationConfig config,
-                                                      BeanDescription beanDesc, JsonSerializer<?> serializer) {
-                if (beanDesc.getBeanClass().isAssignableFrom(Applications.class)) {
-                    return new ApplicationsXmlBeanSerializer((BeanSerializerBase) serializer, keyFormatter);
-                }
-                if (beanDesc.getBeanClass().isAssignableFrom(InstanceInfo.class)) {
-                    return new InstanceInfoXmlBeanSerializer((BeanSerializerBase) serializer);
                 }
                 return serializer;
             }

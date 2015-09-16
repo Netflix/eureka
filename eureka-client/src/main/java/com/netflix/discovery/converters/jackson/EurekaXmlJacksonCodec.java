@@ -23,6 +23,11 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.discovery.converters.KeyFormatter;
+import com.netflix.discovery.converters.jackson.mixin.ApplicationXmlMixIn;
+import com.netflix.discovery.converters.jackson.mixin.ApplicationsXmlMixIn;
+import com.netflix.discovery.converters.jackson.mixin.DataCenterInfoXmlMixIn;
+import com.netflix.discovery.shared.Application;
+import com.netflix.discovery.shared.Applications;
 
 /**
  * @author Tomasz Bak
@@ -39,15 +44,17 @@ public class EurekaXmlJacksonCodec extends AbstractEurekaJacksonCodec {
         xmlMapper = new XmlMapper() {
             public ObjectMapper registerModule(Module module) {
                 setSerializerFactory(
-                        getSerializerFactory().withSerializerModifier(EurekaJacksonModifiers.createXmlSerializerModifier(keyFormatter))
+                        getSerializerFactory().withSerializerModifier(EurekaJacksonXmlModifiers.createXmlSerializerModifier(keyFormatter))
                 );
                 return super.registerModule(module);
             }
         };
         xmlMapper.setSerializationInclusion(Include.NON_NULL);
-        xmlMapper.addMixInAnnotations(DataCenterInfo.class, DataCenterInfoXmlMixIn.class);
+        xmlMapper.addMixIn(DataCenterInfo.class, DataCenterInfoXmlMixIn.class);
+        xmlMapper.addMixIn(Application.class, ApplicationXmlMixIn.class);
+        xmlMapper.addMixIn(Applications.class, ApplicationsXmlMixIn.class);
         SimpleModule xmlModule = new SimpleModule();
-        xmlModule.setDeserializerModifier(EurekaJacksonModifiers.createXmlDeserializerModifier(keyFormatter, compact));
+        xmlModule.setDeserializerModifier(EurekaJacksonXmlModifiers.createXmlDeserializerModifier(keyFormatter, compact));
         xmlMapper.registerModule(xmlModule);
 
         if (compact) {
@@ -55,6 +62,7 @@ public class EurekaXmlJacksonCodec extends AbstractEurekaJacksonCodec {
         }
     }
 
+    @Override
     public ObjectMapper getObjectMapper() {
         return xmlMapper;
     }
