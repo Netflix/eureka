@@ -149,6 +149,11 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
         }
     }
 
+    @Override
+    public BindingStrategy getBindingStrategy() {
+        return BindingStrategy.valueOf(configInstance.getStringProperty(namespace + "bindingStrategy", BindingStrategy.EIP.name()).get().toUpperCase());
+    }
+
     /*
      * (non-Javadoc)
      *
@@ -617,5 +622,27 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     @Override
     public String getListAutoScalingGroupsRoleName() {
         return listAutoScalingGroupsRoleName.get();
+    }
+
+
+    @Override
+    public int getRoute53BindRebindRetries() {
+        return configInstance.getIntProperty(
+                namespace + "route53BindRebindRetries", 3).get();
+
+    }
+
+    @Override
+    public int getRoute53BindingRetryIntervalMs() {
+        return configInstance.getIntProperty(
+                namespace + "route53BindRebindRetryIntervalMs", (5 * 60 * 1000))
+                .get();
+    }
+
+    @Override
+    public long getRoute53DomainTTL() {
+        return configInstance.getLongProperty(
+                namespace + "route53DomainTTL", 30l)
+                .get();
     }
 }
