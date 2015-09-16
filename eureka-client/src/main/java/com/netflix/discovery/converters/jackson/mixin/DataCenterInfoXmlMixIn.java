@@ -1,4 +1,4 @@
-package com.netflix.discovery.converters.jackson;
+package com.netflix.discovery.converters.jackson.mixin;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;

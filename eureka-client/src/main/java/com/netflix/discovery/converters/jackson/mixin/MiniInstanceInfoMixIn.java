@@ -1,4 +1,4 @@
-package com.netflix.discovery.converters.jackson;
+package com.netflix.discovery.converters.jackson.mixin;
 
 import java.util.HashSet;
 import java.util.Map;

@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.deser.SettableBeanProperty;
 import com.fasterxml.jackson.databind.deser.impl.PropertyBasedCreator;
 import com.fasterxml.jackson.databind.deser.impl.PropertyValueBuffer;
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.discovery.converters.jackson.mixin.MiniInstanceInfoMixIn;
 
 /**
  * Custom {@link InstanceInfo} deserializers that handles port/secure port according to the legacy rules.
