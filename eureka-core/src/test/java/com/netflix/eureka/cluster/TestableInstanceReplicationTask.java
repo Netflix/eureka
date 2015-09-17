@@ -3,7 +3,7 @@ package com.netflix.eureka.cluster;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.discovery.shared.EurekaHttpClient.HttpResponse;
+import com.netflix.discovery.shared.transport.EurekaHttpClient.HttpResponse;
 import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
 
 /**

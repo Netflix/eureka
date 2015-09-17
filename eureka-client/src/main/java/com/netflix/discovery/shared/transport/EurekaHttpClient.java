@@ -1,7 +1,8 @@
-package com.netflix.discovery.shared;
+package com.netflix.discovery.shared.transport;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.discovery.shared.Applications;
 
 /**
  * Low level Eureka HTTP client API.

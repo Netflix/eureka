@@ -1,6 +1,6 @@
 package com.netflix.eureka.cluster;
 
-import com.netflix.discovery.shared.EurekaHttpClient;
+import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;

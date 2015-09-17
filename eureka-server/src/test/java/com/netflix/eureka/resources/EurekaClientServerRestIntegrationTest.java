@@ -11,10 +11,10 @@ import java.util.regex.Pattern;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
-import com.netflix.discovery.shared.EurekaHttpClient.HttpResponse;
-import com.netflix.discovery.shared.EurekaJerseyClient;
-import com.netflix.discovery.shared.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
-import com.netflix.discovery.shared.JerseyEurekaHttpClient;
+import com.netflix.discovery.shared.transport.EurekaHttpClient.HttpResponse;
+import com.netflix.discovery.shared.transport.EurekaJerseyClient;
+import com.netflix.discovery.shared.transport.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
+import com.netflix.discovery.shared.transport.JerseyEurekaHttpClient;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;

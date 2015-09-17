@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.shared.EurekaHttpClient.HttpResponse;
+import com.netflix.discovery.shared.transport.EurekaHttpClient.HttpResponse;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
 import com.netflix.eureka.cluster.protocol.ReplicationInstance;

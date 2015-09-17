@@ -9,7 +9,7 @@ import java.util.zip.GZIPOutputStream;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.converters.EurekaJacksonCodec;
-import com.netflix.discovery.shared.EurekaHttpClient.HttpResponse;
+import com.netflix.discovery.shared.transport.EurekaHttpClient.HttpResponse;
 import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;

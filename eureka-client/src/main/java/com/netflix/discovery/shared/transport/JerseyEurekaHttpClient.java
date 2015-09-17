@@ -1,10 +1,11 @@
-package com.netflix.discovery.shared;
+package com.netflix.discovery.shared.transport;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.discovery.shared.Applications;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;

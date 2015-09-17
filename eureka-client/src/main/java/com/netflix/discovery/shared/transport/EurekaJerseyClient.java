@@ -1,4 +1,4 @@
-package com.netflix.discovery.shared;
+package com.netflix.discovery.shared.transport;
 
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 
