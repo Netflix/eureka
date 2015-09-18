@@ -1,22 +1,37 @@
 package com.netflix.appinfo;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * @author Tomasz Bak
  */
-public class MyDataCenterInfo implements DataCenterInfo {
+public class MyDataCenterInfo implements DataCenterInfo, MetadataAware {
+    private Name name = Name.MyOwn;
+    private Map<String, String> metadata = Collections.emptyMap();
 
-    private final Name name;
+    public MyDataCenterInfo() {}
 
-    @JsonCreator
-    public MyDataCenterInfo(@JsonProperty("name") Name name) {
+    public MyDataCenterInfo(Name name) {
         this.name = name;
     }
 
     @Override
     public Name getName() {
         return name;
+    }
+
+    public void setName(Name name) {
+        this.name = name;
+    }
+
+    @Override
+    public Map<String, String> getMetadata() {
+        return metadata;
+    }
+
+    @Override
+    public void setMetadata(Map<String, String> metadata) {
+        this.metadata = metadata;
     }
 }

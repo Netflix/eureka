@@ -28,22 +28,13 @@ public class InstanceInfoTest {
 
     @Test
     public void testCopyConstructor() {
-
-        DataCenterInfo myDCI = new DataCenterInfo() {
-
-            public DataCenterInfo.Name getName() {
-                return DataCenterInfo.Name.MyOwn;
-            }
-
-        };
-
+        DataCenterInfo myDCI = new MyDataCenterInfo();
 
         InstanceInfo smallII1 = newBuilder().setAppName("test").setDataCenterInfo(myDCI).build();
         InstanceInfo smallII2 = new InstanceInfo(smallII1);
 
         assertNotSame(smallII1, smallII2);
         Assert.assertEquals(smallII1, smallII2);
-
 
         InstanceInfo fullII1 = newBuilder().setMetadata(null)
                 .setOverriddenStatus(InstanceInfo.InstanceStatus.UNKNOWN)

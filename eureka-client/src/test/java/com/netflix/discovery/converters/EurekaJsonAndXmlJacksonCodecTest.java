@@ -3,12 +3,9 @@ package com.netflix.discovery.converters;
 import java.util.Iterator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.appinfo.AmazonInfo;
+import com.netflix.appinfo.*;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
-import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.DataCenterInfo.Name;
-import com.netflix.appinfo.InstanceInfo;
-import com.netflix.appinfo.LeaseInfo;
 import com.netflix.discovery.converters.jackson.EurekaJsonJacksonCodec;
 import com.netflix.discovery.converters.jackson.EurekaXmlJacksonCodec;
 import com.netflix.discovery.shared.Application;
@@ -77,12 +74,7 @@ public class EurekaJsonAndXmlJacksonCodecTest {
     }
 
     private void doMyDataCenterInfoEncodeDecodeTest(ObjectMapper mapper) throws Exception {
-        DataCenterInfo myDataCenterInfo = new DataCenterInfo() {
-            @Override
-            public Name getName() {
-                return Name.MyOwn;
-            }
-        };
+        DataCenterInfo myDataCenterInfo = new MyDataCenterInfo();
 
         String encodedString = mapper.writeValueAsString(myDataCenterInfo);
         DataCenterInfo decodedValue = mapper.readValue(encodedString, DataCenterInfo.class);

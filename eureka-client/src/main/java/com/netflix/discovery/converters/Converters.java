@@ -25,13 +25,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.netflix.appinfo.AmazonInfo;
-import com.netflix.appinfo.DataCenterInfo;
+import com.netflix.appinfo.*;
 import com.netflix.appinfo.DataCenterInfo.Name;
-import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.InstanceInfo.PortType;
-import com.netflix.appinfo.LeaseInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.StringCache;
@@ -450,15 +447,15 @@ public final class Converters {
             writer.setValue(info.getName().name());
             writer.endNode();
 
-            if (info.getName() == Name.Amazon) {
-                AmazonInfo aInfo = (AmazonInfo) info;
+            if (info instanceof MetadataAware) {
+                MetadataAware metadataAwareInfo = (MetadataAware) info;
                 writer.startNode(NODE_METADATA);
                 // for backward compat. for now
-                if (aInfo.getMetadata().size() == 0) {
+                if (metadataAwareInfo.getMetadata().size() == 0) {
                     writer.addAttribute("class",
                             "java.util.Collections$EmptyMap");
                 }
-                context.convertAnother(aInfo.getMetadata());
+                context.convertAnother(metadataAwareInfo.getMetadata());
                 writer.endNode();
             }
         }
@@ -475,40 +472,35 @@ public final class Converters {
         @SuppressWarnings("unchecked")
         public Object unmarshal(HierarchicalStreamReader reader,
                                 UnmarshallingContext context) {
-            DataCenterInfo info = null;
+            MetadataAware info = null; // will also always be a DataCenterInfo implementation
+            Map<String, String> metadataMap = Collections.emptyMap();
+
             while (reader.hasMoreChildren()) {
                 reader.moveDown();
 
                 if (ELEM_NAME.equals(reader.getNodeName())) {
                     final String dataCenterName = reader.getValue();
-                    if (DataCenterInfo.Name.Amazon.name().equalsIgnoreCase(
-                            dataCenterName)) {
+                    if (DataCenterInfo.Name.Amazon.name().equalsIgnoreCase(dataCenterName)) {
                         info = new AmazonInfo();
                     } else {
-                        final DataCenterInfo.Name name =
-                                DataCenterInfo.Name.valueOf(dataCenterName);
-                        info = new DataCenterInfo() {
-
-                            @Override
-                            public Name getName() {
-                                return name;
-                            }
-                        };
+                        info = new MyDataCenterInfo(DataCenterInfo.Name.valueOf(dataCenterName));
                     }
                 } else if (NODE_METADATA.equals(reader.getNodeName())) {
-                    if (info.getName() == Name.Amazon) {
-                        Map<String, String> metadataMap = (Map<String, String>) context
-                                .convertAnother(info, Map.class);
-                        Map<String, String> metadataMapInter = new HashMap<String, String>(metadataMap.size());
-                        for (Map.Entry<String, String> entry : metadataMap.entrySet()) {
-                            metadataMapInter.put(StringCache.intern(entry.getKey()), StringCache.intern(entry.getValue()));
-                        }
-                        ((AmazonInfo) info).setMetadata(metadataMapInter);
+                    Map<String, String> metadataMapInter = (Map<String, String>) context
+                            .convertAnother(info, Map.class);
+                    metadataMap = new HashMap<>(metadataMapInter.size());
+                    for (Map.Entry<String, String> entry : metadataMapInter.entrySet()) {
+                        metadataMap.put(StringCache.intern(entry.getKey()), StringCache.intern(entry.getValue()));
                     }
                 }
 
                 reader.moveUp();
             }
+
+            if(info != null) {
+                info.setMetadata(metadataMap);
+            }
+
             return info;
         }
     }
