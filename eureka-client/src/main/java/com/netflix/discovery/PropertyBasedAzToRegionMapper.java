@@ -9,10 +9,8 @@ import java.util.Set;
  */
 public class PropertyBasedAzToRegionMapper extends AbstractAzToRegionMapper {
 
-    private final EurekaClientConfig clientConfig;
-
     public PropertyBasedAzToRegionMapper(EurekaClientConfig clientConfig) {
-        this.clientConfig = clientConfig;
+        super(clientConfig);
     }
 
     @Override

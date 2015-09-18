@@ -1,11 +1,12 @@
 <%@ page language="java" 
-  import="java.util.*,com.netflix.config.*, com.netflix.eureka.*,com.netflix.eureka.resources.*,com.netflix.appinfo.*,com.netflix.eureka.util.*" pageEncoding="UTF-8" %>
+  import="java.util.*,com.netflix.config.*,com.netflix.eureka.*,com.netflix.eureka.registry.*,com.netflix.eureka.resources.*,com.netflix.appinfo.*,com.netflix.eureka.util.*" pageEncoding="UTF-8" %>
 
 <%@page import="com.netflix.appinfo.AmazonInfo.MetaDataKey"%>
 <div id="header">
-  <% 
-  DataCenterInfo info = ApplicationInfoManager.getInstance().getInfo().getDataCenterInfo();
-  PeerAwareInstanceRegistryImpl registry = PeerAwareInstanceRegistryImpl.getInstance();
+  <%
+  InstanceInfo selfInstanceInfo = EurekaServerContextHolder.getInstance().getServerContext().getApplicationInfoManager().getInfo();
+  DataCenterInfo info = selfInstanceInfo.getDataCenterInfo();
+  PeerAwareInstanceRegistry registry = EurekaServerContextHolder.getInstance().getServerContext().getRegistry();
   AmazonInfo amazonInfo = null;
   if(info.getName() == DataCenterInfo.Name.Amazon) {
       amazonInfo = (AmazonInfo)info;

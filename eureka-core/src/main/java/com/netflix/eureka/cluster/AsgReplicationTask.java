@@ -1,6 +1,6 @@
 package com.netflix.eureka.cluster;
 
-import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
 
 /**

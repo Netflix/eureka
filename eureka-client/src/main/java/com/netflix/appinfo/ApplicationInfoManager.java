@@ -72,6 +72,10 @@ public class ApplicationInfoManager {
         instance = this;
     }
 
+    public ApplicationInfoManager(EurekaInstanceConfig config) {
+        this(config, new EurekaConfigBasedInstanceInfoProvider(config).get());
+    }
+
     /**
      * @deprecated please use DI instead
      */
@@ -85,8 +89,7 @@ public class ApplicationInfoManager {
             this.config = config;
             this.instanceInfo = new EurekaConfigBasedInstanceInfoProvider(config).get();
         } catch (Throwable e) {
-            throw new RuntimeException(
-                    "Failed to initialize ApplicationInfoManager", e);
+            throw new RuntimeException("Failed to initialize ApplicationInfoManager", e);
         }
     }
 

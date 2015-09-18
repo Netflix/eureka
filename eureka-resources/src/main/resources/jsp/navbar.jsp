@@ -10,7 +10,7 @@
   <dt> &nbsp;</dt> 
   <dd><b>DS Replicas: <b>
   <%
-   List<PeerEurekaNode> list = PeerAwareInstanceRegistryImpl.getInstance().getReplicaNodes();
+   List<PeerEurekaNode> list = EurekaServerContextHolder.getInstance().getServerContext().getPeerEurekaNodes().getPeerNodesView();
    int i=0;
    for(PeerEurekaNode node : list){
      try{

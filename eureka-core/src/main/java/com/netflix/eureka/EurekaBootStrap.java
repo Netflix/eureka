@@ -19,23 +19,30 @@ package com.netflix.eureka;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import java.util.Date;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.CloudInstanceConfig;
-import com.netflix.appinfo.DataCenterInfo.Name;
+import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
+import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.blitz4j.LoggingConfiguration;
 import com.netflix.config.ConfigurationManager;
+import com.netflix.config.DeploymentContext;
 import com.netflix.discovery.DefaultEurekaClientConfig;
-import com.netflix.discovery.DiscoveryManager;
+import com.netflix.discovery.DiscoveryClient;
+import com.netflix.discovery.EurekaClient;
+import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.converters.JsonXStream;
 import com.netflix.discovery.converters.XmlXStream;
-import com.netflix.eureka.cluster.PeerEurekaNode;
-import com.netflix.eureka.util.EIPManager;
+import com.netflix.eureka.aws.EIPManager;
+import com.netflix.eureka.cluster.PeerEurekaNodes;
+import com.netflix.eureka.registry.AwsInstanceRegistry;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl;
+import com.netflix.eureka.resources.DefaultServerCodecs;
+import com.netflix.eureka.resources.ServerCodecs;
 import com.netflix.eureka.util.EurekaMonitors;
 import com.thoughtworks.xstream.XStream;
 import org.slf4j.Logger;
@@ -53,10 +60,12 @@ import org.slf4j.LoggerFactory;
  * server binds it to the elastic ip as specified.
  * </p>
  *
- * @author Karthik Ranganathan, Greg Kim
+ * @author Karthik Ranganathan, Greg Kim, David Liu
  *
  */
 public class EurekaBootStrap implements ServletContextListener {
+    private static final Logger logger = LoggerFactory.getLogger(EurekaBootStrap.class);
+
     private static final String TEST = "test";
 
     private static final String ARCHAIUS_DEPLOYMENT_ENVIRONMENT = "archaius.deployment.environment";
@@ -70,10 +79,8 @@ public class EurekaBootStrap implements ServletContextListener {
 
     private static final String EUREKA_DATACENTER = "eureka.datacenter";
 
-    private static final Logger logger = LoggerFactory.getLogger(EurekaBootStrap.class);
-
-    private static final int EIP_BIND_SLEEP_TIME_MS = 1000;
-    private static final Timer timer = new Timer("Eureka-EIPBinder", true);
+    private volatile EurekaServerContext serverContext;
+    private volatile EIPManager eipManager;
 
     /**
      * Initializes Eureka, including syncing up with other Eureka peers and publishing the registry.
@@ -85,34 +92,6 @@ public class EurekaBootStrap implements ServletContextListener {
         try {
             initEurekaEnvironment();
 
-            // For backward compatibility
-            JsonXStream.getInstance().registerConverter(
-                    new V1AwareInstanceInfoConverter(),
-                    XStream.PRIORITY_VERY_HIGH);
-            XmlXStream.getInstance().registerConverter(
-                    new V1AwareInstanceInfoConverter(),
-                    XStream.PRIORITY_VERY_HIGH);
-            InstanceInfo info = ApplicationInfoManager.getInstance().getInfo();
-
-            PeerAwareInstanceRegistryImpl registry = PeerAwareInstanceRegistryImpl.getInstance();
-
-            // Copy registry from neighboring eureka node
-            int registryCount = registry.syncUp();
-            registry.openForTraffic(registryCount);
-
-            // Only in AWS, enable the binding functionality
-            if (Name.Amazon.equals(info.getDataCenterInfo().getName())) {
-                handleEIPBinding(registry);
-            }
-            // Initialize available remote registry
-            PeerAwareInstanceRegistryImpl.getInstance().initRemoteRegionRegistry();
-            // Register all monitoring statistics.
-            EurekaMonitors.registerAllStats();
-
-            for (PeerEurekaNode node : registry.getReplicaNodes()) {
-                logger.info("Replica node URL:  " + node.getServiceUrl());
-            }
-
         } catch (Throwable e) {
             logger.error("Cannot bootstrap eureka server :", e);
             throw new RuntimeException("Cannot bootstrap eureka server :", e);
@@ -122,40 +101,87 @@ public class EurekaBootStrap implements ServletContextListener {
     /**
      * Users can override to initialize the environment themselves.
      */
-    protected void initEurekaEnvironment() {
+    protected void initEurekaEnvironment() throws Exception {
         logger.info("Setting the eureka configuration..");
         LoggingConfiguration.getInstance().configure();
         EurekaServerConfig eurekaServerConfig = new DefaultEurekaServerConfig();
-        EurekaServerConfigurationManager.getInstance().setConfiguration(
-                eurekaServerConfig);
 
-        String dataCenter = ConfigurationManager.getConfigInstance()
-                .getString(EUREKA_DATACENTER);
+        // For backward compatibility
+        JsonXStream.getInstance().registerConverter(new V1AwareInstanceInfoConverter(), XStream.PRIORITY_VERY_HIGH);
+        XmlXStream.getInstance().registerConverter(new V1AwareInstanceInfoConverter(), XStream.PRIORITY_VERY_HIGH);
+
+        String dataCenter = ConfigurationManager.getConfigInstance().getString(EUREKA_DATACENTER);
         if (dataCenter == null) {
             logger.info("Eureka data center value eureka.datacenter is not set, defaulting to default");
-            ConfigurationManager.getConfigInstance().setProperty(
-                    ARCHAIUS_DEPLOYMENT_DATACENTER, DEFAULT);
+            ConfigurationManager.getConfigInstance().setProperty(ARCHAIUS_DEPLOYMENT_DATACENTER, DEFAULT);
         } else {
-            ConfigurationManager.getConfigInstance().setProperty(
-                    ARCHAIUS_DEPLOYMENT_DATACENTER, dataCenter);
+            ConfigurationManager.getConfigInstance().setProperty(ARCHAIUS_DEPLOYMENT_DATACENTER, dataCenter);
         }
         String environment = ConfigurationManager.getConfigInstance().getString(EUREKA_ENVIRONMENT);
         if (environment == null) {
-            ConfigurationManager.getConfigInstance().setProperty(
-                    ARCHAIUS_DEPLOYMENT_ENVIRONMENT, TEST);
+            ConfigurationManager.getConfigInstance().setProperty(ARCHAIUS_DEPLOYMENT_ENVIRONMENT, TEST);
             logger.info("Eureka environment value eureka.environment is not set, defaulting to test");
         }
-        EurekaInstanceConfig config;
-        if (CLOUD.equals(ConfigurationManager.getDeploymentContext()
-                .getDeploymentDatacenter())) {
-            config = new CloudInstanceConfig();
-        } else {
-            config = new MyDataCenterInstanceConfig();
-        }
-        logger.info("Initializing the eureka client...");
 
-        DiscoveryManager.getInstance().initComponent(config,
-                new DefaultEurekaClientConfig());
+        EurekaInstanceConfig instanceConfig = isCloud(ConfigurationManager.getDeploymentContext())
+                ? new CloudInstanceConfig()
+                : new MyDataCenterInstanceConfig();
+
+        logger.info("Initializing the eureka client...");
+        ServerCodecs serverCodecs = new DefaultServerCodecs(eurekaServerConfig);
+
+        ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(
+                instanceConfig, new EurekaConfigBasedInstanceInfoProvider(instanceConfig).get());
+
+        EurekaClientConfig eurekaClientConfig = new DefaultEurekaClientConfig();
+        EurekaClient eurekaClient = new DiscoveryClient(applicationInfoManager, eurekaClientConfig);
+
+        PeerAwareInstanceRegistry registry;
+        if (isAws(applicationInfoManager.getInfo())) {
+            registry = new AwsInstanceRegistry(
+                    eurekaServerConfig,
+                    eurekaClientConfig,
+                    serverCodecs,
+                    eurekaClient
+            );
+            eipManager = new EIPManager(eurekaServerConfig, eurekaClientConfig, registry, applicationInfoManager);
+            eipManager.start();
+        } else {
+            registry = new PeerAwareInstanceRegistryImpl(
+                    eurekaServerConfig,
+                    eurekaClientConfig,
+                    serverCodecs,
+                    eurekaClient
+            );
+        }
+
+        PeerEurekaNodes peerEurekaNodes = new PeerEurekaNodes(
+                registry,
+                eurekaServerConfig,
+                eurekaClientConfig,
+                serverCodecs,
+                applicationInfoManager
+        );
+
+        serverContext = new DefaultEurekaServerContext(
+                eurekaServerConfig,
+                serverCodecs,
+                registry,
+                peerEurekaNodes,
+                applicationInfoManager
+        );
+
+        EurekaServerContextHolder.initialize(serverContext);
+
+        serverContext.initialize();
+        logger.info("Initialized server context");
+
+        // Copy registry from neighboring eureka node
+        int registryCount = registry.syncUp();
+        registry.openForTraffic(applicationInfoManager, registryCount);
+
+        // Register all monitoring statistics.
+        EurekaMonitors.registerAllStats();
     }
 
     /**
@@ -165,103 +191,37 @@ public class EurekaBootStrap implements ServletContextListener {
      */
     public void contextDestroyed(ServletContextEvent event) {
         try {
-            logger.info(new Date().toString()
-                    + " Shutting down Eureka Server..");
-            InstanceInfo info = ApplicationInfoManager.getInstance().getInfo();
+            logger.info("{} Shutting down Eureka Server..", new Date().toString());
             // Unregister all MBeans associated w/ DSCounters
-            EurekaMonitors.shutdown();
-            for (int i = 0; i < EurekaServerConfigurationManager.getInstance()
-                    .getConfiguration().getEIPBindRebindRetries(); i++) {
-                try {
-                    if (Name.Amazon.equals(info.getDataCenterInfo().getName())) {
-                        EIPManager.getInstance().unbindEIP();
-                    }
-                    break;
-                } catch (Throwable e) {
-                    logger.warn("Cannot unbind the EIP from the instance");
-                    Thread.sleep(1000);
-                }
-            }
-            PeerAwareInstanceRegistryImpl.getInstance().shutdown();
             destroyEurekaEnvironment();
 
         } catch (Throwable e) {
             logger.error("Error shutting down eureka", e);
         }
-        logger.info(new Date().toString()
-                + " Eureka Service is now shutdown...");
+        logger.info("{} Eureka Service is now shutdown...", new Date().toString());
     }
 
     /**
      * Users can override to clean up the environment themselves.
      */
-    protected void destroyEurekaEnvironment() {
-
-    }
-
-    /**
-     * Handles EIP binding process in AWS Cloud.
-     *
-     * @throws InterruptedException
-     */
-    private void handleEIPBinding(PeerAwareInstanceRegistryImpl registry)
-            throws InterruptedException {
-        EurekaServerConfig eurekaServerConfig = EurekaServerConfigurationManager.getInstance().getConfiguration();
-        int retries = eurekaServerConfig.getEIPBindRebindRetries();
-        // Bind to EIP if needed
-        EIPManager eipManager = EIPManager.getInstance();
-        for (int i = 0; i < retries; i++) {
-            try {
-                if (eipManager.isEIPBound()) {
-                    break;
-                } else {
-                    eipManager.bindEIP();
-                }
-            } catch (Throwable e) {
-                logger.error("Cannot bind to EIP", e);
-                Thread.sleep(EIP_BIND_SLEEP_TIME_MS);
-            }
+    protected void destroyEurekaEnvironment() throws Exception {
+        EurekaMonitors.shutdown();
+        if (eipManager != null) {
+            eipManager.shutdown();
         }
-        // Schedule a timer which periodically checks for EIP binding.
-        scheduleEIPBindTask(eurekaServerConfig, registry);
+        if (serverContext != null) {
+            serverContext.shutdown();
+        }
     }
 
-    /**
-     * Schedules a EIP binding timer task which constantly polls for EIP in the
-     * same zone and binds it to itself.If the EIP is taken away for some
-     * reason, this task tries to get the EIP back. Hence it is advised to take
-     * one EIP assignment per instance in a zone.
-     *
-     * @param eurekaServerConfig
-     *            the Eureka Server Configuration.
-     */
-    private void scheduleEIPBindTask(
-            EurekaServerConfig eurekaServerConfig, final PeerAwareInstanceRegistryImpl registry) {
-        timer.schedule(new TimerTask() {
-
-                           @Override
-                           public void run() {
-                               try {
-                                   // If the EIP is not bound, the registry could  be stale
-                                   // First sync up the registry from the neighboring node before
-                                   // trying to bind the EIP
-                                   EIPManager eipManager = EIPManager.getInstance();
-                                   if (!eipManager.isEIPBound()) {
-                                       registry.clearRegistry();
-                                       int count = registry.syncUp();
-                                       registry.openForTraffic(count);
-                                   } else {
-                                       // An EIP is already bound
-                                       return;
-                                   }
-                                   eipManager.bindEIP();
-                               } catch (Throwable e) {
-                                   logger.error("Could not bind to EIP", e);
-                               }
-                           }
-                       }, eurekaServerConfig.getEIPBindingRetryIntervalMs(),
-                eurekaServerConfig.getEIPBindingRetryIntervalMs());
+    protected boolean isAws(InstanceInfo selfInstanceInfo) {
+        boolean result = DataCenterInfo.Name.Amazon == selfInstanceInfo.getDataCenterInfo().getName();
+        logger.info("isAws returned {}", result);
+        return result;
     }
 
-
+    protected boolean isCloud(DeploymentContext deploymentContext) {
+        logger.info("Deployment datacenter is {}", deploymentContext.getDeploymentDatacenter());
+        return CLOUD.equals(deploymentContext.getDeploymentDatacenter());
+    }
 }

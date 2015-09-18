@@ -18,6 +18,7 @@ import com.netflix.eureka.EurekaServerIdentity;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
+import com.netflix.eureka.resources.ServerCodecs;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.WebResource.Builder;
@@ -35,7 +36,7 @@ public class JerseyReplicationClient extends JerseyEurekaHttpClient implements H
     private final EurekaJerseyClient jerseyClient;
     private final ApacheHttpClient4 jerseyApacheClient;
 
-    public JerseyReplicationClient(EurekaServerConfig config, String serviceUrl) {
+    public JerseyReplicationClient(EurekaServerConfig config, ServerCodecs serverCodecs, String serviceUrl) {
         super(serviceUrl);
         String name = getClass().getSimpleName() + ": " + serviceUrl + "apps/: ";
 
@@ -51,6 +52,8 @@ public class JerseyReplicationClient extends JerseyEurekaHttpClient implements H
             EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
                     .withClientName(jerseyClientName)
                     .withUserAgent("Java-EurekaClient-Replication")
+                    .withEncoderWrapper(serverCodecs.getFullJsonCodec())
+                    .withDecoderWrapper(serverCodecs.getFullJsonCodec())
                     .withConnectionTimeout(config.getPeerNodeConnectTimeoutMs())
                     .withReadTimeout(config.getPeerNodeReadTimeoutMs())
                     .withMaxConnectionsPerHost(config.getPeerNodeTotalConnectionsPerHost())

@@ -42,6 +42,25 @@ public final class CodecWrappers {
         return clazz.getSimpleName();
     }
 
+    public static <T extends EncoderDecoderWrapper> EncoderDecoderWrapper getCodec(Class<T> clazz) {
+        return getCodec(getCodecName(clazz));
+    }
+
+    public static synchronized EncoderDecoderWrapper getCodec(String name) {
+        if (name == null) {
+            return null;
+        }
+
+        if (!CODECS.containsKey(name)) {
+            EncoderDecoderWrapper wrapper = create(name);
+            if (wrapper != null) {
+                CODECS.put(wrapper.codecName(), wrapper);
+            }
+        }
+
+        return CODECS.get(name);
+    }
+
     public static <T extends EncoderWrapper> EncoderWrapper getEncoder(Class<T> clazz) {
         return getEncoder(getCodecName(clazz));
     }

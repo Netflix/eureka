@@ -2,7 +2,9 @@ package com.netflix.discovery.util;
 
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.DefaultEurekaServerConfig;
+import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.cluster.JerseyReplicationClient;
+import com.netflix.eureka.resources.DefaultServerCodecs;
 
 import static com.netflix.discovery.util.ApplicationFunctions.countInstances;
 
@@ -17,7 +19,11 @@ public class DiagnosticClient {
     public static void main(String[] args) throws InterruptedException {
         String discoveryURL = args[0];
         long startTime = System.currentTimeMillis();
-        JerseyReplicationClient client = new JerseyReplicationClient(new DefaultEurekaServerConfig("eureka."), discoveryURL);
+        EurekaServerConfig serverConfig = new DefaultEurekaServerConfig("eureka.");
+        JerseyReplicationClient client = new JerseyReplicationClient(
+                serverConfig,
+                new DefaultServerCodecs(serverConfig),
+                discoveryURL);
         Applications applications = client.getApplications().getEntity();
         System.out.println("Applications count=" + applications.getRegisteredApplications().size());
         System.out.println("Instance count=" + countInstances(applications));

@@ -19,9 +19,12 @@ package com.netflix.eureka.resources;
 import javax.ws.rs.core.Response;
 
 import com.netflix.appinfo.EurekaAccept;
-import com.netflix.eureka.CurrentRequestVersion;
-import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
+import com.netflix.eureka.EurekaServerContext;
+import com.netflix.eureka.EurekaServerContextHolder;
 import com.netflix.eureka.Version;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
+import com.netflix.eureka.registry.ResponseCache;
+import com.netflix.eureka.registry.ResponseCacheImpl.Key;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,19 +37,21 @@ abstract class AbstractVIPResource {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractVIPResource.class);
 
+    private final PeerAwareInstanceRegistry registry;
     private final ResponseCache responseCache;
 
-    /* For testing */ AbstractVIPResource(ResponseCache responseCache) {
-        this.responseCache = responseCache;
+    AbstractVIPResource(EurekaServerContext server) {
+        this.registry = server.getRegistry();
+        this.responseCache = registry.getResponseCache();
     }
 
-    protected AbstractVIPResource() {
-        this(ResponseCache.getInstance());
+    AbstractVIPResource() {
+        this(EurekaServerContextHolder.getInstance().getServerContext());
     }
 
     protected Response getVipResponse(String version, String entityName, String acceptHeader,
-                                      EurekaAccept eurekaAccept, ResponseCache.Key.EntityType entityType) {
-        if (!PeerAwareInstanceRegistryImpl.getInstance().shouldAllowAccess(false)) {
+                                      EurekaAccept eurekaAccept, Key.EntityType entityType) {
+        if (!registry.shouldAllowAccess(false)) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
         CurrentRequestVersion.set(Version.toEnum(version));
@@ -55,7 +60,7 @@ abstract class AbstractVIPResource {
             keyType = ResponseCache.KeyType.XML;
         }
 
-        ResponseCache.Key cacheKey = new ResponseCache.Key(
+        Key cacheKey = new Key(
                 entityType,
                 entityName,
                 keyType,

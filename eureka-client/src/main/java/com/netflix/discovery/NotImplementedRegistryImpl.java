@@ -12,11 +12,11 @@ public class NotImplementedRegistryImpl implements BackupRegistry {
 
     @Override
     public Applications fetchRegistry() {
-        throw new UnsupportedOperationException("Backup registry not implemented.");
+        return null;
     }
 
     @Override
     public Applications fetchRegistry(String[] includeRemoteRegions) {
-        throw new UnsupportedOperationException("Backup registry not implemented.");
+        return null;
     }
 }

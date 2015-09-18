@@ -3,7 +3,7 @@ package com.netflix.eureka.cluster.protocol;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 
 /**
  * The jersey resource class that generates a particular replication event

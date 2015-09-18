@@ -2,7 +2,7 @@ package com.netflix.eureka.cluster;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
-import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 
 /**
  * Base {@link ReplicationTask} class for instance related replication requests.

@@ -17,6 +17,7 @@
 package com.netflix.eureka.resources;
 
 import javax.annotation.Nullable;
+import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
@@ -31,14 +32,16 @@ import javax.ws.rs.core.UriInfo;
 import java.util.Arrays;
 
 import com.netflix.appinfo.EurekaAccept;
-import com.netflix.eureka.AbstractInstanceRegistry;
-import com.netflix.eureka.CurrentRequestVersion;
+import com.netflix.eureka.EurekaServerContext;
+import com.netflix.eureka.EurekaServerContextHolder;
+import com.netflix.eureka.registry.AbstractInstanceRegistry;
 import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.EurekaServerConfigurationManager;
-import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.Version;
-import com.netflix.eureka.resources.ResponseCache.Key;
-import com.netflix.eureka.resources.ResponseCache.KeyType;
+import com.netflix.eureka.registry.ResponseCache;
+import com.netflix.eureka.registry.ResponseCache.KeyType;
+import com.netflix.eureka.registry.ResponseCacheImpl;
+import com.netflix.eureka.registry.ResponseCacheImpl.Key;
 import com.netflix.eureka.util.EurekaMonitors;
 
 /**
@@ -58,17 +61,19 @@ public class ApplicationsResource {
     private static final String HEADER_GZIP_VALUE = "gzip";
     private static final String HEADER_JSON_VALUE = "json";
 
-    private final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager.getInstance().getConfiguration();
-    private final PeerAwareInstanceRegistryImpl registry;
+    private final EurekaServerConfig serverConfig;
+    private final PeerAwareInstanceRegistry registry;
     private final ResponseCache responseCache;
 
-    /* For testing */ ApplicationsResource(PeerAwareInstanceRegistryImpl registry, ResponseCache responseCache) {
-        this.registry = registry;
-        this.responseCache = responseCache;
+    @Inject
+    ApplicationsResource(EurekaServerContext eurekaServer) {
+        this.serverConfig = eurekaServer.getServerConfig();
+        this.registry = eurekaServer.getRegistry();
+        this.responseCache = registry.getResponseCache();
     }
 
     public ApplicationsResource() {
-        this(PeerAwareInstanceRegistryImpl.getInstance(), ResponseCache.getInstance());
+        this(EurekaServerContextHolder.getInstance().getServerContext());
     }
 
     /**
@@ -86,7 +91,7 @@ public class ApplicationsResource {
             @PathParam("version") String version,
             @PathParam("appId") String appId) {
         CurrentRequestVersion.set(Version.toEnum(version));
-        return new ApplicationResource(appId);
+        return new ApplicationResource(appId, serverConfig, registry);
     }
 
     /**
@@ -137,19 +142,21 @@ public class ApplicationsResource {
         }
 
         Key cacheKey = new Key(Key.EntityType.Application,
-                ResponseCache.ALL_APPS,
+                ResponseCacheImpl.ALL_APPS,
                 keyType, CurrentRequestVersion.get(), EurekaAccept.fromString(eurekaAccept), regions
         );
 
+        Response response;
         if (acceptEncoding != null && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
-            return Response.ok(responseCache.getGZIP(cacheKey))
+            response = Response.ok(responseCache.getGZIP(cacheKey))
                     .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE)
                     .header(HEADER_CONTENT_TYPE, returnMediaType)
                     .build();
         } else {
-            return Response.ok(responseCache.get(cacheKey))
+            response = Response.ok(responseCache.get(cacheKey))
                     .build();
         }
+        return response;
     }
 
     /**
@@ -193,8 +200,7 @@ public class ApplicationsResource {
 
         // If the delta flag is disabled in discovery or if the lease expiration
         // has been disabled, redirect clients to get all instances
-        if ((eurekaConfig.shouldDisableDelta())
-                || (!registry.shouldAllowAccess(isRemoteRegionRequested))) {
+        if ((serverConfig.shouldDisableDelta()) || (!registry.shouldAllowAccess(isRemoteRegionRequested))) {
             return Response.status(Status.FORBIDDEN).build();
         }
 
@@ -216,7 +222,7 @@ public class ApplicationsResource {
         }
 
         Key cacheKey = new Key(Key.EntityType.Application,
-                ResponseCache.ALL_APPS_DELTA,
+                ResponseCacheImpl.ALL_APPS_DELTA,
                 keyType, CurrentRequestVersion.get(), EurekaAccept.fromString(eurekaAccept), regions
         );
 

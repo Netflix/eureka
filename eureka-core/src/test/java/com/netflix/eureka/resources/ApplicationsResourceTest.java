@@ -33,13 +33,13 @@ public class ApplicationsResourceTest extends AbstractTester {
         InstanceInfoGenerator instanceInfos = InstanceInfoGenerator.newBuilder(20, 6).build();
         testApplications = instanceInfos.toApplications();
 
-        applicationsResource = new ApplicationsResource(registry, new ResponseCache(registry));
+        applicationsResource = new ApplicationsResource(serverContext);
 
         for (Application application : testApplications.getRegisteredApplications()) {
             for (InstanceInfo instanceInfo : application.getInstances()) {
-                InstanceInfo changed = new InstanceInfo.Builder(instanceInfo)
-                        .setASGName(null).build();  // null asgName to get around AwsAsgUtil check
-                registry.register(changed, false);
+//                // null asgName to get around AwsAsgUtil check
+//                InstanceInfo changed = new InstanceInfo.Builder(instanceInfo).setASGName(null).build();
+                registry.register(instanceInfo, false);
             }
         }
     }

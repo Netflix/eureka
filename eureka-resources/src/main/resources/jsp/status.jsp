@@ -44,7 +44,7 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
            <tfoot><tr><th>Application</th><th>AMIs</th><th>Availability Zones</th><th>Status</th></tr></tfoot>
            <tbody>
            <%
-           for(Application app : PeerAwareInstanceRegistryImpl.getInstance().getSortedApplications()) {
+           for(Application app : EurekaServerContextHolder.getInstance().getServerContext().getRegistry().getSortedApplications()) {
                out.print("<tr><td><b>" + app.getName() + "</b></td>");
                Map<String, Integer> amiCounts = new HashMap<String, Integer>();
                Map<InstanceStatus,List<Pair<String, String>>> instancesByStatus =
