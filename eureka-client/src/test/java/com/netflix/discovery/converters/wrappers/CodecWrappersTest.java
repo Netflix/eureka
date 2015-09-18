@@ -26,7 +26,7 @@ public class CodecWrappersTest {
         Assert.assertNotNull(CodecWrappers.getDecoder(testWrapperName));
     }
 
-    private final class TestWrapper implements EncoderDecoderWrapper {
+    private final class TestWrapper implements CodecWrapper {
 
         @Override
         public <T> T decode(String textValue, Class<T> type) throws IOException {

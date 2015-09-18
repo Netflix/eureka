@@ -35,8 +35,6 @@ public class ApplicationResourceTest extends AbstractTester {
         applicationResource = new ApplicationResource(testApplication.getName(), serverContext.getServerConfig(), serverContext.getRegistry());
 
         for (InstanceInfo instanceInfo : testApplication.getInstances()) {
-//            InstanceInfo changed = new InstanceInfo.Builder(instanceInfo)
-//                    .setASGName(null).build();  // null asgName to get around AwsAsgUtil check
             registry.register(instanceInfo, false);
         }
     }

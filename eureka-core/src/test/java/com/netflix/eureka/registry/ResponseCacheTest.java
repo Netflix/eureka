@@ -5,7 +5,6 @@ import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.eureka.AbstractTester;
 import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.registry.ResponseCacheImpl.Key;
 import com.netflix.eureka.Version;
 import com.netflix.eureka.resources.DefaultServerCodecs;
 import org.junit.Assert;
@@ -47,7 +46,7 @@ public class ResponseCacheTest extends AbstractTester {
     public void testInvalidate() throws Exception {
         ResponseCacheImpl cache = (ResponseCacheImpl) testRegistry.getResponseCache();
         Key key = new Key(Key.EntityType.Application, REMOTE_REGION_APP_NAME,
-                ResponseCache.KeyType.JSON, Version.V1, EurekaAccept.full);
+                Key.KeyType.JSON, Version.V1, EurekaAccept.full);
         String response = cache.get(key, false);
         Assert.assertNotNull("Cache get returned null.", response);
 
@@ -61,7 +60,7 @@ public class ResponseCacheTest extends AbstractTester {
         Key key = new Key(
                 Key.EntityType.Application,
                 REMOTE_REGION_APP_NAME,
-                ResponseCache.KeyType.JSON, Version.V1, EurekaAccept.full, new String[]{REMOTE_REGION}
+                Key.KeyType.JSON, Version.V1, EurekaAccept.full, new String[]{REMOTE_REGION}
         );
 
         Assert.assertNotNull("Cache get returned null.", cache.get(key, false));
@@ -76,12 +75,12 @@ public class ResponseCacheTest extends AbstractTester {
         Key key1 = new Key(
                 Key.EntityType.Application,
                 REMOTE_REGION_APP_NAME,
-                ResponseCache.KeyType.JSON, Version.V1, EurekaAccept.full, new String[]{REMOTE_REGION, "myregion2"}
+                Key.KeyType.JSON, Version.V1, EurekaAccept.full, new String[]{REMOTE_REGION, "myregion2"}
         );
         Key key2 = new Key(
                 Key.EntityType.Application,
                 REMOTE_REGION_APP_NAME,
-                ResponseCache.KeyType.JSON, Version.V1, EurekaAccept.full, new String[]{REMOTE_REGION}
+                Key.KeyType.JSON, Version.V1, EurekaAccept.full, new String[]{REMOTE_REGION}
         );
 
         Assert.assertNotNull("Cache get returned null.", cache.get(key1, false));

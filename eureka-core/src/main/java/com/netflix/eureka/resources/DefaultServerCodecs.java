@@ -1,11 +1,11 @@
 package com.netflix.eureka.resources;
 
 import com.netflix.appinfo.EurekaAccept;
+import com.netflix.discovery.converters.wrappers.CodecWrapper;
 import com.netflix.discovery.converters.wrappers.CodecWrappers;
-import com.netflix.discovery.converters.wrappers.EncoderDecoderWrapper;
 import com.netflix.discovery.converters.wrappers.EncoderWrapper;
 import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.registry.ResponseCache;
+import com.netflix.eureka.registry.Key;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -16,19 +16,19 @@ import javax.inject.Singleton;
 @Singleton
 public class DefaultServerCodecs implements ServerCodecs {
 
-    protected final EncoderDecoderWrapper fullJsonCodec;
-    protected final EncoderDecoderWrapper compactJsonCodec;
+    protected final CodecWrapper fullJsonCodec;
+    protected final CodecWrapper compactJsonCodec;
 
-    protected final EncoderDecoderWrapper fullXmlCodec;
-    protected final EncoderDecoderWrapper compactXmlCodec;
+    protected final CodecWrapper fullXmlCodec;
+    protected final CodecWrapper compactXmlCodec;
 
-    private static EncoderDecoderWrapper getFullJson(EurekaServerConfig serverConfig) {
-        EncoderDecoderWrapper codec = CodecWrappers.getCodec(serverConfig.getJsonCodecName());
+    private static CodecWrapper getFullJson(EurekaServerConfig serverConfig) {
+        CodecWrapper codec = CodecWrappers.getCodec(serverConfig.getJsonCodecName());
         return codec == null ? CodecWrappers.getCodec(CodecWrappers.LegacyJacksonJson.class) : codec;
     }
 
-    private static EncoderDecoderWrapper getFullXml(EurekaServerConfig serverConfig) {
-        EncoderDecoderWrapper codec = CodecWrappers.getCodec(serverConfig.getXmlCodecName());
+    private static CodecWrapper getFullXml(EurekaServerConfig serverConfig) {
+        CodecWrapper codec = CodecWrappers.getCodec(serverConfig.getXmlCodecName());
         return codec == null ? CodecWrappers.getCodec(CodecWrappers.XStreamXml.class) : codec;
     }
 
@@ -42,10 +42,10 @@ public class DefaultServerCodecs implements ServerCodecs {
         );
     }
 
-    protected DefaultServerCodecs(EncoderDecoderWrapper fullJsonCodec,
-                                  EncoderDecoderWrapper compactJsonCodec,
-                                  EncoderDecoderWrapper fullXmlCodec,
-                                  EncoderDecoderWrapper compactXmlCodec) {
+    protected DefaultServerCodecs(CodecWrapper fullJsonCodec,
+                                  CodecWrapper compactJsonCodec,
+                                  CodecWrapper fullXmlCodec,
+                                  CodecWrapper compactXmlCodec) {
         this.fullJsonCodec = fullJsonCodec;
         this.compactJsonCodec = compactJsonCodec;
         this.fullXmlCodec = fullXmlCodec;
@@ -53,27 +53,27 @@ public class DefaultServerCodecs implements ServerCodecs {
     }
 
     @Override
-    public EncoderDecoderWrapper getFullJsonCodec() {
+    public CodecWrapper getFullJsonCodec() {
         return fullJsonCodec;
     }
 
     @Override
-    public EncoderDecoderWrapper getCompactJsonCodec() {
+    public CodecWrapper getCompactJsonCodec() {
         return compactJsonCodec;
     }
 
     @Override
-    public EncoderDecoderWrapper getFullXmlCodec() {
+    public CodecWrapper getFullXmlCodec() {
         return fullXmlCodec;
     }
 
     @Override
-    public EncoderDecoderWrapper getCompactXmlCodecr() {
+    public CodecWrapper getCompactXmlCodecr() {
         return compactXmlCodec;
     }
 
     @Override
-    public EncoderWrapper getEncoder(ResponseCache.KeyType keyType, boolean compact) {
+    public EncoderWrapper getEncoder(Key.KeyType keyType, boolean compact) {
         switch (keyType) {
             case JSON:
                 return compact ? compactJsonCodec : fullJsonCodec;
@@ -84,7 +84,7 @@ public class DefaultServerCodecs implements ServerCodecs {
     }
 
     @Override
-    public EncoderWrapper getEncoder(ResponseCache.KeyType keyType, EurekaAccept eurekaAccept) {
+    public EncoderWrapper getEncoder(Key.KeyType keyType, EurekaAccept eurekaAccept) {
         switch (eurekaAccept) {
             case compact:
                 return getEncoder(keyType, true);
@@ -99,30 +99,30 @@ public class DefaultServerCodecs implements ServerCodecs {
     }
 
     public static class Builder {
-        protected EncoderDecoderWrapper fullJsonCodec;
-        protected EncoderDecoderWrapper compactJsonCodec;
+        protected CodecWrapper fullJsonCodec;
+        protected CodecWrapper compactJsonCodec;
 
-        protected EncoderDecoderWrapper fullXmlCodec;
-        protected EncoderDecoderWrapper compactXmlCodec;
+        protected CodecWrapper fullXmlCodec;
+        protected CodecWrapper compactXmlCodec;
 
         protected Builder() {}
 
-        public Builder withFullJsonCodec(EncoderDecoderWrapper fullJsonCodec) {
+        public Builder withFullJsonCodec(CodecWrapper fullJsonCodec) {
             this.fullJsonCodec = fullJsonCodec;
             return this;
         }
 
-        public Builder withCompactJsonCodec(EncoderDecoderWrapper compactJsonCodec) {
+        public Builder withCompactJsonCodec(CodecWrapper compactJsonCodec) {
             this.compactJsonCodec = compactJsonCodec;
             return this;
         }
 
-        public Builder withFullXmlCodec(EncoderDecoderWrapper fullXmlCodec) {
+        public Builder withFullXmlCodec(CodecWrapper fullXmlCodec) {
             this.fullXmlCodec = fullXmlCodec;
             return this;
         }
 
-        public Builder withCompactXmlCodec(EncoderDecoderWrapper compactXmlEncoder) {
+        public Builder withCompactXmlCodec(CodecWrapper compactXmlEncoder) {
             this.compactXmlCodec = compactXmlEncoder;
             return this;
         }

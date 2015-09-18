@@ -33,8 +33,8 @@ import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.Version;
 import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.eureka.registry.ResponseCache;
-import com.netflix.eureka.registry.ResponseCache.KeyType;
-import com.netflix.eureka.registry.ResponseCacheImpl.Key;
+import com.netflix.eureka.registry.Key.KeyType;
+import com.netflix.eureka.registry.Key;
 import com.netflix.eureka.util.EurekaMonitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,9 +90,9 @@ public class ApplicationResource {
         EurekaMonitors.GET_APPLICATION.increment();
 
         CurrentRequestVersion.set(Version.toEnum(version));
-        KeyType keyType = KeyType.JSON;
+        KeyType keyType = Key.KeyType.JSON;
         if (acceptHeader == null || !acceptHeader.contains("json")) {
-            keyType = KeyType.XML;
+            keyType = Key.KeyType.XML;
         }
 
         Key cacheKey = new Key(

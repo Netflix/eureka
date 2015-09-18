@@ -1,24 +1,24 @@
 package com.netflix.eureka.resources;
 
 import com.netflix.appinfo.EurekaAccept;
-import com.netflix.discovery.converters.wrappers.EncoderDecoderWrapper;
+import com.netflix.discovery.converters.wrappers.CodecWrapper;
 import com.netflix.discovery.converters.wrappers.EncoderWrapper;
-import com.netflix.eureka.registry.ResponseCache;
+import com.netflix.eureka.registry.Key;
 
 /**
  * @author David Liu
  */
 public interface ServerCodecs {
 
-    EncoderDecoderWrapper getFullJsonCodec();
+    CodecWrapper getFullJsonCodec();
 
-    EncoderDecoderWrapper getCompactJsonCodec();
+    CodecWrapper getCompactJsonCodec();
 
-    EncoderDecoderWrapper getFullXmlCodec();
+    CodecWrapper getFullXmlCodec();
 
-    EncoderDecoderWrapper getCompactXmlCodecr();
+    CodecWrapper getCompactXmlCodecr();
 
-    EncoderWrapper getEncoder(ResponseCache.KeyType keyType, boolean compact);
+    EncoderWrapper getEncoder(Key.KeyType keyType, boolean compact);
 
-    EncoderWrapper getEncoder(ResponseCache.KeyType keyType, EurekaAccept eurekaAccept);
+    EncoderWrapper getEncoder(Key.KeyType keyType, EurekaAccept eurekaAccept);
 }

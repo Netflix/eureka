@@ -16,15 +16,11 @@
 
 package com.netflix.eureka.registry;
 
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -161,34 +157,11 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             logger.error("Cannot shutdown monitor registry", t);
         }
         try {
-            if (peerEurekaNodes != null) {
-                for (PeerEurekaNode node : this.peerEurekaNodes.getPeerEurekaNodes()) {
-                    node.shutDown();
-                }
-            }
+        peerEurekaNodes.shutdown();
         } catch (Throwable t) {
             logger.error("Cannot shutdown ReplicaAwareInstanceRegistry", t);
         }
         super.shutdown();
-    }
-
-    protected void initRemoteRegionRegistry() throws MalformedURLException {
-        Map<String, String> remoteRegionUrlsWithName = serverConfig.getRemoteRegionUrlsWithName();
-        if (remoteRegionUrlsWithName != null) {
-            allKnownRemoteRegions = new String[remoteRegionUrlsWithName.size()];
-            int remoteRegionArrayIndex = 0;
-            for (Map.Entry<String, String> remoteRegionUrlWithName : remoteRegionUrlsWithName.entrySet()) {
-                RemoteRegionRegistry remoteRegionRegistry = new RemoteRegionRegistry(
-                        serverConfig,
-                        serverCodecs,
-                        remoteRegionUrlWithName.getKey(),
-                        new URL(remoteRegionUrlWithName.getValue()));
-                regionNameVSRemoteRegistry.put(remoteRegionUrlWithName.getKey(), remoteRegionRegistry);
-                allKnownRemoteRegions[remoteRegionArrayIndex++] = remoteRegionUrlWithName.getKey();
-            }
-        }
-        logger.info("Finished initializing remote region registries. All known remote regions: {}",
-                Arrays.toString(allKnownRemoteRegions));
     }
 
     /**

@@ -17,6 +17,7 @@
 package com.netflix.eureka.registry;
 
 import javax.annotation.Nullable;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -122,6 +123,25 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         if (responseCache == null) {
             responseCache = new ResponseCacheImpl(serverConfig, serverCodecs, this);
         }
+    }
+
+    protected void initRemoteRegionRegistry() throws MalformedURLException {
+        Map<String, String> remoteRegionUrlsWithName = serverConfig.getRemoteRegionUrlsWithName();
+        if (remoteRegionUrlsWithName != null) {
+            allKnownRemoteRegions = new String[remoteRegionUrlsWithName.size()];
+            int remoteRegionArrayIndex = 0;
+            for (Map.Entry<String, String> remoteRegionUrlWithName : remoteRegionUrlsWithName.entrySet()) {
+                RemoteRegionRegistry remoteRegionRegistry = new RemoteRegionRegistry(
+                        serverConfig,
+                        serverCodecs,
+                        remoteRegionUrlWithName.getKey(),
+                        new URL(remoteRegionUrlWithName.getValue()));
+                regionNameVSRemoteRegistry.put(remoteRegionUrlWithName.getKey(), remoteRegionRegistry);
+                allKnownRemoteRegions[remoteRegionArrayIndex++] = remoteRegionUrlWithName.getKey();
+            }
+        }
+        logger.info("Finished initializing remote region registries. All known remote regions: {}",
+                Arrays.toString(allKnownRemoteRegions));
     }
 
     @Override

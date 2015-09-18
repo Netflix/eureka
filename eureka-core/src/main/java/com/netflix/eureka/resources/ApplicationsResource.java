@@ -39,9 +39,9 @@ import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.Version;
 import com.netflix.eureka.registry.ResponseCache;
-import com.netflix.eureka.registry.ResponseCache.KeyType;
+import com.netflix.eureka.registry.Key.KeyType;
 import com.netflix.eureka.registry.ResponseCacheImpl;
-import com.netflix.eureka.registry.ResponseCacheImpl.Key;
+import com.netflix.eureka.registry.Key;
 import com.netflix.eureka.util.EurekaMonitors;
 
 /**
@@ -134,10 +134,10 @@ public class ApplicationsResource {
             return Response.status(Status.FORBIDDEN).build();
         }
         CurrentRequestVersion.set(Version.toEnum(version));
-        KeyType keyType = KeyType.JSON;
+        KeyType keyType = Key.KeyType.JSON;
         String returnMediaType = MediaType.APPLICATION_JSON;
         if (acceptHeader == null || !acceptHeader.contains(HEADER_JSON_VALUE)) {
-            keyType = KeyType.XML;
+            keyType = Key.KeyType.XML;
             returnMediaType = MediaType.APPLICATION_XML;
         }
 
@@ -214,10 +214,10 @@ public class ApplicationsResource {
         }
 
         CurrentRequestVersion.set(Version.toEnum(version));
-        KeyType keyType = KeyType.JSON;
+        KeyType keyType = Key.KeyType.JSON;
         String returnMediaType = MediaType.APPLICATION_JSON;
         if (acceptHeader == null || !acceptHeader.contains(HEADER_JSON_VALUE)) {
-            keyType = KeyType.XML;
+            keyType = Key.KeyType.XML;
             returnMediaType = MediaType.APPLICATION_XML;
         }
 

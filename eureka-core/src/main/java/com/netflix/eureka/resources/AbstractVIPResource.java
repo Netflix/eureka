@@ -24,7 +24,7 @@ import com.netflix.eureka.EurekaServerContextHolder;
 import com.netflix.eureka.Version;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.registry.ResponseCache;
-import com.netflix.eureka.registry.ResponseCacheImpl.Key;
+import com.netflix.eureka.registry.Key;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,9 +55,9 @@ abstract class AbstractVIPResource {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
         CurrentRequestVersion.set(Version.toEnum(version));
-        ResponseCache.KeyType keyType = ResponseCache.KeyType.JSON;
+        Key.KeyType keyType = Key.KeyType.JSON;
         if (acceptHeader == null || !acceptHeader.contains("json")) {
-            keyType = ResponseCache.KeyType.XML;
+            keyType = Key.KeyType.XML;
         }
 
         Key cacheKey = new Key(

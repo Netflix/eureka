@@ -10,7 +10,7 @@ import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.netflix.eureka.AbstractTester;
 import com.netflix.eureka.Version;
-import com.netflix.eureka.registry.ResponseCacheImpl.Key;
+import com.netflix.eureka.registry.Key;
 import org.junit.Before;
 import org.junit.Test;
 

@@ -29,12 +29,12 @@ import com.netflix.discovery.converters.jackson.EurekaXmlJacksonCodec;
  */
 public final class CodecWrappers {
 
-    private static final Map<String, EncoderDecoderWrapper> CODECS = new ConcurrentHashMap<>();
+    private static final Map<String, CodecWrapper> CODECS = new ConcurrentHashMap<>();
 
     /**
      * For transition use: register a new codec wrapper.
      */
-    public static void registerWrapper(EncoderDecoderWrapper wrapper) {
+    public static void registerWrapper(CodecWrapper wrapper) {
         CODECS.put(wrapper.codecName(), wrapper);
     }
 
@@ -42,17 +42,17 @@ public final class CodecWrappers {
         return clazz.getSimpleName();
     }
 
-    public static <T extends EncoderDecoderWrapper> EncoderDecoderWrapper getCodec(Class<T> clazz) {
+    public static <T extends CodecWrapper> CodecWrapper getCodec(Class<T> clazz) {
         return getCodec(getCodecName(clazz));
     }
 
-    public static synchronized EncoderDecoderWrapper getCodec(String name) {
+    public static synchronized CodecWrapper getCodec(String name) {
         if (name == null) {
             return null;
         }
 
         if (!CODECS.containsKey(name)) {
-            EncoderDecoderWrapper wrapper = create(name);
+            CodecWrapper wrapper = create(name);
             if (wrapper != null) {
                 CODECS.put(wrapper.codecName(), wrapper);
             }
@@ -71,7 +71,7 @@ public final class CodecWrappers {
         }
 
         if (!CODECS.containsKey(name)) {
-            EncoderDecoderWrapper wrapper = create(name);
+            CodecWrapper wrapper = create(name);
             if (wrapper != null) {
                 CODECS.put(wrapper.codecName(), wrapper);
             }
@@ -106,7 +106,7 @@ public final class CodecWrappers {
         }
 
         if (!CODECS.containsKey(name)) {
-            EncoderDecoderWrapper wrapper = create(name);
+            CodecWrapper wrapper = create(name);
             if (wrapper != null) {
                 CODECS.put(wrapper.codecName(), wrapper);
             }
@@ -115,7 +115,7 @@ public final class CodecWrappers {
         return CODECS.get(name);
     }
 
-    private static EncoderDecoderWrapper create(String name) {
+    private static CodecWrapper create(String name) {
         if (getCodecName(JacksonJson.class).equals(name)) {
             return new JacksonJson();
         } else if (getCodecName(JacksonJsonMini.class).equals(name)) {
@@ -139,7 +139,7 @@ public final class CodecWrappers {
     // wrapper definitions
     // ========================
 
-    public static class JacksonJson implements EncoderDecoderWrapper {
+    public static class JacksonJson implements CodecWrapper {
 
         protected final EurekaJsonJacksonCodec codec = new EurekaJsonJacksonCodec();
 
@@ -174,7 +174,7 @@ public final class CodecWrappers {
         }
     }
 
-    public static class JacksonJsonMini implements EncoderDecoderWrapper {
+    public static class JacksonJsonMini implements CodecWrapper {
 
         protected final EurekaJsonJacksonCodec codec = new EurekaJsonJacksonCodec(KeyFormatter.defaultKeyFormatter(), true);
 
@@ -209,7 +209,7 @@ public final class CodecWrappers {
         }
     }
 
-    public static class JacksonXml implements EncoderDecoderWrapper {
+    public static class JacksonXml implements CodecWrapper {
 
         protected final EurekaXmlJacksonCodec codec = new EurekaXmlJacksonCodec();
 
@@ -244,7 +244,7 @@ public final class CodecWrappers {
         }
     }
 
-    public static class JacksonXmlMini implements EncoderDecoderWrapper {
+    public static class JacksonXmlMini implements CodecWrapper {
 
         protected final EurekaXmlJacksonCodec codec = new EurekaXmlJacksonCodec(KeyFormatter.defaultKeyFormatter(), true);
 
@@ -279,7 +279,7 @@ public final class CodecWrappers {
         }
     }
 
-    public static class LegacyJacksonJson implements EncoderDecoderWrapper {
+    public static class LegacyJacksonJson implements CodecWrapper {
 
         protected final EurekaJacksonCodec codec = new EurekaJacksonCodec();
 
@@ -314,7 +314,7 @@ public final class CodecWrappers {
         }
     }
 
-    public static class XStreamJson implements EncoderDecoderWrapper {
+    public static class XStreamJson implements CodecWrapper {
 
         protected final JsonXStream codec = JsonXStream.getInstance();
 
@@ -352,7 +352,7 @@ public final class CodecWrappers {
     /**
      * @author David Liu
      */
-    public static class XStreamXml implements EncoderDecoderWrapper {
+    public static class XStreamXml implements CodecWrapper {
 
         protected final XmlXStream codec = XmlXStream.getInstance();
 

@@ -19,7 +19,7 @@ package com.netflix.eureka.resources;
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.eureka.EurekaServerContext;
 import com.netflix.eureka.EurekaServerContextHolder;
-import com.netflix.eureka.registry.ResponseCacheImpl.Key;
+import com.netflix.eureka.registry.Key;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
