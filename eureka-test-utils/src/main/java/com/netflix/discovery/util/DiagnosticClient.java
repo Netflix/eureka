@@ -6,7 +6,7 @@ import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.cluster.JerseyReplicationClient;
 import com.netflix.eureka.resources.DefaultServerCodecs;
 
-import static com.netflix.discovery.util.ApplicationFunctions.countInstances;
+import static com.netflix.discovery.util.EurekaEntityFunctions.countInstances;
 
 /**
  * A tool for running diagnostic tasks against a discovery server. Currently limited to observing
@@ -38,7 +38,7 @@ public class DiagnosticClient {
             }
             startTime = System.currentTimeMillis();
             Applications delta = client.getDelta().getEntity();
-            Applications merged = ApplicationFunctions.merge(applications, delta);
+            Applications merged = EurekaEntityFunctions.mergeApplications(applications, delta);
             if (merged.getAppsHashCode().equals(delta.getAppsHashCode())) {
                 System.out.println("Hash codes match: " + delta.getAppsHashCode() + "(delta count=" + countInstances(delta) + ')');
                 applications = merged;

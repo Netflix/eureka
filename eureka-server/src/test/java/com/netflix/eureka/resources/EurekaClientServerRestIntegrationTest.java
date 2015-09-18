@@ -77,7 +77,7 @@ public class EurekaClientServerRestIntegrationTest {
             public EurekaJerseyClient jerseyClient;
 
             @Override
-            protected ApacheHttpClient4 getJerseyApacheClient() {
+            protected ApacheHttpClient4 getJerseyClient() {
                 jerseyClient = new EurekaJerseyClientBuilder()
                         .withClientName("testEurekaClient")
                         .withConnectionTimeout(1000)

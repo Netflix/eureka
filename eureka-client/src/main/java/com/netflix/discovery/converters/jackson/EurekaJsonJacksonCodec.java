@@ -37,12 +37,12 @@ public class EurekaJsonJacksonCodec extends AbstractEurekaJacksonCodec {
     public EurekaJsonJacksonCodec(final KeyFormatter keyFormatter, boolean compact) {
         // JSON
         SimpleModule jsonModule = new SimpleModule();
-        jsonModule.setSerializerModifier(EurekaJacksonModifiers.createJsonSerializerModifier(keyFormatter));
-        jsonModule.setDeserializerModifier(EurekaJacksonModifiers.createJsonDeserializerModifier(keyFormatter, compact));
+        jsonModule.setSerializerModifier(EurekaJacksonJsonModifiers.createJsonSerializerModifier(keyFormatter));
+        jsonModule.setDeserializerModifier(EurekaJacksonJsonModifiers.createJsonDeserializerModifier(keyFormatter, compact));
         jsonMapper.registerModule(jsonModule);
         jsonMapper.setSerializationInclusion(Include.NON_NULL);
         jsonMapper.configure(SerializationFeature.WRAP_ROOT_VALUE, true);
-        jsonMapper.configure(SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED, true);
+        jsonMapper.configure(SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED, false);
         jsonMapper.configure(DeserializationFeature.UNWRAP_ROOT_VALUE, true);
         jsonMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 

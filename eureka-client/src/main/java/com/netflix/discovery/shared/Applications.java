@@ -37,7 +37,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRootName;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
@@ -103,7 +102,7 @@ public class Applications {
             @JsonProperty("versionDelta") Long versionDelta,
             @JsonProperty("application") List<Application> registeredApplications) {
         this.applications = new ConcurrentLinkedQueue<Application>();
-        for(Application app: registeredApplications) {
+        for (Application app : registeredApplications) {
             this.addApplication(app);
         }
         this.appsHashCode = appsHashCode;
@@ -140,7 +139,6 @@ public class Applications {
      * @return list containing all applications registered with eureka.
      */
     @JsonProperty("application")
-    @JacksonXmlElementWrapper(useWrapping=false)
     public List<Application> getRegisteredApplications() {
         List<Application> list = new ArrayList<Application>();
         list.addAll(this.applications);

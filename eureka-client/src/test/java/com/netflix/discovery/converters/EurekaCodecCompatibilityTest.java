@@ -2,6 +2,7 @@ package com.netflix.discovery.converters;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -206,6 +207,33 @@ public class EurekaCodecCompatibilityTest {
 
         verifyAllPairs(codingAction, Applications.class, availableJsonWrappers);
         verifyAllPairs(codingAction, Applications.class, availableXmlWrappers);
+    }
+
+    /**
+     * For backward compatibility with LegacyJacksonJson codec single item arrays shall not be unwrapped.
+     */
+    @Test
+    public void testApplicationsJsonEncodeDecodeWithSingleAppItem() throws Exception {
+        final Applications applications = infoGenerator.takeDelta(1);
+
+        Action2 codingAction = new Action2() {
+            @Override
+            public void call(EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws IOException {
+                String encodedString = encodingCodec.encode(applications);
+
+                assertThat(encodedString.contains("\"application\":[{"), is(true));
+
+                Applications decodedValue = decodingCodec.decode(encodedString, Applications.class);
+                assertThat(EurekaEntityComparators.equal(applications, decodedValue), is(true));
+            }
+        };
+
+        List<EncoderDecoderWrapper> jsonCodes = Arrays.asList(
+                new CodecWrappers.LegacyJacksonJson(),
+                new CodecWrappers.JacksonJson()
+        );
+
+        verifyAllPairs(codingAction, Applications.class, jsonCodes);
     }
 
     public void verifyAllPairs(Action2 codingAction, Class<?> typeToEncode, List<EncoderDecoderWrapper> codecHolders) throws Exception {

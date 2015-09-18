@@ -15,6 +15,7 @@ import com.netflix.discovery.shared.Applications;
  * structures.
  *
  * @author Tomasz Bak
+ * @deprecated Use instead {@link EurekaEntityFunctions}
  */
 public final class ApplicationFunctions {
 

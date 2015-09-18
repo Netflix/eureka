@@ -361,8 +361,8 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
      */
     @Override
     public String getRegion() {
-        return configInstance.getStringProperty("eureka.region", "us-east-1")
-                .get();
+        DynamicStringProperty defaultEurekaRegion = configInstance.getStringProperty("eureka.region", "us-east-1");
+        return configInstance.getStringProperty(namespace + "region", defaultEurekaRegion.get()).get();
     }
 
     /*
