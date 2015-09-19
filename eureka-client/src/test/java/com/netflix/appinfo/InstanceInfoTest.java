@@ -1,5 +1,6 @@
 package com.netflix.appinfo;
 
+import com.google.common.collect.ImmutableMap;
 import com.netflix.appinfo.InstanceInfo.Builder;
 import com.netflix.appinfo.InstanceInfo.PortType;
 import com.netflix.config.ConcurrentCompositeConfiguration;
@@ -7,6 +8,8 @@ import com.netflix.config.ConfigurationManager;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.Collections;
 
 import static com.netflix.appinfo.InstanceInfo.Builder.newBuilder;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -92,5 +95,51 @@ public class InstanceInfoTest {
                 .setHealthCheckUrls("/healthcheck", "http://${eureka.hostname}/healthcheck", "https://${eureka.hostname}/healthcheck")
                 .build();
         assertThat(instanceInfo.getHealthCheckUrls().size(), is(equalTo(2)));
+    }
+
+    @Test
+    public void testIdEqualsHostWhenDataCenterInfoIdIsNull() {
+        InstanceInfo instanceInfo = newBuilder()
+                .setAppName("test")
+                .setHostName("localhost")
+                .setDataCenterInfo(new MyDataCenterInfo())
+                .build();
+
+        assertThat(instanceInfo.getId(), is(equalTo("localhost")));
+    }
+
+    @Test
+    public void testIdEqualsHostWhenDataCenterInfoIsNotUniqueIdentifier() {
+        InstanceInfo instanceInfo = newBuilder()
+                .setAppName("test")
+                .setHostName("localhost")
+                .setDataCenterInfo(new DataCenterInfo() {
+                    @Override
+                    public Name getName() {
+                        return Name.MyOwn;
+                    }
+                })
+                .build();
+
+        assertThat(instanceInfo.getId(), is(equalTo("localhost")));
+    }
+
+    @Test
+    public void testIdEqualsDataCenterInfoIdWhenPossible() {
+        MyDataCenterInfo dataCenterInfo = new MyDataCenterInfo();
+
+        InstanceInfo instanceInfo = newBuilder()
+                .setAppName("test")
+                .setHostName("localhost")
+                .setDataCenterInfo(dataCenterInfo)
+                .build();
+
+        dataCenterInfo.setId("i1");
+        assertThat(instanceInfo.getId(), is(equalTo("i1")));
+
+        dataCenterInfo.setId(null);
+        dataCenterInfo.setMetadata(ImmutableMap.of("instance-id", "i1"));
+
+        assertThat(instanceInfo.getId(), is(equalTo("i1")));
     }
 }
