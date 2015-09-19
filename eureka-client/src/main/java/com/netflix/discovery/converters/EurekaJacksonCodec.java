@@ -28,14 +28,11 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.netflix.appinfo.AmazonInfo;
-import com.netflix.appinfo.DataCenterInfo;
+import com.netflix.appinfo.*;
 import com.netflix.appinfo.DataCenterInfo.Name;
-import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.InstanceInfo.PortType;
-import com.netflix.appinfo.LeaseInfo;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Application;
@@ -218,7 +215,7 @@ public class EurekaJacksonCodec {
         @Override
         public void serializeWithType(DataCenterInfo dataCenterInfo, JsonGenerator jgen,
                                       SerializerProvider provider, TypeSerializer typeSer)
-                throws IOException, JsonProcessingException {
+                throws IOException {
             jgen.writeStartObject();
 
             // XStream encoded adds this for backwards compatibility issue. Not sure if needed anymore
@@ -230,9 +227,8 @@ public class EurekaJacksonCodec {
 
             jgen.writeStringField(ELEM_NAME, dataCenterInfo.getName().name());
 
-            if (dataCenterInfo.getName() == Name.Amazon) {
-                AmazonInfo aInfo = (AmazonInfo) dataCenterInfo;
-                jgen.writeObjectField(DATACENTER_METADATA, aInfo.getMetadata());
+            if (dataCenterInfo instanceof MetadataAware) {
+                jgen.writeObjectField(DATACENTER_METADATA, ((MetadataAware) dataCenterInfo).getMetadata());
             }
             jgen.writeEndObject();
         }
@@ -248,17 +244,8 @@ public class EurekaJacksonCodec {
         @Override
         public DataCenterInfo deserialize(JsonParser jp, DeserializationContext context) throws IOException {
             JsonNode node = jp.getCodec().readTree(jp);
-            final Name name = Name.valueOf(node.get(ELEM_NAME).asText());
-            if (name != Name.Amazon) {
-                return new DataCenterInfo() {
-                    @Override
-                    public Name getName() {
-                        return name;
-                    }
-                };
-            }
 
-            Map<String, String> metaData = new HashMap<String, String>();
+            Map<String, String> metaData = new HashMap<>();
             JsonNode metaNode = node.get(DATACENTER_METADATA);
             Iterator<String> metaNamesIt = metaNode.fieldNames();
             while (metaNamesIt.hasNext()) {
@@ -267,10 +254,17 @@ public class EurekaJacksonCodec {
                 metaData.put(StringCache.intern(key), StringCache.intern(value));
             }
 
-            AmazonInfo amazonInfo = new AmazonInfo();
-            amazonInfo.setMetadata(metaData);
-
-            return amazonInfo;
+            final Name name = Name.valueOf(node.get(ELEM_NAME).asText());
+            if (name.equals(Name.Amazon)) {
+                AmazonInfo amazonInfo = new AmazonInfo();
+                amazonInfo.setMetadata(metaData);
+                return amazonInfo;
+            }
+            else {
+                MyDataCenterInfo dataCenterInfo = new MyDataCenterInfo(name);
+                dataCenterInfo.setMetadata(metaData);
+                return dataCenterInfo;
+            }
         }
     }
 

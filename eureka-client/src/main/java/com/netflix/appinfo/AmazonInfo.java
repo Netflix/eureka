@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 @JsonDeserialize(builder = StringInterningAmazonInfoBuilder.class)
-public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
+public class AmazonInfo implements DataCenterInfo, UniqueIdentifier, MetadataAware {
 
     private Map<String, String> metadata = new HashMap<String, String>();
     private static DynamicBooleanProperty shouldLogAWSMetadataError;
@@ -284,6 +284,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
      *
      * @return the map of AWS metadata as specified by {@link MetaDataKey}.
      */
+    @Override
     @JsonProperty("metadata")
     public Map<String, String> getMetadata() {
         return metadata;
@@ -295,6 +296,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
      * @param metadataMap
      *            the map containing AWS metadata.
      */
+    @Override
     public void setMetadata(Map<String, String> metadataMap) {
         this.metadata = metadataMap;
     }

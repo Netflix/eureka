@@ -858,7 +858,8 @@ public class InstanceInfo {
     @JsonIgnore
     public String getId() {
         if (dataCenterInfo instanceof UniqueIdentifier) {
-            return ((UniqueIdentifier) dataCenterInfo).getId();
+            String id = ((UniqueIdentifier) dataCenterInfo).getId();
+            return id != null ? id : hostName;
         } else {
             return hostName;
         }
