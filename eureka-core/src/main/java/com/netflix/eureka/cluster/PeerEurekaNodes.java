@@ -168,7 +168,7 @@ public class PeerEurekaNodes {
     }
 
     protected PeerEurekaNode createPeerEurekaNode(String peerEurekaNodeUrl) {
-        HttpReplicationClient replicationClient = new JerseyReplicationClient(config, peerEurekaNodeUrl);
+        HttpReplicationClient replicationClient = JerseyReplicationClient.createReplicationClient(config, peerEurekaNodeUrl);
         String name = PeerEurekaNode.class.getSimpleName() + ": " + peerEurekaNodeUrl + "apps/: ";
         return new PeerEurekaNode(registry, name, peerEurekaNodeUrl, replicationClient, config);
     }

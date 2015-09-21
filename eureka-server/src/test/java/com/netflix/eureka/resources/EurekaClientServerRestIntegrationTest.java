@@ -11,10 +11,11 @@ import java.util.regex.Pattern;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
-import com.netflix.discovery.shared.transport.EurekaHttpClient.HttpResponse;
-import com.netflix.discovery.shared.transport.EurekaJerseyClient;
-import com.netflix.discovery.shared.transport.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
-import com.netflix.discovery.shared.transport.JerseyEurekaHttpClient;
+import com.netflix.discovery.shared.transport.EurekaHttpResponse;
+import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
+import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
+import com.netflix.discovery.shared.transport.jersey.AbstractJerseyEurekaHttpClient;
+import com.netflix.discovery.shared.transport.jersey.JerseyApplicationClient;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
@@ -56,7 +57,7 @@ public class EurekaClientServerRestIntegrationTest {
 
     private static Server server;
 
-    private static JerseyEurekaHttpClient jerseyEurekaClient;
+    private static AbstractJerseyEurekaHttpClient jerseyEurekaClient;
     private static JerseyReplicationClient jerseyReplicationClient;
 
     /**
@@ -73,32 +74,21 @@ public class EurekaClientServerRestIntegrationTest {
         startServer();
         createEurekaServerConfig();
 
-        jerseyEurekaClient = new JerseyEurekaHttpClient(eurekaServiceUrl) {
-            public EurekaJerseyClient jerseyClient;
+        EurekaJerseyClient jerseyClient = new EurekaJerseyClientBuilder()
+                .withClientName("testEurekaClient")
+                .withConnectionTimeout(1000)
+                .withReadTimeout(1000)
+                .withMaxConnectionsPerHost(1)
+                .withMaxTotalConnections(1)
+                .withConnectionIdleTimeout(1000)
+                .build();
 
-            @Override
-            protected ApacheHttpClient4 getJerseyClient() {
-                jerseyClient = new EurekaJerseyClientBuilder()
-                        .withClientName("testEurekaClient")
-                        .withConnectionTimeout(1000)
-                        .withReadTimeout(1000)
-                        .withMaxConnectionsPerHost(1)
-                        .withMaxTotalConnections(1)
-                        .withConnectionIdleTimeout(1000)
-                        .build();
+        ApacheHttpClient4 jerseyApacheClient = jerseyClient.getClient();
+        jerseyApacheClient.addFilter(new GZIPContentEncodingFilter(true));
 
-                ApacheHttpClient4 jerseyApacheClient = jerseyClient.getClient();
-                jerseyApacheClient.addFilter(new GZIPContentEncodingFilter(true));
-                return jerseyApacheClient;
-            }
+        jerseyEurekaClient = new JerseyApplicationClient(jerseyClient, eurekaServiceUrl, false);
 
-            @Override
-            public void shutdown() {
-                super.shutdown();
-                jerseyClient.destroyResources();
-            }
-        };
-        jerseyReplicationClient = new JerseyReplicationClient(eurekaServerConfig, eurekaServiceUrl);
+        jerseyReplicationClient = JerseyReplicationClient.createReplicationClient(eurekaServerConfig, eurekaServiceUrl);
     }
 
     @AfterClass
@@ -115,7 +105,7 @@ public class EurekaClientServerRestIntegrationTest {
     @Test
     public void testRegistration() throws Exception {
         InstanceInfo instanceInfo = instanceInfoIt.next();
-        HttpResponse<Void> httpResponse = jerseyEurekaClient.register(instanceInfo);
+        EurekaHttpResponse<Void> httpResponse = jerseyEurekaClient.register(instanceInfo);
 
         assertThat(httpResponse.getStatusCode(), is(equalTo(204)));
     }
@@ -127,7 +117,7 @@ public class EurekaClientServerRestIntegrationTest {
         jerseyEurekaClient.register(instanceInfo);
 
         // Now send heartbeat
-        HttpResponse<InstanceInfo> heartBeatResponse = jerseyReplicationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
+        EurekaHttpResponse<InstanceInfo> heartBeatResponse = jerseyReplicationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
 
         assertThat(heartBeatResponse.getStatusCode(), is(equalTo(200)));
         assertThat(heartBeatResponse.getEntity(), is(nullValue()));
@@ -138,7 +128,7 @@ public class EurekaClientServerRestIntegrationTest {
         InstanceInfo instanceInfo = instanceInfoIt.next();
 
         // Now send heartbeat
-        HttpResponse<InstanceInfo> heartBeatResponse = jerseyReplicationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
+        EurekaHttpResponse<InstanceInfo> heartBeatResponse = jerseyReplicationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
 
         assertThat(heartBeatResponse.getStatusCode(), is(equalTo(404)));
     }
@@ -150,7 +140,7 @@ public class EurekaClientServerRestIntegrationTest {
         jerseyEurekaClient.register(instanceInfo);
 
         // Now cancel
-        HttpResponse<Void> httpResponse = jerseyEurekaClient.cancel(instanceInfo.getAppName(), instanceInfo.getId());
+        EurekaHttpResponse<Void> httpResponse = jerseyEurekaClient.cancel(instanceInfo.getAppName(), instanceInfo.getId());
 
         assertThat(httpResponse.getStatusCode(), is(equalTo(200)));
     }
@@ -159,7 +149,7 @@ public class EurekaClientServerRestIntegrationTest {
     public void testCancelForEntryThatDoesNotExist() throws Exception {
         // Now cancel
         InstanceInfo instanceInfo = instanceInfoIt.next();
-        HttpResponse<Void> httpResponse = jerseyEurekaClient.cancel(instanceInfo.getAppName(), instanceInfo.getId());
+        EurekaHttpResponse<Void> httpResponse = jerseyEurekaClient.cancel(instanceInfo.getAppName(), instanceInfo.getId());
 
         assertThat(httpResponse.getStatusCode(), is(equalTo(404)));
     }
@@ -171,14 +161,14 @@ public class EurekaClientServerRestIntegrationTest {
         jerseyEurekaClient.register(instanceInfo);
 
         // Now override status
-        HttpResponse<Void> overrideUpdateResponse = jerseyEurekaClient.statusUpdate(instanceInfo.getAppName(), instanceInfo.getId(), InstanceStatus.DOWN, instanceInfo);
+        EurekaHttpResponse<Void> overrideUpdateResponse = jerseyEurekaClient.statusUpdate(instanceInfo.getAppName(), instanceInfo.getId(), InstanceStatus.DOWN, instanceInfo);
         assertThat(overrideUpdateResponse.getStatusCode(), is(equalTo(200)));
 
         InstanceInfo fetchedInstance = expectInstanceInfoInRegistry(instanceInfo);
         assertThat(fetchedInstance.getStatus(), is(equalTo(InstanceStatus.DOWN)));
 
         // Now remove override
-        HttpResponse<Void> deleteOverrideResponse = jerseyEurekaClient.deleteStatusOverride(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo);
+        EurekaHttpResponse<Void> deleteOverrideResponse = jerseyEurekaClient.deleteStatusOverride(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo);
         assertThat(deleteOverrideResponse.getStatusCode(), is(equalTo(200)));
 
         fetchedInstance = expectInstanceInfoInRegistry(instanceInfo);
@@ -196,7 +186,7 @@ public class EurekaClientServerRestIntegrationTest {
                 .withLastDirtyTimestamp(System.currentTimeMillis())
                 .withStatus(instanceInfo.getStatus().name())
                 .build();
-        HttpResponse<ReplicationListResponse> httpResponse = jerseyReplicationClient.submitBatchUpdates(new ReplicationList(replicationInstance));
+        EurekaHttpResponse<ReplicationListResponse> httpResponse = jerseyReplicationClient.submitBatchUpdates(new ReplicationList(replicationInstance));
 
         assertThat(httpResponse.getStatusCode(), is(equalTo(200)));
         List<ReplicationInstanceResponse> replicationListResponse = httpResponse.getEntity().getResponseList();
@@ -205,7 +195,7 @@ public class EurekaClientServerRestIntegrationTest {
     }
 
     private static InstanceInfo expectInstanceInfoInRegistry(InstanceInfo instanceInfo) {
-        HttpResponse<InstanceInfo> queryResponse = jerseyEurekaClient.getInstance(instanceInfo.getAppName(), instanceInfo.getId());
+        EurekaHttpResponse<InstanceInfo> queryResponse = jerseyEurekaClient.getInstance(instanceInfo.getAppName(), instanceInfo.getId());
         assertThat(queryResponse.getStatusCode(), is(equalTo(200)));
         assertThat(queryResponse.getEntity(), is(notNullValue()));
         assertThat(queryResponse.getEntity().getId(), is(equalTo(instanceInfo.getId())));

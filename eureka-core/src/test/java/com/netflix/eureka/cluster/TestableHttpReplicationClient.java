@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
@@ -62,58 +63,58 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
     }
 
     @Override
-    public HttpResponse<Void> register(InstanceInfo info) {
+    public EurekaHttpResponse<Void> register(InstanceInfo info) {
         handledRequests.add(new HandledRequest(RequestType.Register, info));
-        return new HttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], null);
+        return new EurekaHttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], null);
     }
 
     @Override
-    public HttpResponse<Void> cancel(String appName, String id) {
+    public EurekaHttpResponse<Void> cancel(String appName, String id) {
         handledRequests.add(new HandledRequest(RequestType.Cancel, id));
-        return new HttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], null);
+        return new EurekaHttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], null);
     }
 
     @Override
-    public HttpResponse<InstanceInfo> sendHeartBeat(String appName, String id, InstanceInfo info, InstanceStatus overriddenStatus) {
+    public EurekaHttpResponse<InstanceInfo> sendHeartBeat(String appName, String id, InstanceInfo info, InstanceStatus overriddenStatus) {
         handledRequests.add(new HandledRequest(RequestType.Heartbeat, instanceInfoFromPeer));
-        return new HttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], instanceInfoFromPeer);
+        return new EurekaHttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], instanceInfoFromPeer);
     }
 
     @Override
-    public HttpResponse<Void> statusUpdate(String asgName, ASGStatus newStatus) {
+    public EurekaHttpResponse<Void> statusUpdate(String asgName, ASGStatus newStatus) {
         handledRequests.add(new HandledRequest(RequestType.AsgStatusUpdate, newStatus));
-        return new HttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], null);
+        return new EurekaHttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], null);
     }
 
     @Override
-    public HttpResponse<Void> statusUpdate(String appName, String id, InstanceStatus newStatus, InstanceInfo info) {
+    public EurekaHttpResponse<Void> statusUpdate(String appName, String id, InstanceStatus newStatus, InstanceInfo info) {
         handledRequests.add(new HandledRequest(RequestType.StatusUpdate, newStatus));
-        return new HttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], null);
+        return new EurekaHttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], null);
     }
 
     @Override
-    public HttpResponse<Void> deleteStatusOverride(String appName, String id, InstanceInfo info) {
+    public EurekaHttpResponse<Void> deleteStatusOverride(String appName, String id, InstanceInfo info) {
         handledRequests.add(new HandledRequest(RequestType.DeleteStatusOverride, null));
-        return new HttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], null);
+        return new EurekaHttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], null);
     }
 
     @Override
-    public HttpResponse<Applications> getApplications() {
+    public EurekaHttpResponse<Applications> getApplications() {
         throw new IllegalStateException("method not supported");
     }
 
     @Override
-    public HttpResponse<Applications> getDelta() {
+    public EurekaHttpResponse<Applications> getDelta() {
         throw new IllegalStateException("method not supported");
     }
 
     @Override
-    public HttpResponse<InstanceInfo> getInstance(String appName, String id) {
+    public EurekaHttpResponse<InstanceInfo> getInstance(String appName, String id) {
         throw new IllegalStateException("method not supported");
     }
 
     @Override
-    public HttpResponse<ReplicationListResponse> submitBatchUpdates(ReplicationList replicationList) {
+    public EurekaHttpResponse<ReplicationListResponse> submitBatchUpdates(ReplicationList replicationList) {
         if (networkFailureCounter.get() < networkFailuresRepeatCount) {
             networkFailureCounter.incrementAndGet();
             throw new RuntimeException(new IOException("simulated network failure"));
@@ -133,7 +134,7 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
 
         handledRequests.add(new HandledRequest(RequestType.Batch, replicationList));
 
-        return new HttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], replicationListResponse);
+        return new EurekaHttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], replicationListResponse);
     }
 
     @Override

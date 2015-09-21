@@ -1,6 +1,7 @@
 package com.netflix.eureka.cluster;
 
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
+import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
@@ -10,8 +11,8 @@ import com.netflix.eureka.resources.ASGResource.ASGStatus;
  */
 public interface HttpReplicationClient extends EurekaHttpClient {
 
-    HttpResponse<Void> statusUpdate(String asgName, ASGStatus newStatus);
+    EurekaHttpResponse<Void> statusUpdate(String asgName, ASGStatus newStatus);
 
-    HttpResponse<ReplicationListResponse> submitBatchUpdates(ReplicationList replicationList);
+    EurekaHttpResponse<ReplicationListResponse> submitBatchUpdates(ReplicationList replicationList);
 
 }

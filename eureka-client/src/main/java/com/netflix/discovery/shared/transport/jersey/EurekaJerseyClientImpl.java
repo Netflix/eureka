@@ -1,4 +1,4 @@
-package com.netflix.discovery.shared.transport;
+package com.netflix.discovery.shared.transport.jersey;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;

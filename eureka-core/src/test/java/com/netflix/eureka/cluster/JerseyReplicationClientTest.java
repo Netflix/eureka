@@ -9,7 +9,7 @@ import java.util.zip.GZIPOutputStream;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.converters.EurekaJacksonCodec;
-import com.netflix.discovery.shared.transport.EurekaHttpClient.HttpResponse;
+import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
@@ -49,7 +49,7 @@ public class JerseyReplicationClientTest {
 
     @Before
     public void setUp() throws Exception {
-        replicationClient = new JerseyReplicationClient(config, "http://localhost:" + serverMockRule.getHttpPort() + "/eureka/v2");
+        replicationClient = JerseyReplicationClient.createReplicationClient(config, "http://localhost:" + serverMockRule.getHttpPort() + "/eureka/v2");
     }
 
     @Test
@@ -63,7 +63,7 @@ public class JerseyReplicationClientTest {
                 response().withStatusCode(200)
         );
 
-        HttpResponse<Void> response = replicationClient.register(instanceInfo);
+        EurekaHttpResponse<Void> response = replicationClient.register(instanceInfo);
         assertThat(response.getStatusCode(), is(equalTo(200)));
     }
 
@@ -78,7 +78,7 @@ public class JerseyReplicationClientTest {
                 response().withStatusCode(204)
         );
 
-        HttpResponse<Void> response = replicationClient.cancel(instanceInfo.getAppName(), instanceInfo.getId());
+        EurekaHttpResponse<Void> response = replicationClient.cancel(instanceInfo.getAppName(), instanceInfo.getId());
         assertThat(response.getStatusCode(), is(equalTo(204)));
     }
 
@@ -93,7 +93,7 @@ public class JerseyReplicationClientTest {
                 response().withStatusCode(200)
         );
 
-        HttpResponse<InstanceInfo> response = replicationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, InstanceStatus.DOWN);
+        EurekaHttpResponse<InstanceInfo> response = replicationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, InstanceStatus.DOWN);
         assertThat(response.getStatusCode(), is(equalTo(200)));
         assertThat(response.getEntity(), is(nullValue()));
     }
@@ -117,7 +117,7 @@ public class JerseyReplicationClientTest {
                         .withBody(responseBody)
         );
 
-        HttpResponse<InstanceInfo> response = replicationClient.sendHeartBeat(this.instanceInfo.getAppName(), this.instanceInfo.getId(), this.instanceInfo, null);
+        EurekaHttpResponse<InstanceInfo> response = replicationClient.sendHeartBeat(this.instanceInfo.getAppName(), this.instanceInfo.getId(), this.instanceInfo, null);
         assertThat(response.getStatusCode(), is(equalTo(Status.CONFLICT.getStatusCode())));
         assertThat(response.getEntity(), is(notNullValue()));
     }
@@ -133,7 +133,7 @@ public class JerseyReplicationClientTest {
                 response().withStatusCode(200)
         );
 
-        HttpResponse<Void> response = replicationClient.statusUpdate(instanceInfo.getASGName(), ASGStatus.ENABLED);
+        EurekaHttpResponse<Void> response = replicationClient.statusUpdate(instanceInfo.getASGName(), ASGStatus.ENABLED);
         assertThat(response.getStatusCode(), is(equalTo(200)));
     }
 
@@ -148,7 +148,7 @@ public class JerseyReplicationClientTest {
                 response().withStatusCode(200)
         );
 
-        HttpResponse<Void> response = replicationClient.statusUpdate(instanceInfo.getAppName(), instanceInfo.getId(), InstanceStatus.DOWN, instanceInfo);
+        EurekaHttpResponse<Void> response = replicationClient.statusUpdate(instanceInfo.getAppName(), instanceInfo.getId(), InstanceStatus.DOWN, instanceInfo);
         assertThat(response.getStatusCode(), is(equalTo(200)));
     }
 
@@ -163,7 +163,7 @@ public class JerseyReplicationClientTest {
                 response().withStatusCode(204)
         );
 
-        HttpResponse<Void> response = replicationClient.deleteStatusOverride(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo);
+        EurekaHttpResponse<Void> response = replicationClient.deleteStatusOverride(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo);
         assertThat(response.getStatusCode(), is(equalTo(204)));
     }
 
