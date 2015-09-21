@@ -4,9 +4,11 @@
 <%@page import="com.netflix.appinfo.AmazonInfo.MetaDataKey"%>
 <div id="header">
   <%
-  InstanceInfo selfInstanceInfo = EurekaServerContextHolder.getInstance().getServerContext().getApplicationInfoManager().getInfo();
+  EurekaServerContext serverContext = (EurekaServerContext) pageContext.getServletContext()
+          .getAttribute(EurekaServerContext.class.getName());
+  InstanceInfo selfInstanceInfo = serverContext.getApplicationInfoManager().getInfo();
   DataCenterInfo info = selfInstanceInfo.getDataCenterInfo();
-  PeerAwareInstanceRegistry registry = EurekaServerContextHolder.getInstance().getServerContext().getRegistry();
+  PeerAwareInstanceRegistry registry =serverContext.getRegistry();
   AmazonInfo amazonInfo = null;
   if(info.getName() == DataCenterInfo.Name.Amazon) {
       amazonInfo = (AmazonInfo)info;

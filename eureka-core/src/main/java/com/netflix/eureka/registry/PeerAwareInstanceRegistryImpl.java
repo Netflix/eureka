@@ -265,6 +265,8 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                 Application eurekaApps = this.getApplication(applicationInfoManager.getInfo().getAppName(), false);
                 if (eurekaApps == null) {
                     areAllPeerNodesPrimed = true;
+                    logger.info("No peers needed to prime.");
+                    return;
                 }
                 for (PeerEurekaNode node : peerEurekaNodes.getPeerEurekaNodes()) {
                     for (InstanceInfo peerInstanceInfo : eurekaApps.getInstances()) {

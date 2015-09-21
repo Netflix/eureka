@@ -37,7 +37,9 @@
 	</ul>
     <div id="tabs-1">
       <%
-      PeerAwareInstanceRegistry registry = EurekaServerContextHolder.getInstance().getServerContext().getRegistry();
+      EurekaServerContext serverContext = (EurekaServerContext) pageContext.getServletContext()
+              .getAttribute(EurekaServerContext.class.getName());
+      PeerAwareInstanceRegistry registry = serverContext.getRegistry();
       List<Pair<Long, String>> list = registry.getLastNCanceledInstances();
       out.print("<table id=\'lastNCanceled\' class=\"stripeable\">");
       out.print("<tr><th>Timestamp</th><th>Lease</th></tr>");

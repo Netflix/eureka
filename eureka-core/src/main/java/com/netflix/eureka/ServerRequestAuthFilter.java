@@ -25,20 +25,24 @@ public class ServerRequestAuthFilter implements Filter {
 
     private static final String NAME_PREFIX = "DiscoveryServerRequestAuth_Name_";
 
-    private final EurekaServerConfig serverConfig;
+    private EurekaServerConfig serverConfig;
 
     @Inject
     public ServerRequestAuthFilter(EurekaServerContext server) {
         this.serverConfig = server.getServerConfig();
     }
 
+    // for non-DI use
     public ServerRequestAuthFilter() {
-        this(EurekaServerContextHolder.getInstance().getServerContext());
     }
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        // nothing to do here
+        if (serverConfig == null) {
+            EurekaServerContext serverContext = (EurekaServerContext) filterConfig.getServletContext()
+                    .getAttribute(EurekaServerContext.class.getName());
+            serverConfig = serverContext.getServerConfig();
+        }
     }
 
     @Override

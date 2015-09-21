@@ -107,19 +107,24 @@ public class RateLimitingFilter implements Filter {
      */
     private static final RateLimiter registryFullFetchRateLimiter = new RateLimiter(TimeUnit.SECONDS);
 
-    private final EurekaServerConfig serverConfig;
+    private EurekaServerConfig serverConfig;
 
     @Inject
     public RateLimitingFilter(EurekaServerContext server) {
         this.serverConfig = server.getServerConfig();
     }
 
+    // for non-DI use
     public RateLimitingFilter() {
-        this(EurekaServerContextHolder.getInstance().getServerContext());
     }
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
+        if (serverConfig == null) {
+            EurekaServerContext serverContext = (EurekaServerContext) filterConfig.getServletContext()
+                    .getAttribute(EurekaServerContext.class.getName());
+            serverConfig = serverContext.getServerConfig();
+        }
     }
 
     @Override

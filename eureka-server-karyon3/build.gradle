@@ -2,7 +2,6 @@ apply plugin: 'war'
 apply plugin: 'jetty'
 
 dependencies {
-    compile project(':eureka-client')
     compile project(':eureka-core')
     runtime 'xerces:xercesImpl:2.4.0'
     compile "com.netflix.governator:governator:1.10.0"
@@ -29,7 +28,6 @@ task copyLibs(type: Copy) {
 }
 
 war {
-    archiveName 'eureka.war'
     from (project(':eureka-resources').file('build/resources/main'))
 }
 

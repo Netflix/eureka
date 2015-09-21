@@ -19,8 +19,8 @@
         <listener-class>com.netflix.eureka.EurekaContextListener</listener-class>
     </listener>
 
-  <welcome-file-list>
-    <welcome-file>jsp/status.jsp</welcome-file>
-  </welcome-file-list>
+    <welcome-file-list>
+        <welcome-file>jsp/status.jsp</welcome-file>
+    </welcome-file-list>
 
 </web-app>

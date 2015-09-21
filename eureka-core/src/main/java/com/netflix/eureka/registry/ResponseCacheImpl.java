@@ -17,8 +17,6 @@
 package com.netflix.eureka.registry;
 
 import javax.annotation.Nullable;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
@@ -75,7 +73,6 @@ import org.slf4j.LoggerFactory;
  *
  * @author Karthik Ranganathan, Greg Kim
  */
-@Singleton
 public class ResponseCacheImpl implements ResponseCache {
 
     private static final Logger logger = LoggerFactory.getLogger(ResponseCacheImpl.class);
@@ -123,8 +120,7 @@ public class ResponseCacheImpl implements ResponseCache {
     private final EurekaServerConfig serverConfig;
     private final ServerCodecs serverCodecs;
 
-    @Inject
-    public ResponseCacheImpl(EurekaServerConfig serverConfig, ServerCodecs serverCodecs, AbstractInstanceRegistry registry) {
+    ResponseCacheImpl(EurekaServerConfig serverConfig, ServerCodecs serverCodecs, AbstractInstanceRegistry registry) {
         this.serverConfig = serverConfig;
         this.serverCodecs = serverCodecs;
         this.shouldUseReadOnlyResponseCache = serverConfig.shouldUseReadOnlyResponseCache();

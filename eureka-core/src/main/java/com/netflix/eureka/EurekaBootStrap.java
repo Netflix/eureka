@@ -16,6 +16,7 @@
 
 package com.netflix.eureka;
 
+import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import java.util.Date;
@@ -88,11 +89,14 @@ public class EurekaBootStrap implements ServletContextListener {
      * @see
      * javax.servlet.ServletContextListener#contextInitialized(javax.servlet.ServletContextEvent)
      */
+    @Override
     public void contextInitialized(ServletContextEvent event) {
         try {
             initEurekaEnvironment();
             initEurekaServerContext();
 
+            ServletContext sc = event.getServletContext();
+            sc.setAttribute(EurekaServerContext.class.getName(), serverContext);
         } catch (Throwable e) {
             logger.error("Cannot bootstrap eureka server :", e);
             throw new RuntimeException("Cannot bootstrap eureka server :", e);
@@ -196,9 +200,13 @@ public class EurekaBootStrap implements ServletContextListener {
      *
      * @see javax.servlet.ServletContextListener#contextDestroyed(javax.servlet.ServletContextEvent)
      */
+    @Override
     public void contextDestroyed(ServletContextEvent event) {
         try {
             logger.info("{} Shutting down Eureka Server..", new Date().toString());
+            ServletContext sc = event.getServletContext();
+            sc.removeAttribute(EurekaServerContext.class.getName());
+
             destroyEurekaServerContext();
             destroyEurekaEnvironment();
 
