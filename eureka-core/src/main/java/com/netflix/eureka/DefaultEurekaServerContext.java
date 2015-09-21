@@ -45,7 +45,7 @@ public class DefaultEurekaServerContext implements EurekaServerContext {
     private final ApplicationInfoManager applicationInfoManager;
 
     @Inject
-    DefaultEurekaServerContext(EurekaServerConfig serverConfig,
+    public DefaultEurekaServerContext(EurekaServerConfig serverConfig,
                                ServerCodecs serverCodecs,
                                PeerAwareInstanceRegistry registry,
                                PeerEurekaNodes peerEurekaNodes,

@@ -79,8 +79,8 @@ public class EurekaBootStrap implements ServletContextListener {
 
     private static final String EUREKA_DATACENTER = "eureka.datacenter";
 
-    private volatile EurekaServerContext serverContext;
-    private volatile EIPManager eipManager;
+    protected volatile EurekaServerContext serverContext;
+    protected volatile EIPManager eipManager;
 
     /**
      * Initializes Eureka, including syncing up with other Eureka peers and publishing the registry.
@@ -91,6 +91,7 @@ public class EurekaBootStrap implements ServletContextListener {
     public void contextInitialized(ServletContextEvent event) {
         try {
             initEurekaEnvironment();
+            initEurekaServerContext();
 
         } catch (Throwable e) {
             logger.error("Cannot bootstrap eureka server :", e);
@@ -104,11 +105,6 @@ public class EurekaBootStrap implements ServletContextListener {
     protected void initEurekaEnvironment() throws Exception {
         logger.info("Setting the eureka configuration..");
         LoggingConfiguration.getInstance().configure();
-        EurekaServerConfig eurekaServerConfig = new DefaultEurekaServerConfig();
-
-        // For backward compatibility
-        JsonXStream.getInstance().registerConverter(new V1AwareInstanceInfoConverter(), XStream.PRIORITY_VERY_HIGH);
-        XmlXStream.getInstance().registerConverter(new V1AwareInstanceInfoConverter(), XStream.PRIORITY_VERY_HIGH);
 
         String dataCenter = ConfigurationManager.getConfigInstance().getString(EUREKA_DATACENTER);
         if (dataCenter == null) {
@@ -122,6 +118,17 @@ public class EurekaBootStrap implements ServletContextListener {
             ConfigurationManager.getConfigInstance().setProperty(ARCHAIUS_DEPLOYMENT_ENVIRONMENT, TEST);
             logger.info("Eureka environment value eureka.environment is not set, defaulting to test");
         }
+    }
+
+    /**
+     * init hook for server context. Override for custom logic.
+     */
+    protected void initEurekaServerContext() throws Exception {
+        EurekaServerConfig eurekaServerConfig = new DefaultEurekaServerConfig();
+
+        // For backward compatibility
+        JsonXStream.getInstance().registerConverter(new V1AwareInstanceInfoConverter(), XStream.PRIORITY_VERY_HIGH);
+        XmlXStream.getInstance().registerConverter(new V1AwareInstanceInfoConverter(), XStream.PRIORITY_VERY_HIGH);
 
         EurekaInstanceConfig instanceConfig = isCloud(ConfigurationManager.getDeploymentContext())
                 ? new CloudInstanceConfig()
@@ -192,7 +199,7 @@ public class EurekaBootStrap implements ServletContextListener {
     public void contextDestroyed(ServletContextEvent event) {
         try {
             logger.info("{} Shutting down Eureka Server..", new Date().toString());
-            // Unregister all MBeans associated w/ DSCounters
+            destroyEurekaServerContext();
             destroyEurekaEnvironment();
 
         } catch (Throwable e) {
@@ -202,9 +209,9 @@ public class EurekaBootStrap implements ServletContextListener {
     }
 
     /**
-     * Users can override to clean up the environment themselves.
+     * Server context shutdown hook. Override for custom logic
      */
-    protected void destroyEurekaEnvironment() throws Exception {
+    protected void destroyEurekaServerContext() throws Exception {
         EurekaMonitors.shutdown();
         if (eipManager != null) {
             eipManager.shutdown();
@@ -212,6 +219,13 @@ public class EurekaBootStrap implements ServletContextListener {
         if (serverContext != null) {
             serverContext.shutdown();
         }
+    }
+
+    /**
+     * Users can override to clean up the environment themselves.
+     */
+    protected void destroyEurekaEnvironment() throws Exception {
+
     }
 
     protected boolean isAws(InstanceInfo selfInstanceInfo) {
