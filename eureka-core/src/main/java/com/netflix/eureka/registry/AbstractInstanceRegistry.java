@@ -1137,6 +1137,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      *
      * @return
      */
+    @Override
     public List<Pair<Long, String>> getLastNCanceledInstances() {
         List<Pair<Long, String>> list = new ArrayList<Pair<Long, String>>();
         synchronized (recentCanceledQueue) {
