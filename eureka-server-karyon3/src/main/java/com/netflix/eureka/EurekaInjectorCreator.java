@@ -1,8 +1,6 @@
 package com.netflix.eureka;
 
 import com.netflix.archaius.guice.ArchaiusModule;
-import com.netflix.discovery.guice.EurekaModule;
-import com.netflix.eureka.guice.EurekaServerModule;
 import com.netflix.eureka.guice.LocalEurekaServerModule;
 import com.netflix.governator.GovernatorFeatures;
 import com.netflix.governator.LifecycleInjector;
