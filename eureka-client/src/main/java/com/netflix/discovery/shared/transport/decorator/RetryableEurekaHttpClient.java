@@ -106,7 +106,7 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
     }
 
     private List<EurekaEndpoint> getHostCandidates() {
-        List<EurekaEndpoint> candidateHosts = clusterResolver.getClusterServers();
+        List<EurekaEndpoint> candidateHosts = clusterResolver.getClusterEndpoints();
         quarantineSet.retainAll(candidateHosts);
 
         // If all hosts are bad, we have no choice but start over again

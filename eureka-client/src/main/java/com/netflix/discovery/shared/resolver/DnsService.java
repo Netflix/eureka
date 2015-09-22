@@ -16,27 +16,24 @@
 
 package com.netflix.discovery.shared.resolver;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
- * Statically configured Eureka server pool.
- *
  * @author Tomasz Bak
  */
-public class StaticClusterResolver implements ClusterResolver {
+public interface DnsService {
 
-    private final List<EurekaEndpoint> eurekaEndpoints;
+    /**
+     * Resolve host name to the bottom A-Record or the latest available CNAME
+     *
+     * @return IP address
+     */
+    String resolveIp(String hostName);
 
-    public StaticClusterResolver(List<EurekaEndpoint> eurekaEndpoints) {
-        this.eurekaEndpoints = eurekaEndpoints;
-    }
-
-    @Override
-    public List<EurekaEndpoint> getClusterEndpoints() {
-        return eurekaEndpoints;
-    }
-
-    @Override
-    public void shutdown() {
-    }
+    /**
+     * Resolve A-record entry for a given domain name.
+     */
+    @Nullable
+    List<String> resolveARecord(String rootDomainName);
 }

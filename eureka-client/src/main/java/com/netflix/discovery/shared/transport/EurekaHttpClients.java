@@ -18,6 +18,7 @@ package com.netflix.discovery.shared.transport;
 
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
+import com.netflix.discovery.shared.resolver.DnsServiceImpl;
 import com.netflix.discovery.shared.transport.decorator.RebalancingEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.RedirectingEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient;
@@ -54,10 +55,11 @@ public final class EurekaHttpClients {
     }
 
     private static EurekaHttpClientFactory createRedirectingClientFactory(final EurekaHttpClientFactory delegateFactory) {
+        final DnsServiceImpl dnsService = new DnsServiceImpl();
         return new EurekaHttpClientFactory() {
             @Override
             public EurekaHttpClient create(String... serviceUrls) {
-                return new RedirectingEurekaHttpClient(serviceUrls[0], delegateFactory);
+                return new RedirectingEurekaHttpClient(serviceUrls[0], delegateFactory, dnsService);
             }
 
             @Override

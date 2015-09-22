@@ -53,7 +53,7 @@ public final class ResolverUtils {
         List<EurekaEndpoint> remainingZonesList = new ArrayList<>(eurekaEndpoints.size());
 
         for (EurekaEndpoint endpoint : eurekaEndpoints) {
-            if (myZone.equals(endpoint.getZone())) {
+            if (myZone.equalsIgnoreCase(endpoint.getZone())) {
                 myZoneList.add(endpoint);
             } else {
                 remainingZonesList.add(endpoint);
@@ -95,8 +95,13 @@ public final class ResolverUtils {
      * @return true if both resolvers return the same server lists, possibly in a different order
      */
     public static boolean identical(ClusterResolver first, ClusterResolver second) {
-        List<EurekaEndpoint> firstList = first.getClusterServers();
-        List<EurekaEndpoint> secondList = second.getClusterServers();
+        return identical(first.getClusterEndpoints(), second.getClusterEndpoints());
+    }
+
+    /**
+     * @return true if both list are the same, possibly in a different order
+     */
+    public static boolean identical(List<EurekaEndpoint> firstList, List<EurekaEndpoint> secondList) {
         if (firstList.size() != secondList.size()) {
             return false;
         }

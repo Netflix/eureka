@@ -48,7 +48,7 @@ public class DnsClusterResolver implements ClusterResolver {
     }
 
     @Override
-    public List<EurekaEndpoint> getClusterServers() {
+    public List<EurekaEndpoint> getClusterEndpoints() {
         return eurekaEndpoints;
     }
 

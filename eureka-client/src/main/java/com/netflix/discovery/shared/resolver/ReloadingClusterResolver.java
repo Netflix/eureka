@@ -17,10 +17,6 @@
 package com.netflix.discovery.shared.resolver;
 
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
@@ -36,57 +32,69 @@ public class ReloadingClusterResolver implements ClusterResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(ReloadingClusterResolver.class);
 
+    private static final long MAX_RELOAD_INTERVAL_MULTIPLIER = 5;
+
+    private final ClusterResolverFactory factory;
+    private final long reloadIntervalMs;
+    private final long maxReloadIntervalMs;
+
     private final AtomicReference<ClusterResolver> delegateRef;
 
-    private final Runnable reloadTask;
-    private final ScheduledExecutorService executorService;
+    private volatile long lastUpdateTime;
+    private volatile long currentReloadIntervalMs;
 
     public ReloadingClusterResolver(final ClusterResolverFactory factory, final long reloadIntervalMs) {
+        this.factory = factory;
+        this.reloadIntervalMs = reloadIntervalMs;
+        this.maxReloadIntervalMs = MAX_RELOAD_INTERVAL_MULTIPLIER * reloadIntervalMs;
         this.delegateRef = new AtomicReference<>(factory.createClusterResolver());
-        this.executorService = Executors.newSingleThreadScheduledExecutor(
-                new ThreadFactory() {
-                    @Override
-                    public Thread newThread(Runnable r) {
-                        return new Thread(r, ReloadingClusterResolver.class.getSimpleName());
-                    }
-                }
-        );
-        this.reloadTask = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    execute();
-                } catch (Throwable e) {
-                    logger.warn("Error during cluster server list update; continue to use the current one", e);
-                }
-                if (!executorService.isShutdown()) {
-                    executorService.schedule(reloadTask, reloadIntervalMs, TimeUnit.MILLISECONDS);
-                }
-            }
 
-            private void execute() {
-                ClusterResolver newDelegate = factory.createClusterResolver();
-
-                // If no change in the server pool, shutdown the new delegate
-                if (ResolverUtils.identical(delegateRef.get(), newDelegate)) {
-                    logger.debug("Loaded cluster server list identical to the current one; no update required");
-                    shutdownDelegate(newDelegate);
-                } else {
-                    shutdownDelegate(delegateRef.getAndSet(newDelegate));
-                }
-            }
-        };
-        this.executorService.schedule(reloadTask, reloadIntervalMs, TimeUnit.MILLISECONDS);
+        this.lastUpdateTime = System.currentTimeMillis();
+        this.currentReloadIntervalMs = reloadIntervalMs;
     }
 
     @Override
-    public List<EurekaEndpoint> getClusterServers() {
-        return delegateRef.get().getClusterServers();
+    public List<EurekaEndpoint> getClusterEndpoints() {
+        long expiryTime = lastUpdateTime + currentReloadIntervalMs;
+        if (expiryTime <= System.currentTimeMillis()) {
+            try {
+                ClusterResolver newDelegate = reload();
+                if (newDelegate != null) {
+                    shutdownDelegate(delegateRef.getAndSet(newDelegate));
+                }
+                this.lastUpdateTime = System.currentTimeMillis();
+                this.currentReloadIntervalMs = reloadIntervalMs;
+            } catch (Exception e) {
+                logger.warn("Cluster resolve error; keeping the current Eureka endpoints", e);
+                this.currentReloadIntervalMs = Math.min(maxReloadIntervalMs, currentReloadIntervalMs * 2);
+            }
+        }
+        return delegateRef.get().getClusterEndpoints();
     }
 
     @Override
     public void shutdown() {
-        executorService.shutdown();
+        shutdownDelegate(delegateRef.get());
+    }
+
+    private ClusterResolver reload() {
+        ClusterResolver newDelegate = null;
+        List<EurekaEndpoint> newEndpoints;
+        try {
+            newDelegate = factory.createClusterResolver();
+            newEndpoints = newDelegate.getClusterEndpoints();
+        } catch (Exception e) {
+            shutdownDelegate(newDelegate);
+            throw e;
+        }
+
+        // If no change in the server pool, shutdown the new delegate
+        if (ResolverUtils.identical(delegateRef.get().getClusterEndpoints(), newEndpoints)) {
+            logger.debug("Loaded cluster server list identical to the current one; no update required");
+            shutdownDelegate(newDelegate);
+            return null;
+        }
+        return newDelegate;
     }
 
     private static void shutdownDelegate(ClusterResolver newDelegate) {

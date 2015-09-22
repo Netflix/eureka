@@ -30,11 +30,11 @@ public class RandomizingClusterResolver implements ClusterResolver {
     private final List<EurekaEndpoint> eurekaEndpoints;
 
     public RandomizingClusterResolver(ClusterResolver delegate) {
-        this.eurekaEndpoints = ResolverUtils.randomize(new ArrayList<EurekaEndpoint>(delegate.getClusterServers()));
+        this.eurekaEndpoints = ResolverUtils.randomize(new ArrayList<EurekaEndpoint>(delegate.getClusterEndpoints()));
     }
 
     @Override
-    public List<EurekaEndpoint> getClusterServers() {
+    public List<EurekaEndpoint> getClusterEndpoints() {
         return eurekaEndpoints;
     }
 

@@ -62,7 +62,7 @@ public class JerseyEurekaHttpClientFactory implements EurekaHttpClientFactory {
 
         synchronized (lock) {
             if (jerseyClient == null) {
-                if (clusterResolver.getClusterServers().isEmpty()) {
+                if (clusterResolver.getClusterEndpoints().isEmpty()) {
                     throw new IllegalStateException("Eureka server list is empty; cannot setup connection to any server");
                 }
 
@@ -76,7 +76,7 @@ public class JerseyEurekaHttpClientFactory implements EurekaHttpClientFactory {
                         .withEncoder(clientConfig.getEncoderName())
                         .withDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept());
 
-                if (clusterResolver.getClusterServers().get(0).getServiceUrl().startsWith("https://") &&
+                if (clusterResolver.getClusterEndpoints().get(0).getServiceUrl().startsWith("https://") &&
                         "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
                     clientBuilder.withClientName("DiscoveryClient-HTTPClient-System")
                             .withSystemSSLConfiguration();

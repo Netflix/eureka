@@ -16,7 +16,11 @@
 
 package com.netflix.discovery.shared.transport;
 
+import javax.ws.rs.core.HttpHeaders;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Tomasz Bak
@@ -24,7 +28,8 @@ import java.net.URI;
 public class EurekaHttpResponse<T> {
     private final int statusCode;
     private final T entity;
-    private URI location;
+    private final Map<String, String> headers;
+    private final URI location;
 
     public EurekaHttpResponse(int statusCode) {
         this(statusCode, null);
@@ -33,6 +38,26 @@ public class EurekaHttpResponse<T> {
     public EurekaHttpResponse(int statusCode, T entity) {
         this.statusCode = statusCode;
         this.entity = entity;
+        this.headers = null;
+        this.location = null;
+    }
+
+    private EurekaHttpResponse(EurekaHttpResponseBuilder<T> builder) {
+        this.statusCode = builder.statusCode;
+        this.entity = builder.entity;
+        this.headers = builder.headers;
+
+        if (headers != null) {
+            String locationValue = headers.get(HttpHeaders.LOCATION);
+            try {
+                this.location = locationValue == null ? null : new URI(locationValue);
+            } catch (URISyntaxException e) {
+                throw new TransportException("Invalid Location header value in response; cannot complete the request (location="
+                        + locationValue + ')', e);
+            }
+        } else {
+            this.location = null;
+        }
     }
 
     public int getStatusCode() {
@@ -40,7 +65,7 @@ public class EurekaHttpResponse<T> {
     }
 
     public URI getLocation() {
-        throw new IllegalStateException("not implemented yet");
+        return location;
     }
 
     public T getEntity() {
@@ -53,5 +78,37 @@ public class EurekaHttpResponse<T> {
 
     public static <T> EurekaHttpResponse<T> responseWith(int status, T entity) {
         return new EurekaHttpResponse<>(status, entity);
+    }
+
+    public static <T> EurekaHttpResponseBuilder<T> anEurekaHttpResponse(int statusCode) {
+        return new EurekaHttpResponseBuilder<>(statusCode);
+    }
+
+    public static class EurekaHttpResponseBuilder<T> {
+
+        private final int statusCode;
+        private T entity;
+        private Map<String, String> headers;
+
+        private EurekaHttpResponseBuilder(int statusCode) {
+            this.statusCode = statusCode;
+        }
+
+        public EurekaHttpResponseBuilder<T> withEntity(T entity) {
+            this.entity = entity;
+            return this;
+        }
+
+        public EurekaHttpResponseBuilder<T> withHeader(String name, Object value) {
+            if (headers == null) {
+                headers = new HashMap<>();
+            }
+            headers.put(name, value.toString());
+            return this;
+        }
+
+        public EurekaHttpResponse<T> build() {
+            return new EurekaHttpResponse<T>(this);
+        }
     }
 }

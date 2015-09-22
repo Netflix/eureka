@@ -30,14 +30,14 @@ public class ZoneAffinityClusterResolver implements ClusterResolver {
     private final List<EurekaEndpoint> eurekaEndpoints;
 
     public ZoneAffinityClusterResolver(ClusterResolver delegate, String myZone) {
-        List<EurekaEndpoint>[] parts = ResolverUtils.splitByZone(delegate.getClusterServers(), myZone);
+        List<EurekaEndpoint>[] parts = ResolverUtils.splitByZone(delegate.getClusterEndpoints(), myZone);
         List<EurekaEndpoint> myZoneEndpoints = parts[0];
         List<EurekaEndpoint> remainingEndpoints = parts[1];
         this.eurekaEndpoints = randomizeAndMerge(myZoneEndpoints, remainingEndpoints);
     }
 
     @Override
-    public List<EurekaEndpoint> getClusterServers() {
+    public List<EurekaEndpoint> getClusterEndpoints() {
         return eurekaEndpoints;
     }
 
