@@ -64,12 +64,20 @@ public class InstanceInfo {
     public static final int DEFAULT_SECURE_PORT = 7002;
     public static final int DEFAULT_COUNTRY_ID = 1; // US
 
+    private static final String SID_DEFAULT_VAL = "na";
+
     private volatile String appName;
     @Auto
     private volatile String appGroupName;
 
     private volatile String ipAddr;
-    private volatile String sid = "na";
+
+    /**
+     * This is the unique (within the scope of the appname) id of this instance.
+     * Why defaulting to "na"? Unfortunately needed for compatibility in a deployment with a mix
+     * of newer and older clients (older codecs explicitly handle "na").
+     */
+    private volatile String sid = SID_DEFAULT_VAL;
 
     private volatile int port = DEFAULT_PORT;
     private volatile int securePort = DEFAULT_SECURE_PORT;
@@ -130,10 +138,10 @@ public class InstanceInfo {
 
     @JsonCreator
     public InstanceInfo(
+            @JsonProperty("sid") String sid,
             @JsonProperty("app") String appName,
             @JsonProperty("appGroupName") String appGroupName,
             @JsonProperty("ipAddr") String ipAddr,
-            @JsonProperty("sid") String sid,
             @JsonProperty("port") int port,
             @JsonProperty("portEnabled") boolean portEnabled,
             @JsonProperty("securePort") int securePort,
@@ -156,10 +164,10 @@ public class InstanceInfo {
             @JsonProperty("lastDirtyTimestamp") Long lastDirtyTimestamp,
             @JsonProperty("actionType") ActionType actionType,
             @JsonProperty("asgName") String asgName) {
+        this.sid = sid;
         this.appName = StringCache.intern(appName);
         this.appGroupName = StringCache.intern(appGroupName);
         this.ipAddr = ipAddr;
-        this.sid = sid;
         this.port = port;
         this.isUnsecurePortEnabled = portEnabled;
         this.securePort = securePort;
@@ -424,11 +432,9 @@ public class InstanceInfo {
         /**
          * Sets the identity of this application instance.
          *
-         * @param sid
-         *            the sid of the instance.
+         * @param sid the sid of the instance.
          * @return the {@link InstanceInfo} builder.
          */
-        @Deprecated
         public Builder setSID(String sid) {
             result.sid = sid;
             return this;
@@ -837,27 +843,36 @@ public class InstanceInfo {
         return hostName;
     }
 
+    /**
+     * @deprecated the id should not be set at the instance level. This will be removed soon.
+     */
     @Deprecated
     public void setSID(String sid) {
         this.sid = sid;
         setIsDirty();
     }
 
-    @Deprecated
-    @JsonIgnore
+    /**
+     * for serializer. Prefer {@link #getId()} to resolve the id
+     */
+    @JsonProperty("sid")
     public String getSID() {
         return sid;
     }
 
     /**
-     *
      * Returns the unique id of the instance.
+     * (Note) now that id is set at creation time within the instanceProvider, why do the other checks?
+     * This is still necessary for backwards compatibility when upgrading in a deployment with multiple
+     * client versions (some with the change, some without).
      *
      * @return the unique id.
      */
     @JsonIgnore
     public String getId() {
-        if (dataCenterInfo instanceof UniqueIdentifier) {
+        if (sid != null && !sid.isEmpty() && !sid.equals(SID_DEFAULT_VAL)) {
+            return sid;
+        } else if (dataCenterInfo instanceof UniqueIdentifier) {
             return ((UniqueIdentifier) dataCenterInfo).getId();
         } else {
             return hostName;

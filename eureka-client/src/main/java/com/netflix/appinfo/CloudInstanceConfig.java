@@ -90,10 +90,8 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
                 // development and in that scenario, populate instance id
                 // and public hostname with the hostname of the machine
                 Map<String, String> metadataMap = new HashMap<String, String>();
-                metadataMap.put(MetaDataKey.instanceId.getName(),
-                        super.getIpAddress());
-                metadataMap.put(MetaDataKey.publicHostname.getName(),
-                        super.getHostName(false));
+                metadataMap.put(MetaDataKey.instanceId.getName(), super.getIpAddress());
+                metadataMap.put(MetaDataKey.publicHostname.getName(), super.getHostName(false));
                 amazonInfo.setMetadata(metadataMap);
             }
         } else if ((amazonInfo.get(MetaDataKey.publicHostname) == null)
@@ -106,10 +104,6 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
         return info;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see com.netflix.appinfo.AbstractInstanceConfig#getHostName()
-     */
     @Override
     public String getHostName(boolean refresh) {
         if (refresh) {
@@ -118,10 +112,6 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
         return ((AmazonInfo) info).get(MetaDataKey.publicHostname);
     }
 
-    /*
-     * (non-Javadoc)
-     * @see com.netflix.appinfo.AbstractInstanceConfig#getDataCenterInfo()
-     */
     @Override
     public DataCenterInfo getDataCenterInfo() {
         return info;
@@ -133,16 +123,12 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
      */
     public synchronized void refreshAmazonInfo() {
         try {
-            AmazonInfo newInfo = AmazonInfo.Builder.newBuilder()
-                    .autoBuild(namespace);
+            AmazonInfo newInfo = AmazonInfo.Builder.newBuilder().autoBuild(namespace);
             String newHostname = newInfo.get(MetaDataKey.publicHostname);
-            String existingHostname = ((AmazonInfo) info)
-                    .get(MetaDataKey.publicHostname);
-            if (newHostname != null
-                    && !newHostname.equals(existingHostname)) {
+            String existingHostname = ((AmazonInfo) info).get(MetaDataKey.publicHostname);
+            if (newHostname != null && !newHostname.equals(existingHostname)) {
                 // public dns has changed on us, re-sync it
-                logger.warn("The public hostname changed from : "
-                        + existingHostname + " => " + newHostname);
+                logger.warn("The public hostname changed from : {} => {}", existingHostname, newHostname);
                 this.info = newInfo;
             }
         } catch (Throwable t) {
