@@ -184,6 +184,25 @@ public class EurekaJsonAndXmlJacksonCodecTest {
     }
 
     @Test
+    public void testInstanceInfoWithNoMetaEncodeDecodeWithJson() throws Exception {
+        doInstanceInfoWithNoMetaEncodeDecode(new EurekaJsonJacksonCodec().getObjectMapper());
+    }
+
+    @Test
+    public void testInstanceInfoWithNoMetaEncodeDecodeWithXml() throws Exception {
+        doInstanceInfoWithNoMetaEncodeDecode(new EurekaXmlJacksonCodec().getObjectMapper());
+    }
+
+    private void doInstanceInfoWithNoMetaEncodeDecode(ObjectMapper mapper) throws Exception {
+        InstanceInfo noMetaDataInfo = new InstanceInfo.Builder(infoIterator.next()).setMetadata(null).build();
+
+        String encodedString = mapper.writeValueAsString(noMetaDataInfo);
+        InstanceInfo decodedValue = mapper.readValue(encodedString, InstanceInfo.class);
+
+        assertThat(decodedValue.getId(), is(equalTo(noMetaDataInfo.getId())));
+    }
+
+    @Test
     public void testApplicationEncodeDecodeWithJson() throws Exception {
         doApplicationEncodeDecode(new EurekaJsonJacksonCodec().getObjectMapper());
     }
