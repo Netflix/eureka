@@ -39,9 +39,11 @@ class InstanceInfoJsonBeanSerializer extends BeanSerializer {
      * As root mapper is wrapping values, we need a dedicated instance for map serialization.
      */
     private final ObjectMapper stringMapObjectMapper = new ObjectMapper();
+    private final boolean compactMode;
 
-    InstanceInfoJsonBeanSerializer(BeanSerializerBase src) {
+    InstanceInfoJsonBeanSerializer(BeanSerializerBase src, boolean compactMode) {
         super(src);
+        this.compactMode = compactMode;
     }
 
     @Override
@@ -62,11 +64,13 @@ class InstanceInfoJsonBeanSerializer extends BeanSerializer {
         jgen0.writeEndObject();
 
         // Save @class field for backward compatibility. Remove once all clients are migrated to the new codec
-        jgen0.writeFieldName("metadata");
-        if (instanceInfo.getMetadata() == null || instanceInfo.getMetadata().isEmpty()) {
-            serialize(EMPTY_MAP, jgen0, provider);
-        } else {
-            stringMapObjectMapper.writeValue(jgen0, instanceInfo.getMetadata());
+        if (!compactMode) {
+            jgen0.writeFieldName("metadata");
+            if (instanceInfo.getMetadata() == null || instanceInfo.getMetadata().isEmpty()) {
+                stringMapObjectMapper.writeValue(jgen0, EMPTY_MAP);
+            } else {
+                stringMapObjectMapper.writeValue(jgen0, instanceInfo.getMetadata());
+            }
         }
     }
 }

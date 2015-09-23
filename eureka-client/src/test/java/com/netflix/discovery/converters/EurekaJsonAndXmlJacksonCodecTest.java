@@ -2,6 +2,7 @@ package com.netflix.discovery.converters;
 
 import java.util.Iterator;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
@@ -19,6 +20,7 @@ import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -127,21 +129,28 @@ public class EurekaJsonAndXmlJacksonCodecTest {
 
     @Test
     public void testInstanceInfoCompactEncodeDecodeWithJson() throws Exception {
-        doInstanceInfoCompactEncodeDecode(new EurekaJsonJacksonCodec(KeyFormatter.defaultKeyFormatter(), true).getObjectMapper());
+        doInstanceInfoCompactEncodeDecode(new EurekaJsonJacksonCodec(KeyFormatter.defaultKeyFormatter(), true).getObjectMapper(), true);
     }
 
     @Test
     public void testInstanceInfoCompactEncodeDecodeWithXml() throws Exception {
-        doInstanceInfoCompactEncodeDecode(new EurekaXmlJacksonCodec(KeyFormatter.defaultKeyFormatter(), true).getObjectMapper());
+        doInstanceInfoCompactEncodeDecode(new EurekaXmlJacksonCodec(KeyFormatter.defaultKeyFormatter(), true).getObjectMapper(), false);
     }
 
-    private void doInstanceInfoCompactEncodeDecode(ObjectMapper mapper) throws Exception {
+    private void doInstanceInfoCompactEncodeDecode(ObjectMapper mapper, boolean isJson) throws Exception {
         InstanceInfo instanceInfo = infoIterator.next();
 
         String encodedString = mapper.writeValueAsString(instanceInfo);
+
+        if (isJson) {
+            JsonNode metadataNode = new ObjectMapper().readTree(encodedString).get("instance").get("metadata");
+            assertThat(metadataNode, is(nullValue()));
+        }
+
         InstanceInfo decodedValue = mapper.readValue(encodedString, InstanceInfo.class);
 
         assertThat(decodedValue.getId(), is(equalTo(instanceInfo.getId())));
+        assertThat(decodedValue.getMetadata().isEmpty(), is(true));
     }
 
     @Test
@@ -185,21 +194,27 @@ public class EurekaJsonAndXmlJacksonCodecTest {
 
     @Test
     public void testInstanceInfoWithNoMetaEncodeDecodeWithJson() throws Exception {
-        doInstanceInfoWithNoMetaEncodeDecode(new EurekaJsonJacksonCodec().getObjectMapper());
+        doInstanceInfoWithNoMetaEncodeDecode(new EurekaJsonJacksonCodec().getObjectMapper(), true);
     }
 
     @Test
     public void testInstanceInfoWithNoMetaEncodeDecodeWithXml() throws Exception {
-        doInstanceInfoWithNoMetaEncodeDecode(new EurekaXmlJacksonCodec().getObjectMapper());
+        doInstanceInfoWithNoMetaEncodeDecode(new EurekaXmlJacksonCodec().getObjectMapper(), false);
     }
 
-    private void doInstanceInfoWithNoMetaEncodeDecode(ObjectMapper mapper) throws Exception {
+    private void doInstanceInfoWithNoMetaEncodeDecode(ObjectMapper mapper, boolean json) throws Exception {
         InstanceInfo noMetaDataInfo = new InstanceInfo.Builder(infoIterator.next()).setMetadata(null).build();
 
         String encodedString = mapper.writeValueAsString(noMetaDataInfo);
-        InstanceInfo decodedValue = mapper.readValue(encodedString, InstanceInfo.class);
 
+        // Backward compatibility with old codec
+        if (json) {
+            assertThat(encodedString.contains("\"@class\":\"java.util.Collections$EmptyMap\""), is(true));
+        }
+
+        InstanceInfo decodedValue = mapper.readValue(encodedString, InstanceInfo.class);
         assertThat(decodedValue.getId(), is(equalTo(noMetaDataInfo.getId())));
+        assertThat(decodedValue.getMetadata().isEmpty(), is(true));
     }
 
     @Test
