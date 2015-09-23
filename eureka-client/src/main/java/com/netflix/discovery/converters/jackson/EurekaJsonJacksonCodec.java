@@ -21,7 +21,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.KeyFormatter;
+import com.netflix.discovery.converters.jackson.mixin.InstanceInfoJsonMixIn;
 
 /**
  * @author Tomasz Bak
@@ -45,7 +47,7 @@ public class EurekaJsonJacksonCodec extends AbstractEurekaJacksonCodec {
         jsonMapper.configure(SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED, false);
         jsonMapper.configure(DeserializationFeature.UNWRAP_ROOT_VALUE, true);
         jsonMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-
+        jsonMapper.addMixIn(InstanceInfo.class, InstanceInfoJsonMixIn.class);
         if (compact) {
             addMiniConfig(jsonMapper);
         }

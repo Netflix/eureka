@@ -17,8 +17,11 @@
 package com.netflix.discovery.converters.jackson;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.BeanSerializer;
 import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
@@ -29,6 +32,14 @@ import com.netflix.appinfo.InstanceInfo.PortType;
  * @author Tomasz Bak
  */
 class InstanceInfoJsonBeanSerializer extends BeanSerializer {
+
+    private static final Map<String, String> EMPTY_MAP = Collections.singletonMap("@class", "java.util.Collections$EmptyMap");
+
+    /**
+     * As root mapper is wrapping values, we need a dedicated instance for map serialization.
+     */
+    private final ObjectMapper stringMapObjectMapper = new ObjectMapper();
+
     InstanceInfoJsonBeanSerializer(BeanSerializerBase src) {
         super(src);
     }
@@ -49,5 +60,13 @@ class InstanceInfoJsonBeanSerializer extends BeanSerializer {
         jgen0.writeNumberField("$", instanceInfo.getSecurePort());
         jgen0.writeStringField("@enabled", Boolean.toString(instanceInfo.isPortEnabled(PortType.SECURE)));
         jgen0.writeEndObject();
+
+        // Save @class field for backward compatibility. Remove once all clients are migrated to the new codec
+        jgen0.writeFieldName("metadata");
+        if (instanceInfo.getMetadata() == null || instanceInfo.getMetadata().isEmpty()) {
+            serialize(EMPTY_MAP, jgen0, provider);
+        } else {
+            stringMapObjectMapper.writeValue(jgen0, instanceInfo.getMetadata());
+        }
     }
 }
