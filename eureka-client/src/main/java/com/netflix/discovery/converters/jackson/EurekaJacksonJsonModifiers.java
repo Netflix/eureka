@@ -37,7 +37,7 @@ final class EurekaJacksonJsonModifiers {
         };
     }
 
-    public static BeanSerializerModifier createJsonSerializerModifier(final KeyFormatter keyFormatter) {
+    public static BeanSerializerModifier createJsonSerializerModifier(final KeyFormatter keyFormatter, final boolean compactMode) {
         return new BeanSerializerModifier() {
             @Override
             public JsonSerializer<?> modifySerializer(SerializationConfig config,
@@ -46,7 +46,7 @@ final class EurekaJacksonJsonModifiers {
                     return new ApplicationsJsonBeanSerializer((BeanSerializerBase) serializer, keyFormatter);
                 }
                 if (beanDesc.getBeanClass().isAssignableFrom(InstanceInfo.class)) {
-                    return new InstanceInfoJsonBeanSerializer((BeanSerializerBase) serializer);
+                    return new InstanceInfoJsonBeanSerializer((BeanSerializerBase) serializer, compactMode);
                 }
                 return serializer;
             }
