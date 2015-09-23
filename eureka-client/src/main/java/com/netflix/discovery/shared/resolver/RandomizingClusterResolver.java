@@ -37,8 +37,4 @@ public class RandomizingClusterResolver implements ClusterResolver {
     public List<EurekaEndpoint> getClusterEndpoints() {
         return eurekaEndpoints;
     }
-
-    @Override
-    public void shutdown() {
-    }
 }

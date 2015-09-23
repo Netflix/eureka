@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Set;
 
 import com.netflix.discovery.DnsResolver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A cluster resolver implementation that assumes that Eureka cluster configuration is provided in two level,
@@ -72,6 +74,8 @@ import com.netflix.discovery.DnsResolver;
  */
 public class DnsTxtRecordClusterResolver implements ClusterResolver {
 
+    private static final Logger logger = LoggerFactory.getLogger(DnsTxtRecordClusterResolver.class);
+
     private final List<EurekaEndpoint> eurekaEndpoints;
 
     /**
@@ -83,15 +87,14 @@ public class DnsTxtRecordClusterResolver implements ClusterResolver {
      */
     public DnsTxtRecordClusterResolver(String rootClusterDNS, boolean extractZoneFromDNS, int port, boolean isSecure, String relativeUri) {
         this.eurekaEndpoints = resolve(rootClusterDNS, extractZoneFromDNS, port, isSecure, relativeUri);
+        if(logger.isDebugEnabled()) {
+            logger.debug("Resolved {} to {}", rootClusterDNS, eurekaEndpoints);
+        }
     }
 
     @Override
     public List<EurekaEndpoint> getClusterEndpoints() {
         return eurekaEndpoints;
-    }
-
-    @Override
-    public void shutdown() {
     }
 
     private static List<EurekaEndpoint> resolve(String rootClusterDNS, boolean extractZone, int port, boolean isSecure, String relativeUri) {

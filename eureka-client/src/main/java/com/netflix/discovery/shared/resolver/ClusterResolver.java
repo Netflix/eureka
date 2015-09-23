@@ -24,6 +24,4 @@ import java.util.List;
 public interface ClusterResolver {
 
     List<EurekaEndpoint> getClusterEndpoints();
-
-    void shutdown();
 }

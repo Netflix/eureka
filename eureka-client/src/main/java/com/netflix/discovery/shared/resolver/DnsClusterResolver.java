@@ -19,7 +19,8 @@ package com.netflix.discovery.shared.resolver;
 import java.util.Collections;
 import java.util.List;
 
-import com.netflix.discovery.DnsResolver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Resolves cluster addresses from DNS. If the provided name contains only CNAME entry, the cluster server pool
@@ -31,6 +32,8 @@ import com.netflix.discovery.DnsResolver;
  */
 public class DnsClusterResolver implements ClusterResolver {
 
+    private static final Logger logger = LoggerFactory.getLogger(DnsClusterResolver.class);
+
     private final List<EurekaEndpoint> eurekaEndpoints;
 
     /**
@@ -38,21 +41,20 @@ public class DnsClusterResolver implements ClusterResolver {
      * @param port Eureka sever port number
      * @param relativeUri service relative URI that will be appended to server address
      */
-    public DnsClusterResolver(String rootClusterDNS, int port, boolean isSecure, String relativeUri) {
-        List<String> addresses = DnsResolver.resolveARecord(rootClusterDNS);
+    public DnsClusterResolver(DnsService dnsService, String rootClusterDNS, int port, boolean isSecure, String relativeUri) {
+        List<String> addresses = dnsService.resolveARecord(rootClusterDNS);
         if (addresses == null) {
             this.eurekaEndpoints = Collections.singletonList(new EurekaEndpoint(rootClusterDNS, port, isSecure, relativeUri, null));
         } else {
             this.eurekaEndpoints = EurekaEndpoint.createForServerList(addresses, port, isSecure, relativeUri, null);
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug("Resolved {} to {}", rootClusterDNS, eurekaEndpoints);
         }
     }
 
     @Override
     public List<EurekaEndpoint> getClusterEndpoints() {
         return eurekaEndpoints;
-    }
-
-    @Override
-    public void shutdown() {
     }
 }

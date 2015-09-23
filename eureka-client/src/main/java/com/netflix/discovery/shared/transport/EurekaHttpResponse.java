@@ -19,6 +19,7 @@ package com.netflix.discovery.shared.transport;
 import javax.ws.rs.core.HttpHeaders;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,11 +32,7 @@ public class EurekaHttpResponse<T> {
     private final Map<String, String> headers;
     private final URI location;
 
-    public EurekaHttpResponse(int statusCode) {
-        this(statusCode, null);
-    }
-
-    public EurekaHttpResponse(int statusCode, T entity) {
+    protected EurekaHttpResponse(int statusCode, T entity) {
         this.statusCode = statusCode;
         this.entity = entity;
         this.headers = null;
@@ -66,6 +63,10 @@ public class EurekaHttpResponse<T> {
 
     public URI getLocation() {
         return location;
+    }
+
+    public Map<String, String> getHeaders() {
+        return headers == null ? Collections.<String, String>emptyMap() : headers;
     }
 
     public T getEntity() {
@@ -104,6 +105,11 @@ public class EurekaHttpResponse<T> {
                 headers = new HashMap<>();
             }
             headers.put(name, value.toString());
+            return this;
+        }
+
+        public EurekaHttpResponseBuilder<T> withHeaders(Map<String, String> headers) {
+            this.headers = headers;
             return this;
         }
 

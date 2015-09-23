@@ -52,13 +52,9 @@ public class ResolverUtilsTest {
         List<EurekaEndpoint> firstList = SampleCluster.UsEast1a.builder().withServerPool(10).build();
         List<EurekaEndpoint> secondList = ResolverUtils.randomize(firstList);
 
-        StaticClusterResolver firstResolver = new StaticClusterResolver(firstList);
-        StaticClusterResolver secondResolver = new StaticClusterResolver(secondList);
-
-        assertThat(ResolverUtils.identical(firstResolver, secondResolver), is(true));
+        assertThat(ResolverUtils.identical(firstList, secondList), is(true));
 
         secondList.set(0, SampleCluster.UsEast1b.build().get(0));
-        StaticClusterResolver differentResolver = new StaticClusterResolver(secondList);
-        assertThat(ResolverUtils.identical(firstResolver, differentResolver), is(false));
+        assertThat(ResolverUtils.identical(firstList, secondList), is(false));
     }
 }

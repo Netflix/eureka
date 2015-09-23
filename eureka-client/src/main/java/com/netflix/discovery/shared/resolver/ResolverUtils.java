@@ -92,13 +92,6 @@ public final class ResolverUtils {
     }
 
     /**
-     * @return true if both resolvers return the same server lists, possibly in a different order
-     */
-    public static boolean identical(ClusterResolver first, ClusterResolver second) {
-        return identical(first.getClusterEndpoints(), second.getClusterEndpoints());
-    }
-
-    /**
      * @return true if both list are the same, possibly in a different order
      */
     public static boolean identical(List<EurekaEndpoint> firstList, List<EurekaEndpoint> secondList) {

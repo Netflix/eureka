@@ -74,7 +74,6 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
                               ClientConfig clientConfig) {
         try {
             jerseyClientConfig = clientConfig;
-            jerseyClientConfig.getClasses().add(DiscoveryJerseyProvider.class);
             apacheHttpClient = ApacheHttpClient4.create(jerseyClientConfig);
             HttpParams params = apacheHttpClient.getClientHandler().getHttpClient().getParams();
 

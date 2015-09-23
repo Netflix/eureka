@@ -19,12 +19,21 @@ package com.netflix.discovery.shared.resolver;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.servo.annotations.DataSourceType;
+import com.netflix.servo.annotations.Monitor;
+import com.netflix.servo.monitor.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.netflix.discovery.EurekaClientNames.METRIC_RESOLVER_PREFIX;
+
 /**
  * A cluster resolver implementation that periodically creates a new {@link ClusterResolver} instance that
- * swaps the previous value.
+ * swaps the previous value. If the new resolver cannot be created or contains empty server list, the previous
+ * one is used. Failed requests are retried using exponential back-off strategy.
+ * <br/>
+ * It provides more insight in form of additional logging and metrics, as it is supposed to be used as a top
+ * level resolver.
  *
  * @author Tomasz Bak
  */
@@ -43,6 +52,8 @@ public class ReloadingClusterResolver implements ClusterResolver {
     private volatile long lastUpdateTime;
     private volatile long currentReloadIntervalMs;
 
+    private volatile long lastReloadTimestamp = -1;
+
     public ReloadingClusterResolver(final ClusterResolverFactory factory, final long reloadIntervalMs) {
         this.factory = factory;
         this.reloadIntervalMs = reloadIntervalMs;
@@ -51,6 +62,23 @@ public class ReloadingClusterResolver implements ClusterResolver {
 
         this.lastUpdateTime = System.currentTimeMillis();
         this.currentReloadIntervalMs = reloadIntervalMs;
+
+        List<EurekaEndpoint> clusterEndpoints = delegateRef.get().getClusterEndpoints();
+        if (clusterEndpoints.isEmpty()) {
+            logger.error("Empty Eureka server endpoint list during initialization process");
+            throw new ClusterResolverException("Resolved to an empty endpoint list");
+        }
+
+        if (logger.isInfoEnabled()) {
+            logger.info("Initiated with delegate resolver of type {}; next reload in {}[sec]. Loaded endpoints={}",
+                    delegateRef.get().getClass(), currentReloadIntervalMs / 1000, clusterEndpoints);
+        }
+
+        try {
+            Monitors.registerObject(this);
+        } catch (Throwable e) {
+            logger.warn("Cannot register metrics", e);
+        }
     }
 
     @Override
@@ -59,49 +87,48 @@ public class ReloadingClusterResolver implements ClusterResolver {
         if (expiryTime <= System.currentTimeMillis()) {
             try {
                 ClusterResolver newDelegate = reload();
-                if (newDelegate != null) {
-                    shutdownDelegate(delegateRef.getAndSet(newDelegate));
-                }
+
                 this.lastUpdateTime = System.currentTimeMillis();
                 this.currentReloadIntervalMs = reloadIntervalMs;
+
+                if (newDelegate != null) {
+                    delegateRef.set(newDelegate);
+                    lastReloadTimestamp = System.currentTimeMillis();
+                    if (logger.isInfoEnabled()) {
+                        logger.info("Reload endpoints differ from the original list; next reload in {}[sec], Loaded endpoints={}",
+                                currentReloadIntervalMs / 1000, newDelegate.getClusterEndpoints());
+                    }
+                }
             } catch (Exception e) {
-                logger.warn("Cluster resolve error; keeping the current Eureka endpoints", e);
                 this.currentReloadIntervalMs = Math.min(maxReloadIntervalMs, currentReloadIntervalMs * 2);
+                logger.warn("Cluster resolve error; keeping the current Eureka endpoints; next reload in "
+                        + currentReloadIntervalMs / 1000 + "[sec]", e);
             }
         }
         return delegateRef.get().getClusterEndpoints();
     }
 
-    @Override
-    public void shutdown() {
-        shutdownDelegate(delegateRef.get());
-    }
-
     private ClusterResolver reload() {
-        ClusterResolver newDelegate = null;
-        List<EurekaEndpoint> newEndpoints;
-        try {
-            newDelegate = factory.createClusterResolver();
-            newEndpoints = newDelegate.getClusterEndpoints();
-        } catch (Exception e) {
-            shutdownDelegate(newDelegate);
-            throw e;
+        ClusterResolver newDelegate = factory.createClusterResolver();
+        List<EurekaEndpoint> newEndpoints = newDelegate.getClusterEndpoints();
+
+        if (newEndpoints.isEmpty()) {
+            logger.info("Tried to reload but empty endpoint list returned; keeping the current endpoints");
+            return null;
         }
 
         // If no change in the server pool, shutdown the new delegate
         if (ResolverUtils.identical(delegateRef.get().getClusterEndpoints(), newEndpoints)) {
             logger.debug("Loaded cluster server list identical to the current one; no update required");
-            shutdownDelegate(newDelegate);
             return null;
         }
+
         return newDelegate;
     }
 
-    private static void shutdownDelegate(ClusterResolver newDelegate) {
-        try {
-            newDelegate.shutdown();
-        } catch (Throwable e) {
-            logger.info("ClusterResolver shutdown failure", e);
-        }
+    @Monitor(name = METRIC_RESOLVER_PREFIX + "lastReloadTimestamp",
+            description = "How much time has passed from last successful cluster configuration resolve", type = DataSourceType.GAUGE)
+    public long getLastReloadTimestamp() {
+        return lastReloadTimestamp < 0 ? 0 : System.currentTimeMillis() - lastReloadTimestamp;
     }
 }

@@ -35,13 +35,6 @@ public final class TransportUtils {
         return existing;
     }
 
-    public static void replaceClient(AtomicReference<EurekaHttpClient> previousClientRef, EurekaHttpClient newClient) {
-        EurekaHttpClient previous = previousClientRef.getAndSet(newClient);
-        if (previous != newClient) {
-            shutdown(previous);
-        }
-    }
-
     public static void shutdown(EurekaHttpClient eurekaHttpClient) {
         if (eurekaHttpClient != null) {
             eurekaHttpClient.shutdown();

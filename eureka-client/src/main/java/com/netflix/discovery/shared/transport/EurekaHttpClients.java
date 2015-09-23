@@ -19,6 +19,7 @@ package com.netflix.discovery.shared.transport;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.DnsServiceImpl;
+import com.netflix.discovery.shared.transport.decorator.MetricsCollectingEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.RebalancingEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.RedirectingEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient;
@@ -40,18 +41,22 @@ public final class EurekaHttpClients {
      * Standard client supports: registration/query connectivity split, connection re-balancing and retry.
      */
     public static EurekaHttpClient createStandardClient(EurekaClientConfig clientConfig, ClusterResolver clusterResolver) {
-        RetryableEurekaHttpClient registrationClient = new RetryableEurekaHttpClient(
-                clusterResolver,
-                createRebalancingClientFactory(createRedirectingClientFactory(new JerseyEurekaHttpClientFactory(clientConfig, clusterResolver))),
-                NUMBER_OF_RETRIES
+        RebalancingEurekaHttpClient registrationClient = new RebalancingEurekaHttpClient(
+                createRetryableClientFactory(
+                        clusterResolver,
+                        createRedirectingClientFactory(new JerseyEurekaHttpClientFactory(clientConfig, clusterResolver))
+                ),
+                RECONNECT_INTERVAL_MINUTES * 60 * 1000
         );
-        RetryableEurekaHttpClient queryClient = new RetryableEurekaHttpClient(
-                clusterResolver,
-                createRebalancingClientFactory(createRedirectingClientFactory(new JerseyEurekaHttpClientFactory(clientConfig, clusterResolver))),
-                NUMBER_OF_RETRIES
+        RebalancingEurekaHttpClient queryClient = new RebalancingEurekaHttpClient(
+                createRetryableClientFactory(
+                        clusterResolver,
+                        createRedirectingClientFactory(new JerseyEurekaHttpClientFactory(clientConfig, clusterResolver))
+                ),
+                RECONNECT_INTERVAL_MINUTES * 60 * 1000
         );
 
-        return new SplitEurekaHttpClient(registrationClient, queryClient);
+        return new MetricsCollectingEurekaHttpClient(new SplitEurekaHttpClient(registrationClient, queryClient));
     }
 
     private static EurekaHttpClientFactory createRedirectingClientFactory(final EurekaHttpClientFactory delegateFactory) {
@@ -69,11 +74,12 @@ public final class EurekaHttpClients {
         };
     }
 
-    private static EurekaHttpClientFactory createRebalancingClientFactory(final EurekaHttpClientFactory delegateFactory) {
+    private static EurekaHttpClientFactory createRetryableClientFactory(final ClusterResolver clusterResolver,
+                                                                        final EurekaHttpClientFactory delegateFactory) {
         return new EurekaHttpClientFactory() {
             @Override
             public EurekaHttpClient create(String... serviceUrls) {
-                return new RebalancingEurekaHttpClient(delegateFactory, RECONNECT_INTERVAL_MINUTES * 60 * 1000);
+                return new RetryableEurekaHttpClient(clusterResolver, delegateFactory, NUMBER_OF_RETRIES);
             }
 
             @Override

@@ -23,7 +23,7 @@ import java.util.List;
 /**
  * @author Tomasz Bak
  */
-public class EurekaEndpoint {
+public class EurekaEndpoint implements Comparable<EurekaEndpoint> {
 
     private final String hostName;
     private final int port;
@@ -118,6 +118,11 @@ public class EurekaEndpoint {
         result = 31 * result + (relativeUri != null ? relativeUri.hashCode() : 0);
         result = 31 * result + (zone != null ? zone.hashCode() : 0);
         return result;
+    }
+
+    @Override
+    public int compareTo(EurekaEndpoint that) {
+        return serviceUrl.compareTo(that.serviceUrl);
     }
 
     @Override

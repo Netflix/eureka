@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.After;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -35,13 +34,6 @@ public class ReloadingClusterResolverTest {
     private final InjectableFactory factory = new InjectableFactory();
 
     private ReloadingClusterResolver resolver;
-
-    @After
-    public void tearDown() throws Exception {
-        if (resolver != null) {
-            resolver.shutdown();
-        }
-    }
 
     @Test(timeout = 30000)
     public void testDataAreReloadedPeriodically() throws Exception {

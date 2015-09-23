@@ -55,13 +55,13 @@ public class RedirectingEurekaHttpClientTest {
                         .build()
         );
         when(dnsService.resolveIp("another.discovery.test")).thenReturn("192.168.0.1");
-        when(redirectedClient.getApplications()).thenReturn(new EurekaHttpResponse<Applications>(200, new Applications()));
+        when(redirectedClient.getApplications()).thenReturn(EurekaHttpResponse.responseWith(200, new Applications()));
     }
 
     @Test
     public void testNonRedirectedRequestsAreServedByFirstClient() throws Exception {
         when(factory.create(Matchers.<String>anyVararg())).thenReturn(sourceClient);
-        when(sourceClient.getApplications()).thenReturn(new EurekaHttpResponse<Applications>(200, new Applications()));
+        when(sourceClient.getApplications()).thenReturn(EurekaHttpResponse.responseWith(200, new Applications()));
 
         RedirectingEurekaHttpClient httpClient = new RedirectingEurekaHttpClient(SERVICE_URL, factory, dnsService);
 

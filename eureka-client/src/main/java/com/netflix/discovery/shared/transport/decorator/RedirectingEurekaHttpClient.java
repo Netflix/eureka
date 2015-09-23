@@ -95,13 +95,19 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
 
     private <R> EurekaHttpResponse<R> executeOnNewServer(RequestExecutor<R> requestExecutor,
                                                          AtomicReference<EurekaHttpClient> currentHttpClientRef) {
+        URI targetUrl = null;
         for (int followRedirectCount = 0; followRedirectCount < MAX_FOLLOWED_REDIRECTS; followRedirectCount++) {
             EurekaHttpResponse<R> httpResponse = requestExecutor.execute(currentHttpClientRef.get());
             if (httpResponse.getStatusCode() != 302) {
+                if(followRedirectCount == 0) {
+                    logger.info("Pinning to endpoint {}", targetUrl);
+                } else {
+                    logger.info("Pinning to endpoint {}, after {} redirect(s)", targetUrl, followRedirectCount);
+                }
                 return httpResponse;
             }
 
-            URI targetUrl = getRedirectBaseUri(httpResponse.getLocation());
+            targetUrl = getRedirectBaseUri(httpResponse.getLocation());
             if (targetUrl == null) {
                 throw new TransportException("Invalid redirect URL " + httpResponse.getLocation());
             }

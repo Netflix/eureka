@@ -65,37 +65,37 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
     @Override
     public EurekaHttpResponse<Void> register(InstanceInfo info) {
         handledRequests.add(new HandledRequest(RequestType.Register, info));
-        return new EurekaHttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], null);
+        return EurekaHttpResponse.responseWith(networkStatusCodes[callCounter.getAndIncrement()]);
     }
 
     @Override
     public EurekaHttpResponse<Void> cancel(String appName, String id) {
         handledRequests.add(new HandledRequest(RequestType.Cancel, id));
-        return new EurekaHttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], null);
+        return EurekaHttpResponse.responseWith(networkStatusCodes[callCounter.getAndIncrement()]);
     }
 
     @Override
     public EurekaHttpResponse<InstanceInfo> sendHeartBeat(String appName, String id, InstanceInfo info, InstanceStatus overriddenStatus) {
         handledRequests.add(new HandledRequest(RequestType.Heartbeat, instanceInfoFromPeer));
-        return new EurekaHttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], instanceInfoFromPeer);
+        return EurekaHttpResponse.responseWith(networkStatusCodes[callCounter.getAndIncrement()], instanceInfoFromPeer);
     }
 
     @Override
     public EurekaHttpResponse<Void> statusUpdate(String asgName, ASGStatus newStatus) {
         handledRequests.add(new HandledRequest(RequestType.AsgStatusUpdate, newStatus));
-        return new EurekaHttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], null);
+        return EurekaHttpResponse.responseWith(networkStatusCodes[callCounter.getAndIncrement()]);
     }
 
     @Override
     public EurekaHttpResponse<Void> statusUpdate(String appName, String id, InstanceStatus newStatus, InstanceInfo info) {
         handledRequests.add(new HandledRequest(RequestType.StatusUpdate, newStatus));
-        return new EurekaHttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], null);
+        return EurekaHttpResponse.responseWith(networkStatusCodes[callCounter.getAndIncrement()]);
     }
 
     @Override
     public EurekaHttpResponse<Void> deleteStatusOverride(String appName, String id, InstanceInfo info) {
         handledRequests.add(new HandledRequest(RequestType.DeleteStatusOverride, null));
-        return new EurekaHttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], null);
+        return EurekaHttpResponse.responseWith(networkStatusCodes[callCounter.getAndIncrement()]);
     }
 
     @Override
@@ -134,7 +134,7 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
 
         handledRequests.add(new HandledRequest(RequestType.Batch, replicationList));
 
-        return new EurekaHttpResponse<>(networkStatusCodes[callCounter.getAndIncrement()], replicationListResponse);
+        return EurekaHttpResponse.responseWith(networkStatusCodes[callCounter.getAndIncrement()], replicationListResponse);
     }
 
     @Override

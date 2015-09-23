@@ -16,7 +16,11 @@
 
 package com.netflix.discovery.shared.resolver;
 
+import java.util.Arrays;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Statically configured Eureka server pool.
@@ -25,18 +29,23 @@ import java.util.List;
  */
 public class StaticClusterResolver implements ClusterResolver {
 
+    private static final Logger logger = LoggerFactory.getLogger(StaticClusterResolver.class);
+
     private final List<EurekaEndpoint> eurekaEndpoints;
+
+    public StaticClusterResolver(EurekaEndpoint... eurekaEndpoints) {
+        this(Arrays.asList(eurekaEndpoints));
+    }
 
     public StaticClusterResolver(List<EurekaEndpoint> eurekaEndpoints) {
         this.eurekaEndpoints = eurekaEndpoints;
+        if (logger.isDebugEnabled()) {
+            logger.debug("Fixed resolver configuration: {}", eurekaEndpoints);
+        }
     }
 
     @Override
     public List<EurekaEndpoint> getClusterEndpoints() {
         return eurekaEndpoints;
-    }
-
-    @Override
-    public void shutdown() {
     }
 }

@@ -49,7 +49,7 @@ class TestableInstanceReplicationTask extends InstanceReplicationTask {
         if (processingDelayMs > 0) {
             Thread.sleep(processingDelayMs);
         }
-        return new EurekaHttpResponse<>(replyStatusCode);
+        return EurekaHttpResponse.responseWith(replyStatusCode);
     }
 
     public ProcessingState awaitCompletion(long timeout, TimeUnit timeUnit) throws InterruptedException {

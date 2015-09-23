@@ -18,6 +18,9 @@ package com.netflix.discovery.shared.resolver;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * It is a cluster resolver that reorders the server list, such that the first server on the list
  * is in the same zone as the client. The server is chosen randomly from the available pool of server in
@@ -27,6 +30,8 @@ import java.util.List;
  */
 public class ZoneAffinityClusterResolver implements ClusterResolver {
 
+    private static final Logger logger = LoggerFactory.getLogger(ZoneAffinityClusterResolver.class);
+
     private final List<EurekaEndpoint> eurekaEndpoints;
 
     public ZoneAffinityClusterResolver(ClusterResolver delegate, String myZone) {
@@ -34,15 +39,15 @@ public class ZoneAffinityClusterResolver implements ClusterResolver {
         List<EurekaEndpoint> myZoneEndpoints = parts[0];
         List<EurekaEndpoint> remainingEndpoints = parts[1];
         this.eurekaEndpoints = randomizeAndMerge(myZoneEndpoints, remainingEndpoints);
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Local zone={}; resolved to: {}", myZone, eurekaEndpoints);
+        }
     }
 
     @Override
     public List<EurekaEndpoint> getClusterEndpoints() {
         return eurekaEndpoints;
-    }
-
-    @Override
-    public void shutdown() {
     }
 
     private static List<EurekaEndpoint> randomizeAndMerge(List<EurekaEndpoint> myZoneEndpoints, List<EurekaEndpoint> remainingEndpoints) {
