@@ -18,6 +18,7 @@ public interface MiniInstanceInfoMixIn {
         public static final Set<String> ALLOWED_FIELDS;
         static {
             Set<String> fields = new HashSet<>();
+            fields.add("sid");
             fields.add("app");
             fields.add("ipAddr");
             fields.add("vipAddress");
