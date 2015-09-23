@@ -4,6 +4,7 @@ import com.netflix.appinfo.InstanceInfo.Builder;
 import com.netflix.appinfo.InstanceInfo.PortType;
 import com.netflix.config.ConcurrentCompositeConfiguration;
 import com.netflix.config.ConfigurationManager;
+import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -11,6 +12,8 @@ import org.junit.Test;
 import static com.netflix.appinfo.InstanceInfo.Builder.newBuilder;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThat;
 
@@ -101,5 +104,46 @@ public class InstanceInfoTest {
                 .setHealthCheckUrls("/healthcheck", "http://${eureka.hostname}/healthcheck", "https://${eureka.hostname}/healthcheck")
                 .build();
         assertThat(instanceInfo.getHealthCheckUrls().size(), is(equalTo(2)));
+    }
+
+    @Test
+    public void testGetIdWithSIDUsed() {
+        InstanceInfo baseline = InstanceInfoGenerator.takeOne();
+        String dataCenterInfoId = ((UniqueIdentifier) baseline.getDataCenterInfo()).getId();
+        assertThat(baseline.getSID(), is(baseline.getId()));
+        assertThat(dataCenterInfoId, is(baseline.getId()));
+
+        String customSid = "customSid";
+        InstanceInfo instanceInfo = new InstanceInfo.Builder(baseline).setSID(customSid).build();
+        dataCenterInfoId = ((UniqueIdentifier) instanceInfo.getDataCenterInfo()).getId();
+        assertThat(instanceInfo.getSID(), is(instanceInfo.getId()));
+        assertThat(customSid, is(instanceInfo.getId()));
+        assertThat(dataCenterInfoId, is(not(baseline.getId())));
+    }
+
+    // test case for compatiblity
+    @Test
+    public void testGetIdWithSIDNotUsed() {
+        String sidDefaultVal = "na";
+        InstanceInfo baseline = InstanceInfoGenerator.takeOne();
+        InstanceInfo instanceInfo1 = new InstanceInfo.Builder(baseline).setSID(sidDefaultVal).build();
+        String dataCenterInfoId = ((UniqueIdentifier) baseline.getDataCenterInfo()).getId();
+        assertThat(instanceInfo1.getSID(), is(sidDefaultVal));
+        assertThat(instanceInfo1.getSID(), is(not(instanceInfo1.getId())));
+        assertThat(dataCenterInfoId, is(instanceInfo1.getId()));
+
+        // override the sid with ""
+        InstanceInfo instanceInfo2 = new InstanceInfo.Builder(baseline).setSID("").build();
+        dataCenterInfoId = ((UniqueIdentifier) baseline.getDataCenterInfo()).getId();
+        assertThat(instanceInfo2.getSID().isEmpty(), is(true));
+        assertThat(instanceInfo2.getSID(), is(not(instanceInfo2.getId())));
+        assertThat(dataCenterInfoId, is(instanceInfo2.getId()));
+
+        // override the sid with null
+        InstanceInfo instanceInfo3 = new InstanceInfo.Builder(baseline).setSID(null).build();
+        dataCenterInfoId = ((UniqueIdentifier) baseline.getDataCenterInfo()).getId();
+        assertThat(instanceInfo3.getSID(), is(nullValue()));
+        assertThat(instanceInfo3.getSID(), is(not(instanceInfo3.getId())));
+        assertThat(dataCenterInfoId, is(instanceInfo3.getId()));
     }
 }
