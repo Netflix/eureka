@@ -124,7 +124,7 @@ public class InstanceInfoTest {
     // test case for compatiblity
     @Test
     public void testGetIdWithSIDNotUsed() {
-        String sidDefaultVal = "unknown";
+        String sidDefaultVal = "na";
         InstanceInfo baseline = InstanceInfoGenerator.takeOne();
         InstanceInfo instanceInfo1 = new InstanceInfo.Builder(baseline).setSID(sidDefaultVal).build();
         String dataCenterInfoId = ((UniqueIdentifier) baseline.getDataCenterInfo()).getId();
