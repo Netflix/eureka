@@ -13,6 +13,9 @@ import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.eureka.DefaultEurekaServerConfig;
+import com.netflix.eureka.EurekaServerContext;
+import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.RateLimitingFilter;
 import com.netflix.eureka.ServerRequestAuthFilter;
 import org.junit.Assert;
@@ -21,6 +24,9 @@ import org.mortbay.jetty.Request;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.FilterHolder;
 import org.mortbay.jetty.servlet.ServletHandler;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Nitesh Kant
@@ -41,8 +47,12 @@ public class MockRemoteEurekaServer extends ExternalResource {
         this.applicationMap = applicationMap;
         this.applicationDeltaMap = applicationDeltaMap;
         ServletHandler handler = new AppsResourceHandler();
-        handler.addFilterWithMapping(ServerRequestAuthFilter.class, "/*", 1);
-        handler.addFilterWithMapping(RateLimitingFilter.class, "/*", 1);
+        EurekaServerConfig serverConfig = new DefaultEurekaServerConfig();
+        EurekaServerContext serverContext = mock(EurekaServerContext.class);
+        when(serverContext.getServerConfig()).thenReturn(serverConfig);
+
+        handler.addFilterWithMapping(ServerRequestAuthFilter.class, "/*", 1).setFilter(new ServerRequestAuthFilter(serverContext));
+        handler.addFilterWithMapping(RateLimitingFilter.class, "/*", 1).setFilter(new RateLimitingFilter(serverContext));
         server = new Server(port);
         server.addHandler(handler);
         System.out.println(String.format(

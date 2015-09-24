@@ -81,8 +81,7 @@ public enum EurekaMonitors {
 
         DataCenterInfo dcInfo = ApplicationInfoManager.getInstance().getInfo().getDataCenterInfo();
         if (dcInfo.getName() == Name.Amazon) {
-            myZoneCounterName = ((AmazonInfo) dcInfo)
-                    .get(MetaDataKey.availabilityZone) + "." + name;
+            myZoneCounterName = ((AmazonInfo) dcInfo).get(MetaDataKey.availabilityZone) + "." + name;
         } else {
             myZoneCounterName = "dcmaster." + name;
         }
@@ -180,8 +179,7 @@ public enum EurekaMonitors {
      */
     public static void shutdown() {
         for (EurekaMonitors c : EurekaMonitors.values()) {
-            DefaultMonitorRegistry.getInstance().unregister(
-                    Monitors.newObjectMonitor(c.getName(), c));
+            DefaultMonitorRegistry.getInstance().unregister(Monitors.newObjectMonitor(c.getName(), c));
         }
     }
 }

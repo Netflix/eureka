@@ -33,6 +33,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -60,7 +61,7 @@ public class RateLimitingFilterTest {
     @Mock
     private FilterChain filterChain;
 
-    private final RateLimitingFilter filter = new RateLimitingFilter();
+    private RateLimitingFilter filter;
 
     @Before
     public void setUp() throws Exception {
@@ -73,10 +74,12 @@ public class RateLimitingFilterTest {
         ConfigurationManager.getConfigInstance().setProperty("eureka.rateLimiter.fullFetchAverageRate", 1);
         ConfigurationManager.getConfigInstance().setProperty("eureka.rateLimiter.throttleStandardClients", false);
 
-        ApplicationInfoManager.getInstance().initComponent(new MyDataCenterInstanceConfig());
-
+        ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig());
         DefaultEurekaServerConfig config = new DefaultEurekaServerConfig();
-        EurekaServerConfigurationManager.getInstance().setConfiguration(config);
+        EurekaServerContext mockServer = mock(EurekaServerContext.class);
+        when(mockServer.getServerConfig()).thenReturn(config);
+
+        filter = new RateLimitingFilter(mockServer);
     }
 
     @Test

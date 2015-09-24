@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
-import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 
 /**
  * @author Tomasz Bak

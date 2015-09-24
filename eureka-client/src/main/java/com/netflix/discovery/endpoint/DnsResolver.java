@@ -1,4 +1,4 @@
-package com.netflix.discovery;
+package com.netflix.discovery.endpoint;
 
 import javax.annotation.Nullable;
 import javax.naming.NamingEnumeration;
@@ -41,7 +41,7 @@ public final class DnsResolver {
     /**
      * Load up the DNS JNDI context provider.
      */
-    static DirContext getDirContext() {
+    public static DirContext getDirContext() {
         Hashtable<String, String> env = new Hashtable<String, String>();
         env.put(JAVA_NAMING_FACTORY_INITIAL, DNS_NAMING_FACTORY);
         env.put(JAVA_NAMING_PROVIDER_URL, DNS_PROVIDER_URL);

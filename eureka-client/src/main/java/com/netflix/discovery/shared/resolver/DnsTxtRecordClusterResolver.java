@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import com.netflix.discovery.DnsResolver;
+import com.netflix.discovery.endpoint.DnsResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -16,6 +16,7 @@
 
 package com.netflix.eureka;
 
+import javax.inject.Singleton;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -33,6 +34,7 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus;
  * Filter to check whether the eureka server is ready to take requests based on
  * its {@link InstanceStatus}.
  */
+@Singleton
 public class StatusFilter implements Filter {
 
     private static final int SC_TEMPORARY_REDIRECT = 307;
@@ -57,8 +59,7 @@ public class StatusFilter implements Filter {
                          FilterChain chain) throws IOException, ServletException {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
         InstanceStatus status = myInfo.getStatus();
-        if (status != InstanceStatus.UP
-                && response instanceof HttpServletResponse) {
+        if (status != InstanceStatus.UP && response instanceof HttpServletResponse) {
             HttpServletResponse httpRespone = (HttpServletResponse) response;
             httpRespone.sendError(SC_TEMPORARY_REDIRECT,
                     "Current node is currently not ready to serve requests -- current status: "

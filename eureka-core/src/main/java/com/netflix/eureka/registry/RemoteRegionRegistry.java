@@ -13,8 +13,9 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package com.netflix.eureka;
+package com.netflix.eureka.registry;
 
+import javax.inject.Inject;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 import java.net.InetAddress;
@@ -41,6 +42,9 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
 import com.netflix.discovery.shared.LookupService;
+import com.netflix.eureka.EurekaServerConfig;
+import com.netflix.eureka.EurekaServerIdentity;
+import com.netflix.eureka.resources.ServerCodecs;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
 import com.sun.jersey.api.client.ClientResponse;
@@ -61,9 +65,6 @@ import org.slf4j.LoggerFactory;
 public class RemoteRegionRegistry implements LookupService<String> {
     private static final Logger logger = LoggerFactory.getLogger(RemoteRegionRegistry.class);
 
-    private static final EurekaServerConfig EUREKA_SERVER_CONFIG =
-            EurekaServerConfigurationManager.getInstance().getConfiguration();
-
     private final ApacheHttpClient4 discoveryApacheClient;
     private final EurekaJerseyClient discoveryJerseyClient;
     private final com.netflix.servo.monitor.Timer fetchRegistryTimer;
@@ -76,19 +77,24 @@ public class RemoteRegionRegistry implements LookupService<String> {
 
     private final AtomicReference<Applications> applications = new AtomicReference<Applications>();
     private final AtomicReference<Applications> applicationsDelta = new AtomicReference<Applications>();
+    private final EurekaServerConfig serverConfig;
     private volatile boolean readyForServingData;
 
-    public RemoteRegionRegistry(String regionName, URL remoteRegionURL) {
+    @Inject
+    public RemoteRegionRegistry(EurekaServerConfig serverConfig, ServerCodecs serverCodecs, String regionName, URL remoteRegionURL) {
+        this.serverConfig = serverConfig;
         this.remoteRegionURL = remoteRegionURL;
         this.fetchRegistryTimer = Monitors.newTimer(this.remoteRegionURL.toString() + "_FetchRegistry");
 
         EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
                 .withUserAgent("Java-EurekaClient-RemoteRegion")
-                .withConnectionTimeout(EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs())
-                .withReadTimeout(EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs())
-                .withMaxConnectionsPerHost(EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost())
-                .withMaxTotalConnections(EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnections())
-                .withConnectionIdleTimeout(EUREKA_SERVER_CONFIG.getRemoteRegionConnectionIdleTimeoutSeconds());
+                .withEncoderWrapper(serverCodecs.getFullJsonCodec())
+                .withDecoderWrapper(serverCodecs.getFullJsonCodec())
+                .withConnectionTimeout(serverConfig.getRemoteRegionConnectTimeoutMs())
+                .withReadTimeout(serverConfig.getRemoteRegionReadTimeoutMs())
+                .withMaxConnectionsPerHost(serverConfig.getRemoteRegionTotalConnectionsPerHost())
+                .withMaxTotalConnections(serverConfig.getRemoteRegionTotalConnections())
+                .withConnectionIdleTimeout(serverConfig.getRemoteRegionConnectionIdleTimeoutSeconds());
 
         if (remoteRegionURL.getProtocol().equals("http")) {
             clientBuilder.withClientName("Discovery-RemoteRegionClient-" + regionName);
@@ -98,20 +104,17 @@ public class RemoteRegionRegistry implements LookupService<String> {
         } else {
             clientBuilder.withClientName("Discovery-RemoteRegionSecureClient-" + regionName)
                     .withTrustStoreFile(
-                            EUREKA_SERVER_CONFIG.getRemoteRegionTrustStore(),
-                            EUREKA_SERVER_CONFIG.getRemoteRegionTrustStorePassword()
+                            serverConfig.getRemoteRegionTrustStore(),
+                            serverConfig.getRemoteRegionTrustStorePassword()
                     );
         }
         discoveryJerseyClient = clientBuilder.build();
         discoveryApacheClient = discoveryJerseyClient.getClient();
 
-        // should we enable GZip decoding of responses based on Response
-        // Headers?
-        if (EUREKA_SERVER_CONFIG.shouldGZipContentFromRemoteRegion()) {
-            // compressed only if there exists a 'Content-Encoding' header
-            // whose value is "gzip"
-            discoveryApacheClient
-                    .addFilter(new GZIPContentEncodingFilter(false));
+        // should we enable GZip decoding of responses based on Response Headers?
+        if (serverConfig.shouldGZipContentFromRemoteRegion()) {
+            // compressed only if there exists a 'Content-Encoding' header whose value is "gzip"
+            discoveryApacheClient.addFilter(new GZIPContentEncodingFilter(false));
         }
 
         String ip = null;
@@ -154,7 +157,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
         };
 
         ThreadPoolExecutor remoteRegionFetchExecutor = new ThreadPoolExecutor(
-                1, EUREKA_SERVER_CONFIG.getRemoteRegionFetchThreadPoolSize(), 0, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());  // use direct handoff
+                1, serverConfig.getRemoteRegionFetchThreadPoolSize(), 0, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());  // use direct handoff
 
         scheduler = Executors.newScheduledThreadPool(1,
                 new ThreadFactoryBuilder()
@@ -167,12 +170,12 @@ public class RemoteRegionRegistry implements LookupService<String> {
                         "RemoteRegionFetch_" + regionName,
                         scheduler,
                         remoteRegionFetchExecutor,
-                        EUREKA_SERVER_CONFIG.getRemoteRegionRegistryFetchInterval(),
+                        serverConfig.getRemoteRegionRegistryFetchInterval(),
                         TimeUnit.SECONDS,
                         5,  // exponential backoff bound
                         remoteRegionFetchTask
                 ),
-                EUREKA_SERVER_CONFIG.getRemoteRegionRegistryFetchInterval(), TimeUnit.SECONDS);
+                serverConfig.getRemoteRegionRegistryFetchInterval(), TimeUnit.SECONDS);
     }
 
     /**
@@ -194,10 +197,10 @@ public class RemoteRegionRegistry implements LookupService<String> {
         try {
             // If the delta is disabled or if it is the first time, get all
             // applications
-            if (EUREKA_SERVER_CONFIG.shouldDisableDeltaForRemoteRegions()
+            if (serverConfig.shouldDisableDeltaForRemoteRegions()
                     || (getApplications() == null)
                     || (getApplications().getRegisteredApplications().size() == 0)) {
-                logger.info("Disable delta property : {}", EUREKA_SERVER_CONFIG
+                logger.info("Disable delta property : {}", serverConfig
                         .shouldDisableDeltaForRemoteRegions());
                 logger.info("Application is null : {}",
                         (getApplications() == null));

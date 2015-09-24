@@ -19,7 +19,7 @@ package com.netflix.discovery.shared.resolver;
 import javax.annotation.Nullable;
 import java.util.List;
 
-import com.netflix.discovery.DnsResolver;
+import com.netflix.discovery.endpoint.DnsResolver;
 
 /**
  * @author Tomasz Bak

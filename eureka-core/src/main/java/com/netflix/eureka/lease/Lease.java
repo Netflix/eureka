@@ -16,7 +16,7 @@
 
 package com.netflix.eureka.lease;
 
-import com.netflix.eureka.AbstractInstanceRegistry;
+import com.netflix.eureka.registry.AbstractInstanceRegistry;
 
 /**
  * Describes a time-based availability of a {@link T}. Purpose is to avoid

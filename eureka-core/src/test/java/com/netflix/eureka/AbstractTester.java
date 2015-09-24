@@ -17,13 +17,20 @@ import com.netflix.blitz4j.LoggingConfiguration;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryClient;
-import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClient;
+import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Pair;
+import com.netflix.eureka.cluster.PeerEurekaNodes;
 import com.netflix.eureka.mock.MockRemoteEurekaServer;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl;
+import com.netflix.eureka.resources.DefaultServerCodecs;
+import com.netflix.eureka.resources.ServerCodecs;
 import org.junit.After;
 import org.junit.Before;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 
 /**
  * @author Nitesh Kant
@@ -41,13 +48,17 @@ public class AbstractTester {
     public static final String LOCAL_REGION_APP_NAME = "MYLOCAPP";
     public static final String LOCAL_REGION_INSTANCE_1_HOSTNAME = "blahloc";
     public static final String LOCAL_REGION_INSTANCE_2_HOSTNAME = "blahloc2";
+    public static final String REMOTE_ZONE = "us-east-1c";
+
     protected final List<Pair<String, String>> registeredApps = new ArrayList<Pair<String, String>>();
     protected final Map<String, Application> remoteRegionApps = new HashMap<String, Application>();
     protected final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
+
     protected MockRemoteEurekaServer mockRemoteEurekaServer;
-    protected PeerAwareInstanceRegistryImpl registry;
+    protected EurekaServerConfig serverConfig;
+    protected EurekaServerContext serverContext;
     protected EurekaClient client;
-    public static final String REMOTE_ZONE = "us-east-1c";
+    protected PeerAwareInstanceRegistryImpl registry;
 
     @Before
     public void setUp() throws Exception {
@@ -63,8 +74,7 @@ public class AbstractTester {
         ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegionUrlsWithName",
                 REMOTE_REGION_NAME + ";http://localhost:" + mockRemoteEurekaServer.getPort() + MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
 
-        EurekaServerConfig serverConfig = new DefaultEurekaServerConfig();
-        EurekaServerConfigurationManager.getInstance().setConfiguration(serverConfig);
+        serverConfig = spy(new DefaultEurekaServerConfig());
         InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
         builder.setIPAddr("10.10.101.00");
         builder.setHostName("Hosttt");
@@ -78,16 +88,25 @@ public class AbstractTester {
         });
 
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
-                "http://localhost:" + mockRemoteEurekaServer.getPort() +
-                        MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
+                "http://localhost:" + mockRemoteEurekaServer.getPort() + MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
 
-        DefaultEurekaClientConfig config = new DefaultEurekaClientConfig();
+        DefaultEurekaClientConfig clientConfig = new DefaultEurekaClientConfig();
         // setup config in advance, used in initialize converter
         ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), builder.build());
-        DiscoveryManager.getInstance().setEurekaClientConfig(config);
-        client = new DiscoveryClient(applicationInfoManager, config);
-        registry = new TestPeerAwareInstanceRegistry();
-        registry.initRemoteRegionRegistry();
+
+        client = new DiscoveryClient(applicationInfoManager, clientConfig);
+
+        ServerCodecs serverCodecs = new DefaultServerCodecs(serverConfig);
+        registry = new TestPeerAwareInstanceRegistry(serverConfig, clientConfig, serverCodecs, client);
+        serverContext = new DefaultEurekaServerContext(
+                serverConfig,
+                serverCodecs,
+                registry,
+                mock(PeerEurekaNodes.class),
+                applicationInfoManager
+        );
+
+        serverContext.initialize();
     }
 
     protected MockRemoteEurekaServer newMockRemoteServer() {
@@ -100,7 +119,7 @@ public class AbstractTester {
             System.out.println("Canceling application: " + registeredApp.first() + " from local registry.");
             registry.cancel(registeredApp.first(), registeredApp.second(), false);
         }
-        registry.shutdown();
+        serverContext.shutdown();
         mockRemoteEurekaServer.stop();
         remoteRegionApps.clear();
         remoteRegionAppsDelta.clear();
@@ -163,6 +182,13 @@ public class AbstractTester {
     }
 
     private static class TestPeerAwareInstanceRegistry extends PeerAwareInstanceRegistryImpl {
+
+        public TestPeerAwareInstanceRegistry(EurekaServerConfig serverConfig,
+                                             EurekaClientConfig clientConfig,
+                                             ServerCodecs serverCodecs,
+                                             EurekaClient eurekaClient) {
+            super(serverConfig, clientConfig, serverCodecs, eurekaClient);
+        }
 
         @Override
         public boolean isLeaseExpirationEnabled() {

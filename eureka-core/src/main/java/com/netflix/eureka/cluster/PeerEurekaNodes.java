@@ -1,5 +1,7 @@
 package com.netflix.eureka.cluster;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -14,10 +16,11 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.PeerAwareInstanceRegistry;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
+import com.netflix.eureka.resources.ServerCodecs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,21 +29,38 @@ import org.slf4j.LoggerFactory;
  *
  * @author Tomasz Bak
  */
+@Singleton
 public class PeerEurekaNodes {
 
     private static final Logger logger = LoggerFactory.getLogger(PeerEurekaNodes.class);
 
     private final PeerAwareInstanceRegistry registry;
-    private final EurekaServerConfig config;
+    private final EurekaServerConfig serverConfig;
+    private final EurekaClientConfig clientConfig;
+    private final ServerCodecs serverCodecs;
+    private final ApplicationInfoManager applicationInfoManager;
 
     private volatile List<PeerEurekaNode> peerEurekaNodes = Collections.emptyList();
     private volatile Set<String> peerEurekaNodeUrls = Collections.emptySet();
 
     private ScheduledExecutorService taskExecutor;
 
-    public PeerEurekaNodes(PeerAwareInstanceRegistry registry, EurekaServerConfig config) {
+    @Inject
+    public PeerEurekaNodes(
+            PeerAwareInstanceRegistry registry,
+            EurekaServerConfig serverConfig,
+            EurekaClientConfig clientConfig,
+            ServerCodecs serverCodecs,
+            ApplicationInfoManager applicationInfoManager) {
         this.registry = registry;
-        this.config = config;
+        this.serverConfig = serverConfig;
+        this.clientConfig = clientConfig;
+        this.serverCodecs = serverCodecs;
+        this.applicationInfoManager = applicationInfoManager;
+    }
+
+    public List<PeerEurekaNode> getPeerNodesView() {
+        return Collections.unmodifiableList(peerEurekaNodes);
     }
 
     public List<PeerEurekaNode> getPeerEurekaNodes() {
@@ -73,12 +93,15 @@ public class PeerEurekaNodes {
             };
             taskExecutor.scheduleWithFixedDelay(
                     peersUpdateTask,
-                    config.getPeerEurekaNodesUpdateIntervalMs(),
-                    config.getPeerEurekaNodesUpdateIntervalMs(),
+                    serverConfig.getPeerEurekaNodesUpdateIntervalMs(),
+                    serverConfig.getPeerEurekaNodesUpdateIntervalMs(),
                     TimeUnit.MILLISECONDS
             );
         } catch (Exception e) {
             throw new IllegalStateException(e);
+        }
+        for (PeerEurekaNode node : peerEurekaNodes) {
+            logger.info("Replica node URL:  " + node.getServiceUrl());
         }
     }
 
@@ -100,12 +123,11 @@ public class PeerEurekaNodes {
      * @return peer URLs with node's own URL filtered out
      */
     protected List<String> resolvePeerUrls() {
-        InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
-
-        EurekaClientConfig clientConfig = DiscoveryManager.getInstance().getEurekaClientConfig();
+        InstanceInfo myInfo = applicationInfoManager.getInfo();
         String zone = InstanceInfo.getZone(clientConfig.getAvailabilityZones(clientConfig.getRegion()), myInfo);
+        List<String> replicaUrls = EndpointUtils
+                .getDiscoveryServiceUrls(clientConfig, zone, new EndpointUtils.InstanceInfoBasedUrlRandomizer(myInfo));
 
-        List<String> replicaUrls = DiscoveryManager.getInstance().getEurekaClient().getDiscoveryServiceUrls(zone);
         int idx = 0;
         while (idx < replicaUrls.size()) {
             if (isThisMe(replicaUrls.get(idx))) {
@@ -168,9 +190,10 @@ public class PeerEurekaNodes {
     }
 
     protected PeerEurekaNode createPeerEurekaNode(String peerEurekaNodeUrl) {
-        HttpReplicationClient replicationClient = JerseyReplicationClient.createReplicationClient(config, peerEurekaNodeUrl);
         String name = PeerEurekaNode.class.getSimpleName() + ": " + peerEurekaNodeUrl + "apps/: ";
-        return new PeerEurekaNode(registry, name, peerEurekaNodeUrl, replicationClient, config);
+        JerseyReplicationClient replicationClient =
+                JerseyReplicationClient.createReplicationClient(serverConfig, serverCodecs, peerEurekaNodeUrl);
+        return new PeerEurekaNode(registry, name, peerEurekaNodeUrl, replicationClient, serverConfig);
     }
 
     /**
@@ -179,13 +202,12 @@ public class PeerEurekaNodes {
      * identify itself in the list of replica nodes and needs to take itself out
      * of replication traffic.
      *
-     * @param url
-     *            the service url of the replica node that the check is made.
+     * @param url the service url of the replica node that the check is made.
      * @return true, if the url represents the current node which is trying to
      *         replicate, false otherwise.
      */
-    public static boolean isThisMe(String url) {
-        InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
+    public boolean isThisMe(String url) {
+        InstanceInfo myInfo = applicationInfoManager.getInfo();
         try {
             URI uri = new URI(url);
             return (uri.getHost().equals(myInfo.getHostName()));

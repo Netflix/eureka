@@ -13,6 +13,8 @@ import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
+import com.netflix.eureka.resources.DefaultServerCodecs;
+import com.netflix.eureka.resources.ServerCodecs;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,12 +46,14 @@ public class JerseyReplicationClientTest {
     private JerseyReplicationClient replicationClient;
 
     private final EurekaServerConfig config = new DefaultEurekaServerConfig();
-
+    private final ServerCodecs serverCodecs = new DefaultServerCodecs(config);
     private final InstanceInfo instanceInfo = ClusterSampleData.newInstanceInfo(1);
 
     @Before
     public void setUp() throws Exception {
-        replicationClient = JerseyReplicationClient.createReplicationClient(config, "http://localhost:" + serverMockRule.getHttpPort() + "/eureka/v2");
+        replicationClient = JerseyReplicationClient.createReplicationClient(
+                config, serverCodecs, "http://localhost:" + serverMockRule.getHttpPort() + "/eureka/v2"
+        );
     }
 
     @Test

@@ -1,4 +1,4 @@
-<%@ page language="java" import="java.util.*,java.io.*,com.netflix.eureka.*,com.netflix.eureka.util.*" pageEncoding="UTF-8" %>
+<%@ page language="java" import="java.util.*,java.io.*,com.netflix.eureka.*,com.netflix.eureka.registry.*,com.netflix.eureka.util.*" pageEncoding="UTF-8" %>
 <%
     String path = request.getContextPath();
     String basePath = request.getScheme() + "://"
@@ -37,8 +37,10 @@
 	</ul>
     <div id="tabs-1">
       <%
-      PeerAwareInstanceRegistryImpl registery = PeerAwareInstanceRegistryImpl.getInstance();
-      List<Pair<Long, String>> list = registery.getLastNCanceledInstances();
+      EurekaServerContext serverContext = (EurekaServerContext) pageContext.getServletContext()
+              .getAttribute(EurekaServerContext.class.getName());
+      PeerAwareInstanceRegistry registry = serverContext.getRegistry();
+      List<Pair<Long, String>> list = registry.getLastNCanceledInstances();
       out.print("<table id=\'lastNCanceled\' class=\"stripeable\">");
       out.print("<tr><th>Timestamp</th><th>Lease</th></tr>");
       for (Pair<Long, String> entry : list) {
@@ -50,7 +52,7 @@
     </div>
     <div id="tabs-2">
       <%
-      list = registery.getLastNRegisteredInstances();
+      list = registry.getLastNRegisteredInstances();
       out.print("<table id=\'lastNRegistered\' class=\"stripeable\">");
       out.print("<tr><th>Timestamp</th><th>Lease</th></tr>");
       for (Pair<Long, String> entry : list) {

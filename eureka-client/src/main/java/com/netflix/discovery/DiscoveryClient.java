@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimerTask;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -64,6 +63,8 @@ import com.netflix.appinfo.HealthCheckHandler;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.discovery.endpoint.DnsResolver;
+import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
@@ -176,6 +177,7 @@ public class DiscoveryClient implements EurekaClient {
     private final AtomicReference<String> lastQueryRedirect = new AtomicReference<String>();
     private final AtomicReference<String> lastRegisterRedirect = new AtomicReference<String>();
     private final EventBus eventBus;
+    private final EndpointUtils.ServiceUrlRandomizer urlRandomizer;
     private final Provider<BackupRegistry> backupRegistryProvider;
     private final ApacheHttpClient4 discoveryApacheClient;
     private EurekaJerseyClient discoveryJerseyClient;
@@ -319,8 +321,17 @@ public class DiscoveryClient implements EurekaClient {
                             .setDaemon(true)
                             .build());
             clientConfig = config;
-            final String zone = getZone(myInfo);
-            eurekaServiceUrls.set(getDiscoveryServiceUrls(zone));
+            instanceInfo = myInfo;
+            if (myInfo != null) {
+                appPathIdentifier = instanceInfo.getAppName() + "/" + instanceInfo.getId();
+            } else {
+                logger.warn("Setting instanceInfo to a passed in null value");
+            }
+
+            this.urlRandomizer = new EndpointUtils.InstanceInfoBasedUrlRandomizer(instanceInfo);
+            String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
+            final String zone = InstanceInfo.getZone(availZones, myInfo);
+            eurekaServiceUrls.set(timedGetDiscoveryServiceUrls(zone));
             scheduler.scheduleWithFixedDelay(getServiceUrlUpdateTask(zone),
                     clientConfig.getEurekaServiceUrlPollIntervalSeconds(),
                     clientConfig.getEurekaServiceUrlPollIntervalSeconds(), TimeUnit.SECONDS);
@@ -335,14 +346,6 @@ public class DiscoveryClient implements EurekaClient {
                     new SynchronousQueue<Runnable>());  // use direct handoff
 
             fetchRegistryGeneration = new AtomicLong(0);
-
-            instanceInfo = myInfo;
-            if (myInfo != null) {
-                appPathIdentifier = instanceInfo.getAppName() + "/"
-                        + instanceInfo.getId();
-            } else {
-                logger.warn("Setting instanceInfo to a passed in null value");
-            }
 
             clientAccept = EurekaAccept.fromString(clientConfig.getClientDataAccept());
 
@@ -379,7 +382,7 @@ public class DiscoveryClient implements EurekaClient {
             remoteRegionsToFetch = new AtomicReference<String>(clientConfig.fetchRegistryForRemoteRegions());
             AzToRegionMapper azToRegionMapper;
             if (clientConfig.shouldUseDnsForFetchingServiceUrls()) {
-                azToRegionMapper = new DNSBasedAzToRegionMapper();
+                azToRegionMapper = new DNSBasedAzToRegionMapper(clientConfig);
             } else {
                 azToRegionMapper = new PropertyBasedAzToRegionMapper(clientConfig);
             }
@@ -751,51 +754,18 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     /**
+     * @deprecated see replacement in {@link com.netflix.discovery.endpoint.EndpointUtils}
+     *
      * Get the list of all eureka service urls from properties file for the eureka client to talk to.
      *
      * @param instanceZone The zone in which the client resides
      * @param preferSameZone true if we have to prefer the same zone as the client, false otherwise
      * @return The list of all eureka service urls for the eureka client to talk to
      */
+    @Deprecated
     @Override
     public List<String> getServiceUrlsFromConfig(String instanceZone, boolean preferSameZone) {
-        List<String> orderedUrls = new ArrayList<String>();
-        String region = getRegion();
-        String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
-        if (availZones == null || availZones.length == 0) {
-            availZones = new String[1];
-            availZones[0] = "default";
-        }
-        logger.debug("The availability zone for the given region {} are {}",
-                region, Arrays.toString(availZones));
-        int myZoneOffset = getZoneOffset(instanceZone, preferSameZone,
-                availZones);
-
-        List<String> serviceUrls = clientConfig
-                .getEurekaServerServiceUrls(availZones[myZoneOffset]);
-        if (serviceUrls != null) {
-            orderedUrls.addAll(serviceUrls);
-        }
-        int currentOffset = myZoneOffset == (availZones.length - 1) ? 0
-                : (myZoneOffset + 1);
-        while (currentOffset != myZoneOffset) {
-            serviceUrls = clientConfig
-                    .getEurekaServerServiceUrls(availZones[currentOffset]);
-            if (serviceUrls != null) {
-                orderedUrls.addAll(serviceUrls);
-            }
-            if (currentOffset == (availZones.length - 1)) {
-                currentOffset = 0;
-            } else {
-                currentOffset++;
-            }
-        }
-
-        if (orderedUrls.size() < 1) {
-            throw new IllegalArgumentException(
-                    "DiscoveryClient: invalid serviceUrl specified!");
-        }
-        return orderedUrls;
+        return EndpointUtils.getServiceUrlsFromConfig(clientConfig, instanceZone, preferSameZone);
     }
 
     /**
@@ -803,43 +773,7 @@ public class DiscoveryClient implements EurekaClient {
      */
     @Deprecated
     public static List<String> getEurekaServiceUrlsFromConfig(String instanceZone, boolean preferSameZone) {
-        List<String> orderedUrls = new ArrayList<String>();
-        String region = getRegion();
-        String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
-        if (availZones == null || availZones.length == 0) {
-            availZones = new String[1];
-            availZones[0] = "default";
-        }
-        logger.debug("The availability zone for the given region {} are {}",
-                region, Arrays.toString(availZones));
-        int myZoneOffset = getZoneOffset(instanceZone, preferSameZone,
-                availZones);
-
-        List<String> serviceUrls = clientConfig
-                .getEurekaServerServiceUrls(availZones[myZoneOffset]);
-        if (serviceUrls != null) {
-            orderedUrls.addAll(serviceUrls);
-        }
-        int currentOffset = myZoneOffset == (availZones.length - 1) ? 0
-                : (myZoneOffset + 1);
-        while (currentOffset != myZoneOffset) {
-            serviceUrls = clientConfig
-                    .getEurekaServerServiceUrls(availZones[currentOffset]);
-            if (serviceUrls != null) {
-                orderedUrls.addAll(serviceUrls);
-            }
-            if (currentOffset == (availZones.length - 1)) {
-                currentOffset = 0;
-            } else {
-                currentOffset++;
-            }
-        }
-
-        if (orderedUrls.size() < 1) {
-            throw new IllegalArgumentException(
-                    "DiscoveryClient: invalid serviceUrl specified!");
-        }
-        return orderedUrls;
+        return EndpointUtils.getServiceUrlsFromConfig(clientConfig, instanceZone, preferSameZone);
     }
 
     /**
@@ -1551,6 +1485,8 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     /**
+     * @deprecated see replacement in {@link com.netflix.discovery.endpoint.EndpointUtils}
+     *
      * Get the list of all eureka service urls from DNS for the eureka client to
      * talk to. The client picks up the service url from its zone and then fails over to
      * other zones randomly. If there are multiple servers in the same zone, the client once
@@ -1560,100 +1496,31 @@ public class DiscoveryClient implements EurekaClient {
      * @param preferSameZone true if we have to prefer the same zone as the client, false otherwise.
      * @return The list of all eureka service urls for the eureka client to talk to.
      */
+    @Deprecated
     @Override
     public List<String> getServiceUrlsFromDNS(String instanceZone, boolean preferSameZone) {
-        Stopwatch t = GET_SERVICE_URLS_DNS_TIMER.start();
-        String region = getRegion();
-        // Get zone-specific DNS names for the given region so that we can get a
-        // list of available zones
-        Map<String, List<String>> zoneDnsNamesMap = getZoneBasedDiscoveryUrlsFromRegion(region);
-        Set<String> availableZones = zoneDnsNamesMap.keySet();
-        List<String> zones = new ArrayList<String>(availableZones);
-        if (zones.isEmpty()) {
-            throw new RuntimeException("No available zones configured for the instanceZone " + instanceZone);
-        }
-        int zoneIndex = 0;
-        boolean zoneFound = false;
-        for (String zone : zones) {
-            logger.debug(
-                    "Checking if the instance zone {} is the same as the zone from DNS {}",
-                    instanceZone, zone);
-            if (preferSameZone) {
-                if (instanceZone.equalsIgnoreCase(zone)) {
-                    zoneFound = true;
-                }
-            } else {
-                if (!instanceZone.equalsIgnoreCase(zone)) {
-                    zoneFound = true;
-                }
-            }
-            if (zoneFound) {
-                Object[] args = {zones, instanceZone, zoneIndex};
-                logger.debug(
-                        "The zone index from the list {} that matches the instance zone {} is {}",
-                        args);
-                break;
-            }
-            zoneIndex++;
-        }
-        if (zoneIndex >= zones.size()) {
-            logger.warn(
-                    "No match for the zone {} in the list of available zones {}",
-                    instanceZone, Arrays.toString(zones.toArray()));
-        } else {
-            // Rearrange the zones with the instance zone first
-            for (int i = 0; i < zoneIndex; i++) {
-                String zone = zones.remove(0);
-                zones.add(zone);
-            }
-        }
-
-        // Now get the eureka urls for all the zones in the order and return it
-        List<String> serviceUrls = new ArrayList<String>();
-        for (String zone : zones) {
-            for (String zoneCname : zoneDnsNamesMap.get(zone)) {
-                List<String> ec2Urls = new ArrayList<String>(
-                        getEC2DiscoveryUrlsFromZone(zoneCname,
-                                DiscoveryUrlType.CNAME));
-                // Rearrange the list to distribute the load in case of
-                // multiple servers
-                if (ec2Urls.size() > 1) {
-                    this.arrangeListBasedonHostname(ec2Urls);
-                }
-                for (String ec2Url : ec2Urls) {
-                    String serviceUrl = "http://" + ec2Url + ":"
-                            + clientConfig.getEurekaServerPort()
-
-                            + "/" + clientConfig.getEurekaServerURLContext()
-                            + "/";
-                    logger.debug("The EC2 url is {}", serviceUrl);
-                    serviceUrls.add(serviceUrl);
-                }
-            }
-        }
-        // Rearrange the fail over server list to distribute the load
-        String primaryServiceUrl = serviceUrls.remove(0);
-        arrangeListBasedonHostname(serviceUrls);
-        serviceUrls.add(0, primaryServiceUrl);
-
-        logger.debug(
-                "This client will talk to the following serviceUrls in order : {} ",
-                Arrays.toString(serviceUrls.toArray()));
-        t.stop();
-        return serviceUrls;
+        return EndpointUtils.getServiceUrlsFromDNS(clientConfig, instanceZone, preferSameZone, urlRandomizer);
     }
 
+    /**
+     * @deprecated see replacement in {@link com.netflix.discovery.endpoint.EndpointUtils}
+     */
+    @Deprecated
     @Override
     public List<String> getDiscoveryServiceUrls(String zone) {
-        boolean shouldUseDns = clientConfig.shouldUseDnsForFetchingServiceUrls();
-        if (shouldUseDns) {
-            return getServiceUrlsFromDNS(zone, clientConfig.shouldPreferSameZoneEureka());
-        }
-        return getServiceUrlsFromConfig(zone, clientConfig.shouldPreferSameZoneEureka());
+        return EndpointUtils.getDiscoveryServiceUrls(clientConfig, zone, urlRandomizer);
     }
 
-    public enum DiscoveryUrlType {
-        CNAME, A
+    private List<String> timedGetDiscoveryServiceUrls(String zone) {
+        boolean shouldUseDns = clientConfig.shouldUseDnsForFetchingServiceUrls();
+        if (shouldUseDns) {
+            Stopwatch t = GET_SERVICE_URLS_DNS_TIMER.start();
+            List<String> result = EndpointUtils.getServiceUrlsFromDNS(
+                    clientConfig, zone, clientConfig.shouldPreferSameZoneEureka(), urlRandomizer);
+            t.stop();
+            return result;
+        }
+        return EndpointUtils.getServiceUrlsFromConfig(clientConfig, zone, clientConfig.shouldPreferSameZoneEureka());
     }
 
     /**
@@ -1672,10 +1539,13 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     /**
+     * @deprecated see replacement in {@link com.netflix.discovery.endpoint.EndpointUtils}
+     *
      * Get the region that this particular instance is in.
      *
      * @return - The region in which the particular instance belongs to.
      */
+    @Deprecated
     public static String getRegion() {
         String region = clientConfig.getRegion();
         if (region == null) {
@@ -1686,119 +1556,18 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     /**
-     * Get the zone based CNAMES that are bound to a region.
+     * @deprecated see replacement in {@link com.netflix.discovery.endpoint.EndpointUtils}
      *
-     * @param region
-     *            - The region for which the zone names need to be retrieved
-     * @return - The list of CNAMES from which the zone-related information can
-     *         be retrieved
-     */
-    static Map<String, List<String>> getZoneBasedDiscoveryUrlsFromRegion(
-            String region) {
-        String discoveryDnsName = null;
-        try {
-            discoveryDnsName = "txt." + region + "."
-                    + clientConfig.getEurekaServerDNSName();
-
-            logger.debug("The region url to be looked up is {} :",
-                    discoveryDnsName);
-            Set<String> zoneCnamesForRegion = new TreeSet<String>(
-                    DnsResolver.getCNamesFromTxtRecord(discoveryDnsName));
-            Map<String, List<String>> zoneCnameMapForRegion = new TreeMap<String, List<String>>();
-            for (String zoneCname : zoneCnamesForRegion) {
-                String zone = null;
-                if (isEC2Url(zoneCname)) {
-                    throw new RuntimeException(
-                            "Cannot find the right DNS entry for "
-                                    + discoveryDnsName
-                                    + ". "
-                                    + "Expected mapping of the format <aws_zone>.<domain_name>");
-                } else {
-                    String[] cnameTokens = zoneCname.split("\\.");
-                    zone = cnameTokens[0];
-                    logger.debug("The zoneName mapped to region {} is {}",
-                            region, zone);
-                }
-                List<String> zoneCnamesSet = zoneCnameMapForRegion.get(zone);
-                if (zoneCnamesSet == null) {
-                    zoneCnamesSet = new ArrayList<String>();
-                    zoneCnameMapForRegion.put(zone, zoneCnamesSet);
-                }
-                zoneCnamesSet.add(zoneCname);
-            }
-            return zoneCnameMapForRegion;
-        } catch (Throwable e) {
-            throw new RuntimeException("Cannot get cnames bound to the region:"
-                    + discoveryDnsName, e);
-        }
-    }
-
-    private static boolean isEC2Url(String zoneCname) {
-        return zoneCname.startsWith("ec2");
-    }
-
-    /**
      * Get the list of EC2 URLs given the zone name.
      *
-     * @param dnsName
-     *            - The dns name of the zone-specific CNAME
-     * @param type
-     *            - CNAME or EIP that needs to be retrieved
-     * @return - The list of EC2 URLs associated with the dns name
+     * @param dnsName The dns name of the zone-specific CNAME
+     * @param type CNAME or EIP that needs to be retrieved
+     * @return The list of EC2 URLs associated with the dns name
      */
+    @Deprecated
     public static Set<String> getEC2DiscoveryUrlsFromZone(String dnsName,
-                                                          DiscoveryUrlType type) {
-        Set<String> eipsForZone = null;
-        try {
-            dnsName = "txt." + dnsName;
-            logger.debug("The zone url to be looked up is {} :", dnsName);
-            Set<String> ec2UrlsForZone = DnsResolver.getCNamesFromTxtRecord(dnsName);
-            for (String ec2Url : ec2UrlsForZone) {
-                logger.debug("The eureka url for the dns name {} is {}",
-                        dnsName, ec2Url);
-                ec2UrlsForZone.add(ec2Url);
-            }
-            if (DiscoveryUrlType.CNAME.equals(type)) {
-                return ec2UrlsForZone;
-            }
-            eipsForZone = new TreeSet<String>();
-            for (String cname : ec2UrlsForZone) {
-                String[] tokens = cname.split("\\.");
-                String ec2HostName = tokens[0];
-                String[] ips = ec2HostName.split("-");
-                StringBuffer eipBuffer = new StringBuffer();
-                for (int ipCtr = 1; ipCtr < 5; ipCtr++) {
-                    eipBuffer.append(ips[ipCtr]);
-                    if (ipCtr < 4) {
-                        eipBuffer.append(".");
-                    }
-                }
-                eipsForZone.add(eipBuffer.toString());
-            }
-            logger.debug("The EIPS for {} is {} :", dnsName, eipsForZone);
-        } catch (Throwable e) {
-            throw new RuntimeException("Cannot get cnames bound to the region:"
-                    + dnsName, e);
-        }
-        return eipsForZone;
-    }
-
-    /**
-     * Gets the zone to pick up for this instance.
-     *
-     */
-    private static int getZoneOffset(String myZone, boolean preferSameZone,
-                                     String[] availZones) {
-        for (int i = 0; i < availZones.length; i++) {
-            if (myZone != null
-                    && (availZones[i].equalsIgnoreCase(myZone.trim()) == preferSameZone)) {
-                return i;
-            }
-        }
-        logger.warn(
-                "DISCOVERY: Could not pick a zone based on preferred zone settings. My zone - {}, preferSameZone- {}. "
-                        + "Defaulting to " + availZones[0], myZone, preferSameZone);
-        return 0;
+                                                          EndpointUtils.DiscoveryUrlType type) {
+        return EndpointUtils.getEC2DiscoveryUrlsFromZone(dnsName, type);
     }
 
     /**
@@ -2030,7 +1799,7 @@ public class DiscoveryClient implements EurekaClient {
             @Override
             public void run() {
                 try {
-                    List<String> serviceUrlList = getDiscoveryServiceUrls(zone);
+                    List<String> serviceUrlList = timedGetDiscoveryServiceUrls(zone);
                     if (serviceUrlList.isEmpty()) {
                         logger.warn("The service url list is empty");
                         return;
@@ -2086,28 +1855,6 @@ public class DiscoveryClient implements EurekaClient {
     private boolean isFetchingRemoteRegionRegistries() {
         return null != remoteRegionsToFetch.get();
     }
-
-    private void arrangeListBasedonHostname(List<String> list) {
-        int listSize = 0;
-        if (list != null) {
-            listSize = list.size();
-        }
-        if ((this.instanceInfo == null) || (listSize == 0)) {
-            return;
-        }
-        // Find the hashcode of the instance hostname and use it to find an entry
-        // and then arrange the rest of the entries after this entry.
-        int instanceHashcode = this.instanceInfo.getHostName().hashCode();
-        if (instanceHashcode < 0) {
-            instanceHashcode = instanceHashcode * -1;
-        }
-        int backupInstance = instanceHashcode % listSize;
-        for (int i = 0; i < backupInstance; i++) {
-            String zone = list.remove(0);
-            list.add(zone);
-        }
-    }
-
 
     /**
      * Invoked when the remote status of this client has changed.

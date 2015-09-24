@@ -1,4 +1,4 @@
-package com.netflix.eureka;
+package com.netflix.eureka.registry;
 
 import java.util.List;
 
@@ -7,6 +7,7 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.Pair;
+import com.netflix.eureka.AbstractTester;
 import org.junit.Assert;
 import org.junit.Test;
 

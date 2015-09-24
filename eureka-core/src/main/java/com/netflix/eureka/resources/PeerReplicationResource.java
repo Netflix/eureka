@@ -16,6 +16,7 @@
 
 package com.netflix.eureka.resources;
 
+import javax.inject.Inject;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -23,11 +24,15 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.eureka.EurekaServerContext;
+import com.netflix.eureka.EurekaServerConfig;
+import com.netflix.eureka.EurekaServerContextHolder;
 import com.netflix.eureka.cluster.protocol.ReplicationInstance;
 import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse.Builder;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +49,19 @@ public class PeerReplicationResource {
     private static final Logger logger = LoggerFactory.getLogger(PeerReplicationResource.class);
 
     private static final String REPLICATION = "true";
+
+    private final EurekaServerConfig serverConfig;
+    private final PeerAwareInstanceRegistry registry;
+
+    @Inject
+    PeerReplicationResource(EurekaServerContext server) {
+        this.serverConfig = server.getServerConfig();
+        this.registry = server.getRegistry();
+    }
+
+    public PeerReplicationResource() {
+        this(EurekaServerContextHolder.getInstance().getServerContext());
+    }
 
     /**
      * Process batched replication events from peer eureka nodes.
@@ -108,12 +126,12 @@ public class PeerReplicationResource {
     }
 
     /* Visible for testing */ ApplicationResource createApplicationResource(ReplicationInstance instanceInfo) {
-        return new ApplicationResource(instanceInfo.getAppName());
+        return new ApplicationResource(instanceInfo.getAppName(), serverConfig, registry);
     }
 
     /* Visible for testing */ InstanceResource createInstanceResource(ReplicationInstance instanceInfo,
                                                                       ApplicationResource applicationResource) {
-        return new InstanceResource(applicationResource, instanceInfo.getId());
+        return new InstanceResource(applicationResource, instanceInfo.getId(), serverConfig, registry);
     }
 
     private static Builder handleRegister(ReplicationInstance instanceInfo, ApplicationResource applicationResource) {

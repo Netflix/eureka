@@ -279,7 +279,7 @@ public interface EurekaServerConfig {
     long getResponseCacheUpdateIntervalMs();
 
     /**
-     * The {@link com.netflix.eureka.resources.ResponseCache} currently uses a two level caching
+     * The {@link com.netflix.eureka.registry.ResponseCache} currently uses a two level caching
      * strategy to responses. A readWrite cache with an expiration policy, and a readonly cache
      * that caches without expiry.
      *
@@ -350,6 +350,14 @@ public interface EurekaServerConfig {
      * @return the number of retries
      */
     int getRegistrySyncRetries();
+
+    /**
+     * Get the wait/sleep time between each retry sync attempts, if the prev retry failed and there are
+     * more retries to attempt.
+     *
+     * @return the wait time in ms between each sync retries
+     */
+    long getRegistrySyncRetryWaitMs();
 
     /**
      * Get the maximum number of replication events that can be allowed to back

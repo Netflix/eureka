@@ -48,22 +48,18 @@ import org.slf4j.LoggerFactory;
  * @author Karthik Ranganathan
  *
  */
-public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig
-        implements EurekaInstanceConfig {
+public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig implements EurekaInstanceConfig {
     private static final String TEST = "test";
     private static final String ARCHAIUS_DEPLOYMENT_ENVIRONMENT = "archaius.deployment.environment";
     private static final String EUREKA_ENVIRONMENT = "eureka.environment";
     private static final String APP_GROUP_ENV_VAR_NAME = "NETFLIX_APP_GROUP";
-    private static final Logger logger = LoggerFactory
-            .getLogger(PropertiesInstanceConfig.class);
+    private static final Logger logger = LoggerFactory.getLogger(PropertiesInstanceConfig.class);
     protected String namespace = "eureka.";
     private static final DynamicStringProperty EUREKA_PROPS_FILE = DynamicPropertyFactory
-            .getInstance().getStringProperty("eureka.client.props",
-                    "eureka-client");
+            .getInstance().getStringProperty("eureka.client.props", "eureka-client");
     private static final DynamicPropertyFactory INSTANCE = com.netflix.config.DynamicPropertyFactory
             .getInstance();
     private static final String UNKNOWN_APPLICATION = "unknown";
-
 
     private static final String DEFAULT_STATUSPAGE_URLPATH = "/Status";
     private static final String DEFAULT_HOMEPAGE_URLPATH = "/";
@@ -72,6 +68,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig
     private String propSecurePort = namespace + "securePort";
     private String propSecurePortEnabled = propSecurePort + ".enabled";
     private String propNonSecurePort;
+    private String idPropName;
     private String propName;
     private String propPortEnabled;
     private String propLeaseRenewalIntervalInSeconds;
@@ -231,16 +228,11 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig
     @Override
     public Map<String, String> getMetadataMap() {
         Map<String, String> metadataMap = new LinkedHashMap<String, String>();
-        Configuration config = (Configuration) INSTANCE
-                .getBackingConfigurationSource();
+        Configuration config = (Configuration) INSTANCE.getBackingConfigurationSource();
         String subsetPrefix = propMetadataNamespace.charAt(propMetadataNamespace.length() - 1) == '.'
                 ? propMetadataNamespace.substring(0, propMetadataNamespace.length() - 1)
                 : propMetadataNamespace;
-        for (Iterator<String> iter = config.subset(subsetPrefix)
-                .getKeys();
-
-             iter.hasNext(); ) {
-
+        for (Iterator<String> iter = config.subset(subsetPrefix).getKeys(); iter.hasNext(); ) {
             String key = iter.next();
             String value = config.getString(subsetPrefix + "." + key);
             metadataMap.put(key, value);
@@ -248,11 +240,12 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig
         return metadataMap;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see com.netflix.appinfo.AbstractInstanceConfig#getAppname()
-     */
+    @Override
+    public String getSID() {
+        String result = INSTANCE.getStringProperty(idPropName, null).get();
+        return result == null ? null : result.trim();
+    }
+
     @Override
     public String getAppname() {
         return INSTANCE.getStringProperty(propName, UNKNOWN_APPLICATION).get().trim();
@@ -263,11 +256,6 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig
         return INSTANCE.getStringProperty(propAppGroupName, appGrpNameFromEnv).get().trim();
     }
 
-    /*
-         * (non-Javadoc)
-         *
-         * @see com.netflix.appinfo.AbstractInstanceConfig#getIpAddress()
-         */
     public String getIpAddress() {
         return super.getIpAddress();
     }
@@ -328,6 +316,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig
         propSecurePortEnabled = propSecurePort + ".enabled";
         propNonSecurePort = namespace + "port";
 
+        idPropName = namespace + "sid";
         propName = namespace + "name";
         propPortEnabled = propNonSecurePort + ".enabled";
         propLeaseRenewalIntervalInSeconds = namespace + "lease.renewalInterval";
@@ -337,8 +326,8 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig
         propMetadataNamespace = namespace + "metadata.";
         propASGName = namespace + "asgName";
         propAppGroupName = namespace + "appGroup";
-        appGrpNameFromEnv = ConfigurationManager.getConfigInstance().getString(APP_GROUP_ENV_VAR_NAME,
-                UNKNOWN_APPLICATION);
+        appGrpNameFromEnv = ConfigurationManager.getConfigInstance()
+                .getString(APP_GROUP_ENV_VAR_NAME, UNKNOWN_APPLICATION);
 
         String env = ConfigurationManager.getConfigInstance().getString(EUREKA_ENVIRONMENT, TEST);
         ConfigurationManager.getConfigInstance().setProperty(ARCHAIUS_DEPLOYMENT_ENVIRONMENT, env);
