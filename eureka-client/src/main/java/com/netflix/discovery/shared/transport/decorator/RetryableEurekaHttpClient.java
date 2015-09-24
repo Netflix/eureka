@@ -40,6 +40,9 @@ import org.slf4j.LoggerFactory;
  * All the servers to which communication failed are put on the quarantine list. First successful execution
  * clears this list, which makes those server eligible for serving future requests.
  * The list is also cleared once all available servers are exhausted.
+ * <h3>5xx</h3>
+ * If 5xx status code is returned, {@link ServerStatusEvaluator} predicate evaluates if the retries should be
+ * retried on another server, or the response with this status code returned to the client.
  *
  * @author Tomasz Bak
  */
@@ -49,6 +52,7 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
 
     private final ClusterResolver clusterResolver;
     private final EurekaHttpClientFactory clientFactory;
+    private final ServerStatusEvaluator serverStatusEvaluator;
     private final int numberOfRetries;
 
     private final AtomicReference<EurekaHttpClient> delegate = new AtomicReference<>();
@@ -57,9 +61,11 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
 
     public RetryableEurekaHttpClient(ClusterResolver clusterResolver,
                                      EurekaHttpClientFactory clientFactory,
+                                     ServerStatusEvaluator serverStatusEvaluator,
                                      int numberOfRetries) {
         this.clusterResolver = clusterResolver;
         this.clientFactory = clientFactory;
+        this.serverStatusEvaluator = serverStatusEvaluator;
         this.numberOfRetries = numberOfRetries;
     }
 
@@ -92,14 +98,19 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
 
             try {
                 EurekaHttpResponse<R> response = requestExecutor.execute(currentHttpClient);
-                delegate.set(currentHttpClient);
-                return response;
-            } catch (Exception e) {
-                delegate.compareAndSet(currentHttpClient, null);
-                if (currentEndpoint != null) {
-                    quarantineSet.add(currentEndpoint);
+                if (response.getStatusCode() < 500 || !serverStatusEvaluator.abandon(response.getStatusCode())) {
+                    delegate.set(currentHttpClient);
+                    return response;
                 }
+                logger.warn("Request execution failure with status code {}; retrying on another server if available", response.getStatusCode());
+            } catch (Exception e) {
                 logger.warn("Request execution failure", e);
+            }
+
+            // Connection error or 5xx from the server that must be retried on another server
+            delegate.compareAndSet(currentHttpClient, null);
+            if (currentEndpoint != null) {
+                quarantineSet.add(currentEndpoint);
             }
         }
         throw new TransportException("Retry limit reached; giving up on completing the request");

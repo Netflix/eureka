@@ -23,6 +23,8 @@ import com.netflix.discovery.shared.transport.decorator.MetricsCollectingEurekaH
 import com.netflix.discovery.shared.transport.decorator.RebalancingEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.RedirectingEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient;
+import com.netflix.discovery.shared.transport.decorator.ServerStatusEvaluator;
+import com.netflix.discovery.shared.transport.decorator.ServerStatusEvaluators;
 import com.netflix.discovery.shared.transport.decorator.SplitEurekaHttpClient;
 import com.netflix.discovery.shared.transport.jersey.JerseyEurekaHttpClientFactory;
 
@@ -44,15 +46,15 @@ public final class EurekaHttpClients {
         RebalancingEurekaHttpClient registrationClient = new RebalancingEurekaHttpClient(
                 createRetryableClientFactory(
                         clusterResolver,
-                        createRedirectingClientFactory(new JerseyEurekaHttpClientFactory(clientConfig, clusterResolver))
-                ),
+                        createRedirectingClientFactory(new JerseyEurekaHttpClientFactory(clientConfig, clusterResolver)),
+                        ServerStatusEvaluators.alwaysAbandon()),
                 RECONNECT_INTERVAL_MINUTES * 60 * 1000
         );
         RebalancingEurekaHttpClient queryClient = new RebalancingEurekaHttpClient(
                 createRetryableClientFactory(
                         clusterResolver,
-                        createRedirectingClientFactory(new JerseyEurekaHttpClientFactory(clientConfig, clusterResolver))
-                ),
+                        createRedirectingClientFactory(new JerseyEurekaHttpClientFactory(clientConfig, clusterResolver)),
+                        ServerStatusEvaluators.neverAbandon()),
                 RECONNECT_INTERVAL_MINUTES * 60 * 1000
         );
 
@@ -75,11 +77,12 @@ public final class EurekaHttpClients {
     }
 
     private static EurekaHttpClientFactory createRetryableClientFactory(final ClusterResolver clusterResolver,
-                                                                        final EurekaHttpClientFactory delegateFactory) {
+                                                                        final EurekaHttpClientFactory delegateFactory,
+                                                                        final ServerStatusEvaluator serverStatusEvaluator) {
         return new EurekaHttpClientFactory() {
             @Override
             public EurekaHttpClient create(String... serviceUrls) {
-                return new RetryableEurekaHttpClient(clusterResolver, delegateFactory, NUMBER_OF_RETRIES);
+                return new RetryableEurekaHttpClient(clusterResolver, delegateFactory, serverStatusEvaluator, NUMBER_OF_RETRIES);
             }
 
             @Override
