@@ -91,7 +91,10 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter, MessageBodyRe
 
     @Override
     public boolean isReadable(Class serializableClass, Type type, Annotation[] annotations, MediaType mediaType) {
-        return checkForAnnotation(serializableClass);
+        if ("application".equals(mediaType.getType()) && ("xml".equals(mediaType.getSubtype()) || "json".equals(mediaType.getSubtype()))) {
+            return checkForAnnotation(serializableClass);
+        }
+        return false;
     }
 
     @Override
