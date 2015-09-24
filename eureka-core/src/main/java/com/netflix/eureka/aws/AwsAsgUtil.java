@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package com.netflix.eureka.util;
+package com.netflix.eureka.aws;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -42,7 +42,8 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
-import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
+import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.eureka.registry.InstanceRegistry;
 import com.netflix.appinfo.DataCenterInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,14 +63,15 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.EurekaServerConfigurationManager;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * A utility class for querying and updating information about amazon
@@ -78,14 +80,11 @@ import com.netflix.servo.monitor.Stopwatch;
  * @author Karthik Ranganathan
  *
  */
-
+@Singleton
 public class AwsAsgUtil {
     private static final Logger logger = LoggerFactory.getLogger(AwsAsgUtil.class);
 
     private static final String PROP_ADD_TO_LOAD_BALANCER = "AddToLoadBalancer";
-    private static final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
-            .getInstance().getConfiguration();
-    private static final AmazonAutoScaling client = getAmazonAutoScalingClient();
 
     private static final String accountId = getAccountId();
 
@@ -105,48 +104,52 @@ public class AwsAsgUtil {
     private ListeningExecutorService listeningCacheReloadExecutor = MoreExecutors.listeningDecorator(cacheReloadExecutor);
 
     // Cache for the AWS ASG information
-    private final LoadingCache<CacheKey, Boolean> asgCache = CacheBuilder
-            .newBuilder().initialCapacity(500)
-            .expireAfterAccess(eurekaConfig.getASGCacheExpiryTimeoutMs(), TimeUnit.MILLISECONDS)
-            .build(new CacheLoader<CacheKey, Boolean>() {
-                @Override
-                public Boolean load(CacheKey key) throws Exception {
-                    return isASGEnabledinAWS(key.asgAccountId, key.asgName);
-                }
-                @Override
-                public ListenableFuture<Boolean> reload(final CacheKey key, Boolean oldValue) throws Exception {
-                    return listeningCacheReloadExecutor.submit(new Callable<Boolean>() {
-                        @Override
-                        public Boolean call() throws Exception {
-                            return load(key);
-                        }
-                    });
-                }
-            });
-
     private final Timer timer = new Timer("Eureka-ASGCacheRefresh", true);
     private final com.netflix.servo.monitor.Timer loadASGInfoTimer = Monitors.newTimer("Eureka-loadASGInfo");
 
-    private static final AwsAsgUtil awsAsgUtil = new AwsAsgUtil();
+    private final EurekaServerConfig serverConfig;
+    private final EurekaClientConfig clientConfig;
+    private final InstanceRegistry registry;
+    private final LoadingCache<CacheKey, Boolean> asgCache;
+    private final AmazonAutoScaling awsClient;
 
-    private AwsAsgUtil() {
-        String region = DiscoveryManager.getInstance().getEurekaClientConfig().getRegion();
-        client.setEndpoint("autoscaling." + region + ".amazonaws.com");
-        timer.schedule(getASGUpdateTask(),
-                eurekaConfig.getASGUpdateIntervalMs(),
-                eurekaConfig.getASGUpdateIntervalMs());
+    @Inject
+    public AwsAsgUtil(EurekaServerConfig serverConfig,
+                      EurekaClientConfig clientConfig,
+                      InstanceRegistry registry) {
+        this.serverConfig = serverConfig;
+        this.clientConfig = clientConfig;
+        this.registry = registry;
+        this.asgCache = CacheBuilder
+                .newBuilder().initialCapacity(500)
+                .expireAfterAccess(serverConfig.getASGCacheExpiryTimeoutMs(), TimeUnit.MILLISECONDS)
+                .build(new CacheLoader<CacheKey, Boolean>() {
+                    @Override
+                    public Boolean load(CacheKey key) throws Exception {
+                        return isASGEnabledinAWS(key.asgAccountId, key.asgName);
+                    }
+                    @Override
+                    public ListenableFuture<Boolean> reload(final CacheKey key, Boolean oldValue) throws Exception {
+                        return listeningCacheReloadExecutor.submit(new Callable<Boolean>() {
+                            @Override
+                            public Boolean call() throws Exception {
+                                return load(key);
+                            }
+                        });
+                    }
+                });
+
+        this.awsClient = getAmazonAutoScalingClient();
+        this.awsClient.setEndpoint("autoscaling." + clientConfig.getRegion() + ".amazonaws.com");
+        this.timer.schedule(getASGUpdateTask(),
+                serverConfig.getASGUpdateIntervalMs(),
+                serverConfig.getASGUpdateIntervalMs());
 
         try {
-
             Monitors.registerObject(this);
-
         } catch (Throwable e) {
             logger.warn("Cannot register the JMX monitor :", e);
         }
-    }
-
-    public static AwsAsgUtil getInstance() {
-        return awsAsgUtil;
     }
 
     /**
@@ -235,7 +238,7 @@ public class AwsAsgUtil {
         // You can pass one name or a list of names in the request
         DescribeAutoScalingGroupsRequest request = new DescribeAutoScalingGroupsRequest()
                 .withAutoScalingGroupNames(asgName);
-        DescribeAutoScalingGroupsResult result = client
+        DescribeAutoScalingGroupsResult result = awsClient
                 .describeAutoScalingGroups(request);
         List<AutoScalingGroup> asgs = result.getAutoScalingGroups();
         if (asgs.isEmpty()) {
@@ -247,14 +250,12 @@ public class AwsAsgUtil {
 
     private Credentials initializeStsSession(String asgAccount) {
         AWSSecurityTokenService sts = new AWSSecurityTokenServiceClient(new InstanceProfileCredentialsProvider());
-        String region = DiscoveryManager.getInstance().getEurekaClientConfig().getRegion();
+        String region = clientConfig.getRegion();
         if (!region.equals("us-east-1")) {
             sts.setEndpoint("sts." + region + ".amazonaws.com");
         }
 
-        String roleName = EurekaServerConfigurationManager.getInstance().getConfiguration().
-                getListAutoScalingGroupsRoleName();
-
+        String roleName = serverConfig.getListAutoScalingGroupsRoleName();
         String roleArn = "arn:aws:iam::" + asgAccount + ":role/" + roleName;
 
         AssumeRoleResult assumeRoleResult = sts.assumeRole(new AssumeRoleRequest()
@@ -276,7 +277,7 @@ public class AwsAsgUtil {
         }
 
         ClientConfiguration clientConfiguration = new ClientConfiguration()
-                .withConnectionTimeout(eurekaConfig.getASGQueryTimeoutMs());
+                .withConnectionTimeout(serverConfig.getASGQueryTimeoutMs());
 
         AmazonAutoScaling autoScalingClient = new AmazonAutoScalingClient(
                 new BasicSessionCredentials(
@@ -287,15 +288,14 @@ public class AwsAsgUtil {
                 clientConfiguration
         );
 
-        String region = DiscoveryManager.getInstance().getEurekaClientConfig().getRegion();
+        String region = clientConfig.getRegion();
         if (!region.equals("us-east-1")) {
             autoScalingClient.setEndpoint("autoscaling." + region + ".amazonaws.com");
         }
 
         DescribeAutoScalingGroupsRequest request = new DescribeAutoScalingGroupsRequest()
                 .withAutoScalingGroupNames(asgName);
-        DescribeAutoScalingGroupsResult result = autoScalingClient
-                .describeAutoScalingGroups(request);
+        DescribeAutoScalingGroupsResult result = autoScalingClient.describeAutoScalingGroups(request);
         List<AutoScalingGroup> asgs = result.getAutoScalingGroups();
         if (asgs.isEmpty()) {
             return null;
@@ -396,7 +396,7 @@ public class AwsAsgUtil {
      * Get the cacheKeys of all the ASG to which query AWS for.
      *
      * <p>
-     * The names are obtained from the {@link com.netflix.eureka.InstanceRegistry} which is then
+     * The names are obtained from the {@link com.netflix.eureka.registry.InstanceRegistry} which is then
      * used for querying the AWS.
      * </p>
      *
@@ -404,7 +404,7 @@ public class AwsAsgUtil {
      */
     private Set<CacheKey> getCacheKeys() {
         Set<CacheKey> cacheKeys = new HashSet<CacheKey>();
-        Applications apps = PeerAwareInstanceRegistryImpl.getInstance().getApplications(false);
+        Applications apps = registry.getApplicationsFromLocalRegionOnly();
         for (Application app : apps.getRegisteredApplications()) {
             for (InstanceInfo instanceInfo : app.getInstances()) {
                 String localAccountId = getAccountId(instanceInfo, accountId);
@@ -427,7 +427,7 @@ public class AwsAsgUtil {
      * @return the account id
      */
     private String getASGAccount(String asgName) {
-        Applications apps = PeerAwareInstanceRegistryImpl.getInstance().getApplications(false);
+        Applications apps = registry.getApplicationsFromLocalRegionOnly();
 
         for (Application app : apps.getRegisteredApplications()) {
             for (InstanceInfo instanceInfo : app.getInstances()) {
@@ -456,14 +456,13 @@ public class AwsAsgUtil {
         return localAccountId == null ? fallbackId : localAccountId;
     }
 
-    private static AmazonAutoScaling getAmazonAutoScalingClient() {
-        String aWSAccessId = eurekaConfig.getAWSAccessId();
-        String aWSSecretKey = eurekaConfig.getAWSSecretKey();
+    private AmazonAutoScaling getAmazonAutoScalingClient() {
+        String aWSAccessId = serverConfig.getAWSAccessId();
+        String aWSSecretKey = serverConfig.getAWSSecretKey();
         ClientConfiguration clientConfiguration = new ClientConfiguration()
-                .withConnectionTimeout(eurekaConfig.getASGQueryTimeoutMs());
+                .withConnectionTimeout(serverConfig.getASGQueryTimeoutMs());
 
-        if (null != aWSAccessId && !"".equals(aWSAccessId)
-                && null != aWSSecretKey && !"".equals(aWSSecretKey)) {
+        if (null != aWSAccessId && !"".equals(aWSAccessId) && null != aWSSecretKey && !"".equals(aWSSecretKey)) {
             return new AmazonAutoScalingClient(
                     new BasicAWSCredentials(aWSAccessId, aWSSecretKey),
                     clientConfiguration);
@@ -478,8 +477,6 @@ public class AwsAsgUtil {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
         return ((AmazonInfo) myInfo.getDataCenterInfo()).get(MetaDataKey.accountId);
     }
-
-
 
     private static class CacheKey {
         final String asgAccountId;

@@ -94,23 +94,31 @@ public interface EurekaClient extends LookupService {
     public InstanceInfo.InstanceStatus getInstanceRemoteStatus();
 
     /**
+     * @deprecated see {@link com.netflix.discovery.endpoint.EndpointUtils} for replacement
+     *
      * Get the list of all eureka service urls for the eureka client to talk to.
      *
      * @param zone the zone in which the client resides
      * @return The list of all eureka service urls for the eureka client to talk to.
      */
+    @Deprecated
     public List<String> getDiscoveryServiceUrls(String zone);
 
     /**
+     * @deprecated see {@link com.netflix.discovery.endpoint.EndpointUtils} for replacement
+     *
      * Get the list of all eureka service urls from properties file for the eureka client to talk to.
      *
      * @param instanceZone The zone in which the client resides
      * @param preferSameZone true if we have to prefer the same zone as the client, false otherwise
      * @return The list of all eureka service urls for the eureka client to talk to
      */
+    @Deprecated
     public List<String> getServiceUrlsFromConfig(String instanceZone, boolean preferSameZone);
 
     /**
+     * @deprecated see {@link com.netflix.discovery.endpoint.EndpointUtils} for replacement
+     *
      * Get the list of all eureka service urls from DNS for the eureka client to
      * talk to. The client picks up the service url from its zone and then fails over to
      * other zones randomly. If there are multiple servers in the same zone, the client once
@@ -120,6 +128,7 @@ public interface EurekaClient extends LookupService {
      * @param preferSameZone true if we have to prefer the same zone as the client, false otherwise.
      * @return The list of all eureka service urls for the eureka client to talk to.
      */
+    @Deprecated
     public List<String> getServiceUrlsFromDNS(String instanceZone, boolean preferSameZone);
 
     // ===========================

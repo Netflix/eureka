@@ -17,7 +17,11 @@
 package com.netflix.eureka.resources;
 
 import com.netflix.appinfo.EurekaAccept;
+import com.netflix.eureka.EurekaServerContext;
+import com.netflix.eureka.EurekaServerContextHolder;
+import com.netflix.eureka.registry.Key;
 
+import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
@@ -35,6 +39,15 @@ import javax.ws.rs.core.Response;
 @Produces({"application/xml", "application/json"})
 public class SecureVIPResource extends AbstractVIPResource {
 
+    @Inject
+    SecureVIPResource(EurekaServerContext server) {
+        super(server);
+    }
+
+    public SecureVIPResource() {
+        this(EurekaServerContextHolder.getInstance().getServerContext());
+    }
+
     @GET
     @Path("{svipAddress}")
     public Response statusUpdate(@PathParam("version") String version,
@@ -42,7 +55,7 @@ public class SecureVIPResource extends AbstractVIPResource {
                                  @HeaderParam("Accept") final String acceptHeader,
                                  @HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept) {
         return getVipResponse(version, svipAddress, acceptHeader,
-                EurekaAccept.fromString(eurekaAccept), ResponseCache.Key.EntityType.SVIP);
+                EurekaAccept.fromString(eurekaAccept), Key.EntityType.SVIP);
     }
 
 }

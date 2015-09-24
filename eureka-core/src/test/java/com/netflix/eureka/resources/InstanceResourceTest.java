@@ -23,8 +23,8 @@ public class InstanceResourceTest extends AbstractTester {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        applicationResource = new ApplicationResource(testInstanceInfo.getAppName());
-        instanceResource = new InstanceResource(applicationResource, testInstanceInfo.getId(), registry);
+        applicationResource = new ApplicationResource(testInstanceInfo.getAppName(), serverContext.getServerConfig(), serverContext.getRegistry());
+        instanceResource = new InstanceResource(applicationResource, testInstanceInfo.getId(), serverContext.getServerConfig(), serverContext.getRegistry());
     }
 
     @Test

@@ -16,6 +16,7 @@
 
 package com.netflix.eureka.resources;
 
+import javax.inject.Inject;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -24,9 +25,12 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
-import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
+import com.netflix.eureka.EurekaServerContext;
+import com.netflix.eureka.EurekaServerContextHolder;
 import com.netflix.eureka.cluster.PeerEurekaNode;
-import com.netflix.eureka.util.AwsAsgUtil;
+import com.netflix.eureka.aws.AwsAsgUtil;
+import com.netflix.eureka.registry.AwsInstanceRegistry;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,12 +59,9 @@ import org.slf4j.LoggerFactory;
 @Path("/{version}/asg")
 @Produces({"application/xml", "application/json"})
 public class ASGResource {
-
-    private static final Logger logger = LoggerFactory
-            .getLogger(ASGResource.class);
+    private static final Logger logger = LoggerFactory.getLogger(ASGResource.class);
 
     public enum ASGStatus {
-
         ENABLED, DISABLED;
 
         public static ASGStatus toEnum(String s) {
@@ -69,21 +70,33 @@ public class ASGResource {
                     return e;
                 }
             }
-            throw new RuntimeException(
-                    "Cannot find ASG enum for the given string " + s);
+            throw new RuntimeException("Cannot find ASG enum for the given string " + s);
         }
+    }
+
+    protected final PeerAwareInstanceRegistry registry;
+    protected final AwsAsgUtil awsAsgUtil;
+
+    @Inject
+    ASGResource(EurekaServerContext eurekaServer) {
+        this.registry = eurekaServer.getRegistry();
+        if (registry instanceof AwsInstanceRegistry) {
+            this.awsAsgUtil = ((AwsInstanceRegistry) registry).getAwsAsgUtil();
+        } else {
+            this.awsAsgUtil = null;
+        }
+    }
+
+    public ASGResource() {
+        this(EurekaServerContextHolder.getInstance().getServerContext());
     }
 
     /**
      * Changes the status information of the ASG.
      *
-     * @param asgName
-     *            the name of the ASG for which the status needs to be changed.
-     * @param newStatus
-     *            the new status {@link ASGStatus} of the ASG.
-     * @param isReplication
-     *            a header parameter containing information whether this is
-     *            replicated from other nodes.
+     * @param asgName the name of the ASG for which the status needs to be changed.
+     * @param newStatus the new status {@link ASGStatus} of the ASG.
+     * @param isReplication a header parameter containing information whether this is replicated from other nodes.
      *
      * @return response which indicates if the operation succeeded or not.
      */
@@ -92,20 +105,19 @@ public class ASGResource {
     public Response statusUpdate(@PathParam("asgName") String asgName,
                                  @QueryParam("value") String newStatus,
                                  @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
+        if (awsAsgUtil == null) {
+            return Response.status(400).build();
+        }
+
         try {
-            logger.info("Trying to update ASG Status for ASG {} to {}",
-                    asgName, newStatus);
+            logger.info("Trying to update ASG Status for ASG {} to {}", asgName, newStatus);
             ASGStatus asgStatus = ASGStatus.valueOf(newStatus.toUpperCase());
-            AwsAsgUtil.getInstance().setStatus(asgName,
-                    (ASGStatus.DISABLED.equals(asgStatus) ? false : true));
-            PeerAwareInstanceRegistryImpl.getInstance().statusUpdate(asgName,
-                    asgStatus, Boolean.valueOf(isReplication));
-            logger.debug("Updated ASG Status for ASG {} to {}", asgName,
-                    asgStatus);
+            awsAsgUtil.setStatus(asgName, (!ASGStatus.DISABLED.equals(asgStatus)));
+            registry.statusUpdate(asgName, asgStatus, Boolean.valueOf(isReplication));
+            logger.debug("Updated ASG Status for ASG {} to {}", asgName, asgStatus);
 
         } catch (Throwable e) {
-            logger.error("Cannot update the status" + newStatus
-                    + " for the ASG " + asgName, e);
+            logger.error("Cannot update the status {} for the ASG {}", newStatus, asgName, e);
             return Response.serverError().build();
         }
         return Response.ok().build();

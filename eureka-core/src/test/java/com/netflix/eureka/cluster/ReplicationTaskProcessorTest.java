@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 import com.netflix.eureka.cluster.ReplicationTask.ProcessingState;
 import org.junit.After;
 import org.junit.Before;

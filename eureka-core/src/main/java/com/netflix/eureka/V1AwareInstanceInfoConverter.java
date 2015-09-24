@@ -19,6 +19,7 @@ package com.netflix.eureka;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.converters.Converters.InstanceInfoConverter;
+import com.netflix.eureka.resources.CurrentRequestVersion;
 
 /**
  * Support for {@link Version#V1}. {@link Version#V2} introduces a new status

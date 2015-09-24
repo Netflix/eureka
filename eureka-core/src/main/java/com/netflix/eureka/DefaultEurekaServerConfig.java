@@ -17,6 +17,7 @@
 package com.netflix.eureka;
 
 import javax.annotation.Nullable;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -57,6 +58,7 @@ import org.slf4j.LoggerFactory;
  * @author Karthik Ranganathan
  *
  */
+@Singleton
 public class DefaultEurekaServerConfig implements EurekaServerConfig {
     private static final String ARCHAIUS_DEPLOYMENT_ENVIRONMENT = "archaius.deployment.environment";
     private static final String TEST = "test";
@@ -363,6 +365,12 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     public int getRegistrySyncRetries() {
         return configInstance.getIntProperty(
                 namespace + "numberRegistrySyncRetries", 5).get();
+    }
+
+    @Override
+    public long getRegistrySyncRetryWaitMs() {
+        return configInstance.getIntProperty(
+                namespace + "registrySyncRetryWaitMs", 30 * 1000).get();
     }
 
     @Override

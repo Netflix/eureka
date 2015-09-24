@@ -5,5 +5,5 @@ package com.netflix.discovery.converters.wrappers;
  *
  * @author David Liu
  */
-public interface EncoderDecoderWrapper extends EncoderWrapper, DecoderWrapper {
+public interface CodecWrapper extends EncoderWrapper, DecoderWrapper {
 }

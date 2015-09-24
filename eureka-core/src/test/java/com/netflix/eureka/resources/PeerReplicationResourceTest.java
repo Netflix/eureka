@@ -3,7 +3,8 @@ package com.netflix.eureka.resources;
 import javax.ws.rs.core.Response;
 
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
+import com.netflix.eureka.EurekaServerContext;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 import com.netflix.eureka.cluster.ClusterSampleData;
 import com.netflix.eureka.cluster.protocol.ReplicationInstance;
 import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
@@ -30,7 +31,7 @@ public class PeerReplicationResourceTest {
     private final ApplicationResource applicationResource = mock(ApplicationResource.class);
     private final InstanceResource instanceResource = mock(InstanceResource.class);
 
-    private final PeerReplicationResource peerReplicationResource = new PeerReplicationResource() {
+    private final PeerReplicationResource peerReplicationResource = new PeerReplicationResource(mock(EurekaServerContext.class)) {
         @Override
         ApplicationResource createApplicationResource(ReplicationInstance instanceInfo) {
             return applicationResource;

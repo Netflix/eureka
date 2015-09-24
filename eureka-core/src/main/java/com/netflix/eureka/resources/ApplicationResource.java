@@ -28,12 +28,13 @@ import javax.ws.rs.core.Response.Status;
 
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.eureka.CurrentRequestVersion;
-import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
+import com.netflix.eureka.EurekaServerConfig;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.Version;
 import com.netflix.eureka.cluster.PeerEurekaNode;
-import com.netflix.eureka.resources.ResponseCache.Key;
-import com.netflix.eureka.resources.ResponseCache.KeyType;
+import com.netflix.eureka.registry.ResponseCache;
+import com.netflix.eureka.registry.Key.KeyType;
+import com.netflix.eureka.registry.Key;
 import com.netflix.eureka.util.EurekaMonitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,17 +51,17 @@ public class ApplicationResource {
     private static final Logger logger = LoggerFactory.getLogger(ApplicationResource.class);
 
     private final String appName;
-    private final PeerAwareInstanceRegistryImpl registry;
+    private final EurekaServerConfig serverConfig;
+    private final PeerAwareInstanceRegistry registry;
     private final ResponseCache responseCache;
 
-    /* For testing */ ApplicationResource(String appName, PeerAwareInstanceRegistryImpl registry, ResponseCache responseCache) {
+    ApplicationResource(String appName,
+                        EurekaServerConfig serverConfig,
+                        PeerAwareInstanceRegistry registry) {
         this.appName = appName.toUpperCase();
+        this.serverConfig = serverConfig;
         this.registry = registry;
-        this.responseCache = responseCache;
-    }
-
-    public ApplicationResource(String appName) {
-        this(appName, PeerAwareInstanceRegistryImpl.getInstance(), ResponseCache.getInstance());
+        this.responseCache = registry.getResponseCache();
     }
 
     public String getAppName() {
@@ -89,9 +90,9 @@ public class ApplicationResource {
         EurekaMonitors.GET_APPLICATION.increment();
 
         CurrentRequestVersion.set(Version.toEnum(version));
-        KeyType keyType = KeyType.JSON;
+        KeyType keyType = Key.KeyType.JSON;
         if (acceptHeader == null || !acceptHeader.contains("json")) {
-            keyType = KeyType.XML;
+            keyType = Key.KeyType.XML;
         }
 
         Key cacheKey = new Key(
@@ -122,7 +123,7 @@ public class ApplicationResource {
      */
     @Path("{id}")
     public InstanceResource getInstanceInfo(@PathParam("id") String id) {
-        return new InstanceResource(this, id);
+        return new InstanceResource(this, id, serverConfig, registry);
     }
 
     /**
