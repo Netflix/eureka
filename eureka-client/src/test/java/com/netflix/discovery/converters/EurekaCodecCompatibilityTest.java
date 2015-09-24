@@ -167,6 +167,7 @@ public class EurekaCodecCompatibilityTest {
                 String encodedString = encodingCodec.encode(instanceInfo);
                 InstanceInfo decodedValue = decodingCodec.decode(encodedString, InstanceInfo.class);
                 assertThat(EurekaEntityComparators.equal(instanceInfo, decodedValue), is(true));
+                assertThat(EurekaEntityComparators.equal(instanceInfo, decodedValue, new EurekaEntityComparators.RawIdEqualFunc()), is(true));
             }
         };
 
