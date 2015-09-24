@@ -1,2 +1,2 @@
 rootProject.name='eureka' 
-include 'eureka-client','eureka-client-archaius2','eureka-server','eureka-core','eureka-resources','eureka-examples', 'eureka-test-utils'
+include 'eureka-client','eureka-client-archaius2','eureka-server','eureka-server-karyon3','eureka-core','eureka-resources','eureka-examples', 'eureka-test-utils'

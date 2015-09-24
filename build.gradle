@@ -7,7 +7,7 @@ buildscript {
 }
 
 plugins {
-    id 'nebula.netflixoss' version '2.2.7'
+    id 'nebula.netflixoss' version '2.2.10'
 }
 
 ext {
@@ -29,6 +29,7 @@ ext {
     jetty_version='7.2.0.v20101020'
     jacksonVersion='2.5.4'
     woodstoxVersion='4.4.1'
+    karyon3Version='3.0.1-rc.8'
 }
 
 idea {

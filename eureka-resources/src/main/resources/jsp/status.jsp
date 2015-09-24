@@ -1,4 +1,7 @@
-<%@ page language="java" import="java.util.*,java.util.Map.Entry,com.netflix.discovery.shared.Pair,com.netflix.discovery.shared.*, com.netflix.eureka.util.*,com.netflix.appinfo.InstanceInfo.*, com.netflix.appinfo.DataCenterInfo.*,com.netflix.appinfo.AmazonInfo.MetaDataKey,com.netflix.eureka.resources.*,com.netflix.eureka.*,com.netflix.appinfo.*" pageEncoding="UTF-8" %>
+<%@ page language="java" import="java.util.*,java.util.Map.Entry,com.netflix.discovery.shared.Pair,
+com.netflix.discovery.shared.*,com.netflix.eureka.util.*,com.netflix.appinfo.InstanceInfo.*,
+com.netflix.appinfo.DataCenterInfo.*,com.netflix.appinfo.AmazonInfo.MetaDataKey,com.netflix.eureka.resources.*,
+com.netflix.eureka.*,com.netflix.appinfo.*,com.netflix.eureka.util.StatusUtil" pageEncoding="UTF-8" %>
 <%
 String path = request.getContextPath();
 String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
@@ -44,7 +47,9 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
            <tfoot><tr><th>Application</th><th>AMIs</th><th>Availability Zones</th><th>Status</th></tr></tfoot>
            <tbody>
            <%
-           for(Application app : PeerAwareInstanceRegistryImpl.getInstance().getSortedApplications()) {
+           EurekaServerContext serverContext = (EurekaServerContext) pageContext.getServletContext()
+                   .getAttribute(EurekaServerContext.class.getName());
+           for(Application app : serverContext.getRegistry().getSortedApplications()) {
                out.print("<tr><td><b>" + app.getName() + "</b></td>");
                Map<String, Integer> amiCounts = new HashMap<String, Integer>();
                Map<InstanceStatus,List<Pair<String, String>>> instancesByStatus =
@@ -138,7 +143,7 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
       <table id='generalInfo' class="stripeable">
           <tr><th>Name</th><th>Value</th></tr>
            <%
-           StatusInfo statusInfo = (new StatusResource()).getStatusInfo();
+           StatusInfo statusInfo = (new StatusUtil(serverContext)).getStatusInfo();
            Map<String,String> genMap = statusInfo.getGeneralStats();
            for (Map.Entry<String,String> entry : genMap.entrySet()) {
              out.print("<tr>");

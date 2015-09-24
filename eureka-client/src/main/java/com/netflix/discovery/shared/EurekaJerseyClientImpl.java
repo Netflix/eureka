@@ -73,7 +73,6 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
                               ClientConfig clientConfig) {
         try {
             jerseyClientConfig = clientConfig;
-            jerseyClientConfig.getClasses().add(DiscoveryJerseyProvider.class);
             apacheHttpClient = ApacheHttpClient4.create(jerseyClientConfig);
             HttpParams params = apacheHttpClient.getClientHandler().getHttpClient().getParams();
 
@@ -238,7 +237,6 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
                 // (see DiscoveryClient.makeRemoteCall methods).
                 getProperties().put(PROPERTY_FOLLOW_REDIRECTS, Boolean.FALSE);
                 getProperties().put(ClientPNames.HANDLE_REDIRECTS, Boolean.FALSE);
-
             }
 
             private void addProxyConfiguration(MonitoredConnectionManager cm) {

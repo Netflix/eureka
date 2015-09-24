@@ -37,8 +37,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
-import com.netflix.eureka.EurekaServerConfigurationManager;
-import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
+import com.netflix.eureka.EurekaServerConfig;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.cluster.PeerEurekaNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,19 +54,17 @@ public class InstanceResource {
     private static final Logger logger = LoggerFactory
             .getLogger(InstanceResource.class);
 
-    private final PeerAwareInstanceRegistryImpl registry;
+    private final PeerAwareInstanceRegistry registry;
+    private final EurekaServerConfig serverConfig;
+    private final String id;
+    private final ApplicationResource app;
 
-    String id;
-    ApplicationResource app;
 
-    /* For testing */ InstanceResource(ApplicationResource app, String id, PeerAwareInstanceRegistryImpl registry) {
+    InstanceResource(ApplicationResource app, String id, EurekaServerConfig serverConfig, PeerAwareInstanceRegistry registry) {
         this.app = app;
         this.id = id;
+        this.serverConfig = serverConfig;
         this.registry = registry;
-    }
-
-    public InstanceResource(ApplicationResource app, String id) {
-        this(app, id, PeerAwareInstanceRegistryImpl.getInstance());
     }
 
     /**
@@ -121,8 +119,7 @@ public class InstanceResource {
         // Check if we need to sync based on dirty time stamp, the client
         // instance might have changed some value
         Response response = null;
-        if (lastDirtyTimestamp != null
-                && EurekaServerConfigurationManager.getInstance().getConfiguration().shouldSyncWhenTimestampDiffers()) {
+        if (lastDirtyTimestamp != null && serverConfig.shouldSyncWhenTimestampDiffers()) {
             response = this.validateDirtyTimestamp(Long.valueOf(lastDirtyTimestamp), isFromReplicaNode);
             // Store the overridden status since the validation found out the node that replicates wins
             if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()

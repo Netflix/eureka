@@ -1,4 +1,4 @@
-package com.netflix.discovery;
+package com.netflix.discovery.endpoint;
 
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Tomasz Bak
  */
-final class DnsResolver {
+public final class DnsResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(DnsResolver.class);
 
@@ -37,7 +37,7 @@ final class DnsResolver {
     /**
      * Load up the DNS JNDI context provider.
      */
-    static DirContext getDirContext() {
+    public static DirContext getDirContext() {
         Hashtable<String, String> env = new Hashtable<String, String>();
         env.put(JAVA_NAMING_FACTORY_INITIAL, DNS_NAMING_FACTORY);
         env.put(JAVA_NAMING_PROVIDER_URL, DNS_PROVIDER_URL);
@@ -54,7 +54,7 @@ final class DnsResolver {
      *
      * @return URI identical to the one provided, with host name swapped with the resolved value
      */
-    static String resolve(String originalHost) {
+    public static String resolve(String originalHost) {
         String currentHost = originalHost;
         if (isLocalOrIp(currentHost)) {
             return originalHost;
@@ -95,7 +95,7 @@ final class DnsResolver {
     /**
      * Looks up the DNS name provided in the JNDI context.
      */
-    static Set<String> getCNamesFromTxtRecord(String discoveryDnsName) throws NamingException {
+    public static Set<String> getCNamesFromTxtRecord(String discoveryDnsName) throws NamingException {
         Attributes attrs = dirContext.getAttributes(discoveryDnsName, new String[]{TXT_RECORD_TYPE});
         Attribute attr = attrs.get(TXT_RECORD_TYPE);
         String txtRecord = null;

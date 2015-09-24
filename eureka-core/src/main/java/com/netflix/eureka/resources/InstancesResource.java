@@ -16,6 +16,7 @@
 
 package com.netflix.eureka.resources;
 
+import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -25,9 +26,9 @@ import javax.ws.rs.core.Response.Status;
 import java.util.List;
 
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.eureka.CurrentRequestVersion;
-import com.netflix.eureka.AbstractInstanceRegistry;
-import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
+import com.netflix.eureka.EurekaServerContext;
+import com.netflix.eureka.EurekaServerContextHolder;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,8 +45,16 @@ public class InstancesResource {
     private static final Logger logger = LoggerFactory
             .getLogger(InstancesResource.class);
 
-    private final AbstractInstanceRegistry registry = PeerAwareInstanceRegistryImpl
-            .getInstance();
+    private final PeerAwareInstanceRegistry registry;
+
+    @Inject
+    InstancesResource(EurekaServerContext server) {
+        this.registry = server.getRegistry();
+    }
+
+    public InstancesResource() {
+        this(EurekaServerContextHolder.getInstance().getServerContext());
+    }
 
     @GET
     @Path("{id}")
