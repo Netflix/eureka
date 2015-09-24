@@ -62,6 +62,7 @@ public class EurekaJacksonCodec {
     protected static final String ELEM_INSTANCE = "instance";
     protected static final String ELEM_OVERRIDDEN_STATUS = "overriddenstatus";
     protected static final String ELEM_HOST = "hostName";
+    protected static final String ELEM_INSTANCE_ID = "instanceId";
     protected static final String ELEM_APP = "app";
     protected static final String ELEM_IP = "ipAddr";
     protected static final String ELEM_SID = "sid";
@@ -322,6 +323,9 @@ public class EurekaJacksonCodec {
         public void serialize(InstanceInfo info, JsonGenerator jgen, SerializerProvider provider) throws IOException {
             jgen.writeStartObject();
 
+            if (info.getInstanceId() != null) {
+                jgen.writeStringField(ELEM_INSTANCE_ID, info.getInstanceId());
+            }
             jgen.writeStringField(ELEM_HOST, info.getHostName());
             jgen.writeStringField(ELEM_APP, info.getAppName());
             jgen.writeStringField(ELEM_IP, info.getIPAddr());
@@ -416,6 +420,8 @@ public class EurekaJacksonCodec {
                 if (!fieldNode.isNull()) {
                     if (ELEM_HOST.equals(fieldName)) {
                         builder.setHostName(fieldNode.asText());
+                    } else if (ELEM_INSTANCE_ID.equals(fieldName)) {
+                        builder.setInstanceId(fieldNode.asText());
                     } else if (ELEM_APP.equals(fieldName)) {
                         builder.setAppName(fieldNode.asText());
                     } else if (ELEM_IP.equals(fieldName)) {

@@ -64,7 +64,8 @@ public class InstanceInfo {
     public static final int DEFAULT_SECURE_PORT = 7002;
     public static final int DEFAULT_COUNTRY_ID = 1; // US
 
-    private static final String SID_DEFAULT_VAL = "na";
+    // The (fixed) instanceId for this instanceInfo. This should be unique within the scope of the appName.
+    private volatile String instanceId;
 
     private volatile String appName;
     @Auto
@@ -72,12 +73,9 @@ public class InstanceInfo {
 
     private volatile String ipAddr;
 
-    /**
-     * This is the unique (within the scope of the appname) id of this instance.
-     * Why defaulting to "na"? Unfortunately needed for compatibility in a deployment with a mix
-     * of newer and older clients (older codecs explicitly handle "na").
-     */
-    private volatile String sid = SID_DEFAULT_VAL;
+    private static final String SID_DEFAULT = "na";
+    @Deprecated
+    private volatile String sid = SID_DEFAULT;
 
     private volatile int port = DEFAULT_PORT;
     private volatile int securePort = DEFAULT_SECURE_PORT;
@@ -138,10 +136,11 @@ public class InstanceInfo {
 
     @JsonCreator
     public InstanceInfo(
-            @JsonProperty("sid") String sid,
+            @JsonProperty("instanceId") String instanceId,
             @JsonProperty("app") String appName,
             @JsonProperty("appGroupName") String appGroupName,
             @JsonProperty("ipAddr") String ipAddr,
+            @JsonProperty("sid") String sid,
             @JsonProperty("port") int port,
             @JsonProperty("portEnabled") boolean portEnabled,
             @JsonProperty("securePort") int securePort,
@@ -164,6 +163,7 @@ public class InstanceInfo {
             @JsonProperty("lastDirtyTimestamp") Long lastDirtyTimestamp,
             @JsonProperty("actionType") ActionType actionType,
             @JsonProperty("asgName") String asgName) {
+        this.instanceId = instanceId;
         this.sid = sid;
         this.appName = StringCache.intern(appName);
         this.appGroupName = StringCache.intern(appGroupName);
@@ -198,6 +198,10 @@ public class InstanceInfo {
         } else {
             this.metadata = metadata;
         }
+
+        if (sid == null) {
+            this.sid = SID_DEFAULT;
+        }
     }
 
     private Map<String, String> removeMetadataMapLegacyValues(Map<String, String> metadata) {
@@ -218,6 +222,7 @@ public class InstanceInfo {
      * @param ii The object to copy
      */
     public InstanceInfo(InstanceInfo ii) {
+        this.instanceId = ii.instanceId;
         this.appName = ii.appName;
         this.appGroupName = ii.appGroupName;
         this.ipAddr = ii.ipAddr;
@@ -348,6 +353,11 @@ public class InstanceInfo {
             return new Builder();
         }
 
+        public Builder setInstanceId(String instanceId) {
+            result.instanceId = instanceId;
+            return this;
+        }
+
         /**
          * Set the application name of the instance.This is mostly used in
          * querying of instances.
@@ -435,6 +445,7 @@ public class InstanceInfo {
          * @param sid the sid of the instance.
          * @return the {@link InstanceInfo} builder.
          */
+        @Deprecated
         public Builder setSID(String sid) {
             result.sid = sid;
             return this;
@@ -821,6 +832,13 @@ public class InstanceInfo {
     }
 
     /**
+     * @return the raw instanceId. For compatibility, prefer to use {@link #getId()}
+     */
+    public String getInstanceId() {
+        return instanceId;
+    }
+
+    /**
      * Return the name of the application registering with discovery.
      *
      * @return the string denoting the application name.
@@ -843,19 +861,14 @@ public class InstanceInfo {
         return hostName;
     }
 
-    /**
-     * @deprecated the id should not be set at the instance level. This will be removed soon.
-     */
     @Deprecated
     public void setSID(String sid) {
         this.sid = sid;
         setIsDirty();
     }
 
-    /**
-     * for serializer. Prefer {@link #getId()} to resolve the id
-     */
     @JsonProperty("sid")
+    @Deprecated
     public String getSID() {
         return sid;
     }
@@ -870,8 +883,8 @@ public class InstanceInfo {
      */
     @JsonIgnore
     public String getId() {
-        if (sid != null && !sid.isEmpty() && !sid.equals(SID_DEFAULT_VAL)) {
-            return sid;
+        if (instanceId != null && !instanceId.isEmpty()) {
+            return instanceId;
         } else if (dataCenterInfo instanceof UniqueIdentifier) {
             return ((UniqueIdentifier) dataCenterInfo).getId();
         } else {
