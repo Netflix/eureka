@@ -16,6 +16,8 @@
 
 package com.netflix.discovery.shared.transport.decorator;
 
+import com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.RequestType;
+
 /**
  * HTTP status code evaluator, that can be used to make a decision whether it makes sense to
  * immediately retry a request on another server or stick to the current one.
@@ -26,5 +28,5 @@ package com.netflix.discovery.shared.transport.decorator;
  * @author Tomasz Bak
  */
 public interface ServerStatusEvaluator {
-    boolean abandon(int statusCode);
+    boolean accept(int statusCode, RequestType requestType);
 }

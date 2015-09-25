@@ -28,9 +28,16 @@ import java.util.List;
 public class RandomizingClusterResolver implements ClusterResolver {
 
     private final List<EurekaEndpoint> eurekaEndpoints;
+    private final String region;
 
     public RandomizingClusterResolver(ClusterResolver delegate) {
         this.eurekaEndpoints = ResolverUtils.randomize(new ArrayList<EurekaEndpoint>(delegate.getClusterEndpoints()));
+        this.region = delegate.getRegion();
+    }
+
+    @Override
+    public String getRegion() {
+        return region;
     }
 
     @Override

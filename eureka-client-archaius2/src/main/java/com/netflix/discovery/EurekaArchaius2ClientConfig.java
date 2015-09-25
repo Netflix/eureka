@@ -10,13 +10,13 @@ import com.netflix.archaius.Config;
 import com.netflix.archaius.annotations.Configuration;
 import com.netflix.archaius.annotations.ConfigurationSource;
 
-@Configuration(prefix="eureka")
+@Configuration(prefix = "eureka")
 @ConfigurationSource("eureka-client")
 public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
     public static final String DEFAULT_ZONE = "defaultZone";
 
     private static final String DEFAULT_NAMESPACE = "eureka";
-    
+
     private final Config config;
     private final String defaultRegion;
 
@@ -61,16 +61,16 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
     public String getProxyPassword() {
         return config.getString("eurekaServer.proxyPassword", null);
     }
-    
-    public boolean shouldGZipContent(){
+
+    public boolean shouldGZipContent() {
         return config.getBoolean("eurekaServer.gzipContent", true);
     }
 
-    public int getEurekaServerReadTimeoutSeconds(){
+    public int getEurekaServerReadTimeoutSeconds() {
         return config.getInteger("eurekaServer.readTimeout", 8);
     }
 
-    public int getEurekaServerConnectTimeoutSeconds(){
+    public int getEurekaServerConnectTimeoutSeconds() {
         return config.getInteger("eurekaServer.connectTimeout", 5);
     }
 
@@ -110,22 +110,22 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
         return config.getBoolean("preferSameZone", true);
     }
 
-    public boolean allowRedirects(){
+    public boolean allowRedirects() {
         return config.getBoolean("allowRedirects", false);
     }
 
-    public boolean shouldLogDeltaDiff(){
+    public boolean shouldLogDeltaDiff() {
         return config.getBoolean("printDeltaFullDiff", false);
     }
 
     public boolean shouldDisableDelta() {
         return config.getBoolean("disableDelta", false);
     }
-    
+
     public String fetchRegistryForRemoteRegions() {
         return config.getString("fetchRemoteRegionsRegistry", null);
     }
-    
+
     public String getRegion() {
         return config.getString("region", defaultRegion);
     }
@@ -139,13 +139,13 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
         if (serviceUrls == null || serviceUrls.isEmpty()) {
             serviceUrls = config.getString("serviceUrl." + "default", null);
         }
-        
+
         return serviceUrls != null
-            ? Arrays.asList(serviceUrls.split(","))
-            : Collections.<String>emptyList();
+                ? Arrays.asList(serviceUrls.split(","))
+                : Collections.<String>emptyList();
     }
 
-    public boolean shouldFilterOnlyUpInstances(){
+    public boolean shouldFilterOnlyUpInstances() {
         return config.getBoolean("shouldFilterOnlyUpInstances", true);
     }
 
@@ -153,7 +153,7 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
         return config.getInteger("eurekaserver.connectionIdleTimeoutInSeconds", 30);
     }
 
-    public boolean shouldFetchRegistry(){
+    public boolean shouldFetchRegistry() {
         return config.getBoolean("shouldFetchRegistry", true);
     }
 
@@ -161,19 +161,19 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
         return config.getString("registryRefreshSingleVipAddress", null);
     }
 
-    public int getHeartbeatExecutorThreadPoolSize(){
+    public int getHeartbeatExecutorThreadPoolSize() {
         return config.getInteger("client.heartbeat.threadPoolSize", 2);
     }
 
-    public int getHeartbeatExecutorExponentialBackOffBound(){
+    public int getHeartbeatExecutorExponentialBackOffBound() {
         return config.getInteger("client.heartbeat.exponentialBackOffBound", 10);
     }
 
-    public int getCacheRefreshExecutorThreadPoolSize(){
+    public int getCacheRefreshExecutorThreadPoolSize() {
         return config.getInteger("client.cacheRefresh.threadPoolSize", 10);
     }
 
-    public int getCacheRefreshExecutorExponentialBackOffBound(){
+    public int getCacheRefreshExecutorExponentialBackOffBound() {
         return config.getInteger("client.cacheRefresh.exponentialBackOffBound", 10);
     }
 
@@ -202,5 +202,10 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
     @Override
     public String getClientDataAccept() {
         return config.getString("clientDataAccept", EurekaAccept.full.name());
+    }
+
+    @Override
+    public String getExperimental(String name) {
+        return config.getString("experimental." + name);
     }
 }

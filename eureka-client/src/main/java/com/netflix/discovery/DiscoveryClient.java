@@ -67,6 +67,9 @@ import com.netflix.discovery.endpoint.DnsResolver;
 import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.shared.transport.EurekaHttpClient;
+import com.netflix.discovery.shared.transport.EurekaHttpClients;
+import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
 import com.netflix.discovery.util.ThresholdLevelsMetric;
@@ -180,6 +183,7 @@ public class DiscoveryClient implements EurekaClient {
     private final EndpointUtils.ServiceUrlRandomizer urlRandomizer;
     private final Provider<BackupRegistry> backupRegistryProvider;
     private final ApacheHttpClient4 discoveryApacheClient;
+    private final EurekaHttpClient eurekaHttpClient;
     private EurekaJerseyClient discoveryJerseyClient;
 
     private volatile HealthCheckHandler healthCheckHandler;
@@ -417,6 +421,17 @@ public class DiscoveryClient implements EurekaClient {
         if (clientConfig.shouldFetchRegistry() && !fetchRegistry(false)) {
             fetchRegistryFromBackup();
         }
+
+        // Configure new transport layer (candidate for injecting in the future)
+        EurekaHttpClient newEurekaHttpClient = null;
+        try {
+            String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
+            String myZone = InstanceInfo.getZone(availZones, instanceInfo);
+            newEurekaHttpClient = EurekaHttpClients.createStandardClient(clientConfig, applicationInfoManager, myZone);
+        } catch (Exception e) {
+            logger.warn("Experimental transport initialization failure", e);
+        }
+        this.eurekaHttpClient = newEurekaHttpClient;
 
         initScheduledTasks();
         try {
@@ -665,26 +680,31 @@ public class DiscoveryClient implements EurekaClient {
      */
     @Override
     public Applications getApplications(String serviceUrl) {
-        ClientResponse response = null;
-        Applications apps = null;
-        try {
-            response = makeRemoteCall(Action.Refresh);
-            apps = response.getEntity(Applications.class);
-            logger.debug(PREFIX + appPathIdentifier + " -  refresh status: "
-                    + response.getStatus());
-            return apps;
-        } catch (Throwable th) {
-            logger.error(
-                    PREFIX + appPathIdentifier
-                            + " - was unable to refresh its cache! status = "
-                            + th.getMessage(), th);
-
-        } finally {
-            if (response != null) {
-                response.close();
+        if (shouldUseExperimentalTransport()) {
+            try {
+                EurekaHttpResponse<Applications> response = eurekaHttpClient.getApplications();
+                if (response.getStatusCode() == 200) {
+                    logger.debug(PREFIX + appPathIdentifier + " -  refresh status: " + response.getStatusCode());
+                    return response.getEntity();
+                }
+                logger.error(PREFIX + appPathIdentifier + " - was unable to refresh its cache! status = " + response.getStatusCode());
+            } catch (Throwable th) {
+                logger.error(PREFIX + appPathIdentifier + " - was unable to refresh its cache! status = " + th.getMessage(), th);
+            }
+        } else {
+            ClientResponse response = null;
+            try {
+                response = makeRemoteCall(Action.Refresh);
+                Applications apps = response.getEntity(Applications.class);
+                logger.debug(PREFIX + appPathIdentifier + " -  refresh status: " + response.getStatus());
+                return apps;
+            } catch (Throwable th) {
+                logger.error(PREFIX + appPathIdentifier + " - was unable to refresh its cache! status = " + th.getMessage(), th);
+            } finally {
+                closeResponse(response);
             }
         }
-        return apps;
+        return null;
     }
 
     /**
@@ -708,19 +728,31 @@ public class DiscoveryClient implements EurekaClient {
      */
     boolean register() throws Throwable {
         logger.info(PREFIX + appPathIdentifier + ": registering service...");
-        ClientResponse response = null;
-        try {
-            response = makeRemoteCall(Action.Register);
+        if (shouldUseExperimentalTransport()) {
+            EurekaHttpResponse<Void> httpResponse;
+            try {
+                httpResponse = eurekaHttpClient.register(instanceInfo);
+            } catch (Exception e) {
+                logger.warn("{} - registration failed {}", PREFIX + appPathIdentifier, e.getMessage(), e);
+                throw e;
+            }
             isRegisteredWithDiscovery = true;
-            logger.info("{} - registration status: {}", PREFIX + appPathIdentifier,
-                    (response != null ? response.getStatus() : "not sent"));
-            return response != null && response.getStatus() == 200;
-        } catch (Throwable e) {
-            logger.warn("{} - registration failed {}", PREFIX + appPathIdentifier, e.getMessage(), e);
-            throw e;
-        } finally {
-            if (response != null) {
-                response.close();
+            if (logger.isInfoEnabled()) {
+                logger.info("{} - registration status: {}", PREFIX + appPathIdentifier, httpResponse.getStatusCode());
+            }
+            return httpResponse.getStatusCode() == 204;
+        } else {
+            ClientResponse response = null;
+            try {
+                response = makeRemoteCall(Action.Register);
+                isRegisteredWithDiscovery = true;
+                logger.info("{} - registration status: {}", PREFIX + appPathIdentifier, (response != null ? response.getStatus() : "not sent"));
+                return response != null && response.getStatus() == 204;
+            } catch (Throwable e) {
+                logger.warn("{} - registration failed {}", PREFIX + appPathIdentifier, e.getMessage(), e);
+                throw e;
+            } finally {
+                closeResponse(response);
             }
         }
     }
@@ -729,28 +761,44 @@ public class DiscoveryClient implements EurekaClient {
      * Renew with the eureka service by making the appropriate REST call
      */
     boolean renew() {
-        ClientResponse response = null;
-        try {
-            response = makeRemoteCall(Action.Renew);
-            logger.debug("{} - Heartbeat status: {}", PREFIX + appPathIdentifier,
-                    (response != null ? response.getStatus() : "not sent"));
-            if (response == null) {
+        if (shouldUseExperimentalTransport()) {
+            EurekaHttpResponse<InstanceInfo> httpResponse;
+            try {
+                httpResponse = eurekaHttpClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
+                logger.debug("{} - Heartbeat status: {}", PREFIX + appPathIdentifier, httpResponse.getStatusCode());
+                if (httpResponse.getStatusCode() == 404) {
+                    REREGISTER_COUNTER.increment();
+                    logger.info("{} - Re-registering apps/{}", PREFIX + appPathIdentifier, instanceInfo.getAppName());
+                    return register();
+                }
+                return httpResponse.getStatusCode() == 200;
+            } catch (Throwable e) {
+                logger.error("{} - was unable to send heartbeat!", PREFIX + appPathIdentifier, e);
                 return false;
             }
-            if (response.getStatus() == 404) {
-                REREGISTER_COUNTER.increment();
-                logger.info("{} - Re-registering apps/{}", PREFIX + appPathIdentifier, instanceInfo.getAppName());
-                return register();
+        } else {
+            ClientResponse response = null;
+            try {
+                response = makeRemoteCall(Action.Renew);
+                logger.debug("{} - Heartbeat status: {}", PREFIX + appPathIdentifier, (response != null ? response.getStatus() : "not sent"));
+                if (response == null) {
+                    return false;
+                }
+                if (response.getStatus() == 404) {
+                    REREGISTER_COUNTER.increment();
+                    logger.info("{} - Re-registering apps/{}", PREFIX + appPathIdentifier, instanceInfo.getAppName());
+                    return register();
+                }
+            } catch (Throwable e) {
+                logger.error("{} - was unable to send heartbeat!", PREFIX + appPathIdentifier, e);
+                return false;
+            } finally {
+                if (response != null) {
+                    response.close();
+                }
             }
-        } catch (Throwable e) {
-            logger.error("{} - was unable to send heartbeat!", PREFIX + appPathIdentifier, e);
-            return false;
-        } finally {
-            if (response != null) {
-                response.close();
-            }
+            return true;
         }
-        return true;
     }
 
     /**
@@ -807,21 +855,24 @@ public class DiscoveryClient implements EurekaClient {
      * unregister w/ the eureka service.
      */
     void unregister() {
-        ClientResponse response = null;
-        try {
-            response = makeRemoteCall(Action.Cancel);
-
-            logger.info(PREFIX
-                    + appPathIdentifier
-                    + " - deregister  status: "
-                    + (response != null ? response.getStatus()
-                    : "not registered"));
-        } catch (Throwable e) {
-            logger.error(PREFIX + appPathIdentifier
-                    + " - de-registration failed" + e.getMessage(), e);
-        } finally {
-            if (response != null) {
-                response.close();
+        if (shouldUseExperimentalTransport()) {
+            try {
+                EurekaHttpResponse<Void> httpResponse = eurekaHttpClient.cancel(instanceInfo.getAppName(), instanceInfo.getId());
+                logger.info(PREFIX + appPathIdentifier + " - deregister  status: " + httpResponse.getStatusCode());
+            } catch (Exception e) {
+                logger.error(PREFIX + appPathIdentifier + " - de-registration failed" + e.getMessage(), e);
+            }
+        } else {
+            ClientResponse response = null;
+            try {
+                response = makeRemoteCall(Action.Cancel);
+                logger.info(PREFIX + appPathIdentifier + " - deregister  status: " + (response != null ? response.getStatus() : "not registered"));
+            } catch (Throwable e) {
+                logger.error(PREFIX + appPathIdentifier + " - de-registration failed" + e.getMessage(), e);
+            } finally {
+                if (response != null) {
+                    response.close();
+                }
             }
         }
     }
@@ -839,7 +890,6 @@ public class DiscoveryClient implements EurekaClient {
      * @return true if the registry was fetched
      */
     private boolean fetchRegistry(boolean forceFullRegistryFetch) {
-        ClientResponse response = null;
         Stopwatch tracer = FETCH_REGISTRY_TIMER.start();
 
         try {
@@ -861,27 +911,19 @@ public class DiscoveryClient implements EurekaClient {
                 logger.info("Registered Applications size is zero : {}",
                         (applications.getRegisteredApplications().size() == 0));
                 logger.info("Application version is -1: {}", (applications.getVersion() == -1));
-                response = getAndStoreFullRegistry();
+                getAndStoreFullRegistry();
             } else {
-                response = getAndUpdateDelta(applications);
+                getAndUpdateDelta(applications);
             }
             applications.setAppsHashCode(applications.getReconcileHashCode());
             logTotalInstances();
-
-            if (logger.isDebugEnabled()) {
-                logger.debug(PREFIX + appPathIdentifier + " -  refresh status: " + response.getStatus());
-            }
         } catch (Throwable e) {
-            logger.error(
-                    PREFIX + appPathIdentifier
-                            + " - was unable to refresh its cache! status = "
-                            + e.getMessage(), e);
+            logger.error(PREFIX + appPathIdentifier + " - was unable to refresh its cache! status = " + e.getMessage(), e);
             return false;
         } finally {
             if (tracer != null) {
                 tracer.stop();
             }
-            closeResponse(response);
         }
 
         // Notify about cache refresh before updating the instance remote status
@@ -948,14 +990,28 @@ public class DiscoveryClient implements EurekaClient {
      * @throws Throwable
      *             on error.
      */
-    private ClientResponse getAndStoreFullRegistry() throws Throwable {
+    private void getAndStoreFullRegistry() throws Throwable {
         long currentUpdateGeneration = fetchRegistryGeneration.get();
-        ClientResponse response = makeRemoteCall(Action.Refresh);
+
         logger.info("Getting all instance registry info from the eureka server");
 
         Applications apps = null;
-        if (response.getStatus() == Status.OK.getStatusCode()) {
-            apps = response.getEntity(Applications.class);
+        if (shouldUseExperimentalTransport()) {
+            EurekaHttpResponse<Applications> httpResponse = eurekaHttpClient.getApplications();
+            if (httpResponse.getStatusCode() == Status.OK.getStatusCode()) {
+                apps = httpResponse.getEntity();
+            }
+            logger.info("The response status is {}", httpResponse.getStatusCode());
+        } else {
+            ClientResponse response = makeRemoteCall(Action.Refresh);
+            try {
+                if (response.getStatus() == Status.OK.getStatusCode()) {
+                    apps = response.getEntity(Applications.class);
+                }
+                logger.info("The response status is {}", response.getStatus());
+            } finally {
+                closeResponse(response);
+            }
         }
 
         if (apps == null) {
@@ -966,8 +1022,6 @@ public class DiscoveryClient implements EurekaClient {
         } else {
             logger.warn("Not updating applications as another thread is updating it already");
         }
-        logger.info("The response status is {}", response.getStatus());
-        return response;
     }
 
     /**
@@ -983,19 +1037,30 @@ public class DiscoveryClient implements EurekaClient {
      * @return the client response
      * @throws Throwable on error
      */
-    private ClientResponse getAndUpdateDelta(Applications applications) throws Throwable {
+    private void getAndUpdateDelta(Applications applications) throws Throwable {
         long currentUpdateGeneration = fetchRegistryGeneration.get();
-        ClientResponse response = makeRemoteCall(Action.Refresh_Delta);
 
         Applications delta = null;
-        if (response.getStatus() == Status.OK.getStatusCode()) {
-            delta = response.getEntity(Applications.class);
+        if (shouldUseExperimentalTransport()) {
+            EurekaHttpResponse<Applications> httpResponse = eurekaHttpClient.getDelta();
+            if (httpResponse.getStatusCode() == Status.OK.getStatusCode()) {
+                delta = httpResponse.getEntity();
+            }
+        } else {
+            ClientResponse response = makeRemoteCall(Action.Refresh_Delta);
+            try {
+                if (response.getStatus() == Status.OK.getStatusCode()) {
+                    delta = response.getEntity(Applications.class);
+                }
+            } finally {
+                closeResponse(response);
+            }
         }
+
         if (delta == null) {
             logger.warn("The server does not allow the delta revision to be applied because it is not safe. "
                     + "Hence got the full registry.");
-            this.closeResponse(response);
-            response = getAndStoreFullRegistry();
+            getAndStoreFullRegistry();
         } else if (fetchRegistryGeneration.compareAndSet(currentUpdateGeneration, currentUpdateGeneration + 1)) {
             logger.debug("Got delta update with apps hashcode {}", delta.getAppsHashCode());
             String reconcileHashCode = "";
@@ -1008,19 +1073,15 @@ public class DiscoveryClient implements EurekaClient {
                 }
             } else {
                 logger.warn("Cannot acquire update lock, aborting getAndUpdateDelta");
-                return response;
             }
             // There is a diff in number of instances for some reason
-            if ((!reconcileHashCode.equals(delta.getAppsHashCode()))
-                    || clientConfig.shouldLogDeltaDiff()) {
-                response = reconcileAndLogDifference(response, delta, reconcileHashCode);  // this makes a remoteCall
+            if (!reconcileHashCode.equals(delta.getAppsHashCode()) || clientConfig.shouldLogDeltaDiff()) {
+                reconcileAndLogDifference(delta, reconcileHashCode);  // this makes a remoteCall
             }
         } else {
             logger.warn("Not updating application delta as another thread is updating it already");
             logger.debug("Ignoring delta update with apps hashcode {}, as another thread is updating it already", delta.getAppsHashCode());
         }
-
-        return response;
     }
 
     /**
@@ -1046,8 +1107,6 @@ public class DiscoveryClient implements EurekaClient {
      *   atomically set the registry to the new registry
      * fi
      *
-     * @param response
-     *            the HTTP response after getting the full registry.
      * @param delta
      *            the last delta registry information received from the eureka
      *            server.
@@ -1057,30 +1116,43 @@ public class DiscoveryClient implements EurekaClient {
      * @throws Throwable
      *             on any error.
      */
-    private ClientResponse reconcileAndLogDifference(ClientResponse response,
-                                                     Applications delta, String reconcileHashCode) throws Throwable {
-        logger.warn(
-                "The Reconcile hashcodes do not match, client : {}, server : {}. Getting the full registry",
+    private void reconcileAndLogDifference(Applications delta, String reconcileHashCode) throws Throwable {
+        logger.warn("The Reconcile hashcodes do not match, client : {}, server : {}. Getting the full registry",
                 reconcileHashCode, delta.getAppsHashCode());
 
         RECONCILE_HASH_CODES_MISMATCH.increment();
 
-        this.closeResponse(response);
-
         long currentUpdateGeneration = fetchRegistryGeneration.get();
-        response = makeRemoteCall(Action.Refresh);
-        Applications serverApps = response.getEntity(Applications.class);
+
+        Applications serverApps = null;
+        if (shouldUseExperimentalTransport()) {
+            EurekaHttpResponse<Applications> httpResponse = eurekaHttpClient.getApplications();
+            serverApps = httpResponse.getEntity();
+        } else {
+            ClientResponse response = makeRemoteCall(Action.Refresh);
+            try {
+                serverApps = response.getEntity(Applications.class);
+            } finally {
+                closeResponse(response);
+            }
+        }
+
+        if (serverApps == null) {
+            logger.warn("Cannot fetch full registry from the server; reconciliation failure");
+            return;
+        }
 
         try {
             Map<String, List<String>> reconcileDiffMap = getApplications().getReconcileMapDiff(serverApps);
-            String reconcileString = "";
+            StringBuilder reconcileBuilder = new StringBuilder("");
             for (Map.Entry<String, List<String>> mapEntry : reconcileDiffMap.entrySet()) {
-                reconcileString = reconcileString + mapEntry.getKey() + ": ";
+                reconcileBuilder.append(mapEntry.getKey()).append(": ");
                 for (String displayString : mapEntry.getValue()) {
-                    reconcileString = reconcileString + displayString;
+                    reconcileBuilder.append(displayString);
                 }
-                reconcileString = reconcileString + "\n";
+                reconcileBuilder.append('\n');
             }
+            String reconcileString = reconcileBuilder.toString();
             logger.warn("The reconcile string is {}", reconcileString);
         } catch (Throwable e) {
             logger.error("Could not calculate reconcile string ", e);
@@ -1096,8 +1168,6 @@ public class DiscoveryClient implements EurekaClient {
         } else {
             logger.warn("Not setting the applications map as another thread has advanced the update generation");
         }
-
-        return response;
     }
 
     /**
@@ -1579,8 +1649,7 @@ public class DiscoveryClient implements EurekaClient {
             return true;
         } else if (Action.Renew == action && httpStatus == 404) {
             return true;
-        } else if (Action.Refresh_Delta == action
-                && (httpStatus == 403 || httpStatus == 404)) {
+        } else if (Action.Refresh_Delta == action && (httpStatus == 403 || httpStatus == 404)) {
             return true;
         } else {
             return false;
@@ -1854,6 +1923,14 @@ public class DiscoveryClient implements EurekaClient {
 
     private boolean isFetchingRemoteRegionRegistries() {
         return null != remoteRegionsToFetch.get();
+    }
+
+    private boolean shouldUseExperimentalTransport() {
+        if (eurekaHttpClient == null) {
+            return false;
+        }
+        String enabled = clientConfig.getExperimental("transport.enabled");
+        return enabled != null && "true".equalsIgnoreCase(enabled);
     }
 
     /**

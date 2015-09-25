@@ -27,11 +27,15 @@ import com.netflix.discovery.shared.transport.EurekaHttpResponse;
  */
 public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
 
-    protected abstract <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor);
+    public enum RequestType {Register, Cancel, SendHeartBeat, StatusUpdate, DeleteStatusOverride, GetApplications, GetDelta, GetInstance}
 
     public interface RequestExecutor<R> {
         EurekaHttpResponse<R> execute(EurekaHttpClient delegate);
+
+        RequestType getRequestType();
     }
+
+    protected abstract <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor);
 
     @Override
     public EurekaHttpResponse<Void> register(final InstanceInfo info) {
@@ -39,6 +43,11 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
             @Override
             public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
                 return delegate.register(info);
+            }
+
+            @Override
+            public RequestType getRequestType() {
+                return RequestType.Register;
             }
         });
     }
@@ -49,6 +58,11 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
             @Override
             public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
                 return delegate.cancel(appName, id);
+            }
+
+            @Override
+            public RequestType getRequestType() {
+                return RequestType.Cancel;
             }
         });
     }
@@ -63,6 +77,11 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
             public EurekaHttpResponse<InstanceInfo> execute(EurekaHttpClient delegate) {
                 return delegate.sendHeartBeat(appName, id, info, overriddenStatus);
             }
+
+            @Override
+            public RequestType getRequestType() {
+                return RequestType.SendHeartBeat;
+            }
         });
     }
 
@@ -72,6 +91,11 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
             @Override
             public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
                 return delegate.statusUpdate(appName, id, newStatus, info);
+            }
+
+            @Override
+            public RequestType getRequestType() {
+                return RequestType.StatusUpdate;
             }
         });
     }
@@ -83,6 +107,11 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
             public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
                 return delegate.deleteStatusOverride(appName, id, info);
             }
+
+            @Override
+            public RequestType getRequestType() {
+                return RequestType.DeleteStatusOverride;
+            }
         });
     }
 
@@ -92,6 +121,11 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
             @Override
             public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
                 return delegate.getApplications();
+            }
+
+            @Override
+            public RequestType getRequestType() {
+                return RequestType.GetApplications;
             }
         });
     }
@@ -103,6 +137,11 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
             public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
                 return delegate.getApplications();
             }
+
+            @Override
+            public RequestType getRequestType() {
+                return RequestType.GetDelta;
+            }
         });
     }
 
@@ -112,6 +151,11 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
             @Override
             public EurekaHttpResponse<InstanceInfo> execute(EurekaHttpClient delegate) {
                 return delegate.getInstance(appName, id);
+            }
+
+            @Override
+            public RequestType getRequestType() {
+                return RequestType.GetInstance;
             }
         });
     }

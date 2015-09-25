@@ -28,6 +28,7 @@ import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.TransportException;
 import com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.RequestExecutor;
+import com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.RequestType;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
@@ -50,11 +51,13 @@ public class RetryableEurekaHttpClientTest {
     private static final int NUMBER_OF_RETRIES = 2;
     private static final int CLUSTER_SIZE = 3;
 
+    public static final RequestType TEST_REQUEST_TYPE = RequestType.Register;
+
     private static final List<EurekaEndpoint> CLUSTER_ENDPOINTS = SampleCluster.UsEast1a.builder().withServerPool(CLUSTER_SIZE).build();
 
     private final ClusterResolver clusterResolver = mock(ClusterResolver.class);
     private final EurekaHttpClientFactory clientFactory = mock(EurekaHttpClientFactory.class);
-    private final ServerStatusEvaluator serverStatusEvaluator = mock(ServerStatusEvaluator.class);
+    private final ServerStatusEvaluator serverStatusEvaluator = ServerStatusEvaluators.legacyEvaluator();
     private final RequestExecutor<Void> requestExecutor = mock(RequestExecutor.class);
 
     private RetryableEurekaHttpClient retryableClient;
@@ -125,8 +128,7 @@ public class RetryableEurekaHttpClientTest {
     }
 
     @Test
-    public void test5xxWithAbandonEvaluationIsRespected() throws Exception {
-        when(serverStatusEvaluator.abandon(500)).thenReturn(true);
+    public void test5xxStatusCodeResultsInRequestRetry() throws Exception {
         when(clientFactory.create(Matchers.<String>anyVararg())).thenReturn(clusterDelegates.get(0), clusterDelegates.get(1));
         when(requestExecutor.execute(clusterDelegates.get(0))).thenReturn(EurekaHttpResponse.<Void>responseWith(500));
         when(requestExecutor.execute(clusterDelegates.get(1))).thenReturn(EurekaHttpResponse.<Void>responseWith(200));
@@ -138,22 +140,7 @@ public class RetryableEurekaHttpClientTest {
         verify(requestExecutor, times(1)).execute(clusterDelegates.get(1));
     }
 
-    @Test
-    public void test5xxWithNotAbandonEvaluationIsRespected() throws Exception {
-        when(serverStatusEvaluator.abandon(500)).thenReturn(false);
-        when(clientFactory.create(Matchers.<String>anyVararg())).thenReturn(clusterDelegates.get(0), clusterDelegates.get(1));
-        when(requestExecutor.execute(clusterDelegates.get(0))).thenReturn(EurekaHttpResponse.<Void>responseWith(500));
-        when(requestExecutor.execute(clusterDelegates.get(1))).thenReturn(EurekaHttpResponse.<Void>responseWith(200));
-
-        EurekaHttpResponse<Void> httpResponse = retryableClient.execute(requestExecutor);
-        assertThat(httpResponse.getStatusCode(), is(equalTo(500)));
-
-        verify(requestExecutor, times(1)).execute(clusterDelegates.get(0));
-        verify(requestExecutor, times(0)).execute(clusterDelegates.get(1));
-    }
-
-//    @Test(timeout = 10000)
-    @Test
+    @Test(timeout = 10000)
     public void testConcurrentRequestsLeaveLastSuccessfulDelegate() throws Exception {
         when(clientFactory.create(Matchers.<String>anyVararg())).thenReturn(clusterDelegates.get(0), clusterDelegates.get(1));
 
@@ -231,6 +218,11 @@ public class RetryableEurekaHttpClientTest {
                 throw new IllegalStateException("never released");
             }
             return EurekaHttpResponse.responseWith(200);
+        }
+
+        @Override
+        public RequestType getRequestType() {
+            return TEST_REQUEST_TYPE;
         }
 
         void awaitReady() {

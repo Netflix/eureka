@@ -77,6 +77,7 @@ public class DnsTxtRecordClusterResolver implements ClusterResolver {
     private static final Logger logger = LoggerFactory.getLogger(DnsTxtRecordClusterResolver.class);
 
     private final List<EurekaEndpoint> eurekaEndpoints;
+    private final String region;
 
     /**
      * @param rootClusterDNS top level domain name, in the two level hierarchy (see {@link DnsTxtRecordClusterResolver} documentation).
@@ -85,11 +86,17 @@ public class DnsTxtRecordClusterResolver implements ClusterResolver {
      * @param port Eureka sever port number
      * @param relativeUri service relative URI that will be appended to server address
      */
-    public DnsTxtRecordClusterResolver(String rootClusterDNS, boolean extractZoneFromDNS, int port, boolean isSecure, String relativeUri) {
+    public DnsTxtRecordClusterResolver(String region, String rootClusterDNS, boolean extractZoneFromDNS, int port, boolean isSecure, String relativeUri) {
+        this.region = region;
         this.eurekaEndpoints = resolve(rootClusterDNS, extractZoneFromDNS, port, isSecure, relativeUri);
-        if(logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled()) {
             logger.debug("Resolved {} to {}", rootClusterDNS, eurekaEndpoints);
         }
+    }
+
+    @Override
+    public String getRegion() {
+        return region;
     }
 
     @Override
@@ -118,9 +125,18 @@ public class DnsTxtRecordClusterResolver implements ClusterResolver {
     }
 
     private static Set<String> resolve(String rootClusterDNS) throws NamingException {
-        Set<String> result = DnsResolver.getCNamesFromTxtRecord(rootClusterDNS);
-        if (result.isEmpty() && !rootClusterDNS.startsWith("txt.")) {
-            result = DnsResolver.getCNamesFromTxtRecord("txt." + rootClusterDNS);
+        Set<String> result;
+        try {
+            result = DnsResolver.getCNamesFromTxtRecord(rootClusterDNS);
+            if (!rootClusterDNS.startsWith("txt.")) {
+                result = DnsResolver.getCNamesFromTxtRecord("txt." + rootClusterDNS);
+            }
+        } catch (NamingException e) {
+            if (!rootClusterDNS.startsWith("txt.")) {
+                result = DnsResolver.getCNamesFromTxtRecord("txt." + rootClusterDNS);
+            } else {
+                throw e;
+            }
         }
         return result;
     }

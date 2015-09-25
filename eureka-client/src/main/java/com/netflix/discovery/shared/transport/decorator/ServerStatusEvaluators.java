@@ -16,21 +16,23 @@
 
 package com.netflix.discovery.shared.transport.decorator;
 
+import com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.RequestType;
+
 /**
  * @author Tomasz Bak
  */
 public final class ServerStatusEvaluators {
 
-    private static final ServerStatusEvaluator ALWAYS_ABANDON_EVALUATOR = new ServerStatusEvaluator() {
+    private static final ServerStatusEvaluator LEGACY_EVALUATOR = new ServerStatusEvaluator() {
         @Override
-        public boolean abandon(int statusCode) {
-            return true;
-        }
-    };
-
-    private static final ServerStatusEvaluator NEVER_ABANDON_EVALUATOR = new ServerStatusEvaluator() {
-        @Override
-        public boolean abandon(int statusCode) {
+        public boolean accept(int statusCode, RequestType requestType) {
+            if (statusCode >= 200 && statusCode < 300 || statusCode == 302) {
+                return true;
+            } else if (requestType == RequestType.Register && statusCode == 404) {
+                return true;
+            } else if (requestType == RequestType.GetDelta && (statusCode == 403 || statusCode == 404)) {
+                return true;
+            }
             return false;
         }
     };
@@ -39,18 +41,9 @@ public final class ServerStatusEvaluators {
     }
 
     /**
-     * Always abandon a server that returns 5xx. It should be used with the registration requests.
+     * Evaluation rules implemented in com.netflix.discovery.DiscoveryClient#isOk(...) method.
      */
-    public static ServerStatusEvaluator alwaysAbandon() {
-        return ALWAYS_ABANDON_EVALUATOR;
-    }
-
-    /**
-     * Never abandon a server that returns 5xx. It should be used with the data fetch requests.
-     * This might require an update in the future, where after a few retries/time period, the server is
-     * abandoned anyway.
-     */
-    public static ServerStatusEvaluator neverAbandon() {
-        return NEVER_ABANDON_EVALUATOR;
+    public static ServerStatusEvaluator legacyEvaluator() {
+        return LEGACY_EVALUATOR;
     }
 }

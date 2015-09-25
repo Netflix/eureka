@@ -52,6 +52,7 @@ public class ReloadingClusterResolver implements ClusterResolver {
     private volatile long lastUpdateTime;
     private volatile long currentReloadIntervalMs;
 
+    // Metric timestamp, tracking last time when data were effectively changed.
     private volatile long lastReloadTimestamp = -1;
 
     public ReloadingClusterResolver(final ClusterResolverFactory factory, final long reloadIntervalMs) {
@@ -79,6 +80,12 @@ public class ReloadingClusterResolver implements ClusterResolver {
         } catch (Throwable e) {
             logger.warn("Cannot register metrics", e);
         }
+    }
+
+    @Override
+    public String getRegion() {
+        ClusterResolver delegate = delegateRef.get();
+        return delegate == null ? null : delegate.getRegion();
     }
 
     @Override

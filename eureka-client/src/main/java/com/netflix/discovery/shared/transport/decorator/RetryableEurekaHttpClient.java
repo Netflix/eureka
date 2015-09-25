@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.discovery.EurekaClientNames;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
@@ -29,6 +30,10 @@ import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.TransportException;
 import com.netflix.discovery.shared.transport.TransportUtils;
+import com.netflix.discovery.util.ServoUtil;
+import com.netflix.servo.monitor.BasicCounter;
+import com.netflix.servo.monitor.Counter;
+import com.netflix.servo.monitor.MonitorConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +55,8 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
 
     private static final Logger logger = LoggerFactory.getLogger(RetryableEurekaHttpClient.class);
 
+    public static final int DEFAULT_NUMBER_OF_RETRIES = 3;
+
     private final ClusterResolver clusterResolver;
     private final EurekaHttpClientFactory clientFactory;
     private final ServerStatusEvaluator serverStatusEvaluator;
@@ -58,6 +65,7 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
     private final AtomicReference<EurekaHttpClient> delegate = new AtomicReference<>();
 
     private final Set<EurekaEndpoint> quarantineSet = new ConcurrentSkipListSet<>();
+    private final Counter retryCounter;
 
     public RetryableEurekaHttpClient(ClusterResolver clusterResolver,
                                      EurekaHttpClientFactory clientFactory,
@@ -67,11 +75,15 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
         this.clientFactory = clientFactory;
         this.serverStatusEvaluator = serverStatusEvaluator;
         this.numberOfRetries = numberOfRetries;
+
+        this.retryCounter = new BasicCounter(MonitorConfig.builder(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "retries").build());
+        ServoUtil.register(retryCounter);
     }
 
     @Override
     public void shutdown() {
         TransportUtils.shutdown(delegate.get());
+        ServoUtil.unregister(retryCounter);
     }
 
     @Override
@@ -98,7 +110,7 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
 
             try {
                 EurekaHttpResponse<R> response = requestExecutor.execute(currentHttpClient);
-                if (response.getStatusCode() < 500 || !serverStatusEvaluator.abandon(response.getStatusCode())) {
+                if (serverStatusEvaluator.accept(response.getStatusCode(), requestExecutor.getRequestType())) {
                     delegate.set(currentHttpClient);
                     return response;
                 }
@@ -114,6 +126,22 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
             }
         }
         throw new TransportException("Retry limit reached; giving up on completing the request");
+    }
+
+    public static EurekaHttpClientFactory createFactory(final ClusterResolver clusterResolver,
+                                                        final EurekaHttpClientFactory delegateFactory,
+                                                        final ServerStatusEvaluator serverStatusEvaluator) {
+        return new EurekaHttpClientFactory() {
+            @Override
+            public EurekaHttpClient create(String... serviceUrls) {
+                return new RetryableEurekaHttpClient(clusterResolver, delegateFactory, serverStatusEvaluator, DEFAULT_NUMBER_OF_RETRIES);
+            }
+
+            @Override
+            public void shutdown() {
+                delegateFactory.shutdown();
+            }
+        };
     }
 
     private List<EurekaEndpoint> getHostCandidates() {

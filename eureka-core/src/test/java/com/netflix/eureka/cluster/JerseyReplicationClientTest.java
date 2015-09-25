@@ -15,6 +15,7 @@ import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
 import com.netflix.eureka.resources.DefaultServerCodecs;
 import com.netflix.eureka.resources.ServerCodecs;
+import com.netflix.eureka.transport.JerseyReplicationClient;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

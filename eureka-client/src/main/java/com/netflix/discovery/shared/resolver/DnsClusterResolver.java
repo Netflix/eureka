@@ -35,13 +35,15 @@ public class DnsClusterResolver implements ClusterResolver {
     private static final Logger logger = LoggerFactory.getLogger(DnsClusterResolver.class);
 
     private final List<EurekaEndpoint> eurekaEndpoints;
+    private final String region;
 
     /**
      * @param rootClusterDNS cluster DNS name containing CNAME or A record.
      * @param port Eureka sever port number
      * @param relativeUri service relative URI that will be appended to server address
      */
-    public DnsClusterResolver(DnsService dnsService, String rootClusterDNS, int port, boolean isSecure, String relativeUri) {
+    public DnsClusterResolver(DnsService dnsService, String region, String rootClusterDNS, int port, boolean isSecure, String relativeUri) {
+        this.region = region;
         List<String> addresses = dnsService.resolveARecord(rootClusterDNS);
         if (addresses == null) {
             this.eurekaEndpoints = Collections.singletonList(new EurekaEndpoint(rootClusterDNS, port, isSecure, relativeUri, null));
@@ -51,6 +53,11 @@ public class DnsClusterResolver implements ClusterResolver {
         if (logger.isDebugEnabled()) {
             logger.debug("Resolved {} to {}", rootClusterDNS, eurekaEndpoints);
         }
+    }
+
+    @Override
+    public String getRegion() {
+        return region;
     }
 
     @Override

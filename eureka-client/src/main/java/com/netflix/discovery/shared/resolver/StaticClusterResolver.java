@@ -16,6 +16,7 @@
 
 package com.netflix.discovery.shared.resolver;
 
+import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 
@@ -32,20 +33,38 @@ public class StaticClusterResolver implements ClusterResolver {
     private static final Logger logger = LoggerFactory.getLogger(StaticClusterResolver.class);
 
     private final List<EurekaEndpoint> eurekaEndpoints;
+    private final String region;
 
-    public StaticClusterResolver(EurekaEndpoint... eurekaEndpoints) {
-        this(Arrays.asList(eurekaEndpoints));
+    public StaticClusterResolver(String region, EurekaEndpoint... eurekaEndpoints) {
+        this(region, Arrays.asList(eurekaEndpoints));
     }
 
-    public StaticClusterResolver(List<EurekaEndpoint> eurekaEndpoints) {
+    public StaticClusterResolver(String region, List<EurekaEndpoint> eurekaEndpoints) {
         this.eurekaEndpoints = eurekaEndpoints;
+        this.region = region;
         if (logger.isDebugEnabled()) {
             logger.debug("Fixed resolver configuration: {}", eurekaEndpoints);
         }
     }
 
     @Override
+    public String getRegion() {
+        return region;
+    }
+
+    @Override
     public List<EurekaEndpoint> getClusterEndpoints() {
         return eurekaEndpoints;
+    }
+
+    public static ClusterResolver fromURL(String regionName, URL serviceUrl) {
+        boolean isSecure = "https".equalsIgnoreCase(serviceUrl.getProtocol());
+        int defaultPort = isSecure ? 443 : 80;
+        int port = serviceUrl.getPort() == -1 ? defaultPort : serviceUrl.getPort();
+
+        return new StaticClusterResolver(
+                regionName,
+                new EurekaEndpoint(serviceUrl.getHost(), port, isSecure, serviceUrl.getPath(), regionName)
+        );
     }
 }

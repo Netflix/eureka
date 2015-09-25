@@ -33,7 +33,7 @@ public class ZoneAffinityClusterResolverTest {
     public void testApplicationZoneIsFirstOnTheList() throws Exception {
         List<EurekaEndpoint> endpoints = SampleCluster.merge(SampleCluster.UsEast1a, SampleCluster.UsEast1b, SampleCluster.UsEast1c);
 
-        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver(endpoints), "us-east-1b");
+        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver("regionA", endpoints), "us-east-1b", true);
 
         List<EurekaEndpoint> result = resolver.getClusterEndpoints();
         assertThat(result.size(), is(equalTo(endpoints.size())));
@@ -41,10 +41,21 @@ public class ZoneAffinityClusterResolverTest {
     }
 
     @Test
+    public void testAntiAffinity() throws Exception {
+        List<EurekaEndpoint> endpoints = SampleCluster.merge(SampleCluster.UsEast1a, SampleCluster.UsEast1b);
+
+        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver("regionA", endpoints), "us-east-1b", false);
+
+        List<EurekaEndpoint> result = resolver.getClusterEndpoints();
+        assertThat(result.size(), is(equalTo(endpoints.size())));
+        assertThat(result.get(0).getZone(), is(equalTo("us-east-1a")));
+    }
+
+    @Test
     public void testUnrecognizedZoneIsIgnored() throws Exception {
         List<EurekaEndpoint> endpoints = SampleCluster.merge(SampleCluster.UsEast1a, SampleCluster.UsEast1b);
 
-        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver(endpoints), "us-east-1c");
+        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver("regionA", endpoints), "us-east-1c", true);
 
         List<EurekaEndpoint> result = resolver.getClusterEndpoints();
         assertThat(result.size(), is(equalTo(endpoints.size())));

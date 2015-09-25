@@ -20,14 +20,13 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.appinfo.InstanceInfo;
-import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.EurekaClientNames;
-import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
+import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.decorator.MetricsCollectingEurekaHttpClient.EurekaHttpClientRequestMetrics.Status;
-import com.netflix.servo.DefaultMonitorRegistry;
+import com.netflix.discovery.util.ExceptionsMetric;
+import com.netflix.discovery.util.ServoUtil;
 import com.netflix.servo.monitor.BasicCounter;
 import com.netflix.servo.monitor.BasicTimer;
 import com.netflix.servo.monitor.Counter;
@@ -40,143 +39,41 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Tomasz Bak
  */
-public class MetricsCollectingEurekaHttpClient implements EurekaHttpClient {
+public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricsCollectingEurekaHttpClient.class);
 
     private final EurekaHttpClient delegate;
 
-    enum RequestType {Register, Cancel, SendHeartBeat, StatusUpdate, DeleteStatusOverride, GetApplications, GetDelta, GetInstance}
-
     private final Map<RequestType, EurekaHttpClientRequestMetrics> metricsByRequestType;
+    private final ExceptionsMetric exceptionsMetric;
+    private final boolean shutdownMetrics;
 
     public MetricsCollectingEurekaHttpClient(EurekaHttpClient delegate) {
+        this(delegate, initializeMetrics(), new ExceptionsMetric(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "exceptions"), true);
+    }
+
+    private MetricsCollectingEurekaHttpClient(EurekaHttpClient delegate,
+                                              Map<RequestType, EurekaHttpClientRequestMetrics> metricsByRequestType,
+                                              ExceptionsMetric exceptionsMetric,
+                                              boolean shutdownMetrics) {
         this.delegate = delegate;
-        this.metricsByRequestType = initializeMetrics();
+        this.metricsByRequestType = metricsByRequestType;
+        this.exceptionsMetric = exceptionsMetric;
+        this.shutdownMetrics = shutdownMetrics;
     }
 
     @Override
-    public EurekaHttpResponse<Void> register(InstanceInfo info) {
-        EurekaHttpClientRequestMetrics requestMetrics = metricsByRequestType.get(RequestType.Register);
+    protected <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor) {
+        EurekaHttpClientRequestMetrics requestMetrics = metricsByRequestType.get(requestExecutor.getRequestType());
         Stopwatch stopwatch = requestMetrics.latencyTimer.start();
         try {
-            EurekaHttpResponse<Void> httpResponse = delegate.register(info);
+            EurekaHttpResponse<R> httpResponse = requestExecutor.execute(delegate);
             requestMetrics.countersByStatus.get(mappedStatus(httpResponse)).increment();
             return httpResponse;
         } catch (Exception e) {
             requestMetrics.connectionErrors.increment();
-            throw e;
-        } finally {
-            stopwatch.stop();
-        }
-    }
-
-    @Override
-    public EurekaHttpResponse<Void> cancel(String appName, String id) {
-        EurekaHttpClientRequestMetrics requestMetrics = metricsByRequestType.get(RequestType.Cancel);
-        Stopwatch stopwatch = requestMetrics.latencyTimer.start();
-        try {
-            EurekaHttpResponse<Void> httpResponse = delegate.cancel(appName, id);
-            requestMetrics.countersByStatus.get(mappedStatus(httpResponse)).increment();
-            return httpResponse;
-        } catch (Exception e) {
-            requestMetrics.connectionErrors.increment();
-            throw e;
-        } finally {
-            stopwatch.stop();
-        }
-    }
-
-    @Override
-    public EurekaHttpResponse<InstanceInfo> sendHeartBeat(String appName, String id, InstanceInfo info, InstanceStatus overriddenStatus) {
-        EurekaHttpClientRequestMetrics requestMetrics = metricsByRequestType.get(RequestType.SendHeartBeat);
-        Stopwatch stopwatch = requestMetrics.latencyTimer.start();
-        try {
-            EurekaHttpResponse<InstanceInfo> httpResponse = delegate.sendHeartBeat(appName, id, info, overriddenStatus);
-            requestMetrics.countersByStatus.get(mappedStatus(httpResponse)).increment();
-            return httpResponse;
-        } catch (Exception e) {
-            requestMetrics.connectionErrors.increment();
-            throw e;
-        } finally {
-            stopwatch.stop();
-        }
-    }
-
-    @Override
-    public EurekaHttpResponse<Void> statusUpdate(String appName, String id, InstanceStatus newStatus, InstanceInfo info) {
-        EurekaHttpClientRequestMetrics requestMetrics = metricsByRequestType.get(RequestType.StatusUpdate);
-        Stopwatch stopwatch = requestMetrics.latencyTimer.start();
-        try {
-            EurekaHttpResponse<Void> httpResponse = delegate.statusUpdate(appName, id, newStatus, info);
-            requestMetrics.countersByStatus.get(mappedStatus(httpResponse)).increment();
-            return httpResponse;
-        } catch (Exception e) {
-            requestMetrics.connectionErrors.increment();
-            throw e;
-        } finally {
-            stopwatch.stop();
-        }
-    }
-
-    @Override
-    public EurekaHttpResponse<Void> deleteStatusOverride(String appName, String id, InstanceInfo info) {
-        EurekaHttpClientRequestMetrics requestMetrics = metricsByRequestType.get(RequestType.DeleteStatusOverride);
-        Stopwatch stopwatch = requestMetrics.latencyTimer.start();
-        try {
-            EurekaHttpResponse<Void> httpResponse = delegate.deleteStatusOverride(appName, id, info);
-            requestMetrics.countersByStatus.get(mappedStatus(httpResponse)).increment();
-            return httpResponse;
-        } catch (Exception e) {
-            requestMetrics.connectionErrors.increment();
-            throw e;
-        } finally {
-            stopwatch.stop();
-        }
-    }
-
-    @Override
-    public EurekaHttpResponse<Applications> getApplications() {
-        EurekaHttpClientRequestMetrics requestMetrics = metricsByRequestType.get(RequestType.GetApplications);
-        Stopwatch stopwatch = requestMetrics.latencyTimer.start();
-        try {
-            EurekaHttpResponse<Applications> httpResponse = delegate.getApplications();
-            requestMetrics.countersByStatus.get(mappedStatus(httpResponse)).increment();
-            return httpResponse;
-        } catch (Exception e) {
-            requestMetrics.connectionErrors.increment();
-            throw e;
-        } finally {
-            stopwatch.stop();
-        }
-    }
-
-    @Override
-    public EurekaHttpResponse<Applications> getDelta() {
-        EurekaHttpClientRequestMetrics requestMetrics = metricsByRequestType.get(RequestType.GetDelta);
-        Stopwatch stopwatch = requestMetrics.latencyTimer.start();
-        try {
-            EurekaHttpResponse<Applications> httpResponse = delegate.getDelta();
-            requestMetrics.countersByStatus.get(mappedStatus(httpResponse)).increment();
-            return httpResponse;
-        } catch (Exception e) {
-            requestMetrics.connectionErrors.increment();
-            throw e;
-        } finally {
-            stopwatch.stop();
-        }
-    }
-
-    @Override
-    public EurekaHttpResponse<InstanceInfo> getInstance(String appName, String id) {
-        EurekaHttpClientRequestMetrics requestMetrics = metricsByRequestType.get(RequestType.GetInstance);
-        Stopwatch stopwatch = requestMetrics.latencyTimer.start();
-        try {
-            EurekaHttpResponse<InstanceInfo> httpResponse = delegate.getInstance(appName, id);
-            requestMetrics.countersByStatus.get(mappedStatus(httpResponse)).increment();
-            return httpResponse;
-        } catch (Exception e) {
-            requestMetrics.connectionErrors.increment();
+            exceptionsMetric.count(e);
             throw e;
         } finally {
             stopwatch.stop();
@@ -185,9 +82,32 @@ public class MetricsCollectingEurekaHttpClient implements EurekaHttpClient {
 
     @Override
     public void shutdown() {
-        for (EurekaHttpClientRequestMetrics metrics : metricsByRequestType.values()) {
-            metrics.shutdown();
+        if (shutdownMetrics) {
+            shutdownMetrics(metricsByRequestType);
+            exceptionsMetric.shutdown();
         }
+    }
+
+    public static EurekaHttpClientFactory createFactory(final EurekaHttpClientFactory delegateFactory) {
+        final Map<RequestType, EurekaHttpClientRequestMetrics> metricsByRequestType = initializeMetrics();
+        final ExceptionsMetric exceptionMetrics = new ExceptionsMetric(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "exceptions");
+        return new EurekaHttpClientFactory() {
+            @Override
+            public EurekaHttpClient create(String... serviceUrls) {
+                return new MetricsCollectingEurekaHttpClient(
+                        delegateFactory.create(serviceUrls),
+                        metricsByRequestType,
+                        exceptionMetrics,
+                        false
+                );
+            }
+
+            @Override
+            public void shutdown() {
+                shutdownMetrics(metricsByRequestType);
+                exceptionMetrics.shutdown();
+            }
+        };
     }
 
     private static Map<RequestType, EurekaHttpClientRequestMetrics> initializeMetrics() {
@@ -200,6 +120,12 @@ public class MetricsCollectingEurekaHttpClient implements EurekaHttpClient {
             logger.warn("Metrics initialization failure", e);
         }
         return result;
+    }
+
+    private static void shutdownMetrics(Map<RequestType, EurekaHttpClientRequestMetrics> metricsByRequestType) {
+        for (EurekaHttpClientRequestMetrics metrics : metricsByRequestType.values()) {
+            metrics.shutdown();
+        }
     }
 
     private static Status mappedStatus(EurekaHttpResponse<?> httpResponse) {
@@ -237,7 +163,7 @@ public class MetricsCollectingEurekaHttpClient implements EurekaHttpClient {
                             .build(),
                     TimeUnit.MILLISECONDS
             );
-            DefaultMonitorRegistry.getInstance().register(latencyTimer);
+            ServoUtil.register(latencyTimer);
 
             this.connectionErrors = new BasicCounter(
                     MonitorConfig.builder(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "connectionErrors")
@@ -245,18 +171,12 @@ public class MetricsCollectingEurekaHttpClient implements EurekaHttpClient {
                             .withTag("class", MetricsCollectingEurekaHttpClient.class.getSimpleName())
                             .build()
             );
-            DefaultMonitorRegistry.getInstance().register(connectionErrors);
+            ServoUtil.register(connectionErrors);
         }
 
         void shutdown() {
-            try {
-                DefaultMonitorRegistry.getInstance().unregister(latencyTimer);
-                DefaultMonitorRegistry.getInstance().unregister(connectionErrors);
-                for (Counter counter : countersByStatus.values()) {
-                    DefaultMonitorRegistry.getInstance().unregister(counter);
-                }
-            } catch (Exception ignore) {
-            }
+            ServoUtil.unregister(latencyTimer, connectionErrors);
+            ServoUtil.unregister(countersByStatus.values());
         }
 
         private static Map<Status, Counter> createStatusCounters(String resourceName) {
@@ -270,7 +190,7 @@ public class MetricsCollectingEurekaHttpClient implements EurekaHttpClient {
                                 .withTag("status", status.name())
                                 .build()
                 );
-                DefaultMonitorRegistry.getInstance().register(counter);
+                ServoUtil.register(counter);
 
                 result.put(status, counter);
             }

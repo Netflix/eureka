@@ -23,6 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.netflix.discovery.shared.resolver.DnsService;
+import com.netflix.discovery.shared.resolver.DnsServiceImpl;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
@@ -93,13 +94,28 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
         }
     }
 
+    public static EurekaHttpClientFactory createFactory(final EurekaHttpClientFactory delegateFactory) {
+        final DnsServiceImpl dnsService = new DnsServiceImpl();
+        return new EurekaHttpClientFactory() {
+            @Override
+            public EurekaHttpClient create(String... serviceUrls) {
+                return new RedirectingEurekaHttpClient(serviceUrls[0], delegateFactory, dnsService);
+            }
+
+            @Override
+            public void shutdown() {
+                delegateFactory.shutdown();
+            }
+        };
+    }
+
     private <R> EurekaHttpResponse<R> executeOnNewServer(RequestExecutor<R> requestExecutor,
                                                          AtomicReference<EurekaHttpClient> currentHttpClientRef) {
         URI targetUrl = null;
         for (int followRedirectCount = 0; followRedirectCount < MAX_FOLLOWED_REDIRECTS; followRedirectCount++) {
             EurekaHttpResponse<R> httpResponse = requestExecutor.execute(currentHttpClientRef.get());
             if (httpResponse.getStatusCode() != 302) {
-                if(followRedirectCount == 0) {
+                if (followRedirectCount == 0) {
                     logger.info("Pinning to endpoint {}", targetUrl);
                 } else {
                     logger.info("Pinning to endpoint {}, after {} redirect(s)", targetUrl, followRedirectCount);

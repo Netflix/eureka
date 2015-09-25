@@ -16,6 +16,7 @@
 
 package com.netflix.discovery.shared.resolver;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -33,16 +34,30 @@ public class ZoneAffinityClusterResolver implements ClusterResolver {
     private static final Logger logger = LoggerFactory.getLogger(ZoneAffinityClusterResolver.class);
 
     private final List<EurekaEndpoint> eurekaEndpoints;
+    private final String region;
 
-    public ZoneAffinityClusterResolver(ClusterResolver delegate, String myZone) {
+    /**
+     * A zoneAffinity defines zone affinity (true) or anti-affinity rules (false).
+     */
+    public ZoneAffinityClusterResolver(ClusterResolver delegate, String myZone, boolean zoneAffinity) {
+        this.region = delegate.getRegion();
         List<EurekaEndpoint>[] parts = ResolverUtils.splitByZone(delegate.getClusterEndpoints(), myZone);
         List<EurekaEndpoint> myZoneEndpoints = parts[0];
         List<EurekaEndpoint> remainingEndpoints = parts[1];
-        this.eurekaEndpoints = randomizeAndMerge(myZoneEndpoints, remainingEndpoints);
+        List<EurekaEndpoint> randomizedList = randomizeAndMerge(myZoneEndpoints, remainingEndpoints);
+        if (!zoneAffinity) {
+            Collections.reverse(randomizedList);
+        }
+        this.eurekaEndpoints = randomizedList;
 
         if (logger.isDebugEnabled()) {
             logger.debug("Local zone={}; resolved to: {}", myZone, eurekaEndpoints);
         }
+    }
+
+    @Override
+    public String getRegion() {
+        return region;
     }
 
     @Override

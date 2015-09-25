@@ -19,6 +19,9 @@ package com.netflix.discovery.shared.transport;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 
+import com.netflix.appinfo.ApplicationInfoManager;
+import com.netflix.appinfo.EurekaInstanceConfig;
+import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
@@ -41,7 +44,10 @@ import static org.mockito.Mockito.when;
  */
 public class EurekaHttpClientsTest {
 
+    private static final InstanceInfo MY_INSTANCE = InstanceInfoGenerator.newBuilder(1, "myApp").build().first();
     private final EurekaClientConfig clientConfig = mock(EurekaClientConfig.class);
+    private final EurekaInstanceConfig instanceConfig = mock(EurekaInstanceConfig.class);
+    private final ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(instanceConfig, MY_INSTANCE);
 
     private final EurekaHttpClient writeRequestHandler = mock(EurekaHttpClient.class);
     private final EurekaHttpClient readRequestHandler = mock(EurekaHttpClient.class);
@@ -61,7 +67,7 @@ public class EurekaHttpClientsTest {
         when(clientConfig.getEurekaServerTotalConnections()).thenReturn(10);
 
         writeServer = new SimpleEurekaHttpServer(writeRequestHandler);
-        clusterResolver = new StaticClusterResolver(new EurekaEndpoint("localhost", writeServer.getServerPort(), false, "/v2/", null));
+        clusterResolver = new StaticClusterResolver("regionA", new EurekaEndpoint("localhost", writeServer.getServerPort(), false, "/v2/", null));
 
         readServer = new SimpleEurekaHttpServer(readRequestHandler);
         readServerURI = "http://localhost:" + readServer.getServerPort();
@@ -94,7 +100,7 @@ public class EurekaHttpClientsTest {
                         .build()
         );
 
-        EurekaHttpClient eurekaHttpClient = EurekaHttpClients.createStandardClient(clientConfig, clusterResolver);
+        EurekaHttpClient eurekaHttpClient = EurekaHttpClients.createStandardClient(clientConfig, applicationInfoManager, clusterResolver);
 
         EurekaHttpResponse<Applications> result = eurekaHttpClient.getApplications();
 

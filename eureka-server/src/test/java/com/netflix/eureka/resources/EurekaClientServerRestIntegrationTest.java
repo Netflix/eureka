@@ -18,7 +18,7 @@ import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClientImpl.Eure
 import com.netflix.discovery.shared.transport.jersey.JerseyApplicationClient;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.cluster.JerseyReplicationClient;
+import com.netflix.eureka.transport.JerseyReplicationClient;
 import com.netflix.eureka.cluster.protocol.ReplicationInstance;
 import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationList;

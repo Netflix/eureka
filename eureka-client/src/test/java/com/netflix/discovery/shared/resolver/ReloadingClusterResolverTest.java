@@ -92,7 +92,7 @@ public class ReloadingClusterResolverTest {
 
         @Override
         public ClusterResolver createClusterResolver() {
-            return new StaticClusterResolver(currentEndpointsRef.get());
+            return new StaticClusterResolver("regionA", currentEndpointsRef.get());
         }
 
         void setEndpoints(List<EurekaEndpoint> endpoints) {
