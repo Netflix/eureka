@@ -44,13 +44,10 @@ public interface EurekaInstanceConfig {
 
     /**
      * Get the unique Id (within the scope of the appName) of this instance to be registered with eureka.
-     * (why SID?) we are reusing the deprecated sid within InstanceInfo and do the same here for uniformity.
      *
-     * Note that "na" is a special keyword and cannot be used.
-     *
-     * @return the (appname scoped) unique id
+     * @return the (appname scoped) unique id for this instance
      */
-    String getSID();
+    String getInstanceId();
 
     /**
      * Get the name of the application to be registered with eureka.

@@ -48,8 +48,8 @@ public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
     }
 
     @Override
-    public String getSID() {
-        return config.getString("sid", null);
+    public String getInstanceId() {
+        return config.getString("instanceId", null);
     }
 
     @Override

@@ -22,7 +22,7 @@ public final class ClusterSampleData {
 
     public static final long REPLICATION_EXPIRY_TIME_MS = 100;
 
-    public static final long MAX_PROCESSING_DELAY_MS = 10;
+    public static final long MAX_PROCESSING_DELAY_MS = 50;
 
     public static final long RETRY_SLEEP_TIME_MS = 1;
 

@@ -107,43 +107,36 @@ public class InstanceInfoTest {
     }
 
     @Test
-    public void testGetIdWithSIDUsed() {
+    public void testGetIdWithInstanceIdUsed() {
         InstanceInfo baseline = InstanceInfoGenerator.takeOne();
         String dataCenterInfoId = ((UniqueIdentifier) baseline.getDataCenterInfo()).getId();
-        assertThat(baseline.getSID(), is(baseline.getId()));
+        assertThat(baseline.getInstanceId(), is(baseline.getId()));
         assertThat(dataCenterInfoId, is(baseline.getId()));
 
-        String customSid = "customSid";
-        InstanceInfo instanceInfo = new InstanceInfo.Builder(baseline).setSID(customSid).build();
+        String customInstanceId = "someId";
+        InstanceInfo instanceInfo = new InstanceInfo.Builder(baseline).setInstanceId(customInstanceId).build();
         dataCenterInfoId = ((UniqueIdentifier) instanceInfo.getDataCenterInfo()).getId();
-        assertThat(instanceInfo.getSID(), is(instanceInfo.getId()));
-        assertThat(customSid, is(instanceInfo.getId()));
+        assertThat(instanceInfo.getInstanceId(), is(instanceInfo.getId()));
+        assertThat(customInstanceId, is(instanceInfo.getId()));
         assertThat(dataCenterInfoId, is(not(baseline.getId())));
     }
 
-    // test case for compatiblity
+    // test case for backwards compatibility
     @Test
-    public void testGetIdWithSIDNotUsed() {
-        String sidDefaultVal = "na";
+    public void testGetIdWithInstanceIdNotUsed() {
         InstanceInfo baseline = InstanceInfoGenerator.takeOne();
-        InstanceInfo instanceInfo1 = new InstanceInfo.Builder(baseline).setSID(sidDefaultVal).build();
+        // override the sid with ""
+        InstanceInfo instanceInfo1 = new InstanceInfo.Builder(baseline).setInstanceId("").build();
         String dataCenterInfoId = ((UniqueIdentifier) baseline.getDataCenterInfo()).getId();
-        assertThat(instanceInfo1.getSID(), is(sidDefaultVal));
-        assertThat(instanceInfo1.getSID(), is(not(instanceInfo1.getId())));
+        assertThat(instanceInfo1.getInstanceId().isEmpty(), is(true));
+        assertThat(instanceInfo1.getInstanceId(), is(not(instanceInfo1.getId())));
         assertThat(dataCenterInfoId, is(instanceInfo1.getId()));
 
-        // override the sid with ""
-        InstanceInfo instanceInfo2 = new InstanceInfo.Builder(baseline).setSID("").build();
-        dataCenterInfoId = ((UniqueIdentifier) baseline.getDataCenterInfo()).getId();
-        assertThat(instanceInfo2.getSID().isEmpty(), is(true));
-        assertThat(instanceInfo2.getSID(), is(not(instanceInfo2.getId())));
-        assertThat(dataCenterInfoId, is(instanceInfo2.getId()));
-
         // override the sid with null
-        InstanceInfo instanceInfo3 = new InstanceInfo.Builder(baseline).setSID(null).build();
+        InstanceInfo instanceInfo2 = new InstanceInfo.Builder(baseline).setInstanceId(null).build();
         dataCenterInfoId = ((UniqueIdentifier) baseline.getDataCenterInfo()).getId();
-        assertThat(instanceInfo3.getSID(), is(nullValue()));
-        assertThat(instanceInfo3.getSID(), is(not(instanceInfo3.getId())));
-        assertThat(dataCenterInfoId, is(instanceInfo3.getId()));
+        assertThat(instanceInfo2.getInstanceId(), is(nullValue()));
+        assertThat(instanceInfo2.getInstanceId(), is(not(instanceInfo2.getId())));
+        assertThat(dataCenterInfoId, is(instanceInfo2.getId()));
     }
 }
