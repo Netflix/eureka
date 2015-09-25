@@ -64,12 +64,18 @@ public class InstanceInfo {
     public static final int DEFAULT_SECURE_PORT = 7002;
     public static final int DEFAULT_COUNTRY_ID = 1; // US
 
+    // The (fixed) instanceId for this instanceInfo. This should be unique within the scope of the appName.
+    private volatile String instanceId;
+
     private volatile String appName;
     @Auto
     private volatile String appGroupName;
 
     private volatile String ipAddr;
-    private volatile String sid = "na";
+
+    private static final String SID_DEFAULT = "na";
+    @Deprecated
+    private volatile String sid = SID_DEFAULT;
 
     private volatile int port = DEFAULT_PORT;
     private volatile int securePort = DEFAULT_SECURE_PORT;
@@ -130,6 +136,7 @@ public class InstanceInfo {
 
     @JsonCreator
     public InstanceInfo(
+            @JsonProperty("instanceId") String instanceId,
             @JsonProperty("app") String appName,
             @JsonProperty("appGroupName") String appGroupName,
             @JsonProperty("ipAddr") String ipAddr,
@@ -156,10 +163,11 @@ public class InstanceInfo {
             @JsonProperty("lastDirtyTimestamp") Long lastDirtyTimestamp,
             @JsonProperty("actionType") ActionType actionType,
             @JsonProperty("asgName") String asgName) {
+        this.instanceId = instanceId;
+        this.sid = sid;
         this.appName = StringCache.intern(appName);
         this.appGroupName = StringCache.intern(appGroupName);
         this.ipAddr = ipAddr;
-        this.sid = sid;
         this.port = port;
         this.isUnsecurePortEnabled = portEnabled;
         this.securePort = securePort;
@@ -190,6 +198,10 @@ public class InstanceInfo {
         } else {
             this.metadata = metadata;
         }
+
+        if (sid == null) {
+            this.sid = SID_DEFAULT;
+        }
     }
 
     private Map<String, String> removeMetadataMapLegacyValues(Map<String, String> metadata) {
@@ -210,6 +222,7 @@ public class InstanceInfo {
      * @param ii The object to copy
      */
     public InstanceInfo(InstanceInfo ii) {
+        this.instanceId = ii.instanceId;
         this.appName = ii.appName;
         this.appGroupName = ii.appGroupName;
         this.ipAddr = ii.ipAddr;
@@ -340,6 +353,11 @@ public class InstanceInfo {
             return new Builder();
         }
 
+        public Builder setInstanceId(String instanceId) {
+            result.instanceId = instanceId;
+            return this;
+        }
+
         /**
          * Set the application name of the instance.This is mostly used in
          * querying of instances.
@@ -424,8 +442,7 @@ public class InstanceInfo {
         /**
          * Sets the identity of this application instance.
          *
-         * @param sid
-         *            the sid of the instance.
+         * @param sid the sid of the instance.
          * @return the {@link InstanceInfo} builder.
          */
         @Deprecated
@@ -815,6 +832,13 @@ public class InstanceInfo {
     }
 
     /**
+     * @return the raw instanceId. For compatibility, prefer to use {@link #getId()}
+     */
+    public String getInstanceId() {
+        return instanceId;
+    }
+
+    /**
      * Return the name of the application registering with discovery.
      *
      * @return the string denoting the application name.
@@ -843,21 +867,25 @@ public class InstanceInfo {
         setIsDirty();
     }
 
+    @JsonProperty("sid")
     @Deprecated
-    @JsonIgnore
     public String getSID() {
         return sid;
     }
 
     /**
-     *
      * Returns the unique id of the instance.
+     * (Note) now that id is set at creation time within the instanceProvider, why do the other checks?
+     * This is still necessary for backwards compatibility when upgrading in a deployment with multiple
+     * client versions (some with the change, some without).
      *
      * @return the unique id.
      */
     @JsonIgnore
     public String getId() {
-        if (dataCenterInfo instanceof UniqueIdentifier) {
+        if (instanceId != null && !instanceId.isEmpty()) {
+            return instanceId;
+        } else if (dataCenterInfo instanceof UniqueIdentifier) {
             return ((UniqueIdentifier) dataCenterInfo).getId();
         } else {
             return hostName;

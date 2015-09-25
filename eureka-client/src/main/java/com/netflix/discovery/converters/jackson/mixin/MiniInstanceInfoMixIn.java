@@ -18,6 +18,7 @@ public interface MiniInstanceInfoMixIn {
         public static final Set<String> ALLOWED_FIELDS;
         static {
             Set<String> fields = new HashSet<>();
+            fields.add("instanceId");
             fields.add("app");
             fields.add("ipAddr");
             fields.add("vipAddress");
@@ -38,6 +39,9 @@ public interface MiniInstanceInfoMixIn {
 
     @JsonIgnore
     InstanceStatus getOverriddenStatus();
+
+    @JsonIgnore
+    String getSID();
 
     @JsonIgnore
     int getCountryId();

@@ -64,14 +64,6 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
     /*
      * (non-Javadoc)
      *
-     * @see com.netflix.appinfo.InstanceConfig#getAppname()
-     */
-    @Override
-    public abstract String getAppname();
-
-    /*
-     * (non-Javadoc)
-     *
      * @see com.netflix.appinfo.InstanceConfig#isInstanceEnabledOnit()
      */
     @Override

@@ -73,7 +73,7 @@ public class EurekaJacksonCodecTest {
 
     @Test
     public void testInstanceInfoJacksonEncodeDecodeWithoutMetaData() throws Exception {
-        InstanceInfo noMetaDataInfo = InstanceInfoGenerator.takeOne();
+        InstanceInfo noMetaDataInfo = InstanceInfoGenerator.newBuilder(1, 1).withMetaData(false).build().serviceIterator().next();
 
         // Encode
         ByteArrayOutputStream captureStream = new ByteArrayOutputStream();

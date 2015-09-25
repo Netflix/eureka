@@ -26,6 +26,10 @@ import com.google.inject.ImplementedBy;
  * the most common way of doing it or by other means to get the information
  * necessary to talk to other instances registered with <em>Eureka</em>.
  *
+ * <P>
+ * As requirements of registration, an id and an appname must be supplied. The id should be
+ * unique within the scope of the appname.
+ * </P>
  *
  * <p>
  * Note that all configurations are not effective at runtime unless and
@@ -37,6 +41,14 @@ import com.google.inject.ImplementedBy;
  */
 @ImplementedBy(CloudInstanceConfig.class)
 public interface EurekaInstanceConfig {
+
+    /**
+     * Get the unique Id (within the scope of the appName) of this instance to be registered with eureka.
+     *
+     * @return the (appname scoped) unique id for this instance
+     */
+    String getInstanceId();
+
     /**
      * Get the name of the application to be registered with eureka.
      *
