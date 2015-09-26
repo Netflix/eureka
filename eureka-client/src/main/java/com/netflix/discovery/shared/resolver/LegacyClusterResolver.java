@@ -75,9 +75,10 @@ public class LegacyClusterResolver implements ClusterResolver {
         public ClusterResolver createClusterResolver() {
             ClusterResolver newResolver;
             if (clientConfig.shouldUseDnsForFetchingServiceUrls()) {
+                String discoveryDnsName = "txt." + myRegion + '.' + clientConfig.getEurekaServerDNSName();
                 newResolver = new DnsTxtRecordClusterResolver(
                         myRegion,
-                        clientConfig.getEurekaServerDNSName(),
+                        discoveryDnsName,
                         true,
                         Integer.parseInt(clientConfig.getEurekaServerPort()),
                         false,

@@ -418,9 +418,6 @@ public class DiscoveryClient implements EurekaClient {
         } catch (Throwable e) {
             throw new RuntimeException("Failed to initialize DiscoveryClient!", e);
         }
-        if (clientConfig.shouldFetchRegistry() && !fetchRegistry(false)) {
-            fetchRegistryFromBackup();
-        }
 
         // Configure new transport layer (candidate for injecting in the future)
         EurekaHttpClient newEurekaHttpClient = null;
@@ -432,6 +429,10 @@ public class DiscoveryClient implements EurekaClient {
             logger.warn("Experimental transport initialization failure", e);
         }
         this.eurekaHttpClient = newEurekaHttpClient;
+
+        if (clientConfig.shouldFetchRegistry() && !fetchRegistry(false)) {
+            fetchRegistryFromBackup();
+        }
 
         initScheduledTasks();
         try {
