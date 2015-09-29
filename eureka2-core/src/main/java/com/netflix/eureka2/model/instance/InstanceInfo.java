@@ -394,7 +394,7 @@ public class InstanceInfo {
             this.homePageUrl = another.homePageUrl;
             this.statusPageUrl = another.statusPageUrl;
             this.healthCheckUrls = another.healthCheckUrls;
-            this.metaData = another.metaData;
+            this.metaData = another.metaData == null ? null : new HashMap<>(another.metaData);
             this.dataCenterInfo = another.dataCenterInfo;
             return this;
         }

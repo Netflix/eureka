@@ -108,6 +108,12 @@ public class RetryableConnectionFactory<CHANNEL extends ServiceChannel> {
                         return observable;
                     }
                 })
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        logger.warn("Error in the channel", throwable);
+                    }
+                })
                 .doOnSubscribe(new Action0() {
                     @Override
                     public void call() {
