@@ -588,4 +588,12 @@ public interface EurekaServerConfig {
      * @return the class name of the full xml codec to use for the server. If none set a default codec will be used
      */
     String getXmlCodecName();
+
+    /**
+     * To avoid configuration API pollution when trying new/experimental or features or for the migration process,
+     * the corresponding configuration can be put into experimental configuration section.
+     *
+     * @return a property of experimental feature
+     */
+    String getExperimental(String name);
 }

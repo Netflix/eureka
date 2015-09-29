@@ -526,4 +526,12 @@ public interface EurekaClientConfig {
      * @return {@link com.netflix.appinfo.EurekaAccept#name()} for client data accept
      */
     String getClientDataAccept();
+
+    /**
+     * To avoid configuration API pollution when trying new/experimental or features or for the migration process,
+     * the corresponding configuration can be put into experimental configuration section.
+     *
+     * @return a property of experimental feature
+     */
+    String getExperimental(String name);
 }

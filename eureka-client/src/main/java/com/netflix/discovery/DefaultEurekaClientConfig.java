@@ -511,4 +511,9 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
         return configInstance.getStringProperty(
                 namespace + "clientDataAccept", EurekaAccept.full.name()).get();
     }
+
+    @Override
+    public String getExperimental(String name) {
+        return configInstance.getStringProperty(namespace + "experimental." + name, null).get();
+    }
 }
