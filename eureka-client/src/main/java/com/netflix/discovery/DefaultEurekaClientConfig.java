@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.google.inject.ProvidedBy;
+import com.netflix.appinfo.EurekaAccept;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
@@ -360,8 +361,8 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
      */
     @Override
     public String getRegion() {
-        return configInstance.getStringProperty("eureka.region", "us-east-1")
-                .get();
+        DynamicStringProperty defaultEurekaRegion = configInstance.getStringProperty("eureka.region", "us-east-1");
+        return configInstance.getStringProperty(namespace + "region", defaultEurekaRegion.get()).get();
     }
 
     /*
@@ -491,5 +492,23 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     public boolean shouldOnDemandUpdateStatusChange() {
         return configInstance.getBooleanProperty(
                 namespace + "shouldOnDemandUpdateStatusChange", true).get();
+    }
+
+    @Override
+    public String getEncoderName() {
+        return configInstance.getStringProperty(
+                namespace + "encoderName", null).get();
+    }
+
+    @Override
+    public String getDecoderName() {
+        return configInstance.getStringProperty(
+                namespace + "decoderName", null).get();
+    }
+
+    @Override
+    public String getClientDataAccept() {
+        return configInstance.getStringProperty(
+                namespace + "clientDataAccept", EurekaAccept.full.name()).get();
     }
 }

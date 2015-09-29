@@ -15,6 +15,8 @@
  */
 package com.netflix.appinfo;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
@@ -23,11 +25,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonRootName;
 import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.discovery.converters.Auto;
+import com.netflix.discovery.converters.EurekaJacksonCodec.InstanceInfoSerializer;
 import com.netflix.discovery.provider.Serializer;
+import com.netflix.discovery.util.StringCache;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import org.slf4j.Logger;
@@ -47,6 +55,7 @@ import org.slf4j.LoggerFactory;
 @ProvidedBy(EurekaConfigBasedInstanceInfoProvider.class)
 @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("instance")
+@JsonRootName("instance")
 public class InstanceInfo {
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfo.class);
     private static final Pattern VIP_ATTRIBUTES_PATTERN = Pattern.compile("\\$\\{(.*?)\\}");
@@ -55,12 +64,18 @@ public class InstanceInfo {
     public static final int DEFAULT_SECURE_PORT = 7002;
     public static final int DEFAULT_COUNTRY_ID = 1; // US
 
+    // The (fixed) instanceId for this instanceInfo. This should be unique within the scope of the appName.
+    private volatile String instanceId;
+
     private volatile String appName;
     @Auto
     private volatile String appGroupName;
 
     private volatile String ipAddr;
-    private volatile String sid = "na";
+
+    private static final String SID_DEFAULT = "na";
+    @Deprecated
+    private volatile String sid = SID_DEFAULT;
 
     private volatile int port = DEFAULT_PORT;
     private volatile int securePort = DEFAULT_SECURE_PORT;
@@ -119,6 +134,87 @@ public class InstanceInfo {
     private InstanceInfo() {
     }
 
+    @JsonCreator
+    public InstanceInfo(
+            @JsonProperty("instanceId") String instanceId,
+            @JsonProperty("app") String appName,
+            @JsonProperty("appGroupName") String appGroupName,
+            @JsonProperty("ipAddr") String ipAddr,
+            @JsonProperty("sid") String sid,
+            @JsonProperty("port") int port,
+            @JsonProperty("portEnabled") boolean portEnabled,
+            @JsonProperty("securePort") int securePort,
+            @JsonProperty("securePortEnabled") boolean securePortEnabled,
+            @JsonProperty("homePageUrl") String homePageUrl,
+            @JsonProperty("statusPageUrl") String statusPageUrl,
+            @JsonProperty("healthCheckUrl") String healthCheckUrl,
+            @JsonProperty("secureHealthCheckUrl") String secureHealthCheckUrl,
+            @JsonProperty("vipAddress") String vipAddress,
+            @JsonProperty("secureVipAddress") String secureVipAddress,
+            @JsonProperty("countryId") int countryId,
+            @JsonProperty("dataCenterInfo") DataCenterInfo dataCenterInfo,
+            @JsonProperty("hostName") String hostName,
+            @JsonProperty("status") InstanceStatus status,
+            @JsonProperty("overriddenstatus") InstanceStatus overriddenstatus,
+            @JsonProperty("leaseInfo") LeaseInfo leaseInfo,
+            @JsonProperty("isCoordinatingDiscoveryServer") Boolean isCoordinatingDiscoveryServer,
+            @JsonProperty("metadata") HashMap<String, String> metadata,
+            @JsonProperty("lastUpdatedTimestamp") Long lastUpdatedTimestamp,
+            @JsonProperty("lastDirtyTimestamp") Long lastDirtyTimestamp,
+            @JsonProperty("actionType") ActionType actionType,
+            @JsonProperty("asgName") String asgName) {
+        this.instanceId = instanceId;
+        this.sid = sid;
+        this.appName = StringCache.intern(appName);
+        this.appGroupName = StringCache.intern(appGroupName);
+        this.ipAddr = ipAddr;
+        this.port = port;
+        this.isUnsecurePortEnabled = portEnabled;
+        this.securePort = securePort;
+        this.isSecurePortEnabled = securePortEnabled;
+        this.homePageUrl = homePageUrl;
+        this.statusPageUrl = statusPageUrl;
+        this.healthCheckUrl = healthCheckUrl;
+        this.secureHealthCheckUrl = secureHealthCheckUrl;
+        this.vipAddress = StringCache.intern(vipAddress);
+        this.secureVipAddress = StringCache.intern(secureVipAddress);
+        this.countryId = countryId;
+        this.dataCenterInfo = dataCenterInfo;
+        this.hostName = hostName;
+        this.status = status;
+        this.overriddenstatus = overriddenstatus;
+        this.leaseInfo = leaseInfo;
+        this.isCoordinatingDiscoveryServer = isCoordinatingDiscoveryServer;
+        this.lastUpdatedTimestamp = lastUpdatedTimestamp;
+        this.lastDirtyTimestamp = lastDirtyTimestamp;
+        this.actionType = actionType;
+        this.asgName = StringCache.intern(asgName);
+
+        // for compatibility
+        if (metadata == null) {
+            this.metadata = Collections.emptyMap();
+        } else if (metadata.size() == 1) {
+            this.metadata = removeMetadataMapLegacyValues(metadata);
+        } else {
+            this.metadata = metadata;
+        }
+
+        if (sid == null) {
+            this.sid = SID_DEFAULT;
+        }
+    }
+
+    private Map<String, String> removeMetadataMapLegacyValues(Map<String, String> metadata) {
+        if (InstanceInfoSerializer.METADATA_COMPATIBILITY_VALUE.equals(metadata.get(InstanceInfoSerializer.METADATA_COMPATIBILITY_KEY))) {
+            // TODO this else if can be removed once the server no longer uses legacy json
+            metadata.remove(InstanceInfoSerializer.METADATA_COMPATIBILITY_KEY);
+        } else if (InstanceInfoSerializer.METADATA_COMPATIBILITY_VALUE.equals(metadata.get("class"))) {
+            // TODO this else if can be removed once the server no longer uses legacy xml
+            metadata.remove("class");
+        }
+        return metadata;
+    }
+
     /**
      *
      * shallow copy constructor.
@@ -126,6 +222,7 @@ public class InstanceInfo {
      * @param ii The object to copy
      */
     public InstanceInfo(InstanceInfo ii) {
+        this.instanceId = ii.instanceId;
         this.appName = ii.appName;
         this.appGroupName = ii.appGroupName;
         this.ipAddr = ii.ipAddr;
@@ -256,6 +353,11 @@ public class InstanceInfo {
             return new Builder();
         }
 
+        public Builder setInstanceId(String instanceId) {
+            result.instanceId = instanceId;
+            return this;
+        }
+
         /**
          * Set the application name of the instance.This is mostly used in
          * querying of instances.
@@ -265,11 +367,7 @@ public class InstanceInfo {
          * @return the instance info builder.
          */
         public Builder setAppName(String appName) {
-            if (appName != null) {
-                result.appName = appName.toUpperCase(Locale.ROOT);
-            } else {
-                result.appName = null;
-            }
+            result.appName = StringCache.intern(appName.toUpperCase(Locale.ROOT));
             return this;
         }
 
@@ -344,8 +442,7 @@ public class InstanceInfo {
         /**
          * Sets the identity of this application instance.
          *
-         * @param sid
-         *            the sid of the instance.
+         * @param sid the sid of the instance.
          * @return the {@link InstanceInfo} builder.
          */
         @Deprecated
@@ -559,8 +656,8 @@ public class InstanceInfo {
          * @return the instance builder.
          */
         public Builder setVIPAddress(String vipAddress) {
-            result.vipAddressUnresolved = vipAddress;
-            result.vipAddress = resolveDeploymentContextBasedVipAddresses(vipAddress);
+            result.vipAddressUnresolved = StringCache.intern(vipAddress);
+            result.vipAddress = StringCache.intern(resolveDeploymentContextBasedVipAddresses(vipAddress));
             return this;
         }
 
@@ -568,7 +665,7 @@ public class InstanceInfo {
          * Setter used during deserialization process, that does not do macro expansion on the provided value.
          */
         public Builder setVIPAddressDeser(String vipAddress) {
-            result.vipAddress = vipAddress;
+            result.vipAddress = StringCache.intern(vipAddress);
             return this;
         }
 
@@ -584,8 +681,8 @@ public class InstanceInfo {
          * @return - Builder instance
          */
         public Builder setSecureVIPAddress(String secureVIPAddress) {
-            result.secureVipAddressUnresolved = secureVIPAddress;
-            result.secureVipAddress = resolveDeploymentContextBasedVipAddresses(secureVIPAddress);
+            result.secureVipAddressUnresolved = StringCache.intern(secureVIPAddress);
+            result.secureVipAddress = StringCache.intern(resolveDeploymentContextBasedVipAddresses(secureVIPAddress));
             return this;
         }
 
@@ -593,7 +690,7 @@ public class InstanceInfo {
          * Setter used during deserialization process, that does not do macro expansion on the provided value.
          */
         public Builder setSecureVIPAddressDeser(String secureVIPAddress) {
-            result.secureVipAddress = secureVIPAddress;
+            result.secureVipAddress = StringCache.intern(secureVIPAddress);
             return this;
         }
 
@@ -681,7 +778,7 @@ public class InstanceInfo {
          * @return the instance info builder.
          */
         public Builder setASGName(String asgName) {
-            result.asgName = asgName;
+            result.asgName = StringCache.intern(asgName);
             return this;
         }
 
@@ -735,10 +832,18 @@ public class InstanceInfo {
     }
 
     /**
+     * @return the raw instanceId. For compatibility, prefer to use {@link #getId()}
+     */
+    public String getInstanceId() {
+        return instanceId;
+    }
+
+    /**
      * Return the name of the application registering with discovery.
      *
      * @return the string denoting the application name.
      */
+    @JsonProperty("app")
     public String getAppName() {
         return appName;
     }
@@ -762,19 +867,25 @@ public class InstanceInfo {
         setIsDirty();
     }
 
+    @JsonProperty("sid")
     @Deprecated
     public String getSID() {
         return sid;
     }
 
     /**
-     *
      * Returns the unique id of the instance.
+     * (Note) now that id is set at creation time within the instanceProvider, why do the other checks?
+     * This is still necessary for backwards compatibility when upgrading in a deployment with multiple
+     * client versions (some with the change, some without).
      *
      * @return the unique id.
      */
+    @JsonIgnore
     public String getId() {
-        if (dataCenterInfo instanceof UniqueIdentifier) {
+        if (instanceId != null && !instanceId.isEmpty()) {
+            return instanceId;
+        } else if (dataCenterInfo instanceof UniqueIdentifier) {
             return ((UniqueIdentifier) dataCenterInfo).getId();
         } else {
             return hostName;
@@ -786,6 +897,7 @@ public class InstanceInfo {
      *
      * @return - the ip address, in AWS scenario it is a private IP.
      */
+    @JsonProperty("ipAddr")
     public String getIPAddr() {
         return ipAddr;
     }
@@ -796,6 +908,7 @@ public class InstanceInfo {
      *
      * @return - the non-secure port number.
      */
+    @JsonIgnore
     public int getPort() {
         return port;
     }
@@ -866,6 +979,7 @@ public class InstanceInfo {
      *
      * @return the secure port.
      */
+    @JsonIgnore
     public int getSecurePort() {
         return securePort;
     }
@@ -877,6 +991,7 @@ public class InstanceInfo {
      *            indicates whether it is secure or non-secure port.
      * @return true if the port is enabled, false otherwise.
      */
+    @JsonIgnore
     public boolean isPortEnabled(PortType type) {
         if (type == PortType.SECURE) {
             return isSecurePortEnabled;
@@ -929,6 +1044,7 @@ public class InstanceInfo {
      * @return A Set containing the string representation of health check urls
      *         for secure and non secure protocols
      */
+    @JsonIgnore
     public Set<String> getHealthCheckUrls() {
         Set<String> healthCheckUrlSet = new LinkedHashSet<String>();
         if (this.isUnsecurePortEnabled && healthCheckUrl != null && !healthCheckUrl.isEmpty()) {
@@ -940,12 +1056,21 @@ public class InstanceInfo {
         return healthCheckUrlSet;
     }
 
+    public String getHealthCheckUrl() {
+        return healthCheckUrl;
+    }
+
+    public String getSecureHealthCheckUrl() {
+        return secureHealthCheckUrl;
+    }
+
     /**
      * Gets the Virtual Internet Protocol address for this instance. Defaults to
      * hostname if not specified.
      *
      * @return - The Virtual Internet Protocol address
      */
+    @JsonProperty("vipAddress")
     public String getVIPAddress() {
         return vipAddress;
     }
@@ -1026,6 +1151,7 @@ public class InstanceInfo {
      *
      * @return true if the {@link InstanceInfo} is dirty, false otherwise.
      */
+    @JsonIgnore
     public boolean isDirty() {
         return isInstanceInfoDirty;
     }
@@ -1105,6 +1231,7 @@ public class InstanceInfo {
      * @return - true, if this instance is the coordinating discovery server,
      *         false otherwise.
      */
+    @JsonProperty("isCoordinatingDiscoveryServer")
     public Boolean isCoordinatingDiscoveryServer() {
         return isCoordinatingDiscoveryServer;
     }
@@ -1135,6 +1262,7 @@ public class InstanceInfo {
      *
      * @return autoscaling group name of this instance.
      */
+    @JsonProperty("asgName")
     public String getASGName() {
         return this.asgName;
     }
@@ -1145,6 +1273,7 @@ public class InstanceInfo {
      * @return the string indicating the version of the application.
      */
     @Deprecated
+    @JsonIgnore
     public String getVersion() {
         return version;
     }
@@ -1228,5 +1357,4 @@ public class InstanceInfo {
         }
         return instanceZone;
     }
-
 }

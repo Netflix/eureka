@@ -63,6 +63,9 @@ public class ExampleEurekaClient {
         System.out.println("Found an instance of example service to talk to from eureka: "
                 + nextServerInfo.getVIPAddress() + ":" + nextServerInfo.getPort());
 
+        System.out.println("healthCheckUrl: " + nextServerInfo.getHealthCheckUrl());
+        System.out.println("override: " + nextServerInfo.getOverriddenStatus());
+
         Socket s = new Socket();
         int serverPort = nextServerInfo.getPort();
         try {

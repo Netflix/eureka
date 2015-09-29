@@ -1,3 +1,11 @@
+buildscript {
+    repositories { jcenter() }
+
+    dependencies {
+        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:2.2.+'
+    }
+}
+
 plugins {
     id 'nebula.netflixoss' version '2.2.7'
 }
@@ -15,10 +23,18 @@ ext {
     archaiusVersion='0.7.1'
     archaius2Version='2.0.0-rc.28'
     blitzVersion='1.34'
-    mockitoVersion='1.9.5'
+    mockitoVersion='1.10.19'
     junit_version='4.10'
     mockserverVersion='3.9.2'
     jetty_version='7.2.0.v20101020'
+    jacksonVersion='2.5.4'
+    woodstoxVersion='4.4.1'
+}
+
+idea {
+    project {
+        languageLevel = '1.7'
+    }
 }
 
 subprojects {

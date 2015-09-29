@@ -16,6 +16,9 @@
 
 package com.netflix.appinfo;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonRootName;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 
 /**
@@ -31,6 +34,7 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
  * @author Karthik Ranganathan, Greg Kim
  *
  */
+@JsonRootName("leaseInfo")
 public class LeaseInfo {
 
     public static final int DEFAULT_LEASE_RENEWAL_INTERVAL = 30;
@@ -156,6 +160,35 @@ public class LeaseInfo {
     }
 
     /**
+     * TODO: note about renewalTimestamp legacy:
+     * The previous change to use Jackson ser/deser changed the field name for lastRenewalTimestamp to renewalTimestamp
+     * for serialization, which causes an incompatibility with the jacksonNG codec when the server returns data with
+     * field renewalTimestamp and jacksonNG expects lastRenewalTimestamp. Remove this legacy field from client code
+     * in a few releases (once servers are updated to a release that generates json with the correct
+     * lastRenewalTimestamp).
+     */
+    @JsonCreator
+    public LeaseInfo(@JsonProperty("renewalIntervalInSecs") int renewalIntervalInSecs,
+                     @JsonProperty("durationInSecs") int durationInSecs,
+                     @JsonProperty("registrationTimestamp") long registrationTimestamp,
+                     @JsonProperty("lastRenewalTimestamp") Long lastRenewalTimestamp,
+                     @JsonProperty("renewalTimestamp") long lastRenewalTimestampLegacy,  // for legacy
+                     @JsonProperty("evictionTimestamp") long evictionTimestamp,
+                     @JsonProperty("serviceUpTimestamp") long serviceUpTimestamp) {
+        this.renewalIntervalInSecs = renewalIntervalInSecs;
+        this.durationInSecs = durationInSecs;
+        this.registrationTimestamp = registrationTimestamp;
+        this.evictionTimestamp = evictionTimestamp;
+        this.serviceUpTimestamp = serviceUpTimestamp;
+
+        if (lastRenewalTimestamp == null) {
+            this.lastRenewalTimestamp = lastRenewalTimestampLegacy;
+        } else {
+            this.lastRenewalTimestamp = lastRenewalTimestamp;
+        }
+    }
+
+    /**
      * Returns the registration timestamp.
      *
      * @return time in milliseconds since epoch.
@@ -169,6 +202,7 @@ public class LeaseInfo {
      *
      * @return time in milliseconds since epoch.
      */
+    @JsonProperty("lastRenewalTimestamp")
     public long getRenewalTimestamp() {
         return lastRenewalTimestamp;
     }

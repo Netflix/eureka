@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.netflix.appinfo.AmazonInfo;
@@ -39,6 +40,7 @@ import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.util.StringCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +62,7 @@ public class EurekaJacksonCodec {
     protected static final String ELEM_INSTANCE = "instance";
     protected static final String ELEM_OVERRIDDEN_STATUS = "overriddenstatus";
     protected static final String ELEM_HOST = "hostName";
+    protected static final String ELEM_INSTANCE_ID = "instanceId";
     protected static final String ELEM_APP = "app";
     protected static final String ELEM_IP = "ipAddr";
     protected static final String ELEM_SID = "sid";
@@ -97,7 +100,6 @@ public class EurekaJacksonCodec {
     private final String versionDeltaKey;
     private final String appHashCodeKey;
 
-    private final StringCache cache = new StringCache();
     private final ObjectMapper mapper;
 
     private final Map<Class<?>, ObjectReader> objectReaderByClass;
@@ -116,10 +118,10 @@ public class EurekaJacksonCodec {
         module.addSerializer(Application.class, new ApplicationSerializer());
         module.addSerializer(Applications.class, new ApplicationsSerializer(this.versionDeltaKey, this.appHashCodeKey));
 
-        module.addDeserializer(DataCenterInfo.class, new DataCenterInfoDeserializer(cache));
+        module.addDeserializer(DataCenterInfo.class, new DataCenterInfoDeserializer());
         module.addDeserializer(LeaseInfo.class, new LeaseInfoDeserializer());
-        module.addDeserializer(InstanceInfo.class, new InstanceInfoDeserializer(this.mapper, cache));
-        module.addDeserializer(Application.class, new ApplicationDeserializer(this.mapper, cache));
+        module.addDeserializer(InstanceInfo.class, new InstanceInfoDeserializer(this.mapper));
+        module.addDeserializer(Application.class, new ApplicationDeserializer(this.mapper));
         module.addDeserializer(Applications.class, new ApplicationsDeserializer(this.mapper, this.versionDeltaKey, this.appHashCodeKey));
 
         this.mapper.registerModule(module);
@@ -147,10 +149,6 @@ public class EurekaJacksonCodec {
 
     protected String getAppHashCodeKey() {
         return appHashCodeKey;
-    }
-
-    protected StringCache getCache() {
-        return cache;
     }
 
     protected static String formatKey(String keyTemplate) {
@@ -219,7 +217,9 @@ public class EurekaJacksonCodec {
 
     public static class DataCenterInfoSerializer extends JsonSerializer<DataCenterInfo> {
         @Override
-        public void serialize(DataCenterInfo dataCenterInfo, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+        public void serializeWithType(DataCenterInfo dataCenterInfo, JsonGenerator jgen,
+                                      SerializerProvider provider, TypeSerializer typeSer)
+                throws IOException, JsonProcessingException {
             jgen.writeStartObject();
 
             // XStream encoded adds this for backwards compatibility issue. Not sure if needed anymore
@@ -237,15 +237,14 @@ public class EurekaJacksonCodec {
             }
             jgen.writeEndObject();
         }
+
+        @Override
+        public void serialize(DataCenterInfo dataCenterInfo, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            serializeWithType(dataCenterInfo, jgen, provider, null);
+        }
     }
 
     public static class DataCenterInfoDeserializer extends JsonDeserializer<DataCenterInfo> {
-
-        protected StringCache cache;
-
-        public DataCenterInfoDeserializer(StringCache cache) {
-            this.cache = cache;
-        }
 
         @Override
         public DataCenterInfo deserialize(JsonParser jp, DeserializationContext context) throws IOException {
@@ -266,7 +265,7 @@ public class EurekaJacksonCodec {
             while (metaNamesIt.hasNext()) {
                 String key = metaNamesIt.next();
                 String value = metaNode.get(key).asText();
-                metaData.put(cache.cachedValueOf(key), cache.cachedValueOf(value));
+                metaData.put(StringCache.intern(key), StringCache.intern(value));
             }
 
             AmazonInfo amazonInfo = new AmazonInfo();
@@ -316,12 +315,17 @@ public class EurekaJacksonCodec {
 
     public static class InstanceInfoSerializer extends JsonSerializer<InstanceInfo> {
         // For backwards compatibility
-        protected static final Object EMPTY_METADATA = Collections.singletonMap("@class", "java.util.Collections$EmptyMap");
+        public static final String METADATA_COMPATIBILITY_KEY = "@class";
+        public static final String METADATA_COMPATIBILITY_VALUE = "java.util.Collections$EmptyMap";
+        protected static final Object EMPTY_METADATA = Collections.singletonMap(METADATA_COMPATIBILITY_KEY, METADATA_COMPATIBILITY_VALUE);
 
         @Override
         public void serialize(InstanceInfo info, JsonGenerator jgen, SerializerProvider provider) throws IOException {
             jgen.writeStartObject();
 
+            if (info.getInstanceId() != null) {
+                jgen.writeStringField(ELEM_INSTANCE_ID, info.getInstanceId());
+            }
             jgen.writeStringField(ELEM_HOST, info.getHostName());
             jgen.writeStringField(ELEM_APP, info.getAppName());
             jgen.writeStringField(ELEM_IP, info.getIPAddr());
@@ -390,11 +394,9 @@ public class EurekaJacksonCodec {
 
     public static class InstanceInfoDeserializer extends JsonDeserializer<InstanceInfo> {
         protected ObjectMapper mapper;
-        protected final StringCache cache;
 
-        protected InstanceInfoDeserializer(ObjectMapper mapper, StringCache cache) {
+        protected InstanceInfoDeserializer(ObjectMapper mapper) {
             this.mapper = mapper;
-            this.cache = cache;
         }
 
         @Override
@@ -418,12 +420,14 @@ public class EurekaJacksonCodec {
                 if (!fieldNode.isNull()) {
                     if (ELEM_HOST.equals(fieldName)) {
                         builder.setHostName(fieldNode.asText());
+                    } else if (ELEM_INSTANCE_ID.equals(fieldName)) {
+                        builder.setInstanceId(fieldNode.asText());
                     } else if (ELEM_APP.equals(fieldName)) {
-                        builder.setAppName(cache.cachedValueOf(fieldNode.asText()));
+                        builder.setAppName(fieldNode.asText());
                     } else if (ELEM_IP.equals(fieldName)) {
                         builder.setIPAddr(fieldNode.asText());
                     } else if (ELEM_SID.equals(fieldName)) {
-                        builder.setSID(cache.cachedValueOf(fieldNode.asText()));
+                        builder.setSID(fieldNode.asText());
                     } else if (ELEM_IDENTIFYING_ATTR.equals(fieldName)) {
                         // nothing;
                     } else if (ELEM_STATUS.equals(fieldName)) {
@@ -450,7 +454,7 @@ public class EurekaJacksonCodec {
                         Map<String, String> meta = null;
                         Iterator<String> metaNameIt = fieldNode.fieldNames();
                         while (metaNameIt.hasNext()) {
-                            String key = cache.cachedValueOf(metaNameIt.next());
+                            String key = StringCache.intern(metaNameIt.next());
                             if (key.equals("@class")) { // For backwards compatibility
                                 if (meta == null && !metaNameIt.hasNext()) { // Optimize for empty maps
                                     meta = Collections.emptyMap();
@@ -459,9 +463,12 @@ public class EurekaJacksonCodec {
                                 if (meta == null) {
                                     meta = new ConcurrentHashMap<String, String>();
                                 }
-                                String value = cache.cachedValueOf(fieldNode.get(key).asText());
+                                String value = StringCache.intern(fieldNode.get(key).asText());
                                 meta.put(key, value);
                             }
+                        }
+                        if (meta == null) {
+                            meta = Collections.emptyMap();
                         }
                         builder.setMetadata(meta);
                     } else if (ELEM_HEALTHCHECKURL.equals(fieldName)) {
@@ -547,19 +554,16 @@ public class EurekaJacksonCodec {
     public static class ApplicationDeserializer extends JsonDeserializer<Application> {
 
         protected ObjectMapper mapper;
-        protected StringCache cache;
 
-        public ApplicationDeserializer(ObjectMapper mapper, StringCache cache) {
+        public ApplicationDeserializer(ObjectMapper mapper) {
             this.mapper = mapper;
-            this.cache = cache;
         }
 
         @Override
         public Application deserialize(JsonParser jp, DeserializationContext context) throws IOException {
             JsonNode node = jp.getCodec().readTree(jp);
 
-            String name = cache.cachedValueOf(node.get(ELEM_NAME).asText());
-            Application application = new Application(name);
+            Application application = new Application(node.get(ELEM_NAME).asText());
 
             JsonNode instanceNode = node.get(ELEM_INSTANCE);
             if (instanceNode != null) {

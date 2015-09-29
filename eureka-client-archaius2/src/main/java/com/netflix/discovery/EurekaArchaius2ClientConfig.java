@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import com.google.inject.Inject;
+import com.netflix.appinfo.EurekaAccept;
 import com.netflix.archaius.Config;
 import com.netflix.archaius.annotations.Configuration;
 import com.netflix.archaius.annotations.ConfigurationSource;
@@ -186,5 +187,20 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
 
     public boolean shouldOnDemandUpdateStatusChange() {
         return config.getBoolean("shouldOnDemandUpdateStatusChange", true);
+    }
+
+    @Override
+    public String getEncoderName() {
+        return config.getString("encoderName");
+    }
+
+    @Override
+    public String getDecoderName() {
+        return config.getString("decoderName");
+    }
+
+    @Override
+    public String getClientDataAccept() {
+        return config.getString("clientDataAccept", EurekaAccept.full.name());
     }
 }

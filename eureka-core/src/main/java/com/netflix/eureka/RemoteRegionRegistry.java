@@ -39,7 +39,7 @@ import com.netflix.discovery.TimedSupervisorTask;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.EurekaJerseyClient;
-import com.netflix.discovery.shared.EurekaJerseyClient.EurekaJerseyClientBuilder;
+import com.netflix.discovery.shared.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
 import com.netflix.discovery.shared.LookupService;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
@@ -83,7 +83,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
         this.fetchRegistryTimer = Monitors.newTimer(this.remoteRegionURL.toString() + "_FetchRegistry");
 
         EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
-                .withUserAgent("Java EurekaClient (remote region)")
+                .withUserAgent("Java-EurekaClient-RemoteRegion")
                 .withConnectionTimeout(EUREKA_SERVER_CONFIG.getRemoteRegionConnectTimeoutMs())
                 .withReadTimeout(EUREKA_SERVER_CONFIG.getRemoteRegionReadTimeoutMs())
                 .withMaxConnectionsPerHost(EUREKA_SERVER_CONFIG.getRemoteRegionTotalConnectionsPerHost())

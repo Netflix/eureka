@@ -56,6 +56,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.netflix.appinfo.ApplicationInfoManager;
+import com.netflix.appinfo.EurekaAccept;
 import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.appinfo.HealthCheckCallback;
 import com.netflix.appinfo.HealthCheckCallbackToHandlerBridge;
@@ -66,7 +67,8 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.EurekaJerseyClient;
-import com.netflix.discovery.shared.EurekaJerseyClient.EurekaJerseyClientBuilder;
+import com.netflix.discovery.shared.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
+import com.netflix.discovery.util.ThresholdLevelsMetric;
 import com.netflix.eventbus.spi.EventBus;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Counter;
@@ -79,6 +81,9 @@ import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static com.netflix.discovery.EurekaClientNames.METRIC_REGISTRATION_PREFIX;
+import static com.netflix.discovery.EurekaClientNames.METRIC_REGISTRY_PREFIX;
 
 /**
  * The class that is instrumental for interactions with <tt>Eureka Server</tt>.
@@ -119,6 +124,8 @@ public class DiscoveryClient implements EurekaClient {
 
     private static final Pattern REDIRECT_PATH_REGEX = Pattern.compile("(.*/v2/)apps(/.*)?$");
 
+    protected static EurekaClientConfig clientConfig;
+
     // Timers
     private static final String PREFIX = "DiscoveryClient_";
     private final com.netflix.servo.monitor.Timer GET_SERVICE_URLS_DNS_TIMER = Monitors
@@ -143,54 +150,54 @@ public class DiscoveryClient implements EurekaClient {
     private final Counter REREGISTER_COUNTER = Monitors.newCounter(PREFIX
             + "Reregister");
 
-    private final Provider<BackupRegistry> backupRegistryProvider;
-
     // instance variables
-    private volatile HealthCheckHandler healthCheckHandler;
-    private final Provider<HealthCheckHandler> healthCheckHandlerProvider;
-    private final Provider<HealthCheckCallback> healthCheckCallbackProvider;
-    private final AtomicReference<List<String>> eurekaServiceUrls = new AtomicReference<List<String>>();
-    private final AtomicReference<Applications> localRegionApps = new AtomicReference<Applications>();
-    private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<String, Applications>();
-    private final Lock fetchRegistryUpdateLock = new ReentrantLock();
-    // monotonically increasing generation counter to ensure stale threads do not reset registry to an older version
-    private final AtomicLong fetchRegistryGeneration;
-
-    private final ApplicationInfoManager applicationInfoManager;
-    private final InstanceInfo instanceInfo;
-    private String appPathIdentifier;
-    private boolean isRegisteredWithDiscovery = false;
-    private EurekaJerseyClient discoveryJerseyClient;
-    private AtomicReference<String> lastQueryRedirect = new AtomicReference<String>();
-    private AtomicReference<String> lastRegisterRedirect = new AtomicReference<String>();
-    private ApacheHttpClient4 discoveryApacheClient;
-    protected static EurekaClientConfig clientConfig;
-    private final AtomicReference<String> remoteRegionsToFetch;
-    private final InstanceRegionChecker instanceRegionChecker;
-    private volatile InstanceInfo.InstanceStatus lastRemoteInstanceStatus = InstanceInfo.InstanceStatus.UNKNOWN;
-
-    private ApplicationInfoManager.StatusChangeListener statusChangeListener;
-    private volatile long lastSuccessfulRegistryFetchTimestamp = -1;
-    private volatile long lastSuccessfulHeartbeatTimestamp = -1;
-
-    private enum Action {
-        Register, Cancel, Renew, Refresh, Refresh_Delta
-    }
-
     /**
      * A scheduler to be used for the following 3 tasks:
      * - updating service urls
      * - scheduling a TimedSuperVisorTask
      */
     private final ScheduledExecutorService scheduler;
-
-    private InstanceInfoReplicator instanceInfoReplicator;
-
     // additional executors for executing hearbeat and cacheRefresh tasks
     private final ThreadPoolExecutor heartbeatExecutor;
     private final ThreadPoolExecutor cacheRefreshExecutor;
 
+    private final Provider<HealthCheckHandler> healthCheckHandlerProvider;
+    private final Provider<HealthCheckCallback> healthCheckCallbackProvider;
+    private final AtomicReference<List<String>> eurekaServiceUrls = new AtomicReference<List<String>>();
+    private final AtomicReference<Applications> localRegionApps = new AtomicReference<Applications>();
+    private final Lock fetchRegistryUpdateLock = new ReentrantLock();
+    // monotonically increasing generation counter to ensure stale threads do not reset registry to an older version
+    private final AtomicLong fetchRegistryGeneration;
+    private final ApplicationInfoManager applicationInfoManager;
+    private final InstanceInfo instanceInfo;
+    private final EurekaAccept clientAccept;
+    private final AtomicReference<String> remoteRegionsToFetch;
+    private final InstanceRegionChecker instanceRegionChecker;
+    private final AtomicReference<String> lastQueryRedirect = new AtomicReference<String>();
+    private final AtomicReference<String> lastRegisterRedirect = new AtomicReference<String>();
     private final EventBus eventBus;
+    private final Provider<BackupRegistry> backupRegistryProvider;
+    private final ApacheHttpClient4 discoveryApacheClient;
+    private EurekaJerseyClient discoveryJerseyClient;
+
+    private volatile HealthCheckHandler healthCheckHandler;
+    private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<String, Applications>();
+    private volatile InstanceInfo.InstanceStatus lastRemoteInstanceStatus = InstanceInfo.InstanceStatus.UNKNOWN;
+
+    private String appPathIdentifier;
+    private boolean isRegisteredWithDiscovery = false;
+    private ApplicationInfoManager.StatusChangeListener statusChangeListener;
+
+    private InstanceInfoReplicator instanceInfoReplicator;
+
+    private volatile long lastSuccessfulRegistryFetchTimestamp = -1;
+    private volatile long lastSuccessfulHeartbeatTimestamp = -1;
+    private final ThresholdLevelsMetric heartbeatStalenessMonitor;
+    private final ThresholdLevelsMetric registryStalenessMonitor;
+
+    private enum Action {
+        Register, Cancel, Renew, Refresh, Refresh_Delta
+    }
 
     public static class DiscoveryClientOptionalArgs {
         @Inject(optional = true)
@@ -204,6 +211,9 @@ public class DiscoveryClient implements EurekaClient {
 
         @Inject(optional = true)
         private Collection<ClientFilter> additionalFilters;
+
+        @Inject(optional = true)
+        private EurekaJerseyClient eurekaJerseyClient;
 
         public DiscoveryClientOptionalArgs() {
         }
@@ -222,6 +232,10 @@ public class DiscoveryClient implements EurekaClient {
 
         public void setAdditionalFilters(Collection<ClientFilter> additionalFilters) {
             this.additionalFilters = additionalFilters;
+        }
+
+        public void setEurekaJerseyClient(EurekaJerseyClient eurekaJerseyClient) {
+            this.eurekaJerseyClient = eurekaJerseyClient;
         }
     }
 
@@ -282,13 +296,15 @@ public class DiscoveryClient implements EurekaClient {
     DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, DiscoveryClientOptionalArgs args,
                     Provider<BackupRegistry> backupRegistryProvider) {
         if (args != null) {
-            healthCheckHandlerProvider = args.healthCheckHandlerProvider;
-            healthCheckCallbackProvider = args.healthCheckCallbackProvider;
-            eventBus = args.eventBus;
+            this.healthCheckHandlerProvider = args.healthCheckHandlerProvider;
+            this.healthCheckCallbackProvider = args.healthCheckCallbackProvider;
+            this.eventBus = args.eventBus;
+            this.discoveryJerseyClient = args.eurekaJerseyClient;
         } else {
-            healthCheckCallbackProvider = null;
-            healthCheckHandlerProvider = null;
-            eventBus = null;
+            this.healthCheckCallbackProvider = null;
+            this.healthCheckHandlerProvider = null;
+            this.eventBus = null;
+            this.discoveryJerseyClient = null;
         }
 
         this.applicationInfoManager = applicationInfoManager;
@@ -328,29 +344,38 @@ public class DiscoveryClient implements EurekaClient {
                 logger.warn("Setting instanceInfo to a passed in null value");
             }
 
-            EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
-                    .withUserAgent("Java EurekaClient")
-                    .withConnectionTimeout(clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000)
-                    .withReadTimeout(clientConfig.getEurekaServerReadTimeoutSeconds() * 1000)
-                    .withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost())
-                    .withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections())
-                    .withConnectionIdleTimeout(clientConfig.getEurekaConnectionIdleTimeoutSeconds());
+            clientAccept = EurekaAccept.fromString(clientConfig.getClientDataAccept());
 
-            if (eurekaServiceUrls.get().get(0).startsWith("https://") &&
-                    "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
-                clientBuilder.withClientName("DiscoveryClient-HTTPClient-System")
-                        .withSystemSSLConfiguration();
-            } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
-                clientBuilder.withClientName("Proxy-DiscoveryClient-HTTPClient")
-                        .withProxy(
-                                clientConfig.getProxyHost(), clientConfig.getProxyPort(),
-                                clientConfig.getProxyUserName(), clientConfig.getProxyPassword()
-                        );
-            } else {
-                clientBuilder.withClientName("DiscoveryClient-HTTPClient");
+            if (discoveryJerseyClient == null) {  // if not injected, create one
+
+                EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
+                        .withUserAgent("Java-EurekaClient")
+                        .withConnectionTimeout(clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000)
+                        .withReadTimeout(clientConfig.getEurekaServerReadTimeoutSeconds() * 1000)
+                        .withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost())
+                        .withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections())
+                        .withConnectionIdleTimeout(clientConfig.getEurekaConnectionIdleTimeoutSeconds())
+                        .withEncoder(clientConfig.getEncoderName())
+                        .withDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept());
+
+                if (eurekaServiceUrls.get().get(0).startsWith("https://") &&
+                        "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
+                    clientBuilder.withClientName("DiscoveryClient-HTTPClient-System")
+                            .withSystemSSLConfiguration();
+                } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
+                    clientBuilder.withClientName("Proxy-DiscoveryClient-HTTPClient")
+                            .withProxy(
+                                    clientConfig.getProxyHost(), clientConfig.getProxyPort(),
+                                    clientConfig.getProxyUserName(), clientConfig.getProxyPassword()
+                            );
+                } else {
+                    clientBuilder.withClientName("DiscoveryClient-HTTPClient");
+                }
+                discoveryJerseyClient = clientBuilder.build();
             }
-            discoveryJerseyClient = clientBuilder.build();
+
             discoveryApacheClient = discoveryJerseyClient.getClient();
+
             remoteRegionsToFetch = new AtomicReference<String>(clientConfig.fetchRegistryForRemoteRegions());
             AzToRegionMapper azToRegionMapper;
             if (clientConfig.shouldUseDnsForFetchingServiceUrls()) {
@@ -368,8 +393,7 @@ public class DiscoveryClient implements EurekaClient {
             if (enableGZIPContentEncodingFilter) {
                 // compressed only if there exists a 'Content-Encoding' header
                 // whose value is "gzip"
-                discoveryApacheClient.addFilter(new GZIPContentEncodingFilter(
-                        false));
+                discoveryApacheClient.addFilter(new GZIPContentEncodingFilter(false));
             }
 
             // always enable client identity headers
@@ -397,6 +421,8 @@ public class DiscoveryClient implements EurekaClient {
         } catch (Throwable e) {
             logger.warn("Cannot register timers", e);
         }
+        this.heartbeatStalenessMonitor = new ThresholdLevelsMetric(this, METRIC_REGISTRATION_PREFIX + "lastHeartbeatSec_", new long[]{15L, 30L, 60L, 120L, 240L, 480L});
+        this.registryStalenessMonitor = new ThresholdLevelsMetric(this, METRIC_REGISTRY_PREFIX + "lastUpdateSec_", new long[]{15L, 30L, 60L, 120L, 240L, 480L});
 
         // This is a bit of hack to allow for existing code using DiscoveryManager.getInstance()
         // to work with DI'd DiscoveryClient
@@ -838,6 +864,9 @@ public class DiscoveryClient implements EurekaClient {
         if (discoveryJerseyClient != null) {
             discoveryJerseyClient.destroyResources();
         }
+
+        heartbeatStalenessMonitor.shutdown();
+        registryStalenessMonitor.shutdown();
     }
 
     /**
@@ -1818,6 +1847,7 @@ public class DiscoveryClient implements EurekaClient {
     private ClientResponse getUrl(String fullServiceUrl) {
         ClientResponse cr = discoveryApacheClient.resource(fullServiceUrl)
                 .accept(MediaType.APPLICATION_JSON_TYPE)
+                .header(EurekaAccept.HTTP_X_EUREKA_ACCEPT, clientAccept.name())
                 .get(ClientResponse.class);
 
         return cr;
@@ -1829,6 +1859,7 @@ public class DiscoveryClient implements EurekaClient {
      */
     void refreshInstanceInfo() {
         applicationInfoManager.refreshDataCenterInfoIfRequired();
+        applicationInfoManager.refreshLeaseInfoIfRequired();
 
         InstanceStatus status;
         try {
@@ -2112,15 +2143,19 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
-    @com.netflix.servo.annotations.Monitor(name = "lastSuccessfulHeartbeatTimePeriod",
+    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRATION_PREFIX + "lastSuccessfulHeartbeatTimePeriod",
             description = "How much time has passed from last successful heartbeat", type = DataSourceType.GAUGE)
     public long getLastSuccessfulHeartbeatTimePeriod() {
-        return lastSuccessfulHeartbeatTimestamp < 0 ? 0 : System.currentTimeMillis() - lastSuccessfulHeartbeatTimestamp;
+        long delay = lastSuccessfulHeartbeatTimestamp < 0 ? 0 : System.currentTimeMillis() - lastSuccessfulHeartbeatTimestamp;
+        heartbeatStalenessMonitor.update(delay);
+        return delay;
     }
 
-    @com.netflix.servo.annotations.Monitor(name = "lastSuccessfulRegistryFetchTimePeriod",
+    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "lastSuccessfulRegistryFetchTimePeriod",
             description = "How much time has passed from last successful local registry update", type = DataSourceType.GAUGE)
     public long getLastSuccessfulRegistryFetchTimePeriod() {
-        return lastSuccessfulRegistryFetchTimestamp < 0 ? 0 : System.currentTimeMillis() - lastSuccessfulRegistryFetchTimestamp;
+        long delay = lastSuccessfulRegistryFetchTimestamp < 0 ? 0 : System.currentTimeMillis() - lastSuccessfulRegistryFetchTimestamp;
+        registryStalenessMonitor.update(delay);
+        return delay;
     }
 }

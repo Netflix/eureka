@@ -26,6 +26,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import com.netflix.appinfo.EurekaAccept;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.eureka.CurrentRequestVersion;
 import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
@@ -46,16 +47,24 @@ import org.slf4j.LoggerFactory;
  */
 @Produces({"application/xml", "application/json"})
 public class ApplicationResource {
-    private static final Logger logger = LoggerFactory
-            .getLogger(ApplicationResource.class);
+    private static final Logger logger = LoggerFactory.getLogger(ApplicationResource.class);
 
-    private final PeerAwareInstanceRegistryImpl registry = PeerAwareInstanceRegistryImpl
-            .getInstance();
+    private final String appName;
+    private final PeerAwareInstanceRegistryImpl registry;
+    private final ResponseCache responseCache;
 
-    String appName;
+    /* For testing */ ApplicationResource(String appName, PeerAwareInstanceRegistryImpl registry, ResponseCache responseCache) {
+        this.appName = appName.toUpperCase();
+        this.registry = registry;
+        this.responseCache = responseCache;
+    }
 
     public ApplicationResource(String appName) {
-        this.appName = appName.toUpperCase();
+        this(appName, PeerAwareInstanceRegistryImpl.getInstance(), ResponseCache.getInstance());
+    }
+
+    public String getAppName() {
+        return appName;
     }
 
     /**
@@ -71,8 +80,9 @@ public class ApplicationResource {
      */
     @GET
     public Response getApplication(@PathParam("version") String version,
-                                   @HeaderParam("Accept") final String acceptHeader) {
-        if (!PeerAwareInstanceRegistryImpl.getInstance().shouldAllowAccess(false)) {
+                                   @HeaderParam("Accept") final String acceptHeader,
+                                   @HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept) {
+        if (!registry.shouldAllowAccess(false)) {
             return Response.status(Status.FORBIDDEN).build();
         }
 
@@ -84,9 +94,15 @@ public class ApplicationResource {
             keyType = KeyType.XML;
         }
 
-        Key cacheKey = new Key(Key.EntityType.Application, appName, keyType, CurrentRequestVersion.get());
+        Key cacheKey = new Key(
+                Key.EntityType.Application,
+                appName,
+                keyType,
+                CurrentRequestVersion.get(),
+                EurekaAccept.fromString(eurekaAccept)
+        );
 
-        String payLoad = ResponseCache.getInstance().get(cacheKey);
+        String payLoad = responseCache.get(cacheKey);
 
         if (payLoad != null) {
             logger.debug("Found: {}", appName);

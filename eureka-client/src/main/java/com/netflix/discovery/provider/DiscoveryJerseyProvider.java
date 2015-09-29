@@ -22,6 +22,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
@@ -32,7 +33,10 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.netflix.discovery.converters.EurekaJacksonCodec;
+import com.netflix.discovery.converters.wrappers.CodecWrappers;
+import com.netflix.discovery.converters.wrappers.CodecWrappers.LegacyJacksonJson;
+import com.netflix.discovery.converters.wrappers.DecoderWrapper;
+import com.netflix.discovery.converters.wrappers.EncoderWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * A custom provider implementation for Jersey that dispatches to the
  * implementation that serializes/deserializes objects sent to and from eureka
  * server.
- *
+ * <p/>
  * <p>
  * This implementation allows users to plugin their own
  * serialization/deserialization mechanism by reading the annotation provided by
@@ -48,125 +52,105 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  * @author Karthik Ranganathan
- *
  */
 @Provider
 @Produces("*/*")
 @Consumes("*/*")
-public class DiscoveryJerseyProvider implements MessageBodyWriter,
-        MessageBodyReader {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(DiscoveryJerseyProvider.class);
+public class DiscoveryJerseyProvider implements MessageBodyWriter, MessageBodyReader {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DiscoveryJerseyProvider.class);
 
-    // Cache the serializers so that they don't have to be instantiated every
-    // time/
+    // Cache the serializers so that they don't have to be instantiated every time
     private static ConcurrentHashMap<Class, ISerializer> serializers = new ConcurrentHashMap<Class, ISerializer>();
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see javax.ws.rs.ext.MessageBodyReader#isReadable(java.lang.Class,
-     * java.lang.reflect.Type, java.lang.annotation.Annotation[],
-     * javax.ws.rs.core.MediaType)
-     */
-    @Override
-    public boolean isReadable(Class serializableClass, Type type,
-                              Annotation[] annotations, MediaType mediaType) {
-        return checkForAnnotation(serializableClass);
+    private final EncoderWrapper encoder;
+    private final DecoderWrapper decoder;
+
+    public DiscoveryJerseyProvider() {
+        this(null, null);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see javax.ws.rs.ext.MessageBodyReader#readFrom(java.lang.Class,
-     * java.lang.reflect.Type, java.lang.annotation.Annotation[],
-     * javax.ws.rs.core.MediaType, javax.ws.rs.core.MultivaluedMap,
-     * java.io.InputStream)
-     */
+    public DiscoveryJerseyProvider(EncoderWrapper encoder, DecoderWrapper decoder) {
+        this.encoder = encoder == null ? CodecWrappers.getEncoder(LegacyJacksonJson.class) : encoder;
+        this.decoder = decoder == null ? CodecWrappers.getDecoder(LegacyJacksonJson.class) : decoder;
+
+        if (encoder instanceof CodecWrappers.JacksonJsonMini) {
+            throw new UnsupportedOperationException("Encoder: " + encoder.codecName() + "is not supported for the client");
+        }
+
+        LOGGER.info("Using encoding codec {}", this.encoder.codecName());
+        LOGGER.info("Using decoding codec {}", this.decoder.codecName());
+    }
+
+    public EncoderWrapper getEncoder() {
+        return encoder;
+    }
+
+    public DecoderWrapper getDecoder() {
+        return decoder;
+    }
+
+    @Override
+    public boolean isReadable(Class serializableClass, Type type, Annotation[] annotations, MediaType mediaType) {
+        if ("application".equals(mediaType.getType()) && ("xml".equals(mediaType.getSubtype()) || "json".equals(mediaType.getSubtype()))) {
+            return checkForAnnotation(serializableClass);
+        }
+        return false;
+    }
+
     @Override
     public Object readFrom(Class serializableClass, Type type,
                            Annotation[] annotations, MediaType mediaType,
-                           MultivaluedMap headers, InputStream inputStream)
-            throws IOException, WebApplicationException {
-
-        // Use Jackson for JSON
-        if (mediaType.equals(MediaType.APPLICATION_JSON_TYPE)) {
+                           MultivaluedMap headers, InputStream inputStream) throws IOException {
+        if (decoder.support(mediaType)) {
             try {
-                return EurekaJacksonCodec.getInstance().readValue(serializableClass, inputStream);
-            } catch (Error e) {
-                LOGGER.error("Unexpected error occured during de-serialization of discovery data, doing connection "
-                        + "cleanup.", e);
-                inputStream.close();
-                throw e;
+                return decoder.decode(inputStream, serializableClass);
+            } catch (Throwable e) {
+                if (e instanceof Error) { // See issue: https://github.com/Netflix/eureka/issues/72 on why we catch Error here.
+                    closeInputOnError(inputStream);
+                    throw new WebApplicationException(createErrorReply(500, e, mediaType));
+                }
+                LOGGER.debug("Cannot parse request body", e);
+                throw new WebApplicationException(createErrorReply(400, "cannot parse request body", mediaType));
             }
         }
 
-        // XML encoded with XStream
+        // default to XML encoded with XStream
         ISerializer serializer = getSerializer(serializableClass);
         if (null != serializer) {
             try {
                 return serializer.read(inputStream, serializableClass, mediaType);
-            } catch (Error e) { // See issue: https://github.com/Netflix/eureka/issues/72 on why we catch Error here.
-                LOGGER.error("Unexpected error occured during de-serialization of discovery data, doing connection "
-                        + "cleanup.", e);
-                if (null != inputStream) {
-                    inputStream.close();
-                    LOGGER.error("Unexpected error occured during de-serialization of discovery data, done connection "
-                            + "cleanup.", e);
+            } catch (Throwable e) {
+                if (e instanceof Error) { // See issue: https://github.com/Netflix/eureka/issues/72 on why we catch Error here.
+                    closeInputOnError(inputStream);
+                    throw new WebApplicationException(createErrorReply(500, e, mediaType));
                 }
-                throw e;
+                LOGGER.debug("Cannot parse request body", e);
+                throw new WebApplicationException(createErrorReply(400, "cannot parse request body", mediaType));
             }
         } else {
-            LOGGER.error("No serializer available for serializable class: " + serializableClass
-                    + ", de-serialization will fail.");
-            throw new IOException("No serializer available for serializable class: " + serializableClass);
+            LOGGER.error("No serializer available for serializable class: {}, de-serialization will fail.", serializableClass);
+            throw new WebApplicationException(createErrorReply(500, "No serializer available for serializable class: " + serializableClass, mediaType));
         }
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see javax.ws.rs.ext.MessageBodyWriter#getSize(java.lang.Object,
-     * java.lang.Class, java.lang.reflect.Type,
-     * java.lang.annotation.Annotation[], javax.ws.rs.core.MediaType)
-     */
     @Override
-    public long getSize(Object serializableObject, Class serializableClass,
-                        Type type, Annotation[] annotations, MediaType mediaType) {
-        // TODO Auto-generated method stub
+    public long getSize(Object serializableObject, Class serializableClass, Type type, Annotation[] annotations, MediaType mediaType) {
         return -1;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see javax.ws.rs.ext.MessageBodyWriter#isWriteable(java.lang.Class,
-     * java.lang.reflect.Type, java.lang.annotation.Annotation[],
-     * javax.ws.rs.core.MediaType)
-     */
     @Override
-    public boolean isWriteable(Class serializableClass, Type type,
-                               Annotation[] annotations, MediaType mediaType) {
+    public boolean isWriteable(Class serializableClass, Type type, Annotation[] annotations, MediaType mediaType) {
         return checkForAnnotation(serializableClass);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see javax.ws.rs.ext.MessageBodyWriter#writeTo(java.lang.Object,
-     * java.lang.Class, java.lang.reflect.Type,
-     * java.lang.annotation.Annotation[], javax.ws.rs.core.MediaType,
-     * javax.ws.rs.core.MultivaluedMap, java.io.OutputStream)
-     */
     @Override
     public void writeTo(Object serializableObject, Class serializableClass,
                         Type type, Annotation[] annotations, MediaType mediaType,
-                        MultivaluedMap headers, OutputStream outputStream)
-            throws IOException, WebApplicationException {
+                        MultivaluedMap headers, OutputStream outputStream) throws IOException, WebApplicationException {
 
-        if (mediaType.equals(MediaType.APPLICATION_JSON_TYPE)) {
-            EurekaJacksonCodec.getInstance().writeTo(serializableObject, outputStream);
-        } else {
+        if (encoder.support(mediaType)) {
+            encoder.encode(serializableObject, outputStream);
+        } else {  // default
             ISerializer serializer = getSerializer(serializableClass);
             if (null != serializer) {
                 serializer.write(serializableObject, outputStream, mediaType);
@@ -181,14 +165,12 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter,
     /**
      * Checks for the {@link java.io.Serializable} annotation for the given class.
      *
-     * @param serializableClass
-     *            The class to be serialized/deserialized.
+     * @param serializableClass The class to be serialized/deserialized.
      * @return true if the annotation is present, false otherwise.
      */
     private boolean checkForAnnotation(Class serializableClass) {
         try {
-            Annotation annotation = serializableClass
-                    .getAnnotation(Serializer.class);
+            Annotation annotation = serializableClass.getAnnotation(Serializer.class);
             if (annotation != null) {
                 return true;
             }
@@ -201,16 +183,15 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter,
     /**
      * Gets the {@link Serializer} implementation for serializing/ deserializing
      * objects.
-     *
-     * <p>
+     * <p/>
+     * <p/>
      * The implementation is cached after the first time instantiation and then
      * returned.
-     * <p>
+     * <p/>
      *
-     * @param serializableClass
-     *            - The class that is to be serialized/deserialized.
+     * @param serializableClass - The class that is to be serialized/deserialized.
      * @return The {@link Serializer} implementation for serializing/
-     *         deserializing objects.
+     * deserializing objects.
      */
     @Nullable
     private static ISerializer getSerializer(@SuppressWarnings("rawtypes") Class serializableClass) {
@@ -239,5 +220,34 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter,
 
         }
         return converter;
+    }
+
+    private static Response createErrorReply(int status, Throwable cause, MediaType mediaType) {
+        StringBuilder sb = new StringBuilder(cause.getClass().getName());
+        if (cause.getMessage() != null) {
+            sb.append(": ").append(cause.getMessage());
+        }
+        return createErrorReply(status, sb.toString(), mediaType);
+    }
+
+    private static Response createErrorReply(int status, String errorMessage, MediaType mediaType) {
+        String message;
+        if (MediaType.APPLICATION_JSON_TYPE.equals(mediaType)) {
+            message = "{\"error\": \"" + errorMessage + "\"}";
+        } else {
+            message = "<error><message>" + errorMessage + "</message></error>";
+        }
+        return Response.status(status).entity(message).type(mediaType).build();
+    }
+
+    private static void closeInputOnError(InputStream inputStream) {
+        if (inputStream != null) {
+            LOGGER.error("Unexpected error occurred during de-serialization of discovery data, done connection cleanup");
+            try {
+                inputStream.close();
+            } catch (IOException e) {
+                LOGGER.debug("Cannot close input", e);
+            }
+        }
     }
 }

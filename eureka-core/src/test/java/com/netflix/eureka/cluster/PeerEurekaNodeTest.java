@@ -25,6 +25,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -32,6 +33,9 @@ import static org.mockito.Mockito.verify;
  * @author Tomasz Bak
  */
 public class PeerEurekaNodeTest {
+
+    private static final int BATCH_SIZE = 10;
+    private static final long MAX_BATCHING_DELAY_MS = 10;
 
     private final PeerAwareInstanceRegistry registry = mock(PeerAwareInstanceRegistry.class);
 
@@ -105,7 +109,7 @@ public class PeerEurekaNodeTest {
         expectRequestType(RequestType.Batch);
 
         // Check that registry has instanceInfo from peer
-        verify(registry, times(1)).register(instanceInfoFromPeer, true);
+        verify(registry, timeout(1000).times(1)).register(instanceInfoFromPeer, true);
     }
 
     @Test
@@ -139,6 +143,8 @@ public class PeerEurekaNodeTest {
                 registry, "test", "http://test.host.com",
                 httpReplicationClient,
                 config,
+                BATCH_SIZE,
+                MAX_BATCHING_DELAY_MS,
                 RETRY_SLEEP_TIME_MS,
                 SERVER_UNAVAILABLE_SLEEP_TIME_MS
         );

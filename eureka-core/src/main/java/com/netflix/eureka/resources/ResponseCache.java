@@ -40,9 +40,9 @@ import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+import com.netflix.appinfo.EurekaAccept;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.converters.EurekaJacksonCodec;
-import com.netflix.discovery.converters.XmlXStream;
+import com.netflix.discovery.converters.wrappers.EncoderWrapper;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.AbstractInstanceRegistry;
@@ -77,8 +77,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ResponseCache {
 
-    private static final Logger logger = LoggerFactory
-            .getLogger(ResponseCache.class);
+    private static final Logger logger = LoggerFactory.getLogger(ResponseCache.class);
 
     public static final String ALL_APPS = "ALL_APPS";
     public static final String ALL_APPS_DELTA = "ALL_APPS_DELTA";
@@ -87,7 +86,7 @@ public class ResponseCache {
     private static final AtomicLong versionDeltaWithRegions = new AtomicLong(0);
     private static final String EMPTY_PAYLOAD = "";
 
-    private static final java.util.Timer timer = new java.util.Timer("Eureka -CacheFillTimer", true);
+    private static final java.util.Timer timer = new java.util.Timer("Eureka-CacheFillTimer", true);
 
     private final Timer serializeAllAppsTimer = Monitors
             .newTimer("serialize-all");
@@ -107,8 +106,7 @@ public class ResponseCache {
         JSON, XML
     }
 
-    private final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
-            .getInstance().getConfiguration();
+    private final EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager.getInstance().getConfiguration();
 
     /**
      * This map holds mapping of keys without regions to a list of keys with region (provided by clients)
@@ -153,10 +151,16 @@ public class ResponseCache {
                     });
 
     private final boolean shouldUseReadOnlyResponseCache;
+    private final AbstractInstanceRegistry registry;
+    private volatile ServerCodecs serverCodecs;
 
     private static final ResponseCache s_instance = new ResponseCache();
 
     private ResponseCache() {
+        this(PeerAwareInstanceRegistryImpl.getInstance());
+    }
+
+    /* test use */ ResponseCache(AbstractInstanceRegistry registry) {
         long responseCacheUpdateIntervalMs = eurekaConfig.getResponseCacheUpdateIntervalMs();
         shouldUseReadOnlyResponseCache = eurekaConfig.shouldUseReadOnlyResponseCache();
 
@@ -167,6 +171,11 @@ public class ResponseCache {
                     responseCacheUpdateIntervalMs);
         }
 
+        this.registry = registry;
+        this.serverCodecs = new ServerCodecs.Builder()
+                .withEurekaServerConfig(eurekaConfig)
+                .build();
+
         try {
             Monitors.registerObject(this);
 
@@ -175,6 +184,14 @@ public class ResponseCache {
                     "Cannot register the JMX monitor for the InstanceRegistry :",
                     e);
         }
+    }
+
+    /**
+     * Temporary measure to enable defining custom server side codecs until the server side code base is cleaned up
+     * and more DI friendly
+     */
+    public void setServerCodecs(ServerCodecs serverCodecs) {
+        this.serverCodecs = serverCodecs;
     }
 
     private TimerTask getCacheUpdateTask() {
@@ -260,14 +277,19 @@ public class ResponseCache {
     public void invalidate(String appName, @Nullable String vipAddress, @Nullable String secureVipAddress) {
         for (KeyType type : KeyType.values()) {
             for (Version v : Version.values()) {
-                invalidate(new Key(Key.EntityType.Application, appName, type, v),
-                        new Key(Key.EntityType.Application, ALL_APPS, type, v),
-                        new Key(Key.EntityType.Application, ALL_APPS_DELTA, type, v));
+                invalidate(
+                        new Key(Key.EntityType.Application, appName, type, v, EurekaAccept.full),
+                        new Key(Key.EntityType.Application, appName, type, v, EurekaAccept.compact),
+                        new Key(Key.EntityType.Application, ALL_APPS, type, v, EurekaAccept.full),
+                        new Key(Key.EntityType.Application, ALL_APPS, type, v, EurekaAccept.compact),
+                        new Key(Key.EntityType.Application, ALL_APPS_DELTA, type, v, EurekaAccept.full),
+                        new Key(Key.EntityType.Application, ALL_APPS_DELTA, type, v, EurekaAccept.compact)
+                );
                 if (null != vipAddress) {
-                    invalidate(new Key(Key.EntityType.VIP, vipAddress, type, v));
+                    invalidate(new Key(Key.EntityType.VIP, vipAddress, type, v, EurekaAccept.full));
                 }
                 if (null != secureVipAddress) {
-                    invalidate(new Key(Key.EntityType.SVIP, secureVipAddress, type, v));
+                    invalidate(new Key(Key.EntityType.SVIP, secureVipAddress, type, v, EurekaAccept.full));
                 }
             }
         }
@@ -282,13 +304,15 @@ public class ResponseCache {
      */
     public void invalidate(Key... keys) {
         for (Key key : keys) {
-            Object[] args = {key.getEntityType(), key.getName(), key.getVersion(), key.getType()};
-            logger.debug("Invalidating the response cache key : {} {} {} {}", args);
+            logger.debug("Invalidating the response cache key : {} {} {} {}, {}",
+                    key.getEntityType(), key.getName(), key.getVersion(), key.getType(), key.getEurekaAccept());
+
             readWriteCacheMap.invalidate(key);
             Collection<Key> keysWithRegions = regionSpecificKeys.get(key);
             if (null != keysWithRegions && !keysWithRegions.isEmpty()) {
                 for (Key keysWithRegion : keysWithRegions) {
-                    logger.debug("Invalidating the response cache key : {} {} {} {}", args);
+                    logger.debug("Invalidating the response cache key : {} {} {} {}, {}",
+                            key.getEntityType(), key.getName(), key.getVersion(), key.getType(), key.getEurekaAccept());
                     readWriteCacheMap.invalidate(keysWithRegion);
                 }
             }
@@ -350,12 +374,14 @@ public class ResponseCache {
     /**
      * Generate pay load with both JSON and XML formats for all applications.
      */
-    private static String getPayLoad(Key key, Applications apps) {
+    private String getPayLoad(Key key, Applications apps) {
+        EncoderWrapper encoderWrapper = serverCodecs.getEncoder(key.getType(), key.getEurekaAccept());
         String result;
-        if (key.getType() == KeyType.JSON) {
-            result = EurekaJacksonCodec.getInstance().writeToString(apps);
-        } else {
-            result = XmlXStream.getInstance().toXML(apps);
+        try {
+            result = encoderWrapper.encode(apps);
+        } catch (Exception e) {
+            logger.error("Failed to encode the payload for all apps", e);
+            return "";
         }
         if(logger.isDebugEnabled()) {
             logger.debug("New application cache entry {} with apps hashcode {}", key.toStringCompact(), apps.getAppsHashCode());
@@ -366,15 +392,17 @@ public class ResponseCache {
     /**
      * Generate pay load with both JSON and XML formats for a given application.
      */
-    private static String getPayLoad(Key key, Application app) {
+    private String getPayLoad(Key key, Application app) {
         if (app == null) {
             return EMPTY_PAYLOAD;
         }
 
-        if (key.getType() == KeyType.JSON) {
-            return EurekaJacksonCodec.getInstance().writeToString(app);
-        } else {
-            return XmlXStream.getInstance().toXML(app);
+        EncoderWrapper encoderWrapper = serverCodecs.getEncoder(key.getType(), key.getEurekaAccept());
+        try {
+            return encoderWrapper.encode(app);
+        } catch (Exception e) {
+            logger.error("Failed to encode the payload for application {}", app.getName(), e);
+            return "";
         }
     }
 
@@ -383,7 +411,6 @@ public class ResponseCache {
      */
     private Value generatePayload(Key key) {
         Stopwatch tracer = null;
-        AbstractInstanceRegistry registry = PeerAwareInstanceRegistryImpl.getInstance();
         try {
             String payload;
             switch (key.getEntityType()) {
@@ -492,19 +519,21 @@ public class ResponseCache {
         private final Version requestVersion;
         private final String hashKey;
         private final EntityType entityType;
+        private final EurekaAccept eurekaAccept;
 
-        public Key(EntityType entityType, String entityName, KeyType type, Version v) {
-            this(entityType, entityName, null, type, v);
+        public Key(EntityType entityType, String entityName, KeyType type, Version v, EurekaAccept eurekaAccept) {
+            this(entityType, entityName, type, v, eurekaAccept, null);
         }
 
-        public Key(EntityType entityType, String entityName, @Nullable String[] regions, KeyType type, Version v) {
+        public Key(EntityType entityType, String entityName, KeyType type, Version v, EurekaAccept eurekaAccept, @Nullable String[] regions) {
             this.regions = regions;
             this.entityType = entityType;
             this.entityName = entityName;
-            requestType = type;
-            requestVersion = v;
+            this.requestType = type;
+            this.requestVersion = v;
+            this.eurekaAccept = eurekaAccept;
             hashKey = this.entityType + this.entityName + (null != this.regions ? Arrays.toString(this.regions) : "")
-                    + requestType.name() + requestVersion.name();
+                    + requestType.name() + requestVersion.name() + this.eurekaAccept.name();
         }
 
         public String getName() {
@@ -523,6 +552,10 @@ public class ResponseCache {
             return requestVersion;
         }
 
+        public EurekaAccept getEurekaAccept() {
+            return eurekaAccept;
+        }
+
         public EntityType getEntityType() {
             return entityType;
         }
@@ -536,7 +569,7 @@ public class ResponseCache {
         }
 
         public Key cloneWithoutRegions() {
-            return new Key(entityType, entityName, requestType, requestVersion);
+            return new Key(entityType, entityName, requestType, requestVersion, eurekaAccept);
         }
 
         @Override

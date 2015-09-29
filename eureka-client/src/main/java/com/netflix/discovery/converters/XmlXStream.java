@@ -44,17 +44,14 @@ public class XmlXStream extends XStream {
     public XmlXStream() {
         super(new DomDriver(null, initializeNameCoder()));
 
-        StringCache cache = new StringCache();
-
-        registerConverter(new Converters.ApplicationConverter(cache));
+        registerConverter(new Converters.ApplicationConverter());
         registerConverter(new Converters.ApplicationsConverter());
-        registerConverter(new Converters.DataCenterInfoConverter(cache));
-        registerConverter(new Converters.InstanceInfoConverter(cache));
+        registerConverter(new Converters.DataCenterInfoConverter());
+        registerConverter(new Converters.InstanceInfoConverter());
         registerConverter(new Converters.LeaseInfoConverter());
-        registerConverter(new Converters.MetadataConverter(cache));
+        registerConverter(new Converters.MetadataConverter());
         setMode(XStream.NO_REFERENCES);
-        processAnnotations(new Class[]{InstanceInfo.class, Application.class,
-                Applications.class});
+        processAnnotations(new Class[]{InstanceInfo.class, Application.class, Applications.class});
     }
 
     public static XmlXStream getInstance() {

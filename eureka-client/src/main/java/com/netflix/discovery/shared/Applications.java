@@ -33,6 +33,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonRootName;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
@@ -60,6 +64,7 @@ import org.slf4j.LoggerFactory;
  */
 @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("applications")
+@JsonRootName("applications")
 public class Applications {
     private static final String APP_INSTANCEID_DELIMITER = "$$";
     private static final Logger logger = LoggerFactory.getLogger(Applications.class);
@@ -86,6 +91,22 @@ public class Applications {
      */
     public Applications() {
         this.applications = new ConcurrentLinkedQueue<Application>();
+    }
+
+    /**
+     * Note that appsHashCode and versionDelta key names are formatted in a custom/configurable way.
+     */
+    @JsonCreator
+    public Applications(
+            @JsonProperty("appsHashCode") String appsHashCode,
+            @JsonProperty("versionDelta") Long versionDelta,
+            @JsonProperty("application") List<Application> registeredApplications) {
+        this.applications = new ConcurrentLinkedQueue<Application>();
+        for (Application app : registeredApplications) {
+            this.addApplication(app);
+        }
+        this.appsHashCode = appsHashCode;
+        this.versionDelta = versionDelta;
     }
 
     /**
@@ -117,6 +138,7 @@ public class Applications {
      *
      * @return list containing all applications registered with eureka.
      */
+    @JsonProperty("application")
     public List<Application> getRegisteredApplications() {
         List<Application> list = new ArrayList<Application>();
         list.addAll(this.applications);
@@ -179,6 +201,7 @@ public class Applications {
     }
 
     @Deprecated
+    @JsonIgnore // Handled directly due to legacy name formatting
     public Long getVersion() {
         return this.versionDelta;
     }
@@ -197,6 +220,7 @@ public class Applications {
      * @return the string indicating the hashcode based on the applications stored.
      *
      */
+    @JsonIgnore // Handled directly due to legacy name formatting
     public String getAppsHashCode() {
         return this.appsHashCode;
     }
@@ -208,6 +232,7 @@ public class Applications {
      * @return the internal hash code representation indicating the information
      *         about the instances.
      */
+    @JsonIgnore
     public String getReconcileHashCode() {
         TreeMap<String, AtomicInteger> instanceCountMap = new TreeMap<String, AtomicInteger>();
         populateInstanceCountMap(instanceCountMap);

@@ -27,11 +27,16 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonRootName;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.InstanceRegionChecker;
 import com.netflix.discovery.provider.Serializer;
+import com.netflix.discovery.util.StringCache;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamImplicit;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
@@ -45,6 +50,7 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
  */
 @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("application")
+@JsonRootName("application")
 public class Application {
 
     @Override
@@ -72,9 +78,19 @@ public class Application {
     }
 
     public Application(String name) {
-        this.name = name;
+        this.name = StringCache.intern(name);
         instancesMap = new ConcurrentHashMap<String, InstanceInfo>();
         instances = new LinkedHashSet<InstanceInfo>();
+    }
+
+    @JsonCreator
+    public Application(
+            @JsonProperty("name") String name,
+            @JsonProperty("instance") List<InstanceInfo> instances) {
+        this(name);
+        for (InstanceInfo instanceInfo : instances) {
+            addInstance(instanceInfo);
+        }
     }
 
     /**
@@ -113,6 +129,7 @@ public class Application {
      *
      * @return the list of shuffled instances associated with this application.
      */
+    @JsonProperty("instance")
     public List<InstanceInfo> getInstances() {
         if (this.shuffledInstances.get() == null) {
             return this.getInstancesAsIsFromEureka();
@@ -128,6 +145,7 @@ public class Application {
      * @return list of non-shuffled and non-filtered instances associated with this particular
      *         application.
      */
+    @JsonIgnore
     public List<InstanceInfo> getInstancesAsIsFromEureka() {
         return new ArrayList<InstanceInfo>(this.instances);
     }
@@ -160,7 +178,7 @@ public class Application {
      *            the name of the application.
      */
     public void setName(String name) {
-        this.name = name;
+        this.name = StringCache.intern(name);
     }
 
     /**

@@ -28,8 +28,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @ProvidedBy(MyDataCenterInstanceConfigProvider.class)
-public class MyDataCenterInstanceConfig extends PropertiesInstanceConfig
-        implements EurekaInstanceConfig {
+public class MyDataCenterInstanceConfig extends PropertiesInstanceConfig implements EurekaInstanceConfig {
 
     public MyDataCenterInstanceConfig() {
     }
@@ -38,8 +37,7 @@ public class MyDataCenterInstanceConfig extends PropertiesInstanceConfig
         super(namespace);
     }
 
-    public MyDataCenterInstanceConfig(String namespace,
-                                      DataCenterInfo dataCenterInfo) {
+    public MyDataCenterInstanceConfig(String namespace, DataCenterInfo dataCenterInfo) {
         super(namespace, dataCenterInfo);
     }
 

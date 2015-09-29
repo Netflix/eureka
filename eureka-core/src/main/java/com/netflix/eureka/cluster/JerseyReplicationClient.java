@@ -11,13 +11,14 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.EurekaIdentityHeaderFilter;
 import com.netflix.discovery.shared.EurekaJerseyClient;
-import com.netflix.discovery.shared.EurekaJerseyClient.EurekaJerseyClientBuilder;
+import com.netflix.discovery.shared.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
 import com.netflix.discovery.shared.JerseyEurekaHttpClient;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerIdentity;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.WebResource.Builder;
@@ -50,7 +51,7 @@ public class JerseyReplicationClient extends JerseyEurekaHttpClient implements H
             String jerseyClientName = "Discovery-PeerNodeClient-" + hostname;
             EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
                     .withClientName(jerseyClientName)
-                    .withUserAgent("Java EurekaClient (replication)")
+                    .withUserAgent("Java-EurekaClient-Replication")
                     .withConnectionTimeout(config.getPeerNodeConnectTimeoutMs())
                     .withReadTimeout(config.getPeerNodeReadTimeoutMs())
                     .withMaxConnectionsPerHost(config.getPeerNodeTotalConnectionsPerHost())
@@ -79,7 +80,7 @@ public class JerseyReplicationClient extends JerseyEurekaHttpClient implements H
     }
 
     @Override
-    protected ApacheHttpClient4 getJerseyApacheClient() {
+    protected Client getJerseyClient() {
         return jerseyApacheClient;
     }
 
@@ -97,7 +98,7 @@ public class JerseyReplicationClient extends JerseyEurekaHttpClient implements H
         String urlPath = "apps/" + appName + '/' + id;
         ClientResponse response = null;
         try {
-            WebResource webResource = getJerseyApacheClient().resource(serviceUrl)
+            WebResource webResource = getJerseyClient().resource(serviceUrl)
                     .path(urlPath)
                     .queryParam("status", info.getStatus().toString())
                     .queryParam("lastDirtyTimestamp", info.getLastDirtyTimestamp().toString());

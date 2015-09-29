@@ -83,11 +83,12 @@ public class PeerEurekaNode {
     private final TaskDispatcher<String, ReplicationTask> nonBatchingDispatcher;
 
     public PeerEurekaNode(PeerAwareInstanceRegistry registry, String targetHost, String serviceUrl, HttpReplicationClient replicationClient, EurekaServerConfig config) {
-        this(registry, targetHost, serviceUrl, replicationClient, config, RETRY_SLEEP_TIME_MS, SERVER_UNAVAILABLE_SLEEP_TIME_MS);
+        this(registry, targetHost, serviceUrl, replicationClient, config, BATCH_SIZE, MAX_BATCHING_DELAY_MS, RETRY_SLEEP_TIME_MS, SERVER_UNAVAILABLE_SLEEP_TIME_MS);
     }
 
     /* For testing */ PeerEurekaNode(PeerAwareInstanceRegistry registry, String targetHost, String serviceUrl,
                                      HttpReplicationClient replicationClient, EurekaServerConfig config,
+                                     int batchSize, long maxBatchingDelayMs,
                                      long retrySleepTimeMs, long serverUnavailableSleepTimeMs) {
         this.registry = registry;
         this.targetHost = targetHost;
@@ -102,9 +103,9 @@ public class PeerEurekaNode {
         this.batchingDispatcher = TaskDispatchers.createBatchingTaskDispatcher(
                 batcherName,
                 config.getMaxElementsInPeerReplicationPool(),
-                BATCH_SIZE,
+                batchSize,
                 config.getMaxThreadsForPeerReplication(),
-                MAX_BATCHING_DELAY_MS,
+                maxBatchingDelayMs,
                 serverUnavailableSleepTimeMs,
                 retrySleepTimeMs,
                 taskProcessor
@@ -119,7 +120,6 @@ public class PeerEurekaNode {
                 taskProcessor
         );
     }
-
 
     /**
      * Sends the registration information of {@link InstanceInfo} receiving by

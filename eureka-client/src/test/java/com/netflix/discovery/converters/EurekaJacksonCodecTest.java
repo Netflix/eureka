@@ -11,6 +11,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.junit.Test;
 
@@ -72,7 +73,7 @@ public class EurekaJacksonCodecTest {
 
     @Test
     public void testInstanceInfoJacksonEncodeDecodeWithoutMetaData() throws Exception {
-        InstanceInfo noMetaDataInfo = InstanceInfoGenerator.takeOne();
+        InstanceInfo noMetaDataInfo = InstanceInfoGenerator.newBuilder(1, 1).withMetaData(false).build().serviceIterator().next();
 
         // Encode
         ByteArrayOutputStream captureStream = new ByteArrayOutputStream();

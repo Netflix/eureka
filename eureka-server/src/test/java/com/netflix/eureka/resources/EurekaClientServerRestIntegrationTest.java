@@ -13,7 +13,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.EurekaHttpClient.HttpResponse;
 import com.netflix.discovery.shared.EurekaJerseyClient;
-import com.netflix.discovery.shared.EurekaJerseyClient.EurekaJerseyClientBuilder;
+import com.netflix.discovery.shared.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
 import com.netflix.discovery.shared.JerseyEurekaHttpClient;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.netflix.eureka.EurekaServerConfig;
@@ -77,7 +77,7 @@ public class EurekaClientServerRestIntegrationTest {
             public EurekaJerseyClient jerseyClient;
 
             @Override
-            protected ApacheHttpClient4 getJerseyApacheClient() {
+            protected ApacheHttpClient4 getJerseyClient() {
                 jerseyClient = new EurekaJerseyClientBuilder()
                         .withClientName("testEurekaClient")
                         .withConnectionTimeout(1000)
@@ -298,6 +298,5 @@ public class EurekaClientServerRestIntegrationTest {
         when(eurekaServerConfig.getPeerNodeTotalConnections()).thenReturn(1);
         when(eurekaServerConfig.getPeerNodeTotalConnectionsPerHost()).thenReturn(1);
         when(eurekaServerConfig.getPeerNodeConnectionIdleTimeoutSeconds()).thenReturn(1000);
-
     }
 }
