@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -257,7 +258,17 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      * @return true if the instance was removed from the
      *         {@link AbstractInstanceRegistry} successfully, false otherwise.
      */
+    @Override
     public boolean cancel(String appName, String id, boolean isReplication) {
+        return internalCancel(appName, id, isReplication);
+    }
+
+    /**
+     * {@link #cancel(String, String, boolean)} method is overridden by {@link PeerAwareInstanceRegistry}, so each
+     * cancel request is replicated to the peers. This is however not desired for expires which would be counted
+     * in the remote peers as valid cancellations, so self preservation mode would not kick-in.
+     */
+    protected boolean internalCancel(String appName, String id, boolean isReplication) {
         try {
             read.lock();
             CANCEL.increment(isReplication);
@@ -269,17 +280,13 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             synchronized (recentCanceledQueue) {
                 recentCanceledQueue.add(new Pair<Long, String>(System.currentTimeMillis(), appName + "(" + id + ")"));
             }
-            InstanceStatus instanceStatus = overriddenInstanceStatusMap
-                    .remove(id);
+            InstanceStatus instanceStatus = overriddenInstanceStatusMap.remove(id);
             if (instanceStatus != null) {
-                logger.debug(
-                        "Removed instance id {} from the overridden map which has value {}",
-                        id, instanceStatus.name());
+                logger.debug("Removed instance id {} from the overridden map which has value {}", id, instanceStatus.name());
             }
             if (leaseToCancel == null) {
                 CANCEL_NOT_FOUND.increment(isReplication);
-                logger.warn("DS: Registry: cancel failed because Lease is not registered for: "
-                        + appName + ":" + id);
+                logger.warn("DS: Registry: cancel failed because Lease is not registered for: {}/{}", appName, id);
                 return false;
             } else {
                 leaseToCancel.cancel();
@@ -288,8 +295,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 String svip = null;
                 if (instanceInfo != null) {
                     instanceInfo.setActionType(ActionType.DELETED);
-                    recentlyChangedQueue.add(new RecentlyChangedItem(
-                            leaseToCancel));
+                    recentlyChangedQueue.add(new RecentlyChangedItem(leaseToCancel));
                     instanceInfo.setLastUpdatedTimestamp();
                     vip = instanceInfo.getVIPAddress();
                     svip = instanceInfo.getSecureVipAddress();
@@ -561,25 +567,58 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      *
      * @see com.netflix.eureka.lease.LeaseManager#evict()
      */
+    @Override
     public void evict() {
+        logger.debug("Running the evict task");
+
         if (!isLeaseExpirationEnabled()) {
             logger.debug("DS: lease expiration is currently disabled.");
             return;
         }
-        logger.debug("Running the evict task");
+
+        // We collect first all expired items, to evict them in random order. For large eviction sets,
+        // if we do not that, we might wipe out whole apps before self preservation kicks in. By randomizing it,
+        // the impact should be evenly distributed across all applications.
+        List<Lease<InstanceInfo>> expiredLeases = new ArrayList<>();
         for (Entry<String, Map<String, Lease<InstanceInfo>>> groupEntry : registry.entrySet()) {
             Map<String, Lease<InstanceInfo>> leaseMap = groupEntry.getValue();
             if (leaseMap != null) {
                 for (Entry<String, Lease<InstanceInfo>> leaseEntry : leaseMap.entrySet()) {
                     Lease<InstanceInfo> lease = leaseEntry.getValue();
                     if (lease.isExpired() && lease.getHolder() != null) {
-                        String appName = lease.getHolder().getAppName();
-                        String id = lease.getHolder().getId();
-                        EXPIRED.increment();
-                        logger.warn("DS: Registry: expired lease for "
-                                + appName + " - " + id);
-                        cancel(appName, id, false);
+                        expiredLeases.add(lease);
                     }
+                }
+            }
+        }
+
+        boolean experimental = "true".equalsIgnoreCase(EUREKA_SERVER_CONFIG.getExperimental("evict.cancel.disabled"));
+
+        // To compensate for GC pauses or drifting local time, we need to use current registry size as a base for
+        // triggering self-preservation. Without that we would wipe out full registry.
+        int registrySize = (int) getLocalRegistrySize();
+        int registrySizeThreshold = (int) (registrySize * EUREKA_SERVER_CONFIG.getRenewalPercentThreshold());
+        int evictionLimit = registrySize - registrySizeThreshold;
+
+        int toEvict = Math.min(expiredLeases.size(), evictionLimit);
+        if (toEvict > 0) {
+            logger.info("Evicting {} items (expired={}, evictionLimit={})", toEvict, expiredLeases.size(), evictionLimit);
+
+            Random random = new Random(System.currentTimeMillis());
+            for (int i = 0; i < toEvict; i++) {
+                // Pick a random item (Knuth shuffle algorithm)
+                int next = i + random.nextInt(expiredLeases.size() - i);
+                Collections.swap(expiredLeases, i, next);
+                Lease<InstanceInfo> lease = expiredLeases.get(i);
+
+                String appName = lease.getHolder().getAppName();
+                String id = lease.getHolder().getId();
+                EXPIRED.increment();
+                logger.warn("DS: Registry: expired lease for {}/{}", appName, id);
+                if (experimental) {
+                    internalCancel(appName, id, false);
+                } else {
+                    cancel(appName, id, false);
                 }
             }
         }

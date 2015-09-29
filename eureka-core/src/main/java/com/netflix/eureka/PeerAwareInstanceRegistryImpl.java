@@ -462,26 +462,15 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             replicateASGInfoToReplicaNodes(asgName, newStatus, node);
 
         }
-
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see com.netflix.eureka.InstanceRegistry#isLeaseExpirationEnabled()
-     */
     @Override
     public boolean isLeaseExpirationEnabled() {
-        boolean leaseExpirationEnabled = (numberOfRenewsPerMinThreshold > 0)
-                && (getNumOfRenewsInLastMin() > numberOfRenewsPerMinThreshold);
-        boolean isSelfPreservationModeEnabled = isSelfPreservationModeEnabled();
-        if ((!leaseExpirationEnabled)) {
-            if (!isSelfPreservationModeEnabled) {
-                logger.warn("The self preservation mode is disabled!. Hence allowing the instances to expire.");
-                leaseExpirationEnabled = true;
-            }
+        if (!isSelfPreservationModeEnabled()) {
+            // The self preservation mode is disabled, hence allowing the instances to expire.
+            return true;
         }
-        return leaseExpirationEnabled;
+        return numberOfRenewsPerMinThreshold > 0 && getNumOfRenewsInLastMin() > numberOfRenewsPerMinThreshold;
     }
 
     /**
