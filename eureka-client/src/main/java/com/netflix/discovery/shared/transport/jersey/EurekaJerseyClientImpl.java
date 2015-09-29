@@ -1,4 +1,4 @@
-package com.netflix.discovery.shared;
+package com.netflix.discovery.shared.transport.jersey;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -16,6 +16,7 @@ import com.netflix.discovery.converters.wrappers.CodecWrappers;
 import com.netflix.discovery.converters.wrappers.DecoderWrapper;
 import com.netflix.discovery.converters.wrappers.EncoderWrapper;
 import com.netflix.discovery.provider.DiscoveryJerseyProvider;
+import com.netflix.discovery.shared.MonitoredConnectionManager;
 import com.netflix.servo.monitor.BasicCounter;
 import com.netflix.servo.monitor.BasicTimer;
 import com.netflix.servo.monitor.Counter;

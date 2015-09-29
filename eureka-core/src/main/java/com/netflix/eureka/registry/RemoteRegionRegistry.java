@@ -17,7 +17,6 @@ package com.netflix.eureka.registry;
 
 import javax.inject.Inject;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response.Status;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -39,12 +38,17 @@ import com.netflix.discovery.EurekaIdentityHeaderFilter;
 import com.netflix.discovery.TimedSupervisorTask;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.discovery.shared.EurekaJerseyClient;
-import com.netflix.discovery.shared.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
 import com.netflix.discovery.shared.LookupService;
+import com.netflix.discovery.shared.resolver.ClusterResolver;
+import com.netflix.discovery.shared.resolver.StaticClusterResolver;
+import com.netflix.discovery.shared.transport.EurekaHttpClient;
+import com.netflix.discovery.shared.transport.EurekaHttpResponse;
+import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
+import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerIdentity;
 import com.netflix.eureka.resources.ServerCodecs;
+import com.netflix.eureka.transport.EurekaServerHttpClients;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
 import com.sun.jersey.api.client.ClientResponse;
@@ -79,6 +83,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
     private final AtomicReference<Applications> applicationsDelta = new AtomicReference<Applications>();
     private final EurekaServerConfig serverConfig;
     private volatile boolean readyForServingData;
+    private final EurekaHttpClient eurekaHttpClient;
 
     @Inject
     public RemoteRegionRegistry(EurekaServerConfig serverConfig, ServerCodecs serverCodecs, String regionName, URL remoteRegionURL) {
@@ -125,6 +130,16 @@ public class RemoteRegionRegistry implements LookupService<String> {
         }
         EurekaServerIdentity identity = new EurekaServerIdentity(ip);
         discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
+
+        // Configure new transport layer (candidate for injecting in the future)
+        EurekaHttpClient newEurekaHttpClient = null;
+        try {
+            ClusterResolver clusterResolver = StaticClusterResolver.fromURL(regionName, remoteRegionURL);
+            newEurekaHttpClient = EurekaServerHttpClients.createRemoteRegionClient(serverConfig, serverCodecs, clusterResolver);
+        } catch (Exception e) {
+            logger.warn("Experimental transport initialization failure", e);
+        }
+        this.eurekaHttpClient = newEurekaHttpClient;
 
         applications.set(new Applications());
         try {
@@ -191,72 +206,60 @@ public class RemoteRegionRegistry implements LookupService<String> {
      * @return true, if the fetch was successful, false otherwise.
      */
     private boolean fetchRegistry() {
-        ClientResponse response = null;
+        boolean success;
         Stopwatch tracer = fetchRegistryTimer.start();
 
         try {
-            // If the delta is disabled or if it is the first time, get all
-            // applications
+            // If the delta is disabled or if it is the first time, get all applications
             if (serverConfig.shouldDisableDeltaForRemoteRegions()
                     || (getApplications() == null)
                     || (getApplications().getRegisteredApplications().size() == 0)) {
-                logger.info("Disable delta property : {}", serverConfig
-                        .shouldDisableDeltaForRemoteRegions());
-                logger.info("Application is null : {}",
-                        (getApplications() == null));
-                logger.info(
-                        "Registered Applications size is zero : {}",
-                        (getApplications().getRegisteredApplications().size() == 0));
-                response = storeFullRegistry();
+                logger.info("Disable delta property : {}", serverConfig.shouldDisableDeltaForRemoteRegions());
+                logger.info("Application is null : {}", getApplications() == null);
+                logger.info("Registered Applications size is zero : {}", getApplications().getRegisteredApplications().isEmpty());
+                success = storeFullRegistry();
             } else {
-                long currDeltaGeneration = deltaGeneration.get();
-                Applications delta = null;
-                response = fetchRemoteRegistry(true);
-                if (null != response) {
-                    if (response.getStatus() == Status.OK.getStatusCode()) {
-                        delta = response.getEntity(Applications.class);
-                        if (delta == null) {
-                            logger.error("The delta is null for some reason. Not storing this information");
-                        } else if (deltaGeneration.compareAndSet(currDeltaGeneration, currDeltaGeneration + 1)) {
-                            this.applicationsDelta.set(delta);
-                        } else {
-                            delta = null;  // set the delta to null so we don't use it
-                            logger.warn("Not updating delta as another thread is updating it already");
-                        }
-                    }
-                    if (delta == null) {
-                        logger.warn("The server does not allow the delta revision to be applied because it is not "
-                                + "safe. Hence got the full registry.");
-                        this.closeResponse(response);
-                        response = fetchRemoteRegistry(true);
-                    } else {
-                        updateDelta(delta);
-                        String reconcileHashCode = getApplications()
-                                .getReconcileHashCode();
-                        // There is a diff in number of instances for some reason
-                        if ((!reconcileHashCode.equals(delta.getAppsHashCode()))) {
-                            response = reconcileAndLogDifference(response, delta, reconcileHashCode);
-
-                        }
-                    }
-                }
+                success = fetchAndStoreDelta();
             }
             logTotalInstances();
-
-            logger.debug("Remote Registry Fetch Status : {}", null == response ? null : response.getStatus());
         } catch (Throwable e) {
-            logger.error(
-                    "Unable to fetch registry information from the remote registry "
-                            + this.remoteRegionURL.toString(), e);
+            logger.error("Unable to fetch registry information from the remote registry " + this.remoteRegionURL.toString(), e);
             return false;
-
         } finally {
             if (tracer != null) {
                 tracer.stop();
             }
-            closeResponse(response);
         }
-        return null != response;
+        return success;
+    }
+
+    private boolean fetchAndStoreDelta() throws Throwable {
+        long currDeltaGeneration = deltaGeneration.get();
+        Applications delta = fetchRemoteRegistry(true);
+
+        if (delta == null) {
+            logger.error("The delta is null for some reason. Not storing this information");
+        } else if (deltaGeneration.compareAndSet(currDeltaGeneration, currDeltaGeneration + 1)) {
+            this.applicationsDelta.set(delta);
+        } else {
+            delta = null;  // set the delta to null so we don't use it
+            logger.warn("Not updating delta as another thread is updating it already");
+        }
+
+        if (delta == null) {
+            logger.warn("The server does not allow the delta revision to be applied because it is not "
+                    + "safe. Hence got the full registry.");
+            return storeFullRegistry();
+        } else {
+            updateDelta(delta);
+            String reconcileHashCode = getApplications().getReconcileHashCode();
+            // There is a diff in number of instances for some reason
+            if ((!reconcileHashCode.equals(delta.getAppsHashCode()))) {
+                return reconcileAndLogDifference(delta, reconcileHashCode);
+            }
+        }
+
+        return delta != null;
     }
 
     /**
@@ -335,23 +338,19 @@ public class RemoteRegionRegistry implements LookupService<String> {
      *
      * @return the full registry information.
      */
-    public ClientResponse storeFullRegistry() {
+    public boolean storeFullRegistry() {
         long currentUpdateGeneration = fullRegistryGeneration.get();
-        ClientResponse response = fetchRemoteRegistry(false);
-        if (response == null) {
-            logger.error("The response is null.");
-            return null;
-        }
-        Applications apps = response.getEntity(Applications.class);
+        Applications apps = fetchRemoteRegistry(false);
         if (apps == null) {
             logger.error("The application is null for some reason. Not storing this information");
         } else if (fullRegistryGeneration.compareAndSet(currentUpdateGeneration, currentUpdateGeneration + 1)) {
             applications.set(apps);
+            logger.info("Successfully updated registry with the latest content");
+            return true;
         } else {
             logger.warn("Not updating applications as another thread is updating it already");
         }
-        logger.info("The response status is {}", response.getStatus());
-        return response;
+        return false;
     }
 
     /**
@@ -359,58 +358,59 @@ public class RemoteRegionRegistry implements LookupService<String> {
      * @param delta - true, if the fetch needs to get deltas, false otherwise
      * @return - response which has information about the data.
      */
-    private ClientResponse fetchRemoteRegistry(boolean delta) {
-        logger.info(
-                "Getting instance registry info from the eureka server : {} , delta : {}",
-                this.remoteRegionURL, delta);
-        ClientResponse response = null;
-        try {
+    private Applications fetchRemoteRegistry(boolean delta) {
+        logger.info("Getting instance registry info from the eureka server : {} , delta : {}", this.remoteRegionURL, delta);
 
-            String urlPath = delta ? "apps/delta" : "apps/";
-
-            response = discoveryApacheClient
-                    .resource(this.remoteRegionURL.toString() + urlPath)
-                    .accept(MediaType.APPLICATION_JSON_TYPE)
-                    .get(ClientResponse.class);
-            int httpStatus = response.getStatus();
-            if (httpStatus >= 200 && httpStatus < 300) {
-                logger.debug("Got the data successfully : {}", httpStatus);
-            } else {
-                logger.warn("Cannot get the data from {} : {}", this.remoteRegionURL.toString(), httpStatus);
-                return null; // To short circuit entity evaluation.
+        if (shouldUseExperimentalTransport()) {
+            try {
+                EurekaHttpResponse<Applications> httpResponse = delta ? eurekaHttpClient.getDelta() : eurekaHttpClient.getApplications();
+                int httpStatus = httpResponse.getStatusCode();
+                if (httpStatus >= 200 && httpStatus < 300) {
+                    logger.debug("Got the data successfully : {}", httpStatus);
+                    return httpResponse.getEntity();
+                }
+                logger.warn("Cannot get the data from {} : {}", this.remoteRegionURL, httpStatus);
+            } catch (Throwable t) {
+                logger.error("Can't get a response from " + this.remoteRegionURL, t);
             }
+        } else {
+            ClientResponse response = null;
+            try {
+                String urlPath = delta ? "apps/delta" : "apps/";
 
-        } catch (Throwable t) {
-            logger.error("Can't get a response from " + this.remoteRegionURL, t);
-
+                response = discoveryApacheClient.resource(this.remoteRegionURL + urlPath)
+                        .accept(MediaType.APPLICATION_JSON_TYPE)
+                        .get(ClientResponse.class);
+                int httpStatus = response.getStatus();
+                if (httpStatus >= 200 && httpStatus < 300) {
+                    logger.debug("Got the data successfully : {}", httpStatus);
+                    return response.getEntity(Applications.class);
+                }
+                logger.warn("Cannot get the data from {} : {}", this.remoteRegionURL, httpStatus);
+            } catch (Throwable t) {
+                logger.error("Can't get a response from " + this.remoteRegionURL, t);
+            } finally {
+                closeResponse(response);
+            }
         }
-        return response;
+        return null;
     }
 
     /**
      * Reconciles the delta information fetched to see if the hashcodes match.
      *
-     * @param response - the response of the delta fetch.
      * @param delta - the delta information fetched previously for reconcililation.
      * @param reconcileHashCode - the hashcode for comparison.
      * @return - response
      * @throws Throwable
      */
-    private ClientResponse reconcileAndLogDifference(ClientResponse response,
-                                                     Applications delta, String reconcileHashCode) throws Throwable {
-        logger.warn(
-                "The Reconcile hashcodes do not match, client : {}, server : {}. Getting the full registry",
+    private boolean reconcileAndLogDifference(Applications delta, String reconcileHashCode) throws Throwable {
+        logger.warn("The Reconcile hashcodes do not match, client : {}, server : {}. Getting the full registry",
                 reconcileHashCode, delta.getAppsHashCode());
 
-        this.closeResponse(response);
-        response = this.fetchRemoteRegistry(false);
-        if (null == response) {
-            logger.warn("Response is null while fetching remote registry during reconcile difference.");
-            return null;
-        }
-        Applications serverApps = response.getEntity(Applications.class);
-        Map<String, List<String>> reconcileDiffMap = getApplications()
-                .getReconcileMapDiff(serverApps);
+        Applications serverApps = this.fetchRemoteRegistry(false);
+
+        Map<String, List<String>> reconcileDiffMap = getApplications().getReconcileMapDiff(serverApps);
         String reconcileString = "";
         for (Map.Entry<String, List<String>> mapEntry : reconcileDiffMap
                 .entrySet()) {
@@ -423,11 +423,10 @@ public class RemoteRegionRegistry implements LookupService<String> {
         logger.warn("The reconcile string is {}", reconcileString);
         applications.set(serverApps);
         applicationsDelta.set(serverApps);
-        logger.warn(
-                "The Reconcile hashcodes after complete sync up, client : {}, server : {}.",
+        logger.warn("The Reconcile hashcodes after complete sync up, client : {}, server : {}.",
                 getApplications().getReconcileHashCode(),
                 delta.getAppsHashCode());
-        return response;
+        return true;
     }
 
     /**
@@ -474,4 +473,11 @@ public class RemoteRegionRegistry implements LookupService<String> {
         return this.applicationsDelta.get();
     }
 
+    private boolean shouldUseExperimentalTransport() {
+        if (eurekaHttpClient == null) {
+            return false;
+        }
+        String enabled = serverConfig.getExperimental("transport.enabled");
+        return enabled != null && "true".equalsIgnoreCase(enabled);
+    }
 }

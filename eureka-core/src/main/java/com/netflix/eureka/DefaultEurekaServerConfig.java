@@ -626,4 +626,9 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     public String getListAutoScalingGroupsRoleName() {
         return listAutoScalingGroupsRoleName.get();
     }
+
+    @Override
+    public String getExperimental(String name) {
+        return configInstance.getStringProperty(namespace + "experimental." + name, null).get();
+    }
 }

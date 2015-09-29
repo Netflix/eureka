@@ -134,6 +134,14 @@ public class InstanceInfoGenerator {
         return result;
     }
 
+    public InstanceInfo first() {
+        return take(0);
+    }
+
+    public InstanceInfo take(int idx) {
+        return toInstanceList().get(idx);
+    }
+
     public static InstanceInfo takeOne() {
         return newBuilder(1, 1).withMetaData(true).build().serviceIterator().next();
     }
