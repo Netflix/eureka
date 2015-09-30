@@ -1261,8 +1261,6 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             }
         }
 
-        // not thread safe obviously
-
         /**
          * compute a compensation time defined as the actual time this task was executed since the prev iteration,
          * vs the configured amount of time for execution. This is useful for cases where changes in time (due to
