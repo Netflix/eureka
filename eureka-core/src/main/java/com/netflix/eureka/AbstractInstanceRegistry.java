@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -569,6 +570,10 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      */
     @Override
     public void evict() {
+        evict(0l);
+    }
+
+    public void evict(long additionalLeaseMs) {
         logger.debug("Running the evict task");
 
         if (!isLeaseExpirationEnabled()) {
@@ -585,7 +590,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             if (leaseMap != null) {
                 for (Entry<String, Lease<InstanceInfo>> leaseEntry : leaseMap.entrySet()) {
                     Lease<InstanceInfo> lease = leaseEntry.getValue();
-                    if (lease.isExpired() && lease.getHolder() != null) {
+                    if (lease.isExpired(additionalLeaseMs) && lease.getHolder() != null) {
                         expiredLeases.add(lease);
                     }
                 }
@@ -623,6 +628,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             }
         }
     }
+
 
     /**
      * Returns the given app that is in this instance only, falling back to other regions transparently only
@@ -1235,15 +1241,46 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         return overriddenInstanceStatusMap.size();
     }
 
-    private final class EvictionTask extends TimerTask {
+    /* visible for testing */ class EvictionTask extends TimerTask {
+
+        private final AtomicLong lastExecutionNanosRef = new AtomicLong(0l);
 
         @Override
         public void run() {
             try {
-                evict();
+                boolean experimental = "true".equalsIgnoreCase(EUREKA_SERVER_CONFIG.getExperimental("evict.compensateForDelays"));
+                if (experimental) {
+                    long compensationTimeMs = getCompensationTimeMs();
+                    logger.info("Running the evict task with compensationTime {}ms", compensationTimeMs);
+                    evict(compensationTimeMs);
+                } else {
+                    evict();
+                }
             } catch (Throwable e) {
                 logger.error("Could not run the evict task", e);
             }
+        }
+
+        /**
+         * compute a compensation time defined as the actual time this task was executed since the prev iteration,
+         * vs the configured amount of time for execution. This is useful for cases where changes in time (due to
+         * clock skew or gc for example) causes the actual eviction task to execute later than the desired time
+         * according to the configured cycle.
+         */
+        long getCompensationTimeMs() {
+            long currNanos = getCurrentTimeNano();
+            long lastNanos = lastExecutionNanosRef.getAndSet(currNanos);
+            if (lastNanos == 0l) {
+                return 0l;
+            }
+
+            long elapsedMs = TimeUnit.NANOSECONDS.toMillis(currNanos - lastNanos);
+            long compensationTime = elapsedMs - EUREKA_CONFIG.getEvictionIntervalTimerInMs();
+            return compensationTime <= 0l ? 0l : compensationTime;
+        }
+
+        long getCurrentTimeNano() {  // for testing
+            return System.nanoTime();
         }
 
     }

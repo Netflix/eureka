@@ -14,6 +14,9 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Nitesh Kant
@@ -147,6 +150,25 @@ public class InstanceRegistryTest extends AbstractTester {
         // Register again with status UP (this is what health check is doing)
         registry.register(createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME), 10000000, false);
         verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.UP);
+    }
+
+    @Test
+    public void testEvictionTaskCompensationTime() throws Exception {
+        long evictionTaskPeriodNanos = EurekaServerConfigurationManager.getInstance().getConfiguration()
+                .getEvictionIntervalTimerInMs() * 1000000;
+
+        AbstractInstanceRegistry.EvictionTask testTask = spy(registry.new EvictionTask());
+
+        when(testTask.getCurrentTimeNano())
+                .thenReturn(1l)  // less than the period
+                .thenReturn(1l + evictionTaskPeriodNanos)  // exactly 1 period
+                .thenReturn(1l + evictionTaskPeriodNanos*2 + 10000000l)  // 10ms longer than 1 period
+                .thenReturn(1l + evictionTaskPeriodNanos*3 - 1l);  // less than 1 period
+
+        assertThat(testTask.getCompensationTimeMs(), is(0l));
+        assertThat(testTask.getCompensationTimeMs(), is(0l));
+        assertThat(testTask.getCompensationTimeMs(), is(10l));
+        assertThat(testTask.getCompensationTimeMs(), is(0l));
     }
 
     private void verifyLocalInstanceStatus(String id, InstanceStatus status) {
