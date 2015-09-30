@@ -114,7 +114,7 @@ public class PeerEurekaNode {
                 targetHost,
                 config.getMaxElementsInStatusReplicationPool(),
                 config.getMaxThreadsForStatusReplication(),
-                MAX_BATCHING_DELAY_MS,
+                maxBatchingDelayMs,
                 serverUnavailableSleepTimeMs,
                 retrySleepTimeMs,
                 taskProcessor

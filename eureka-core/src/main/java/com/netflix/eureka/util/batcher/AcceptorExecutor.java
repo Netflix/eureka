@@ -17,7 +17,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.netflix.eureka.util.batcher.TaskProcessor.ProcessingResult;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.annotations.Monitor;
+import com.netflix.servo.monitor.MonitorConfig;
 import com.netflix.servo.monitor.Monitors;
+import com.netflix.servo.monitor.StatsTimer;
+import com.netflix.servo.monitor.Timer;
+import com.netflix.servo.stats.StatsConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,6 +86,8 @@ class AcceptorExecutor<ID, T> {
     @Monitor(name = METRIC_REPLICATION_PREFIX + "queueOverflows", description = "Number of queue overflows", type = DataSourceType.COUNTER)
     volatile long queueOverflows;
 
+    private final Timer batchSizeMetric;
+
     AcceptorExecutor(String id,
                      int maxBufferSize,
                      int maxBatchingSize,
@@ -98,6 +104,14 @@ class AcceptorExecutor<ID, T> {
         this.acceptorThread.setDaemon(true);
         this.acceptorThread.start();
 
+        final double[] percentiles = {50.0, 95.0, 99.0, 99.5};
+        final StatsConfig statsConfig = new StatsConfig.Builder()
+                .withSampleSize(1000)
+                .withPercentiles(percentiles)
+                .withPublishStdDev(true)
+                .build();
+        final MonitorConfig config = MonitorConfig.builder(METRIC_REPLICATION_PREFIX + "batchSize").build();
+        this.batchSizeMetric = new StatsTimer(config, statsConfig);
         try {
             Monitors.registerObject(id, this);
         } catch (Throwable e) {
@@ -292,6 +306,7 @@ class AcceptorExecutor<ID, T> {
                     if (holders.isEmpty()) {
                         batchWorkRequests.release();
                     } else {
+                        batchSizeMetric.record(holders.size(), TimeUnit.MILLISECONDS);
                         batchWorkQueue.add(holders);
                     }
                 }
