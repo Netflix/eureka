@@ -290,7 +290,7 @@ class AcceptorExecutor<ID, T> {
                         }
                     }
                     if (holders.isEmpty()) {
-                        singleItemWorkRequests.release();
+                        batchWorkRequests.release();
                     } else {
                         batchWorkQueue.add(holders);
                     }
