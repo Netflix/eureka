@@ -5,6 +5,7 @@ dependencies {
     compile "com.amazonaws:aws-java-sdk-ec2:${awsVersion}"
     compile "com.amazonaws:aws-java-sdk-autoscaling:${awsVersion}"
     compile "com.amazonaws:aws-java-sdk-sts:${awsVersion}"
+    compile "com.amazonaws:aws-java-sdk-route53:${awsVersion}"
     compile "javax.servlet:servlet-api:${servletVersion}"
     compile "com.netflix.governator:governator:${governatorVersion}"
     compile 'com.thoughtworks.xstream:xstream:1.4.2'

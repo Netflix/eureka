@@ -72,7 +72,7 @@ import javax.inject.Singleton;
  *
  */
 @Singleton
-public class EIPManager {
+public class EIPManager implements AwsBinder {
     private static final Logger logger = LoggerFactory.getLogger(EIPManager.class);
 
     private static final String US_EAST_1 = "us-east-1";

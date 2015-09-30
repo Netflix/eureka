@@ -16,6 +16,8 @@
 
 package com.netflix.eureka;
 
+import com.netflix.eureka.aws.AwsBindingStrategy;
+
 import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
@@ -596,4 +598,41 @@ public interface EurekaServerConfig {
      * @return the class name of the full xml codec to use for the server. If none set a default codec will be used
      */
     String getXmlCodecName();
+
+
+    /**
+     * Get the configured binding strategy EIP or Route53.
+     * @return the configured binding strategy
+     */
+    AwsBindingStrategy getBindingStrategy();
+
+    /**
+     *
+     * @return the ttl used to set up the route53 domain if new
+     */
+    long getRoute53DomainTTL();
+
+    /**
+     * Gets the number of times the server should try to bind to the candidate
+     * Route53 domain.
+     *
+     * <p>
+     * <em>The changes are effective at runtime.</em>
+     * </p>
+     *
+     * @return the number of times the server should try to bind to the
+     *         candidate Route53 domain.
+     */
+    int getRoute53BindRebindRetries();
+
+    /**
+     * Gets the interval with which the server should check if the Route53 domain is bound
+     * and should try to bind in the case if it is already not bound.
+     * <p>
+     * <em>The changes are effective at runtime.</em>
+     * </p>
+     *
+     * @return the time in milliseconds.
+     */
+    int getRoute53BindingRetryIntervalMs();
 }
