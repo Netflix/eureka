@@ -169,8 +169,11 @@ public class PeerEurekaNodes {
 
     protected PeerEurekaNode createPeerEurekaNode(String peerEurekaNodeUrl) {
         HttpReplicationClient replicationClient = new JerseyReplicationClient(config, peerEurekaNodeUrl);
-        String name = PeerEurekaNode.class.getSimpleName() + ": " + peerEurekaNodeUrl + "apps/: ";
-        return new PeerEurekaNode(registry, name, peerEurekaNodeUrl, replicationClient, config);
+        String targetHost = hostFromUrl(peerEurekaNodeUrl);
+        if (targetHost == null) {
+            targetHost = "host";
+        }
+        return new PeerEurekaNode(registry, targetHost, peerEurekaNodeUrl, replicationClient, config);
     }
 
     /**
@@ -186,12 +189,18 @@ public class PeerEurekaNodes {
      */
     public static boolean isThisMe(String url) {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
+        String hostName = hostFromUrl(url);
+        return hostName != null && hostName.equals(myInfo.getHostName());
+    }
+
+    public static String hostFromUrl(String url) {
+        URI uri;
         try {
-            URI uri = new URI(url);
-            return (uri.getHost().equals(myInfo.getHostName()));
+            uri = new URI(url);
         } catch (URISyntaxException e) {
-            logger.error("Error in syntax", e);
-            return false;
+            logger.warn("Cannot parse service URI " + url, e);
+            return null;
         }
+        return uri.getHost();
     }
 }

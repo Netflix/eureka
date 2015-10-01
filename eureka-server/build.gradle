@@ -12,7 +12,7 @@ dependencies {
     providedCompile "javax.servlet:servlet-api:$servletVersion"
 
     testCompile project(':eureka-test-utils')
-    testCompile 'org.mockito:mockito-core:1.10.19'
+    testCompile "org.mockito:mockito-core:${mockitoVersion}"
     testCompile "org.eclipse.jetty:jetty-server:$jetty_version"
     testCompile "org.eclipse.jetty:jetty-webapp:$jetty_version"
 }
