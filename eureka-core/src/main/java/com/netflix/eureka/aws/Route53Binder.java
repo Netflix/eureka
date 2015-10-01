@@ -8,10 +8,8 @@ import com.amazonaws.services.route53.model.*;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +19,11 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Route53 binder implementation. Will look for a free domain in the list of service url to bind itself to via Route53.
@@ -34,6 +36,8 @@ public class Route53Binder implements AwsBinder {
 
     private final EurekaServerConfig serverConfig;
     private final EurekaClientConfig clientConfig;
+    private final ApplicationInfoManager applicationInfoManager;
+
     /**
      * the hostname to register under the Route53 CNAME
      */
@@ -49,17 +53,19 @@ public class Route53Binder implements AwsBinder {
                          ApplicationInfoManager applicationInfoManager) {
         this(getRegistrationHostnameFromAmazonDataCenterInfo(applicationInfoManager),
                 serverConfig,
-                clientConfig);
+                clientConfig,
+                applicationInfoManager);
     }
 
     /**
      * @param registrationHostname the hostname to register under the Route53 CNAME
      */
     public Route53Binder(String registrationHostname, EurekaServerConfig serverConfig,
-                         EurekaClientConfig clientConfig) {
+                         EurekaClientConfig clientConfig, ApplicationInfoManager applicationInfoManager) {
         this.registrationHostname = registrationHostname;
         this.serverConfig = serverConfig;
         this.clientConfig = clientConfig;
+        this.applicationInfoManager = applicationInfoManager;
         this.timer = new Timer("Eureka-Route53Binder", true);
         this.amazonRoute53Client =  getAmazonRoute53Client(serverConfig);
     }
@@ -155,7 +161,7 @@ public class Route53Binder implements AwsBinder {
     }
 
     private String getMyZone() {
-        InstanceInfo info = ApplicationInfoManager.getInstance().getInfo();
+        InstanceInfo info = applicationInfoManager.getInfo();
         AmazonInfo amazonInfo = info != null ? (AmazonInfo) info.getDataCenterInfo() : null;
         String zone =  amazonInfo != null ? amazonInfo.get(AmazonInfo.MetaDataKey.availabilityZone) : null;
         if (zone == null) {
@@ -166,8 +172,7 @@ public class Route53Binder implements AwsBinder {
 
     private List<String> getDeclaredDomains() {
         final String myZone = getMyZone();
-        List<String> ec2Urls = DiscoveryManager.getInstance()
-                .getEurekaClientConfig().getEurekaServerServiceUrls(myZone);
+        List<String> ec2Urls = clientConfig.getEurekaServerServiceUrls(myZone);
         return toDomains(ec2Urls);
     }
 
