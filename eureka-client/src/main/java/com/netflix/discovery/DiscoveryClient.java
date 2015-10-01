@@ -68,6 +68,7 @@ import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
+import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpClients;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
@@ -184,6 +185,7 @@ public class DiscoveryClient implements EurekaClient {
     private final Provider<BackupRegistry> backupRegistryProvider;
     private final ApacheHttpClient4 discoveryApacheClient;
     private final EurekaHttpClient eurekaHttpClient;
+    private final EurekaHttpClientFactory eurekaHttpClientFactory;
     private EurekaJerseyClient discoveryJerseyClient;
 
     private volatile HealthCheckHandler healthCheckHandler;
@@ -420,14 +422,15 @@ public class DiscoveryClient implements EurekaClient {
         }
 
         // Configure new transport layer (candidate for injecting in the future)
+        EurekaHttpClientFactory newEurekaHttpClientFactory = null;
         EurekaHttpClient newEurekaHttpClient = null;
         try {
-            String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
-            String myZone = InstanceInfo.getZone(availZones, instanceInfo);
-            newEurekaHttpClient = EurekaHttpClients.createStandardClient(clientConfig, applicationInfoManager, myZone);
+            newEurekaHttpClientFactory = EurekaHttpClients.createStandardClientFactory(clientConfig, applicationInfoManager);
+            newEurekaHttpClient = newEurekaHttpClientFactory.create();
         } catch (Exception e) {
             logger.warn("Experimental transport initialization failure", e);
         }
+        this.eurekaHttpClientFactory = newEurekaHttpClientFactory;
         this.eurekaHttpClient = newEurekaHttpClient;
 
         if (clientConfig.shouldFetchRegistry() && !fetchRegistry(false)) {
@@ -846,6 +849,12 @@ public class DiscoveryClient implements EurekaClient {
 
         if (discoveryJerseyClient != null) {
             discoveryJerseyClient.destroyResources();
+        }
+        if (eurekaHttpClientFactory != null) {
+            eurekaHttpClientFactory.shutdown();
+        }
+        if (eurekaHttpClient != null) {
+            eurekaHttpClient.shutdown();
         }
 
         heartbeatStalenessMonitor.shutdown();

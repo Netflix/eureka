@@ -16,15 +16,10 @@
 
 package com.netflix.discovery.shared.transport.jersey;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.EurekaClientIdentity;
-import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.EurekaIdentityHeaderFilter;
-import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
@@ -34,28 +29,19 @@ import com.sun.jersey.client.apache4.ApacheHttpClient4;
 /**
  * @author Tomasz Bak
  */
-@Singleton
 public class JerseyEurekaHttpClientFactory implements EurekaHttpClientFactory {
 
-    private final EurekaClientConfig clientConfig;
-    private final ClusterResolver clusterResolver;
-    private final InstanceInfo myInstanceInfo;
+    private final EurekaJerseyClient jerseyClient;
+    private final boolean allowRedirects;
 
-    private volatile EurekaJerseyClient jerseyClient;
-    private final Object lock = new Object();
-
-    @Inject
-    public JerseyEurekaHttpClientFactory(EurekaClientConfig clientConfig,
-                                         ApplicationInfoManager applicationInfoManager,
-                                         ClusterResolver clusterResolver) {
-        this.clientConfig = clientConfig;
-        this.clusterResolver = clusterResolver;
-        this.myInstanceInfo = applicationInfoManager.getInfo();
+    public JerseyEurekaHttpClientFactory(EurekaJerseyClient jerseyClient, boolean allowRedirects) {
+        this.jerseyClient = jerseyClient;
+        this.allowRedirects = allowRedirects;
     }
 
     @Override
     public EurekaHttpClient create(String... serviceUrl) {
-        return new JerseyApplicationClient(getOrCreateJerseyClient(), serviceUrl[0], clientConfig.allowRedirects());
+        return new JerseyApplicationClient(jerseyClient.getClient(), serviceUrl[0], allowRedirects);
     }
 
     @Override
@@ -65,55 +51,70 @@ public class JerseyEurekaHttpClientFactory implements EurekaHttpClientFactory {
         }
     }
 
-    private EurekaJerseyClient getOrCreateJerseyClient() {
-        if (jerseyClient != null) {
-            return jerseyClient;
+    public static EurekaHttpClientFactory create(EurekaClientConfig clientConfig,
+                                                 ApplicationInfoManager applicationInfoManager,
+                                                 boolean isSecure) {
+        JerseyEurekaHttpClientFactoryBuilder clientBuilder = newBuilder()
+                .withMyInstanceInfo(applicationInfoManager.getInfo())
+                .withUserAgent("Java-EurekaClient")
+                .withAllowRedirect(clientConfig.allowRedirects())
+                .withConnectionTimeout(clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000)
+                .withReadTimeout(clientConfig.getEurekaServerReadTimeoutSeconds() * 1000)
+                .withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost())
+                .withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections())
+                .withConnectionIdleTimeout(clientConfig.getEurekaConnectionIdleTimeoutSeconds())
+                .withEncoder(clientConfig.getEncoderName())
+                .withDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept());
+
+        if (isSecure && "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
+            clientBuilder.withClientName("DiscoveryClient-HTTPClient-System").withSystemSSLConfiguration();
+        } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
+            clientBuilder.withClientName("Proxy-DiscoveryClient-HTTPClient")
+                    .withProxy(
+                            clientConfig.getProxyHost(), Integer.parseInt(clientConfig.getProxyPort()),
+                            clientConfig.getProxyUserName(), clientConfig.getProxyPassword()
+                    );
+        } else {
+            clientBuilder.withClientName("DiscoveryClient-HTTPClient");
         }
 
-        synchronized (lock) {
-            if (jerseyClient == null) {
-                if (clusterResolver.getClusterEndpoints().isEmpty()) {
-                    throw new IllegalStateException("Eureka server list is empty; cannot setup connection to any server");
-                }
+        return clientBuilder.build();
+    }
 
-                EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
-                        .withUserAgent("Java-EurekaClient")
-                        .withConnectionTimeout(clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000)
-                        .withReadTimeout(clientConfig.getEurekaServerReadTimeoutSeconds() * 1000)
-                        .withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost())
-                        .withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections())
-                        .withConnectionIdleTimeout(clientConfig.getEurekaConnectionIdleTimeoutSeconds())
-                        .withEncoder(clientConfig.getEncoderName())
-                        .withDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept());
+    public static JerseyEurekaHttpClientFactoryBuilder newBuilder() {
+        return new JerseyEurekaHttpClientFactoryBuilder();
+    }
 
-                if (clusterResolver.getClusterEndpoints().get(0).isSecure() &&
-                        "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
-                    clientBuilder.withClientName("DiscoveryClient-HTTPClient-System").withSystemSSLConfiguration();
-                } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
-                    clientBuilder.withClientName("Proxy-DiscoveryClient-HTTPClient")
-                            .withProxy(
-                                    clientConfig.getProxyHost(), clientConfig.getProxyPort(),
-                                    clientConfig.getProxyUserName(), clientConfig.getProxyPassword()
-                            );
-                } else {
-                    clientBuilder.withClientName("DiscoveryClient-HTTPClient");
-                }
-                jerseyClient = clientBuilder.build();
-                ApacheHttpClient4 discoveryApacheClient = jerseyClient.getClient();
+    /**
+     * Currently use EurekaJerseyClientBuilder. Once old transport in DiscoveryClient is removed, incorporate
+     * EurekaJerseyClientBuilder here, and remove it.
+     */
+    public static class JerseyEurekaHttpClientFactoryBuilder extends EurekaHttpClientFactoryBuilder<JerseyEurekaHttpClientFactoryBuilder> {
+        @Override
+        public EurekaHttpClientFactory build() {
+            EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
+                    .withClientName(clientName)
+                    .withUserAgent("Java-EurekaClient")
+                    .withConnectionTimeout(connectionTimeout)
+                    .withReadTimeout(readTimeout)
+                    .withMaxConnectionsPerHost(maxConnectionsPerHost)
+                    .withMaxTotalConnections(maxTotalConnections)
+                    .withConnectionIdleTimeout(connectionIdleTimeout)
+                    .withEncoderWrapper(encoderWrapper)
+                    .withDecoderWrapper(decoderWrapper);
 
-                // Add gzip content encoding support
-                boolean enableGZIPContentEncodingFilter = clientConfig.shouldGZipContent();
-                if (enableGZIPContentEncodingFilter) {
-                    discoveryApacheClient.addFilter(new GZIPContentEncodingFilter(false));
-                }
+            EurekaJerseyClient jerseyClient = clientBuilder.build();
+            ApacheHttpClient4 discoveryApacheClient = jerseyClient.getClient();
 
-                // always enable client identity headers
-                String ip = myInstanceInfo == null ? null : myInstanceInfo.getIPAddr();
-                EurekaClientIdentity identity = new EurekaClientIdentity(ip);
-                discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
-            }
+            // Add gzip content encoding support
+            discoveryApacheClient.addFilter(new GZIPContentEncodingFilter(false));
+
+            // always enable client identity headers
+            String ip = myInstanceInfo == null ? null : myInstanceInfo.getIPAddr();
+            EurekaClientIdentity identity = new EurekaClientIdentity(ip);
+            discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
+
+            return new JerseyEurekaHttpClientFactory(jerseyClient, allowRedirect);
         }
-
-        return jerseyClient;
     }
 }

@@ -60,7 +60,7 @@ public class JerseyRemoteRegionClientFactory implements EurekaHttpClientFactory 
 
     @Override
     public EurekaHttpClient create(String... serviceUrl) {
-        return new JerseyApplicationClient(getOrCreateJerseyClient(), serviceUrl[0], false);
+        return new JerseyApplicationClient(getOrCreateJerseyClient().getClient(), serviceUrl[0], false);
     }
 
     @Override

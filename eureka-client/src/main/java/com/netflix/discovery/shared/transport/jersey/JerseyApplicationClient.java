@@ -17,6 +17,7 @@
 package com.netflix.discovery.shared.transport.jersey;
 
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource.Builder;
 
 /**
@@ -30,7 +31,7 @@ public class JerseyApplicationClient extends AbstractJerseyEurekaHttpClient {
 
     private final boolean allowRedirect;
 
-    public JerseyApplicationClient(EurekaJerseyClient jerseyClient, String serviceUrl, boolean allowRedirect) {
+    public JerseyApplicationClient(Client jerseyClient, String serviceUrl, boolean allowRedirect) {
         super(jerseyClient, serviceUrl);
         this.allowRedirect = allowRedirect;
     }

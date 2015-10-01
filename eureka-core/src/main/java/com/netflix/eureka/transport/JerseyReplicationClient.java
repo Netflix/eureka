@@ -41,7 +41,7 @@ public class JerseyReplicationClient extends AbstractJerseyEurekaHttpClient impl
     private final ApacheHttpClient4 jerseyApacheClient;
 
     public JerseyReplicationClient(EurekaJerseyClient jerseyClient, String serviceUrl) {
-        super(jerseyClient, serviceUrl);
+        super(jerseyClient.getClient(), serviceUrl);
         this.jerseyClient = jerseyClient;
         this.jerseyApacheClient = jerseyClient.getClient();
     }

@@ -56,6 +56,7 @@ public class EurekaHttpClientsTest {
     private SimpleEurekaHttpServer readServer;
 
     private ClusterResolver clusterResolver;
+    private EurekaHttpClientFactory clientFactory;
 
     private String readServerURI;
 
@@ -71,6 +72,8 @@ public class EurekaHttpClientsTest {
 
         readServer = new SimpleEurekaHttpServer(readRequestHandler);
         readServerURI = "http://localhost:" + readServer.getServerPort();
+
+        clientFactory = EurekaHttpClients.createStandardClientFactory(clientConfig, applicationInfoManager, clusterResolver);
     }
 
     @After
@@ -80,6 +83,9 @@ public class EurekaHttpClientsTest {
         }
         if (readServer != null) {
             readServer.shutdown();
+        }
+        if (clientFactory != null) {
+            clientFactory.shutdown();
         }
     }
 
@@ -100,7 +106,7 @@ public class EurekaHttpClientsTest {
                         .build()
         );
 
-        EurekaHttpClient eurekaHttpClient = EurekaHttpClients.createStandardClient(clientConfig, applicationInfoManager, clusterResolver);
+        EurekaHttpClient eurekaHttpClient = clientFactory.create();
 
         EurekaHttpResponse<Applications> result = eurekaHttpClient.getApplications();
 

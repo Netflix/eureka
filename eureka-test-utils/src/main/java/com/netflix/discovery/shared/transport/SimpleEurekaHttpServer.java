@@ -21,6 +21,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -65,6 +67,14 @@ public class SimpleEurekaHttpServer {
 
     public void shutdown() {
         httpServer.stop(0);
+    }
+
+    public URI getServiceURI() {
+        try {
+            return new URI("http://localhost:" + getServerPort() + "/v2");
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException("Cannot parse service URI", e);
+        }
     }
 
     public int getServerPort() {
