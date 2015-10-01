@@ -19,7 +19,7 @@ ext {
     apacheHttpClientVersion='4.3.4'
     guiceVersion='4.0'
     servoVersion='0.9.4'
-    governatorVersion='1.7.5'
+    governatorVersion='1.10.1'
     archaiusVersion='0.7.1'
     archaius2Version='2.0.0-rc.28'
     blitzVersion='1.34'

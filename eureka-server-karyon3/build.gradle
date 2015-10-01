@@ -4,8 +4,8 @@ apply plugin: 'jetty'
 dependencies {
     compile project(':eureka-core')
     runtime 'xerces:xercesImpl:2.4.0'
-    compile "com.netflix.governator:governator:1.10.0"
-    compile "com.netflix.governator:governator-servlet:1.10.0"
+    compile "com.netflix.governator:governator:${governatorVersion}"
+    compile "com.netflix.governator:governator-servlet:${governatorVersion}"
     compile "com.netflix.karyon:karyon3-core:${karyon3Version}"
     compile "com.netflix.karyon:karyon3-archaius2:${karyon3Version}"
     compile "com.netflix.karyon:karyon3-jetty:${karyon3Version}"

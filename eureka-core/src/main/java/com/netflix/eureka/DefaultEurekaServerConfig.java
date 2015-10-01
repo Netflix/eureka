@@ -629,6 +629,11 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     }
 
     @Override
+    public String getExperimental(String name) {
+        return configInstance.getStringProperty(namespace + "experimental." + name, null).get();
+    }
+
+    @Override
     public int getRoute53BindRebindRetries() {
         return configInstance.getIntProperty(
                 namespace + "route53BindRebindRetries", 3).get();
