@@ -189,7 +189,7 @@ class AcceptorExecutor<ID, T> {
 
                     long now = System.currentTimeMillis();
                     if (scheduleTime < now) {
-                        scheduleTime = now + trafficShaper.grantTransmissionPermit();
+                        scheduleTime = now + trafficShaper.transmissionDelay();
                     }
                     if (scheduleTime <= now) {
                         assignBatchWork();

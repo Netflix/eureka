@@ -133,7 +133,7 @@ public class PeerEurekaNode {
     public void register(final InstanceInfo info) throws Exception {
         long expiryTime = System.currentTimeMillis() + info.getLeaseInfo().getRenewalIntervalInSecs() * 1000;
         batchingDispatcher.process(
-                "register#" + info.getId(),
+                taskId("register", info),
                 new InstanceReplicationTask(targetHost, Action.Register, info, null, true) {
                     public HttpResponse<Void> execute() {
                         return replicationClient.register(info);
@@ -156,7 +156,7 @@ public class PeerEurekaNode {
     public void cancel(final String appName, final String id) throws Exception {
         long expiryTime = System.currentTimeMillis() + maxProcessingDelayMs;
         batchingDispatcher.process(
-                "cancel#" + id,
+                taskId("cancel", appName, id),
                 new InstanceReplicationTask(targetHost, Action.Cancel, appName, id) {
                     @Override
                     public HttpResponse<Void> execute() {
@@ -223,7 +223,7 @@ public class PeerEurekaNode {
             }
         };
         long expiryTime = System.currentTimeMillis() + info.getLeaseInfo().getRenewalIntervalInSecs() * 1000;
-        batchingDispatcher.process("heartbeat#" + id, replicationTask, expiryTime);
+        batchingDispatcher.process(taskId("heartbeat", info), replicationTask, expiryTime);
     }
 
     /**
@@ -269,7 +269,7 @@ public class PeerEurekaNode {
                              final InstanceStatus newStatus, final InstanceInfo info) {
         long expiryTime = System.currentTimeMillis() + maxProcessingDelayMs;
         batchingDispatcher.process(
-                "statusUpdate#" + id,
+                taskId("statusUpdate", appName, id),
                 new InstanceReplicationTask(targetHost, Action.StatusUpdate, info, null, false) {
                     @Override
                     public HttpResponse<Void> execute() {
@@ -293,7 +293,7 @@ public class PeerEurekaNode {
     public void deleteStatusOverride(final String appName, final String id, final InstanceInfo info) {
         long expiryTime = System.currentTimeMillis() + maxProcessingDelayMs;
         batchingDispatcher.process(
-                "statusUpdate#" + id,
+                taskId("deleteStatusOverride", appName, id),
                 new InstanceReplicationTask(targetHost, Action.DeleteStatusOverride, info, null, false) {
                     @Override
                     public HttpResponse<Void> execute() {
@@ -379,5 +379,13 @@ public class PeerEurekaNode {
             batcherName = serviceUrl;
         }
         return "target_" + batcherName;
+    }
+
+    private static String taskId(String requestType, String appName, String id) {
+        return requestType + '#' + appName + '/' + id;
+    }
+
+    private static String taskId(String requestType, InstanceInfo info) {
+        return taskId(requestType, info.getAppName(), info.getId());
     }
 }

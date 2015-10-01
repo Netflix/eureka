@@ -1,5 +1,7 @@
 package com.netflix.eureka.cluster;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -9,8 +11,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
@@ -27,8 +27,6 @@ import org.slf4j.LoggerFactory;
  * @author Tomasz Bak
  */
 public class PeerEurekaNodes {
-
-    private static final Pattern HOST_NAME_RE = Pattern.compile("(http|https)://([^:/]+).*");
 
     private static final Logger logger = LoggerFactory.getLogger(PeerEurekaNodes.class);
 
@@ -196,10 +194,13 @@ public class PeerEurekaNodes {
     }
 
     public static String hostFromUrl(String url) {
-        Matcher matcher = HOST_NAME_RE.matcher(url);
-        if (!matcher.matches()) {
+        URI uri;
+        try {
+            uri = new URI(url);
+        } catch (URISyntaxException e) {
+            logger.warn("Cannot parse service URI " + url, e);
             return null;
         }
-        return matcher.group(2);
+        return uri.getHost();
     }
 }

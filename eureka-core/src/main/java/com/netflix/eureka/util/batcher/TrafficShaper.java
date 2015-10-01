@@ -27,6 +27,11 @@ import com.netflix.eureka.util.batcher.TaskProcessor.ProcessingResult;
  */
 class TrafficShaper {
 
+    /**
+     * Upper bound on delay provided by configuration.
+     */
+    private static final long MAX_DELAY = 30 * 1000;
+
     private final long congestionRetryDelayMs;
     private final long networkFailureRetryMs;
 
@@ -34,8 +39,8 @@ class TrafficShaper {
     private volatile long lastNetworkFailure;
 
     TrafficShaper(long congestionRetryDelayMs, long networkFailureRetryMs) {
-        this.congestionRetryDelayMs = congestionRetryDelayMs;
-        this.networkFailureRetryMs = networkFailureRetryMs;
+        this.congestionRetryDelayMs = Math.min(MAX_DELAY, congestionRetryDelayMs);
+        this.networkFailureRetryMs = Math.min(MAX_DELAY, networkFailureRetryMs);
     }
 
     void registerFailure(ProcessingResult processingResult) {
@@ -46,21 +51,27 @@ class TrafficShaper {
         }
     }
 
-    long grantTransmissionPermit() {
-        if (lastCongestionError == -1 || lastNetworkFailure == -1) {
+    long transmissionDelay() {
+        if (lastCongestionError == -1 && lastNetworkFailure == -1) {
             return 0;
         }
+
         long now = System.currentTimeMillis();
-        if (now - lastCongestionError < congestionRetryDelayMs) {
-            return congestionRetryDelayMs - (now - lastCongestionError);
-        } else {
+        if (lastCongestionError != -1) {
+            long congestionDelay = now - lastCongestionError;
+            if (congestionDelay >= 0 && congestionDelay < congestionRetryDelayMs) {
+                return congestionRetryDelayMs - congestionDelay;
+            }
             lastCongestionError = -1;
         }
 
-        if (now - lastNetworkFailure < networkFailureRetryMs) {
-            return networkFailureRetryMs - (now - lastNetworkFailure);
+        if (lastNetworkFailure != -1) {
+            long failureDelay = now - lastNetworkFailure;
+            if (failureDelay >= 0 && failureDelay < networkFailureRetryMs) {
+                return networkFailureRetryMs - failureDelay;
+            }
+            lastNetworkFailure = -1;
         }
-        lastNetworkFailure = -1;
         return 0;
     }
 }
