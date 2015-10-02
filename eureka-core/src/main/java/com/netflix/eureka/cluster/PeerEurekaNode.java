@@ -25,6 +25,7 @@ import com.netflix.discovery.shared.EurekaHttpClient.HttpResponse;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.PeerAwareInstanceRegistry;
 import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
+import com.netflix.eureka.lease.Lease;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
 import com.netflix.eureka.util.batcher.TaskDispatcher;
 import com.netflix.eureka.util.batcher.TaskDispatchers;
@@ -131,7 +132,7 @@ public class PeerEurekaNode {
      * @throws Exception
      */
     public void register(final InstanceInfo info) throws Exception {
-        long expiryTime = System.currentTimeMillis() + info.getLeaseInfo().getRenewalIntervalInSecs() * 1000;
+        long expiryTime = System.currentTimeMillis() + getLeaseRenewalOf(info);
         batchingDispatcher.process(
                 taskId("register", info),
                 new InstanceReplicationTask(targetHost, Action.Register, info, null, true) {
@@ -222,7 +223,7 @@ public class PeerEurekaNode {
                 }
             }
         };
-        long expiryTime = System.currentTimeMillis() + info.getLeaseInfo().getRenewalIntervalInSecs() * 1000;
+        long expiryTime = System.currentTimeMillis() + getLeaseRenewalOf(info);
         batchingDispatcher.process(taskId("heartbeat", info), replicationTask, expiryTime);
     }
 
@@ -387,5 +388,9 @@ public class PeerEurekaNode {
 
     private static String taskId(String requestType, InstanceInfo info) {
         return taskId(requestType, info.getAppName(), info.getId());
+    }
+
+    private static int getLeaseRenewalOf(InstanceInfo info) {
+        return (info.getLeaseInfo() == null ? Lease.DEFAULT_DURATION_IN_SECS : info.getLeaseInfo().getRenewalIntervalInSecs()) * 1000;
     }
 }
