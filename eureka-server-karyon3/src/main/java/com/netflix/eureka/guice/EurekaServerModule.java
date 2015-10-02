@@ -28,7 +28,7 @@ public class EurekaServerModule extends AbstractModule {
         bind(EurekaServerConfig.class).to(DefaultEurekaServerConfig.class).in(Scopes.SINGLETON);
         bind(PeerEurekaNodes.class).in(Scopes.SINGLETON);
 
-        bind(AwsBinderDelegate.class).in(Scopes.SINGLETON);
+        bind(AwsBinderDelegate.class).asEagerSingleton();
 
         // registry and interfaces
         bind(AwsInstanceRegistry.class).asEagerSingleton();
