@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -34,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -278,7 +280,17 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      *                      otherwise.
      * @return true if the instance was removed from the {@link AbstractInstanceRegistry} successfully, false otherwise.
      */
+    @Override
     public boolean cancel(String appName, String id, boolean isReplication) {
+        return internalCancel(appName, id, isReplication);
+    }
+
+    /**
+     * {@link #cancel(String, String, boolean)} method is overridden by {@link PeerAwareInstanceRegistry}, so each
+     * cancel request is replicated to the peers. This is however not desired for expires which would be counted
+     * in the remote peers as valid cancellations, so self preservation mode would not kick-in.
+     */
+    protected boolean internalCancel(String appName, String id, boolean isReplication) {
         try {
             read.lock();
             CANCEL.increment(isReplication);
@@ -292,12 +304,11 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             }
             InstanceStatus instanceStatus = overriddenInstanceStatusMap.remove(id);
             if (instanceStatus != null) {
-                logger.debug("Removed instance id {} from the overridden map which has value {}",
-                        id, instanceStatus.name());
+                logger.debug("Removed instance id {} from the overridden map which has value {}", id, instanceStatus.name());
             }
             if (leaseToCancel == null) {
                 CANCEL_NOT_FOUND.increment(isReplication);
-                logger.warn("DS: Registry: cancel failed because Lease is not registered for: {}:{}", appName, id);
+                logger.warn("DS: Registry: cancel failed because Lease is not registered for: {}/{}", appName, id);
                 return false;
             } else {
                 leaseToCancel.cancel();
@@ -560,28 +571,67 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      *
      * @see com.netflix.eureka.lease.LeaseManager#evict()
      */
+    @Override
     public void evict() {
+        evict(0l);
+    }
+
+    public void evict(long additionalLeaseMs) {
+        logger.debug("Running the evict task");
+
         if (!isLeaseExpirationEnabled()) {
             logger.debug("DS: lease expiration is currently disabled.");
             return;
         }
-        logger.debug("Running the evict task");
+
+        // We collect first all expired items, to evict them in random order. For large eviction sets,
+        // if we do not that, we might wipe out whole apps before self preservation kicks in. By randomizing it,
+        // the impact should be evenly distributed across all applications.
+        List<Lease<InstanceInfo>> expiredLeases = new ArrayList<>();
         for (Entry<String, Map<String, Lease<InstanceInfo>>> groupEntry : registry.entrySet()) {
             Map<String, Lease<InstanceInfo>> leaseMap = groupEntry.getValue();
             if (leaseMap != null) {
                 for (Entry<String, Lease<InstanceInfo>> leaseEntry : leaseMap.entrySet()) {
                     Lease<InstanceInfo> lease = leaseEntry.getValue();
-                    if (lease.isExpired() && lease.getHolder() != null) {
-                        String appName = lease.getHolder().getAppName();
-                        String id = lease.getHolder().getId();
-                        EXPIRED.increment();
-                        logger.warn("DS: Registry: expired lease for {} - {}", appName, id);
-                        cancel(appName, id, false);
+                    if (lease.isExpired(additionalLeaseMs) && lease.getHolder() != null) {
+                        expiredLeases.add(lease);
                     }
                 }
             }
         }
+
+        boolean experimental = "true".equalsIgnoreCase(serverConfig.getExperimental("evict.cancel.disabled"));
+
+        // To compensate for GC pauses or drifting local time, we need to use current registry size as a base for
+        // triggering self-preservation. Without that we would wipe out full registry.
+        int registrySize = (int) getLocalRegistrySize();
+        int registrySizeThreshold = (int) (registrySize * serverConfig.getRenewalPercentThreshold());
+        int evictionLimit = registrySize - registrySizeThreshold;
+
+        int toEvict = Math.min(expiredLeases.size(), evictionLimit);
+        if (toEvict > 0) {
+            logger.info("Evicting {} items (expired={}, evictionLimit={})", toEvict, expiredLeases.size(), evictionLimit);
+
+            Random random = new Random(System.currentTimeMillis());
+            for (int i = 0; i < toEvict; i++) {
+                // Pick a random item (Knuth shuffle algorithm)
+                int next = i + random.nextInt(expiredLeases.size() - i);
+                Collections.swap(expiredLeases, i, next);
+                Lease<InstanceInfo> lease = expiredLeases.get(i);
+
+                String appName = lease.getHolder().getAppName();
+                String id = lease.getHolder().getId();
+                EXPIRED.increment();
+                logger.warn("DS: Registry: expired lease for {}/{}", appName, id);
+                if (experimental) {
+                    internalCancel(appName, id, false);
+                } else {
+                    cancel(appName, id, false);
+                }
+            }
+        }
     }
+
 
     /**
      * Returns the given app that is in this instance only, falling back to other regions transparently only
@@ -1197,15 +1247,46 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         return overriddenInstanceStatusMap.size();
     }
 
-    private final class EvictionTask extends TimerTask {
+    /* visible for testing */ class EvictionTask extends TimerTask {
+
+        private final AtomicLong lastExecutionNanosRef = new AtomicLong(0l);
 
         @Override
         public void run() {
             try {
-                evict();
+                boolean experimental = "true".equalsIgnoreCase(serverConfig.getExperimental("evict.compensateForDelays"));
+                if (experimental) {
+                    long compensationTimeMs = getCompensationTimeMs();
+                    logger.info("Running the evict task with compensationTime {}ms", compensationTimeMs);
+                    evict(compensationTimeMs);
+                } else {
+                    evict();
+                }
             } catch (Throwable e) {
                 logger.error("Could not run the evict task", e);
             }
+        }
+
+        /**
+         * compute a compensation time defined as the actual time this task was executed since the prev iteration,
+         * vs the configured amount of time for execution. This is useful for cases where changes in time (due to
+         * clock skew or gc for example) causes the actual eviction task to execute later than the desired time
+         * according to the configured cycle.
+         */
+        long getCompensationTimeMs() {
+            long currNanos = getCurrentTimeNano();
+            long lastNanos = lastExecutionNanosRef.getAndSet(currNanos);
+            if (lastNanos == 0l) {
+                return 0l;
+            }
+
+            long elapsedMs = TimeUnit.NANOSECONDS.toMillis(currNanos - lastNanos);
+            long compensationTime = elapsedMs - serverConfig.getEvictionIntervalTimerInMs();
+            return compensationTime <= 0l ? 0l : compensationTime;
+        }
+
+        long getCurrentTimeNano() {  // for testing
+            return System.nanoTime();
         }
 
     }

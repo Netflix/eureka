@@ -1,23 +1,16 @@
 package com.netflix.eureka.cluster;
 
-import java.util.concurrent.TimeUnit;
+import java.util.Collections;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.util.InstanceInfoGenerator;
-import com.netflix.eureka.EurekaServerConfig;
+import com.netflix.eureka.cluster.TestableInstanceReplicationTask.ProcessingState;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
-import com.netflix.eureka.cluster.ReplicationTask.ProcessingState;
-import org.junit.After;
+import com.netflix.eureka.util.batcher.TaskProcessor.ProcessingResult;
 import org.junit.Before;
 import org.junit.Test;
 
-import static com.netflix.eureka.cluster.ClusterSampleData.MAX_PROCESSING_DELAY_MS;
-import static com.netflix.eureka.cluster.ClusterSampleData.REPLICATION_EXPIRY_TIME_MS;
-import static com.netflix.eureka.cluster.ClusterSampleData.RETRY_SLEEP_TIME_MS;
-import static com.netflix.eureka.cluster.ClusterSampleData.SERVER_UNAVAILABLE_SLEEP_TIME_MS;
-import static com.netflix.eureka.cluster.TestableInstanceReplicationTask.aBatchableTask;
-import static com.netflix.eureka.cluster.TestableInstanceReplicationTask.aNonBatchableTask;
-import static org.hamcrest.CoreMatchers.equalTo;
+import static com.netflix.eureka.cluster.TestableInstanceReplicationTask.aReplicationTask;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -28,147 +21,89 @@ public class ReplicationTaskProcessorTest {
 
     private final TestableHttpReplicationClient replicationClient = new TestableHttpReplicationClient();
 
-    private final EurekaServerConfig config = ClusterSampleData.newEurekaServerConfig(true);
-
     private ReplicationTaskProcessor replicationTaskProcessor;
 
     @Before
     public void setUp() throws Exception {
-        replicationTaskProcessor = new ReplicationTaskProcessor(
-                "peerId#test",
-                "batcherName#test",
-                Action.Heartbeat.name(),
-                replicationClient,
-                config,
-                MAX_PROCESSING_DELAY_MS,
-                RETRY_SLEEP_TIME_MS,
-                SERVER_UNAVAILABLE_SLEEP_TIME_MS
-        );
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        replicationTaskProcessor.shutdown();
+        replicationTaskProcessor = new ReplicationTaskProcessor("peerId#test", replicationClient);
     }
 
     @Test
     public void testNonBatchableTaskExecution() throws Exception {
-        TestableInstanceReplicationTask task = aNonBatchableTask().withAction(Action.Heartbeat).withReplyStatusCode(200).build();
-
-        boolean status = replicationTaskProcessor.process(task);
-
-        assertThat(status, is(true));
-        assertThat(task.awaitCompletion(30, TimeUnit.SECONDS), is(equalTo(ProcessingState.Finished)));
+        TestableInstanceReplicationTask task = aReplicationTask().withAction(Action.Heartbeat).withReplyStatusCode(200).build();
+        ProcessingResult status = replicationTaskProcessor.process(task);
+        assertThat(status, is(ProcessingResult.Success));
     }
 
     @Test
-    public void testNonBatchableTaskFailureHandling() throws Exception {
-        TestableInstanceReplicationTask task = aNonBatchableTask().withAction(Action.Heartbeat).withReplyStatusCode(503).build();
-
-        boolean status = replicationTaskProcessor.process(task);
-
-        assertThat(status, is(true));
-        assertThat(task.awaitCompletion(30, TimeUnit.SECONDS), is(equalTo(ProcessingState.Failed)));
+    public void testNonBatchableTaskCongestionFailureHandling() throws Exception {
+        TestableInstanceReplicationTask task = aReplicationTask().withAction(Action.Heartbeat).withReplyStatusCode(503).build();
+        ProcessingResult status = replicationTaskProcessor.process(task);
+        assertThat(status, is(ProcessingResult.Congestion));
+        assertThat(task.getProcessingState(), is(ProcessingState.Pending));
     }
 
     @Test
-    public void testNonBatchableTaskExpiry() throws Exception {
-        TestableInstanceReplicationTask longTask = aNonBatchableTask()
-                .withId("longTask")
-                .withAction(Action.Heartbeat)
-                .withReplyStatusCode(200)
-                .withProcessingDelay(5 * REPLICATION_EXPIRY_TIME_MS, TimeUnit.MILLISECONDS)
-                .build();
-        TestableInstanceReplicationTask secondTask =
-                aNonBatchableTask().withId("secondTask").withAction(Action.Heartbeat).withReplyStatusCode(200).build();
-
-        boolean status = replicationTaskProcessor.process(longTask) && replicationTaskProcessor.process(secondTask);
-
-        assertThat(status, is(true));
-        assertThat(longTask.awaitCompletion(30, TimeUnit.SECONDS), is(equalTo(ProcessingState.Finished)));
-        assertThat(secondTask.awaitCompletion(30, TimeUnit.SECONDS), is(equalTo(ProcessingState.Cancelled)));
+    public void testNonBatchableTaskNetworkFailureHandling() throws Exception {
+        TestableInstanceReplicationTask task = aReplicationTask().withAction(Action.Heartbeat).withNetworkFailures(1).build();
+        ProcessingResult status = replicationTaskProcessor.process(task);
+        assertThat(status, is(ProcessingResult.TransientError));
+        assertThat(task.getProcessingState(), is(ProcessingState.Pending));
     }
 
     @Test
-    public void testNonBatchableTaskRetryOnConnectionError() throws Exception {
-        TestableInstanceReplicationTask task = aNonBatchableTask()
-                .withAction(Action.Heartbeat).withReplyStatusCode(200).withNetworkFailures(2).build();
-
-        boolean status = replicationTaskProcessor.process(task);
-
-        assertThat(status, is(true));
-        assertThat(task.awaitCompletion(30, TimeUnit.SECONDS), is(equalTo(ProcessingState.Finished)));
+    public void testNonBatchableTaskPermanentFailureHandling() throws Exception {
+        TestableInstanceReplicationTask task = aReplicationTask().withAction(Action.Heartbeat).withReplyStatusCode(406).build();
+        ProcessingResult status = replicationTaskProcessor.process(task);
+        assertThat(status, is(ProcessingResult.PermanentError));
+        assertThat(task.getProcessingState(), is(ProcessingState.Failed));
     }
 
     @Test
     public void testBatchableTaskListExecution() throws Exception {
-        TestableInstanceReplicationTask task = aBatchableTask().build();
+        TestableInstanceReplicationTask task = aReplicationTask().build();
 
         replicationClient.withBatchReply(200);
         replicationClient.withNetworkStatusCode(200);
-        boolean status = replicationTaskProcessor.process(task);
+        ProcessingResult status = replicationTaskProcessor.process(Collections.<ReplicationTask>singletonList(task));
 
-        assertThat(status, is(true));
-        assertThat(task.awaitCompletion(30, TimeUnit.SECONDS), is(equalTo(ProcessingState.Finished)));
+        assertThat(status, is(ProcessingResult.Success));
+        assertThat(task.getProcessingState(), is(ProcessingState.Finished));
     }
 
     @Test
-    public void testBatchableTaskFailureHandling() throws Exception {
-        TestableInstanceReplicationTask task = aBatchableTask().build();
+    public void testBatchableTaskCongestionFailureHandling() throws Exception {
+        TestableInstanceReplicationTask task = aReplicationTask().build();
+
+        replicationClient.withNetworkStatusCode(503);
+        ProcessingResult status = replicationTaskProcessor.process(Collections.<ReplicationTask>singletonList(task));
+
+        assertThat(status, is(ProcessingResult.Congestion));
+        assertThat(task.getProcessingState(), is(ProcessingState.Pending));
+    }
+
+    @Test
+    public void testBatchableTaskNetworkFailureHandling() throws Exception {
+        TestableInstanceReplicationTask task = aReplicationTask().build();
+
+        replicationClient.withNetworkError(1);
+        ProcessingResult status = replicationTaskProcessor.process(Collections.<ReplicationTask>singletonList(task));
+
+        assertThat(status, is(ProcessingResult.TransientError));
+        assertThat(task.getProcessingState(), is(ProcessingState.Pending));
+    }
+
+    @Test
+    public void testBatchableTaskPermanentFailureHandling() throws Exception {
+        TestableInstanceReplicationTask task = aReplicationTask().build();
         InstanceInfo instanceInfoFromPeer = InstanceInfoGenerator.takeOne();
 
         replicationClient.withNetworkStatusCode(200);
         replicationClient.withBatchReply(400);
         replicationClient.withInstanceInfo(instanceInfoFromPeer);
-        boolean status = replicationTaskProcessor.process(task);
+        ProcessingResult status = replicationTaskProcessor.process(Collections.<ReplicationTask>singletonList(task));
 
-        assertThat(status, is(true));
-        assertThat(task.awaitCompletion(30, TimeUnit.SECONDS), is(equalTo(ProcessingState.Failed)));
-    }
-
-    @Test
-    public void testBatchableTaskExpiry() throws Exception {
-        TestableInstanceReplicationTask longTask = aBatchableTask().build();
-
-        replicationClient.withNetworkStatusCode(200);
-        replicationClient.withBatchReply(200);
-        replicationClient.withProcessingDelay(5 * REPLICATION_EXPIRY_TIME_MS, TimeUnit.MILLISECONDS);
-        replicationTaskProcessor.process(longTask);
-
-        // Wait a bit, to be sure long task is picked up by the batcher
-        Thread.sleep(REPLICATION_EXPIRY_TIME_MS);
-
-        TestableInstanceReplicationTask secondTask =
-                aBatchableTask().withId("secondTask").withAction(Action.Heartbeat).withReplyStatusCode(200).build();
-        replicationTaskProcessor.process(secondTask);
-
-        assertThat(longTask.awaitCompletion(30, TimeUnit.SECONDS), is(equalTo(ProcessingState.Finished)));
-        assertThat(secondTask.awaitCompletion(30, TimeUnit.SECONDS), is(equalTo(ProcessingState.Cancelled)));
-    }
-
-    @Test
-    public void testBatchableTaskRetryOnConnectionError() throws Exception {
-        TestableInstanceReplicationTask task = aBatchableTask().withAction(Action.Heartbeat).withReplyStatusCode(200).build();
-
-        replicationClient.withNetworkStatusCode(200);
-        replicationClient.withNetworkError(2);
-        replicationClient.withBatchReply(200);
-        boolean status = replicationTaskProcessor.process(task);
-
-        assertThat(status, is(true));
-        assertThat(task.awaitCompletion(30, TimeUnit.SECONDS), is(equalTo(ProcessingState.Finished)));
-    }
-
-    @Test
-    public void testBatchableTaskRetryOnServerBusy() throws Exception {
-        TestableInstanceReplicationTask task = aBatchableTask().withAction(Action.Heartbeat).withReplyStatusCode(200).build();
-
-        replicationClient.withNetworkStatusCode(503, 200);
-        replicationClient.withBatchReply(200);
-
-        boolean status = replicationTaskProcessor.process(task);
-
-        assertThat(status, is(true));
-        assertThat(task.awaitCompletion(30, TimeUnit.SECONDS), is(equalTo(ProcessingState.Finished)));
+        assertThat(status, is(ProcessingResult.Success));
+        assertThat(task.getProcessingState(), is(ProcessingState.Failed));
     }
 }

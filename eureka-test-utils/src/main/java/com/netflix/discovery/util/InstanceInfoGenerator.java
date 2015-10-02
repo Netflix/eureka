@@ -150,6 +150,7 @@ public class InstanceInfoGenerator {
     private InstanceInfo generateInstanceInfo(int appIndex, int appInstanceId, boolean useInstanceId) {
         String appName = appNames[appIndex];
         String hostName = "instance" + appInstanceId + '.' + appName + ".com";
+        String privateHostname = "ip-10.0" + appIndex + "." + appInstanceId + ".compute.internal";
         String publicIp = "20.0." + appIndex + '.' + appInstanceId;
         String privateIp = "192.168." + appIndex + '.' + appInstanceId;
 
@@ -164,6 +165,7 @@ public class InstanceInfoGenerator {
                 .addMetadata(MetaDataKey.availabilityZone, zone)
                 .addMetadata(MetaDataKey.instanceId, instanceId)
                 .addMetadata(MetaDataKey.instanceType, "m2.xlarge")
+                .addMetadata(MetaDataKey.localHostname, privateHostname)
                 .addMetadata(MetaDataKey.localIpv4, privateIp)
                 .addMetadata(MetaDataKey.publicHostname, hostName)
                 .addMetadata(MetaDataKey.publicIpv4, publicIp)

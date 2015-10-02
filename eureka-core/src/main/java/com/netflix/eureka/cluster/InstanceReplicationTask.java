@@ -49,11 +49,6 @@ public abstract class InstanceReplicationTask extends ReplicationTask {
         return appName + '/' + id + ':' + action + '@' + peerNodeName;
     }
 
-    @Override
-    public boolean isBatchingSupported() {
-        return true;
-    }
-
     public String getAppName() {
         return appName;
     }

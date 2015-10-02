@@ -22,8 +22,6 @@ public final class ClusterSampleData {
 
     public static final long REPLICATION_EXPIRY_TIME_MS = 100;
 
-    public static final long MAX_PROCESSING_DELAY_MS = 50;
-
     public static final long RETRY_SLEEP_TIME_MS = 1;
 
     public static final long SERVER_UNAVAILABLE_SLEEP_TIME_MS = 1;
@@ -33,7 +31,7 @@ public final class ClusterSampleData {
     private ClusterSampleData() {
     }
 
-    public static EurekaServerConfig newEurekaServerConfig(boolean batchingEnabled) {
+    public static EurekaServerConfig newEurekaServerConfig() {
         EurekaServerConfig config = mock(EurekaServerConfig.class);
 
         // Cluster management related
@@ -43,9 +41,9 @@ public final class ClusterSampleData {
         when(config.shouldSyncWhenTimestampDiffers()).thenReturn(true);
         when(config.getMaxTimeForReplication()).thenReturn((int) REPLICATION_EXPIRY_TIME_MS);
         when(config.getMaxElementsInPeerReplicationPool()).thenReturn(10);
-        when(config.getMinThreadsForPeerReplication()).thenReturn(1);
+        when(config.getMaxElementsInStatusReplicationPool()).thenReturn(10);
         when(config.getMaxThreadsForPeerReplication()).thenReturn(1);
-        when(config.shouldBatchReplication()).thenReturn(batchingEnabled);
+        when(config.getMaxThreadsForStatusReplication()).thenReturn(1);
 
         return config;
     }

@@ -5,16 +5,12 @@ import java.util.List;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.EurekaHttpClient.HttpResponse;
-import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 import com.netflix.eureka.cluster.protocol.ReplicationInstance;
 import com.netflix.eureka.cluster.protocol.ReplicationInstance.ReplicationInstanceBuilder;
 import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
-import com.netflix.eureka.util.batcher.MessageBatcher;
-import com.netflix.eureka.util.batcher.MessageProcessor;
-import com.netflix.servo.monitor.DynamicCounter;
+import com.netflix.eureka.util.batcher.TaskProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,171 +19,99 @@ import static com.netflix.eureka.cluster.protocol.ReplicationInstance.Replicatio
 /**
  * @author Tomasz Bak
  */
-public class ReplicationTaskProcessor {
+class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
 
     private static final Logger logger = LoggerFactory.getLogger(ReplicationTaskProcessor.class);
 
-    private final String peerId;
     private final HttpReplicationClient replicationClient;
-    private final EurekaServerConfig config;
-    private final long retrySleepTimeMs;
-    private final long serverUnavailableSleepTime;
-    private final MessageBatcher<ReplicationTask> batcher;
 
-    ReplicationTaskProcessor(String peerId,
-                             String batcherName,
-                             String batchedAction,
-                             HttpReplicationClient replicationClient,
-                             EurekaServerConfig config,
-                             long maxDelay,
-                             long retrySleepTimeMs,
-                             long serverUnavailableSleepTime) {
-        this.peerId = peerId;
+    private final String peerId;
+
+    private volatile long lastNetworkErrorTime;
+
+    ReplicationTaskProcessor(String peerId, HttpReplicationClient replicationClient) {
         this.replicationClient = replicationClient;
-        this.config = config;
-        this.retrySleepTimeMs = retrySleepTimeMs;
-        this.serverUnavailableSleepTime = serverUnavailableSleepTime;
-        String absoluteBatcherName = batcherName + '-' + batchedAction;
-
-        batcher = new MessageBatcher<ReplicationTask>(
-                absoluteBatcherName,
-                createMessageProcessor(),
-                config.getMaxElementsInPeerReplicationPool(),
-                maxDelay,
-                config.getMinThreadsForPeerReplication(),
-                config.getMaxThreadsForPeerReplication(),
-                config.getMaxIdleThreadAgeInMinutesForPeerReplication() * 60 * 1000, // minutes -> ms
-                true
-        );
+        this.peerId = peerId;
     }
 
-    private MessageProcessor<ReplicationTask> createMessageProcessor() {
-        return new MessageProcessor<ReplicationTask>() {
-            @Override
-            public void process(List<ReplicationTask> tasks) {
-                if (tasks.get(0).isBatchingSupported() && config.shouldBatchReplication()) {
-                    executeBatch(tasks);
-                } else {
-                    executeSingle(tasks);
-                }
+    @Override
+    public ProcessingResult process(ReplicationTask task) {
+        try {
+            HttpResponse<?> httpResponse = task.execute();
+            int statusCode = httpResponse.getStatusCode();
+            Object entity = httpResponse.getEntity();
+            if (logger.isDebugEnabled()) {
+                logger.debug("Replication task {} completed with status {}, (includes entity {})", task.getTaskName(), statusCode, entity != null);
             }
-        };
-    }
-
-    public boolean process(ReplicationTask replicationTask) {
-        boolean success = batcher.process(replicationTask);
-        if (!success) {
-            logger.error("Cannot find space in the replication pool for peer {}. Check the network connectivity or the traffic", peerId);
+            if (isSuccess(statusCode)) {
+                task.handleSuccess();
+            } else if (statusCode == 503) {
+                logger.debug("Server busy (503) reply for task {}", task.getTaskName());
+                return ProcessingResult.Congestion;
+            } else {
+                task.handleFailure(statusCode, entity);
+                return ProcessingResult.PermanentError;
+            }
+        } catch (Throwable e) {
+            if (isNetworkConnectException(e)) {
+                logNetworkErrorSample(task, e);
+                return ProcessingResult.TransientError;
+            } else {
+                logger.error(peerId + ": " + task.getTaskName() + "Not re-trying this exception because it does not seem to be a network exception", e);
+                return ProcessingResult.PermanentError;
+            }
         }
-        return success;
+        return ProcessingResult.Success;
     }
 
-    public void shutdown() {
-        batcher.stop();
-    }
-
-    private void executeSingle(List<ReplicationTask> tasks) {
-        for (ReplicationTask task : tasks) {
-            long lastNetworkErrorTime = 0;
-            boolean done;
-            do {
-                done = true;
-                try {
-                    if (isLate(task)) {
-                        continue;
-                    }
-                    DynamicCounter.increment("Single_" + task.getAction().name() + "_tries");
-
-                    HttpResponse<?> httpResponse = task.execute();
-                    int statusCode = httpResponse.getStatusCode();
-                    Object entity = httpResponse.getEntity();
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Replication task {} completed with status {}, (includes entity {})", task.getTaskName(), statusCode, entity != null);
-                    }
-                    if (isSuccess(statusCode)) {
-                        DynamicCounter.increment("Single_" + task.getAction().name() + "_success");
-                        task.handleSuccess();
-                    } else {
-                        DynamicCounter.increment("Single_" + task.getAction().name() + "_failure");
-                        task.handleFailure(statusCode, entity);
-                    }
-                } catch (Throwable e) {
-                    if (isNetworkConnectException(e)) {
-                        long now = System.currentTimeMillis();
-                        // We want to retry eagerly, but without flooding log file with tons of error entries.
-                        // As tasks are executed by a pool of threads the error logging multiplies. For example:
-                        // 20 threads * 100ms delay == 200 error entries / sec worst case
-                        // Still we would like to see the exception samples, so we print samples at regular intervals.
-                        if (now - lastNetworkErrorTime > 10000) {
-                            lastNetworkErrorTime = now;
-                            logger.error("Network level connection to peer " + peerId + " for task " + task.getTaskName() + "; retrying after delay", e);
-                        }
-                        try {
-                            Thread.sleep(retrySleepTimeMs);
-                        } catch (InterruptedException ignore) {
-                        }
-                        DynamicCounter.increment(task.getAction().name() + "_retries");
-                        done = false;
-                    } else {
-                        logger.error(peerId + ": " + task.getTaskName() + "Not re-trying this exception because it does not seem to be a network exception", e);
-                    }
-                }
-            } while (!done);
-        }
-    }
-
-    private void executeBatch(List<ReplicationTask> tasks) {
+    @Override
+    public ProcessingResult process(List<ReplicationTask> tasks) {
         ReplicationList list = createReplicationListOf(tasks);
-        if (list.getReplicationList().isEmpty()) {
-            return;
-        }
-
-        Action action = list.getReplicationList().get(0).getAction();
-        DynamicCounter.increment("Batch_" + action + "_tries");
-
-        long lastNetworkErrorTime = 0;
-        boolean done;
-        do {
-            done = true;
-            try {
-                HttpResponse<ReplicationListResponse> response = replicationClient.submitBatchUpdates(list);
-                int statusCode = response.getStatusCode();
-                if (!isSuccess(statusCode)) {
-                    if (statusCode == 503) {
-                        logger.warn("Server busy (503) HTTP status code received from the peer {}; rescheduling tasks after delay", peerId);
-                        rescheduleAfterDelay(tasks);
-                    } else {
-                        // Unexpected error returned from the server. This should ideally never happen.
-                        logger.error("Batch update failure with HTTP status code {}; discarding {} replication tasks", statusCode, tasks.size());
-                    }
-                    return;
-                }
-                DynamicCounter.increment("Batch_" + action + "_success");
-
-                handleBatchResponse(tasks, response.getEntity().getResponseList());
-            } catch (Throwable e) {
-                if (isNetworkConnectException(e)) {
-                    long now = System.currentTimeMillis();
-                    // We want to retry eagerly, but without flooding log file with tons of error entries.
-                    // As tasks are executed by a pool of threads the error logging multiplies. For example:
-                    // 20 threads * 100ms delay == 200 error entries / sec worst case
-                    // Still we would like to see the exception samples, so we print samples at regular intervals
-                    if (now - lastNetworkErrorTime > 10000) {
-                        lastNetworkErrorTime = now;
-                        logger.error("Network level connection to peer " + peerId + "; retrying after delay", e);
-                    }
-
-                    try {
-                        Thread.sleep(retrySleepTimeMs);
-                    } catch (InterruptedException ignore) {
-                    }
-                    done = false;
-                    DynamicCounter.increment("Batch_" + action + "_retries");
+        try {
+            HttpResponse<ReplicationListResponse> response = replicationClient.submitBatchUpdates(list);
+            int statusCode = response.getStatusCode();
+            if (!isSuccess(statusCode)) {
+                if (statusCode == 503) {
+                    logger.warn("Server busy (503) HTTP status code received from the peer {}; rescheduling tasks after delay", peerId);
+                    return ProcessingResult.Congestion;
                 } else {
-                    logger.error("Not re-trying this exception because it does not seem to be a network exception", e);
+                    // Unexpected error returned from the server. This should ideally never happen.
+                    logger.error("Batch update failure with HTTP status code {}; discarding {} replication tasks", statusCode, tasks.size());
+                    return ProcessingResult.PermanentError;
                 }
+            } else {
+                handleBatchResponse(tasks, response.getEntity().getResponseList());
             }
-        } while (!done);
+        } catch (Throwable e) {
+            if (isNetworkConnectException(e)) {
+                logNetworkErrorSample(null, e);
+                return ProcessingResult.TransientError;
+            } else {
+                logger.error("Not re-trying this exception because it does not seem to be a network exception", e);
+                return ProcessingResult.PermanentError;
+            }
+        }
+        return ProcessingResult.Success;
+    }
+
+    /**
+     * We want to retry eagerly, but without flooding log file with tons of error entries.
+     * As tasks are executed by a pool of threads the error logging multiplies. For example:
+     * 20 threads * 100ms delay == 200 error entries / sec worst case
+     * Still we would like to see the exception samples, so we print samples at regular intervals.
+     */
+    private void logNetworkErrorSample(ReplicationTask task, Throwable e) {
+        long now = System.currentTimeMillis();
+        if (now - lastNetworkErrorTime > 10000) {
+            lastNetworkErrorTime = now;
+            StringBuilder sb = new StringBuilder();
+            sb.append("Network level connection to peer ").append(peerId);
+            if (task != null) {
+                sb.append(" for task ").append(task.getTaskName());
+            }
+            sb.append("; retrying after delay");
+            logger.error(sb.toString(), e);
+        }
     }
 
     private void handleBatchResponse(List<ReplicationTask> tasks, List<ReplicationInstanceResponse> responseList) {
@@ -215,41 +139,13 @@ public class ReplicationTaskProcessor {
         }
     }
 
-    private void rescheduleAfterDelay(List<ReplicationTask> tasks) {
-        try {
-            Thread.sleep(serverUnavailableSleepTime);
-        } catch (InterruptedException e) {
-            // Ignore
-        }
-        for (ReplicationTask task : tasks) {
-            if (!isLate(task)) {
-                process(task);
-            }
-        }
-    }
-
     private ReplicationList createReplicationListOf(List<ReplicationTask> tasks) {
         ReplicationList list = new ReplicationList();
         for (ReplicationTask task : tasks) {
-            if (!isLate(task)) {
-                // Only InstanceReplicationTask are batched.
-                list.addReplicationInstance(createReplicationInstanceOf((InstanceReplicationTask) task));
-            }
+            // Only InstanceReplicationTask are batched.
+            list.addReplicationInstance(createReplicationInstanceOf((InstanceReplicationTask) task));
         }
         return list;
-    }
-
-    private boolean isLate(ReplicationTask task) {
-        long now = System.currentTimeMillis();
-        boolean late = now - task.getSubmitTime() > config.getMaxTimeForReplication();
-
-        if (late) {
-            DynamicCounter.increment("Replication_" + task.getAction().name() + "_expiry");
-            logger.warn("Replication task {} older than the threshold (submit time {}", task.getTaskName(), task.getSubmitTime());
-
-            task.cancel();
-        }
-        return late;
     }
 
     private static boolean isSuccess(int statusCode) {
@@ -293,3 +189,4 @@ public class ReplicationTaskProcessor {
         return instanceBuilder.build();
     }
 }
+
