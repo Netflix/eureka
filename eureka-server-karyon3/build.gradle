@@ -16,6 +16,9 @@ dependencies {
     runtime 'org.codehaus.jettison:jettison:1.2' 
     providedCompile "javax.servlet:servlet-api:${servletVersion}"
 
+    // for now to keep governator and karyon3 in sync until karyon3 stabilize
+    compile "com.netflix.governator:governator-jetty:${governatorVersion}"
+
     testCompile project(':eureka-test-utils')
     testCompile 'org.mockito:mockito-core:1.10.19'
     testCompile "org.eclipse.jetty:jetty-server:${jetty_version}"
