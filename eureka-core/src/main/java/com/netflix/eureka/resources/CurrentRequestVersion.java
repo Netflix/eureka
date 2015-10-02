@@ -14,11 +14,13 @@
  *    limitations under the License.
  */
 
-package com.netflix.eureka;
+package com.netflix.eureka.resources;
 
+
+import com.netflix.eureka.Version;
 
 /**
- * A thread-scoped value that holds the "current {@link Version}" for the
+ * A thread-scoped value that holds the "current {@link com.netflix.eureka.Version}" for the
  * request.
  *
  * <p>This is not intended as a general mechanism for passing data.

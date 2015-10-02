@@ -1,7 +1,7 @@
 package com.netflix.eureka.cluster;
 
 import com.netflix.discovery.shared.EurekaHttpClient.HttpResponse;
-import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

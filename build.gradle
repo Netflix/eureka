@@ -7,7 +7,7 @@ buildscript {
 }
 
 plugins {
-    id 'nebula.netflixoss' version '2.2.7'
+    id 'nebula.netflixoss' version '2.2.10'
 }
 
 ext {
@@ -19,9 +19,9 @@ ext {
     apacheHttpClientVersion='4.3.4'
     guiceVersion='4.0'
     servoVersion='0.9.4'
-    governatorVersion='1.7.5'
+    governatorVersion='1.10.4'
     archaiusVersion='0.7.1'
-    archaius2Version='2.0.0-rc.28'
+    archaius2Version='2.0.0-rc.32'
     blitzVersion='1.34'
     mockitoVersion='1.10.19'
     junit_version='4.10'
@@ -29,6 +29,7 @@ ext {
     jetty_version='7.2.0.v20101020'
     jacksonVersion='2.5.4'
     woodstoxVersion='4.4.1'
+    karyon3Version='3.0.1-rc.13'
 }
 
 idea {

@@ -17,7 +17,7 @@ import com.netflix.discovery.shared.EurekaJerseyClientImpl.EurekaJerseyClientBui
 import com.netflix.discovery.shared.JerseyEurekaHttpClient;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.PeerAwareInstanceRegistryImpl.Action;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 import com.netflix.eureka.cluster.JerseyReplicationClient;
 import com.netflix.eureka.cluster.protocol.ReplicationInstance;
 import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
@@ -98,7 +98,9 @@ public class EurekaClientServerRestIntegrationTest {
                 jerseyClient.destroyResources();
             }
         };
-        jerseyReplicationClient = new JerseyReplicationClient(eurekaServerConfig, eurekaServiceUrl);
+
+        ServerCodecs serverCodecs = new DefaultServerCodecs(eurekaServerConfig);
+        jerseyReplicationClient = new JerseyReplicationClient(eurekaServerConfig, serverCodecs, eurekaServiceUrl);
     }
 
     @AfterClass

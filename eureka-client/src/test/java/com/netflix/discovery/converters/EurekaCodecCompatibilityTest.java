@@ -10,9 +10,9 @@ import java.util.List;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.MyDataCenterInfo;
+import com.netflix.discovery.converters.wrappers.CodecWrapper;
 import com.netflix.discovery.converters.wrappers.CodecWrappers;
 import com.netflix.discovery.converters.wrappers.DecoderWrapper;
-import com.netflix.discovery.converters.wrappers.EncoderDecoderWrapper;
 import com.netflix.discovery.converters.wrappers.EncoderWrapper;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
@@ -28,8 +28,8 @@ import static org.junit.Assert.assertThat;
  */
 public class EurekaCodecCompatibilityTest {
 
-    private static final List<EncoderDecoderWrapper> availableJsonWrappers = new ArrayList<>();
-    private static final List<EncoderDecoderWrapper> availableXmlWrappers = new ArrayList<>();
+    private static final List<CodecWrapper> availableJsonWrappers = new ArrayList<>();
+    private static final List<CodecWrapper> availableXmlWrappers = new ArrayList<>();
 
     static {
         availableJsonWrappers.add(new CodecWrappers.XStreamJson());
@@ -230,7 +230,7 @@ public class EurekaCodecCompatibilityTest {
             }
         };
 
-        List<EncoderDecoderWrapper> jsonCodes = Arrays.asList(
+        List<CodecWrapper> jsonCodes = Arrays.asList(
                 new CodecWrappers.LegacyJacksonJson(),
                 new CodecWrappers.JacksonJson()
         );
@@ -238,7 +238,7 @@ public class EurekaCodecCompatibilityTest {
         verifyAllPairs(codingAction, Applications.class, jsonCodes);
     }
 
-    public void verifyAllPairs(Action2 codingAction, Class<?> typeToEncode, List<EncoderDecoderWrapper> codecHolders) throws Exception {
+    public void verifyAllPairs(Action2 codingAction, Class<?> typeToEncode, List<CodecWrapper> codecHolders) throws Exception {
         for (EncoderWrapper encodingCodec : codecHolders) {
             for (DecoderWrapper decodingCodec : codecHolders) {
                 String pair = "{" + encodingCodec.codecName() + ',' + decodingCodec.codecName() + '}';

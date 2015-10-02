@@ -6,8 +6,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.netflix.appinfo.ApplicationInfoManager;
+import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.PeerAwareInstanceRegistry;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
+import com.netflix.eureka.resources.DefaultServerCodecs;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -98,8 +101,13 @@ public class PeerEurekaNodesTest {
         private final ConcurrentHashMap<String, PeerEurekaNode> peerEurekaNodeByUrl = new ConcurrentHashMap<>();
         private final AtomicInteger reloadCounter = new AtomicInteger();
 
-        TestablePeerEurekaNodes(PeerAwareInstanceRegistry registry, EurekaServerConfig config) {
-            super(registry, config);
+        TestablePeerEurekaNodes(PeerAwareInstanceRegistry registry, EurekaServerConfig serverConfig) {
+            super(registry,
+                    serverConfig,
+                    new DefaultEurekaClientConfig(),
+                    new DefaultServerCodecs(serverConfig),
+                    mock(ApplicationInfoManager.class)
+            );
         }
 
         void withPeerUrls(String... peerUrls) {

@@ -16,6 +16,8 @@
 
 package com.netflix.eureka;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -82,6 +84,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Tomasz Bak
  */
+@Singleton
 public class RateLimitingFilter implements Filter {
 
     private static final Logger logger = LoggerFactory.getLogger(RateLimitingFilter.class);
@@ -104,8 +107,24 @@ public class RateLimitingFilter implements Filter {
      */
     private static final RateLimiter registryFullFetchRateLimiter = new RateLimiter(TimeUnit.SECONDS);
 
+    private EurekaServerConfig serverConfig;
+
+    @Inject
+    public RateLimitingFilter(EurekaServerContext server) {
+        this.serverConfig = server.getServerConfig();
+    }
+
+    // for non-DI use
+    public RateLimitingFilter() {
+    }
+
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
+        if (serverConfig == null) {
+            EurekaServerContext serverContext = (EurekaServerContext) filterConfig.getServletContext()
+                    .getAttribute(EurekaServerContext.class.getName());
+            serverConfig = serverContext.getServerConfig();
+        }
     }
 
     @Override
@@ -120,7 +139,7 @@ public class RateLimitingFilter implements Filter {
 
         if (isRateLimited(httpRequest, target)) {
             incrementStats(target);
-            if (config().isRateLimiterEnabled()) {
+            if (serverConfig.isRateLimiterEnabled()) {
                 ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 return;
             }
@@ -153,7 +172,7 @@ public class RateLimitingFilter implements Filter {
         return target;
     }
 
-    private static boolean isRateLimited(HttpServletRequest request, Target target) {
+    private boolean isRateLimited(HttpServletRequest request, Target target) {
         if (isPrivileged(request)) {
             logger.debug("Privileged {} request", target);
             return false;
@@ -166,29 +185,29 @@ public class RateLimitingFilter implements Filter {
         return false;
     }
 
-    private static boolean isPrivileged(HttpServletRequest request) {
-        if (config().isRateLimiterThrottleStandardClients()) {
+    private boolean isPrivileged(HttpServletRequest request) {
+        if (serverConfig.isRateLimiterThrottleStandardClients()) {
             return false;
         }
-        Set<String> privilegedClients = config().getRateLimiterPrivilegedClients();
+        Set<String> privilegedClients = serverConfig.getRateLimiterPrivilegedClients();
         String clientName = request.getHeader(AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY);
         return privilegedClients.contains(clientName) || DEFAULT_PRIVILEGED_CLIENTS.contains(clientName);
     }
 
-    private static boolean isOverloaded(Target target) {
-        int maxInWindow = config().getRateLimiterBurstSize();
-        int fetchWindowSize = config().getRateLimiterRegistryFetchAverageRate();
+    private boolean isOverloaded(Target target) {
+        int maxInWindow = serverConfig.getRateLimiterBurstSize();
+        int fetchWindowSize = serverConfig.getRateLimiterRegistryFetchAverageRate();
         boolean overloaded = !registryFetchRateLimiter.acquire(maxInWindow, fetchWindowSize);
 
         if (target == Target.FullFetch) {
-            int fullFetchWindowSize = config().getRateLimiterFullFetchAverageRate();
+            int fullFetchWindowSize = serverConfig.getRateLimiterFullFetchAverageRate();
             overloaded |= !registryFullFetchRateLimiter.acquire(maxInWindow, fullFetchWindowSize);
         }
         return overloaded;
     }
 
-    private static void incrementStats(Target target) {
-        if (config().isRateLimiterEnabled()) {
+    private void incrementStats(Target target) {
+        if (serverConfig.isRateLimiterEnabled()) {
             EurekaMonitors.RATE_LIMITED.increment();
             if (target == Target.FullFetch) {
                 EurekaMonitors.RATE_LIMITED_FULL_FETCH.increment();
@@ -199,10 +218,6 @@ public class RateLimitingFilter implements Filter {
                 EurekaMonitors.RATE_LIMITED_FULL_FETCH_CANDIDATES.increment();
             }
         }
-    }
-
-    private static EurekaServerConfig config() {
-        return EurekaServerConfigurationManager.getInstance().getConfiguration();
     }
 
     @Override

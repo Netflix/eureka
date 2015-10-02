@@ -17,6 +17,7 @@
 package com.netflix.eureka;
 
 import javax.annotation.Nullable;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,6 +32,7 @@ import com.netflix.config.DynamicIntProperty;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
 import com.netflix.config.DynamicStringSetProperty;
+import com.netflix.eureka.aws.AwsBindingStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +59,7 @@ import org.slf4j.LoggerFactory;
  * @author Karthik Ranganathan
  *
  */
+@Singleton
 public class DefaultEurekaServerConfig implements EurekaServerConfig {
     private static final String ARCHAIUS_DEPLOYMENT_ENVIRONMENT = "archaius.deployment.environment";
     private static final String TEST = "test";
@@ -366,6 +369,12 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     }
 
     @Override
+    public long getRegistrySyncRetryWaitMs() {
+        return configInstance.getIntProperty(
+                namespace + "registrySyncRetryWaitMs", 30 * 1000).get();
+    }
+
+    @Override
     public int getMaxElementsInPeerReplicationPool() {
         return configInstance.getIntProperty(
                 namespace + "maxElementsInPeerReplicationPool", 10000).get();
@@ -622,5 +631,31 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     @Override
     public String getExperimental(String name) {
         return configInstance.getStringProperty(namespace + "experimental." + name, null).get();
+    }
+
+    @Override
+    public int getRoute53BindRebindRetries() {
+        return configInstance.getIntProperty(
+                namespace + "route53BindRebindRetries", 3).get();
+
+    }
+
+    @Override
+    public int getRoute53BindingRetryIntervalMs() {
+        return configInstance.getIntProperty(
+                namespace + "route53BindRebindRetryIntervalMs", (5 * 60 * 1000))
+                .get();
+    }
+
+    @Override
+    public long getRoute53DomainTTL() {
+        return configInstance.getLongProperty(
+                namespace + "route53DomainTTL", 30l)
+                .get();
+    }
+
+    @Override
+    public AwsBindingStrategy getBindingStrategy() {
+        return AwsBindingStrategy.valueOf(configInstance.getStringProperty(namespace + "awsBindingStrategy", AwsBindingStrategy.EIP.name()).get().toUpperCase());
     }
 }

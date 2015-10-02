@@ -25,6 +25,8 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
     private static final Logger logger = LoggerFactory.getLogger(InstanceRegionChecker.class);
     private static final String[] EMPTY_STR_ARRAY = new String[0];
 
+    protected final EurekaClientConfig clientConfig;
+
     /**
      * A default for the mapping that we know of, if a remote region is configured to be fetched but does not have
      * any availability zone mapping, we will use these defaults. OTOH, if the remote region has any mapping defaults
@@ -41,7 +43,8 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
     private final Map<String, String> availabilityZoneVsRegion = new ConcurrentHashMap<String, String>();
     private String[] regionsToFetch;
 
-    protected AbstractAzToRegionMapper() {
+    protected AbstractAzToRegionMapper(EurekaClientConfig clientConfig) {
+        this.clientConfig = clientConfig;
         populateDefaultAZToRegionMap();
     }
 

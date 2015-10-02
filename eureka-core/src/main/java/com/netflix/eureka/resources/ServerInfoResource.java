@@ -2,9 +2,11 @@ package com.netflix.eureka.resources;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.eureka.AbstractInstanceRegistry;
-import com.netflix.eureka.PeerAwareInstanceRegistryImpl;
+import com.netflix.eureka.EurekaServerContext;
+import com.netflix.eureka.EurekaServerContextHolder;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 
+import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -17,7 +19,16 @@ import java.util.Map;
 @Produces("application/json")
 @Path("/serverinfo")
 public class ServerInfoResource {
-    private final AbstractInstanceRegistry registry = PeerAwareInstanceRegistryImpl.getInstance();
+    private final PeerAwareInstanceRegistry registry;
+
+    @Inject
+    ServerInfoResource(EurekaServerContext server) {
+        this.registry = server.getRegistry();
+    }
+
+    public ServerInfoResource() {
+        this(EurekaServerContextHolder.getInstance().getServerContext());
+    }
 
     @GET
     @Path("statusoverrides")

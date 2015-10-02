@@ -16,6 +16,8 @@
 
 package com.netflix.eureka;
 
+import com.netflix.eureka.aws.AwsBindingStrategy;
+
 import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
@@ -279,7 +281,7 @@ public interface EurekaServerConfig {
     long getResponseCacheUpdateIntervalMs();
 
     /**
-     * The {@link com.netflix.eureka.resources.ResponseCache} currently uses a two level caching
+     * The {@link com.netflix.eureka.registry.ResponseCache} currently uses a two level caching
      * strategy to responses. A readWrite cache with an expiration policy, and a readonly cache
      * that caches without expiry.
      *
@@ -350,6 +352,14 @@ public interface EurekaServerConfig {
      * @return the number of retries
      */
     int getRegistrySyncRetries();
+
+    /**
+     * Get the wait/sleep time between each retry sync attempts, if the prev retry failed and there are
+     * more retries to attempt.
+     *
+     * @return the wait time in ms between each sync retries
+     */
+    long getRegistrySyncRetryWaitMs();
 
     /**
      * Get the maximum number of replication events that can be allowed to back
@@ -596,4 +606,41 @@ public interface EurekaServerConfig {
      * @return a property of experimental feature
      */
     String getExperimental(String name);
+
+
+    /**
+     * Get the configured binding strategy EIP or Route53.
+     * @return the configured binding strategy
+     */
+    AwsBindingStrategy getBindingStrategy();
+
+    /**
+     *
+     * @return the ttl used to set up the route53 domain if new
+     */
+    long getRoute53DomainTTL();
+
+    /**
+     * Gets the number of times the server should try to bind to the candidate
+     * Route53 domain.
+     *
+     * <p>
+     * <em>The changes are effective at runtime.</em>
+     * </p>
+     *
+     * @return the number of times the server should try to bind to the
+     *         candidate Route53 domain.
+     */
+    int getRoute53BindRebindRetries();
+
+    /**
+     * Gets the interval with which the server should check if the Route53 domain is bound
+     * and should try to bind in the case if it is already not bound.
+     * <p>
+     * <em>The changes are effective at runtime.</em>
+     * </p>
+     *
+     * @return the time in milliseconds.
+     */
+    int getRoute53BindingRetryIntervalMs();
 }

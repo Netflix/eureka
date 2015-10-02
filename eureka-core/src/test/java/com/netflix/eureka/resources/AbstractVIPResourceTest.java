@@ -10,6 +10,7 @@ import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.netflix.eureka.AbstractTester;
 import com.netflix.eureka.Version;
+import com.netflix.eureka.registry.Key;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -34,9 +35,9 @@ public class AbstractVIPResourceTest extends AbstractTester {
         InstanceInfoGenerator instanceInfos = InstanceInfoGenerator.newBuilder(6, 1).build();
         testApplication = instanceInfos.toApplications().getRegisteredApplications().get(0);
 
-        resource = new AbstractVIPResource(new ResponseCache(registry)) {
+        resource = new AbstractVIPResource(serverContext) {
             @Override
-            protected Response getVipResponse(String version, String entityName, String acceptHeader, EurekaAccept eurekaAccept, ResponseCache.Key.EntityType entityType) {
+            protected Response getVipResponse(String version, String entityName, String acceptHeader, EurekaAccept eurekaAccept, Key.EntityType entityType) {
                 return super.getVipResponse(version, entityName, acceptHeader, eurekaAccept, entityType);
             }
         };
@@ -59,7 +60,7 @@ public class AbstractVIPResourceTest extends AbstractTester {
                 vipName,
                 MediaType.APPLICATION_JSON,
                 EurekaAccept.full,
-                ResponseCache.Key.EntityType.VIP
+                Key.EntityType.VIP
         );
 
         String json = String.valueOf(response.getEntity());
@@ -77,7 +78,7 @@ public class AbstractVIPResourceTest extends AbstractTester {
                 vipName,
                 MediaType.APPLICATION_JSON,
                 EurekaAccept.compact,
-                ResponseCache.Key.EntityType.VIP
+                Key.EntityType.VIP
         );
 
         String json = String.valueOf(response.getEntity());

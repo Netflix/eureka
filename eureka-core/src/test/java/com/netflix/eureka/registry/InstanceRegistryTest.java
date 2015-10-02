@@ -1,4 +1,4 @@
-package com.netflix.eureka;
+package com.netflix.eureka.registry;
 
 import java.util.List;
 
@@ -7,6 +7,7 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.Pair;
+import com.netflix.eureka.AbstractTester;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -14,7 +15,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
@@ -154,8 +154,7 @@ public class InstanceRegistryTest extends AbstractTester {
 
     @Test
     public void testEvictionTaskCompensationTime() throws Exception {
-        long evictionTaskPeriodNanos = EurekaServerConfigurationManager.getInstance().getConfiguration()
-                .getEvictionIntervalTimerInMs() * 1000000;
+        long evictionTaskPeriodNanos = serverConfig.getEvictionIntervalTimerInMs() * 1000000;
 
         AbstractInstanceRegistry.EvictionTask testTask = spy(registry.new EvictionTask());
 

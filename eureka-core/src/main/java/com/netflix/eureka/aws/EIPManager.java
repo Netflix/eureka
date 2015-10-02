@@ -14,11 +14,13 @@
  *    limitations under the License.
  */
 
-package com.netflix.eureka.util;
+package com.netflix.eureka.aws;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
@@ -34,12 +36,18 @@ import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.DiscoveryManager;
+import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.EurekaServerConfigurationManager;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.servo.monitor.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * An AWS specific <em>elastic ip</em> binding utility for binding eureka
@@ -63,29 +71,109 @@ import org.slf4j.LoggerFactory;
  * @author Karthik Ranganathan, Greg Kim
  *
  */
-public class EIPManager {
+@Singleton
+public class EIPManager implements AwsBinder {
+    private static final Logger logger = LoggerFactory.getLogger(EIPManager.class);
+
     private static final String US_EAST_1 = "us-east-1";
-    private static final Logger logger = LoggerFactory
-            .getLogger(EIPManager.class);
-    private EurekaServerConfig eurekaConfig = EurekaServerConfigurationManager
-            .getInstance().getConfiguration();
+    private static final int EIP_BIND_SLEEP_TIME_MS = 1000;
+    private static final Timer timer = new Timer("Eureka-EIPBinder", true);
 
-    private static final EIPManager s_instance = new EIPManager();
+    private final EurekaServerConfig serverConfig;
+    private final EurekaClientConfig clientConfig;
+    private final PeerAwareInstanceRegistry registry;
+    private final ApplicationInfoManager applicationInfoManager;
 
-    public static EIPManager getInstance() {
-        return s_instance;
+    @Inject
+    public EIPManager(EurekaServerConfig serverConfig,
+                      EurekaClientConfig clientConfig,
+                      PeerAwareInstanceRegistry registry,
+                      ApplicationInfoManager applicationInfoManager) {
+        this.serverConfig = serverConfig;
+        this.clientConfig = clientConfig;
+        this.registry = registry;
+        this.applicationInfoManager = applicationInfoManager;
+        try {
+            Monitors.registerObject(this);
+        } catch (Throwable e) {
+            logger.warn("Cannot register the JMX monitor for the InstanceRegistry", e);
+        }
     }
 
-    private EIPManager() {
-        try {
+    @PostConstruct
+    public void start() throws Exception {
+        handleEIPBinding();
+    }
 
-            Monitors.registerObject(this);
-
-        } catch (Throwable e) {
-            logger.warn(
-                    "Cannot register the JMX monitor for the InstanceRegistry :",
-                    e);
+    @PreDestroy
+    public void shutdown() throws Exception {
+        timer.cancel();
+        for (int i = 0; i < serverConfig.getEIPBindRebindRetries(); i++) {
+            try {
+                unbindEIP();
+                break;
+            } catch (Exception e) {
+                logger.warn("Cannot unbind the EIP from the instance");
+                Thread.sleep(1000);
+            }
         }
+    }
+
+
+    /**
+     * Handles EIP binding process in AWS Cloud.
+     *
+     * @throws InterruptedException
+     */
+    private void handleEIPBinding() throws InterruptedException {
+        int retries = serverConfig.getEIPBindRebindRetries();
+        // Bind to EIP if needed
+        for (int i = 0; i < retries; i++) {
+            try {
+                if (isEIPBound()) {
+                    break;
+                } else {
+                    bindEIP();
+                }
+            } catch (Throwable e) {
+                logger.error("Cannot bind to EIP", e);
+                Thread.sleep(EIP_BIND_SLEEP_TIME_MS);
+            }
+        }
+        // Schedule a timer which periodically checks for EIP binding.
+        scheduleEIPBindTask();
+    }
+
+    /**
+     * Schedules a EIP binding timer task which constantly polls for EIP in the
+     * same zone and binds it to itself.If the EIP is taken away for some
+     * reason, this task tries to get the EIP back. Hence it is advised to take
+     * one EIP assignment per instance in a zone.
+     *
+     */
+    private void scheduleEIPBindTask() {
+        timer.schedule(new TimerTask() {
+                           @Override
+                           public void run() {
+                               try {
+                                   // If the EIP is not bound, the registry could  be stale
+                                   // First sync up the registry from the neighboring node before
+                                   // trying to bind the EIP
+                                   if (!isEIPBound()) {
+                                       registry.clearRegistry();
+                                       int count = registry.syncUp();
+                                       registry.openForTraffic(applicationInfoManager, count);
+                                   } else {
+                                       // An EIP is already bound
+                                       return;
+                                   }
+                                   bindEIP();
+                               } catch (Throwable e) {
+                                   logger.error("Could not bind to EIP", e);
+                               }
+                           }
+                       }, serverConfig.getEIPBindingRetryIntervalMs(),
+                serverConfig.getEIPBindingRetryIntervalMs());
     }
 
     /**
@@ -93,20 +181,15 @@ public class EIPManager {
      * @return true if an EIP is bound, false otherwise
      */
     public boolean isEIPBound() {
-        InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
-        String myInstanceId = ((AmazonInfo) myInfo.getDataCenterInfo())
-                .get(MetaDataKey.instanceId);
-        String myZone = ((AmazonInfo) myInfo.getDataCenterInfo())
-                .get(MetaDataKey.availabilityZone);
-        String myPublicIP = ((AmazonInfo) myInfo.getDataCenterInfo())
-                .get(MetaDataKey.publicIpv4);
+        InstanceInfo myInfo = applicationInfoManager.getInfo();
+        String myInstanceId = ((AmazonInfo) myInfo.getDataCenterInfo()).get(MetaDataKey.instanceId);
+        String myZone = ((AmazonInfo) myInfo.getDataCenterInfo()).get(MetaDataKey.availabilityZone);
+        String myPublicIP = ((AmazonInfo) myInfo.getDataCenterInfo()).get(MetaDataKey.publicIpv4);
 
-        Collection<String> candidateEIPs = getCandidateEIPs(myInstanceId,
-                myZone);
+        Collection<String> candidateEIPs = getCandidateEIPs(myInstanceId, myZone);
         for (String eipEntry : candidateEIPs) {
             if (eipEntry.equals(myPublicIP)) {
-                logger.info(
-                        "My instance {} seems to be already associated with the public ip {}",
+                logger.info("My instance {} seems to be already associated with the public ip {}",
                         myInstanceId, myPublicIP);
                 return true;
             }
@@ -142,7 +225,6 @@ public class EIPManager {
         boolean isMyinstanceAssociatedWithEIP = false;
         Address selectedEIP = null;
 
-
         for (String eipEntry : candidateEIPs) {
             try {
                 String associatedInstanceId;
@@ -167,14 +249,12 @@ public class EIPManager {
                         break;
                     } else {
                         // The EIP is used by some other instance, hence skip it
-                        logger.warn(
-                                "The selected EIP {} is associated with another instance {} according to AWS, hence "
-                                        + "skipping this", eipEntry, associatedInstanceId);
+                        logger.warn("The selected EIP {} is associated with another instance {} according to AWS," +
+                                " hence skipping this", eipEntry, associatedInstanceId);
                     }
                 }
             } catch (Throwable t) {
-                logger.error("Failed to bind elastic IP: " + eipEntry + " to "
-                        + myInstanceId, t);
+                logger.error("Failed to bind elastic IP: {} to {}", eipEntry, myInstanceId, t);
             }
         }
         if (null != selectedEIP) {
@@ -182,8 +262,8 @@ public class EIPManager {
             // Only bind if the EIP is not already associated
             if (!isMyinstanceAssociatedWithEIP) {
 
-                AssociateAddressRequest associateAddressRequest = new AssociateAddressRequest().withInstanceId(
-                        myInstanceId);
+                AssociateAddressRequest associateAddressRequest = new AssociateAddressRequest()
+                        .withInstanceId(myInstanceId);
 
                 String domain = selectedEIP.getDomain();
                 if ("vpc".equals(domain)) {
@@ -193,20 +273,19 @@ public class EIPManager {
                 }
 
                 ec2Service.associateAddress(associateAddressRequest);
-                logger.info("\n\n\nAssociated " + myInstanceId + " running in zone: " + myZone + " to elastic IP: "
-                        + publicIp);
+                logger.info("\n\n\nAssociated {} running in zone: {} to elastic IP: {}", myInstanceId, myZone, publicIp);
             }
             logger.info("My instance {} seems to be already associated with the EIP {}", myInstanceId, publicIp);
         } else {
-            logger.info("No EIP is free to be associated with this instance. Candidate EIPs are: " + candidateEIPs);
+            logger.info("No EIP is free to be associated with this instance. Candidate EIPs are: {}", candidateEIPs);
         }
     }
 
     /**
      * Unbind the EIP that this instance is associated with.
      */
-    public void unbindEIP() {
-        InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
+    public void unbindEIP() throws Exception {
+        InstanceInfo myInfo = applicationInfoManager.getInfo();
         String myPublicIP = null;
         if (myInfo != null
                 && myInfo.getDataCenterInfo().getName() == Name.Amazon) {
@@ -216,10 +295,8 @@ public class EIPManager {
                 AmazonEC2 ec2Service = getEC2Service();
                 DescribeAddressesRequest describeAddressRequest = new DescribeAddressesRequest()
                         .withPublicIps(myPublicIP);
-                DescribeAddressesResult result = ec2Service
-                        .describeAddresses(describeAddressRequest);
-                if ((result.getAddresses() != null)
-                        && (!result.getAddresses().isEmpty())) {
+                DescribeAddressesResult result = ec2Service.describeAddresses(describeAddressRequest);
+                if ((result.getAddresses() != null) && (!result.getAddresses().isEmpty())) {
                     Address eipAddress = result.getAddresses().get(0);
                     DisassociateAddressRequest dissociateRequest = new DisassociateAddressRequest();
                     String domain = eipAddress.getDomain();
@@ -230,12 +307,10 @@ public class EIPManager {
                     }
 
                     ec2Service.disassociateAddress(dissociateRequest);
-                    logger.info("Dissociated the EIP {} from this instance",
-                            myPublicIP);
+                    logger.info("Dissociated the EIP {} from this instance", myPublicIP);
                 }
             } catch (Throwable e) {
-                throw new RuntimeException("Cannot dissociate address"
-                        + myPublicIP + "from this instance", e);
+                throw new RuntimeException("Cannot dissociate address from this instance", e);
             }
         }
 
@@ -256,15 +331,12 @@ public class EIPManager {
             myZone = "us-east-1d";
         }
 
-        Collection<String> eipCandidates =
-                (DiscoveryManager.getInstance().getEurekaClientConfig().shouldUseDnsForFetchingServiceUrls()
+        Collection<String> eipCandidates = clientConfig.shouldUseDnsForFetchingServiceUrls()
                         ? getEIPsForZoneFromDNS(myZone)
-                        : getEIPsForZoneFromConfig(myZone));
+                        : getEIPsForZoneFromConfig(myZone);
 
         if (eipCandidates == null || eipCandidates.size() == 0) {
-            throw new RuntimeException(
-                    "Could not get any elastic ips from the EIP pool for zone :"
-                            + myZone);
+            throw new RuntimeException("Could not get any elastic ips from the EIP pool for zone :" + myZone);
         }
 
         return eipCandidates;
@@ -278,8 +350,7 @@ public class EIPManager {
      * @return collection of EIPs to choose from for binding.
      */
     private Collection<String> getEIPsForZoneFromConfig(String myZone) {
-        List<String> ec2Urls = DiscoveryManager.getInstance()
-                .getEurekaClientConfig().getEurekaServerServiceUrls(myZone);
+        List<String> ec2Urls = clientConfig.getEurekaServerServiceUrls(myZone);
         return getEIPsFromServiceUrls(ec2Urls);
     }
 
@@ -292,7 +363,7 @@ public class EIPManager {
      */
     private Collection<String> getEIPsFromServiceUrls(List<String> ec2Urls) {
         List<String> returnedUrls = new ArrayList<String>();
-        String region = DiscoveryManager.getInstance().getEurekaClientConfig().getRegion();
+        String region = clientConfig.getRegion();
         String regionPhrase = "";
         if (!US_EAST_1.equals(region)) {
             regionPhrase = "." + region;
@@ -317,7 +388,8 @@ public class EIPManager {
      * up from the specified configuration
      * {@link com.netflix.discovery.EurekaClientConfig#getRegion()};the domain name is picked up from
      * the specified configuration {@link com.netflix.discovery.EurekaClientConfig#getEurekaServerDNSName()}
-     * with a "txt." prefix (see {@link com.netflix.discovery.DiscoveryClient#getZoneBasedDiscoveryUrlsFromRegion}).
+     * with a "txt." prefix (see {@link com.netflix.discovery.endpoint.EndpointUtils
+     * #getZoneBasedDiscoveryUrlsFromRegion(com.netflix.discovery.EurekaClientConfig, String)}.
      * </p>
      *
      * @param myZone
@@ -326,8 +398,12 @@ public class EIPManager {
      *         in.
      */
     private Collection<String> getEIPsForZoneFromDNS(String myZone) {
-        List<String> ec2Urls = DiscoveryManager.getInstance()
-                .getEurekaClient().getServiceUrlsFromDNS(myZone, true);
+        List<String> ec2Urls = EndpointUtils.getServiceUrlsFromDNS(
+                clientConfig,
+                myZone,
+                true,
+                new EndpointUtils.InstanceInfoBasedUrlRandomizer(applicationInfoManager.getInfo())
+        );
         return getEIPsFromServiceUrls(ec2Urls);
     }
 
@@ -337,24 +413,18 @@ public class EIPManager {
      * @return the EC2 service object to call AWS APIs.
      */
     private AmazonEC2 getEC2Service() {
-        eurekaConfig = EurekaServerConfigurationManager.getInstance()
-                .getConfiguration();
-
-        String aWSAccessId = eurekaConfig.getAWSAccessId();
-        String aWSSecretKey = eurekaConfig.getAWSSecretKey();
+        String aWSAccessId = serverConfig.getAWSAccessId();
+        String aWSSecretKey = serverConfig.getAWSSecretKey();
 
         AmazonEC2 ec2Service;
         if (null != aWSAccessId && !"".equals(aWSAccessId)
                 && null != aWSSecretKey && !"".equals(aWSSecretKey)) {
-            ec2Service = new AmazonEC2Client(new BasicAWSCredentials(
-                    aWSAccessId, aWSSecretKey));
+            ec2Service = new AmazonEC2Client(new BasicAWSCredentials(aWSAccessId, aWSSecretKey));
         } else {
-            ec2Service = new AmazonEC2Client(
-                    new InstanceProfileCredentialsProvider());
+            ec2Service = new AmazonEC2Client(new InstanceProfileCredentialsProvider());
         }
 
-        String region = DiscoveryManager.getInstance().getEurekaClientConfig()
-                .getRegion();
+        String region = clientConfig.getRegion();
         region = region.trim().toLowerCase();
         ec2Service.setEndpoint("ec2." + region + ".amazonaws.com");
         return ec2Service;
