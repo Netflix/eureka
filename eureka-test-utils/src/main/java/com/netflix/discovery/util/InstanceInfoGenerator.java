@@ -38,7 +38,7 @@ public class InstanceInfoGenerator {
     private Applications allApplications = new Applications();
     private final boolean withMetaData;
     private final boolean includeAsg;
-    private final boolean useSID;
+    private final boolean useInstanceId;
 
     InstanceInfoGenerator(InstanceInfoGeneratorBuilder builder) {
         this.instanceCount = builder.instanceCount;
@@ -47,7 +47,7 @@ public class InstanceInfoGenerator {
         this.taggedId = builder.taggedId;
         this.withMetaData = builder.includeMetaData;
         this.includeAsg = builder.includeAsg;
-        this.useSID = builder.useSID;
+        this.useInstanceId = builder.useInstanceId;
     }
 
     public Applications takeDelta(int count) {
@@ -85,7 +85,7 @@ public class InstanceInfoGenerator {
                 if (!hasNext()) {
                     throw new NoSuchElementException("no more InstanceInfo elements");
                 }
-                InstanceInfo toReturn = generateInstanceInfo(currentApp, appInstanceIds[currentApp], useSID);
+                InstanceInfo toReturn = generateInstanceInfo(currentApp, appInstanceIds[currentApp], useInstanceId);
                 appInstanceIds[currentApp]++;
                 currentApp = (currentApp + 1) % appNames.length;
                 returned++;
@@ -154,10 +154,11 @@ public class InstanceInfoGenerator {
         return new InstanceInfoGeneratorBuilder(instanceCount, appNames);
     }
 
-    // useSID to false to generate older InstanceInfo types that does not use sid for instance id.
-    private InstanceInfo generateInstanceInfo(int appIndex, int appInstanceId, boolean useSID) {
+    // useInstanceId to false to generate older InstanceInfo types that does not use instanceId field for instance id.
+    private InstanceInfo generateInstanceInfo(int appIndex, int appInstanceId, boolean useInstanceId) {
         String appName = appNames[appIndex];
         String hostName = "instance" + appInstanceId + '.' + appName + ".com";
+        String privateHostname = "ip-10.0" + appIndex + "." + appInstanceId + ".compute.internal";
         String publicIp = "20.0." + appIndex + '.' + appInstanceId;
         String privateIp = "192.168." + appIndex + '.' + appInstanceId;
 
@@ -172,6 +173,7 @@ public class InstanceInfoGenerator {
                 .addMetadata(MetaDataKey.availabilityZone, zone)
                 .addMetadata(MetaDataKey.instanceId, instanceId)
                 .addMetadata(MetaDataKey.instanceType, "m2.xlarge")
+                .addMetadata(MetaDataKey.localHostname, privateHostname)
                 .addMetadata(MetaDataKey.localIpv4, privateIp)
                 .addMetadata(MetaDataKey.publicHostname, hostName)
                 .addMetadata(MetaDataKey.publicIpv4, publicIp)
@@ -190,8 +192,8 @@ public class InstanceInfoGenerator {
                 .setRenewalTimestamp(now + RENEW_INTERVAL)
                 .build();
 
-        Builder builder = useSID
-                ? InstanceInfo.Builder.newBuilder().setSID(instanceId)
+        Builder builder = useInstanceId
+                ? InstanceInfo.Builder.newBuilder().setInstanceId(instanceId)
                 : InstanceInfo.Builder.newBuilder();
 
         builder
@@ -234,7 +236,7 @@ public class InstanceInfoGenerator {
         private boolean includeAsg = true;
         private String zone;
         private boolean taggedId;
-        private boolean useSID = true;
+        private boolean useInstanceId = true;
 
         public InstanceInfoGeneratorBuilder(int instanceCount, int applicationCount) {
             this.instanceCount = instanceCount;
@@ -270,8 +272,8 @@ public class InstanceInfoGenerator {
             return this;
         }
 
-        public InstanceInfoGeneratorBuilder withSID(boolean useSID) {
-            this.useSID = useSID;
+        public InstanceInfoGeneratorBuilder withUseInstanceId(boolean useInstanceId) {
+            this.useInstanceId = useInstanceId;
             return this;
         }
 

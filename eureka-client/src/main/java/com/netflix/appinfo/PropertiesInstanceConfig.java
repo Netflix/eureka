@@ -241,7 +241,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
     }
 
     @Override
-    public String getSID() {
+    public String getInstanceId() {
         String result = INSTANCE.getStringProperty(idPropName, null).get();
         return result == null ? null : result.trim();
     }
@@ -316,7 +316,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
         propSecurePortEnabled = propSecurePort + ".enabled";
         propNonSecurePort = namespace + "port";
 
-        idPropName = namespace + "sid";
+        idPropName = namespace + "instanceId";
         propName = namespace + "name";
         propPortEnabled = propNonSecurePort + ".enabled";
         propLeaseRenewalIntervalInSeconds = namespace + "lease.renewalInterval";

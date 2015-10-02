@@ -7,6 +7,7 @@ import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.DefaultEurekaServerContext;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerContext;
+import com.netflix.eureka.aws.AwsBinderDelegate;
 import com.netflix.eureka.aws.EIPManager;
 import com.netflix.eureka.cluster.PeerEurekaNodes;
 import com.netflix.eureka.registry.AbstractInstanceRegistry;
@@ -27,7 +28,7 @@ public class EurekaServerModule extends AbstractModule {
         bind(EurekaServerConfig.class).to(DefaultEurekaServerConfig.class).in(Scopes.SINGLETON);
         bind(PeerEurekaNodes.class).in(Scopes.SINGLETON);
 
-        bind(EIPManager.class).asEagerSingleton();
+        bind(AwsBinderDelegate.class).asEagerSingleton();
 
         // registry and interfaces
         bind(AwsInstanceRegistry.class).asEagerSingleton();

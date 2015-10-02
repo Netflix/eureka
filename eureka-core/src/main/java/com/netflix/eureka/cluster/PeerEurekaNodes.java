@@ -191,10 +191,12 @@ public class PeerEurekaNodes {
     }
 
     protected PeerEurekaNode createPeerEurekaNode(String peerEurekaNodeUrl) {
-        String name = PeerEurekaNode.class.getSimpleName() + ": " + peerEurekaNodeUrl + "apps/: ";
-        JerseyReplicationClient replicationClient =
-                JerseyReplicationClient.createReplicationClient(serverConfig, serverCodecs, peerEurekaNodeUrl);
-        return new PeerEurekaNode(registry, name, peerEurekaNodeUrl, replicationClient, serverConfig);
+        HttpReplicationClient replicationClient = JerseyReplicationClient.createReplicationClient(serverConfig, serverCodecs, peerEurekaNodeUrl);
+        String targetHost = hostFromUrl(peerEurekaNodeUrl);
+        if (targetHost == null) {
+            targetHost = "host";
+        }
+        return new PeerEurekaNode(registry, targetHost, peerEurekaNodeUrl, replicationClient, serverConfig);
     }
 
     /**
@@ -207,14 +209,20 @@ public class PeerEurekaNodes {
      * @return true, if the url represents the current node which is trying to
      *         replicate, false otherwise.
      */
-    public boolean isThisMe(String url) {
-        InstanceInfo myInfo = applicationInfoManager.getInfo();
+    public static boolean isThisMe(String url) {
+        InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
+        String hostName = hostFromUrl(url);
+        return hostName != null && hostName.equals(myInfo.getHostName());
+    }
+
+    public static String hostFromUrl(String url) {
+        URI uri;
         try {
-            URI uri = new URI(url);
-            return (uri.getHost().equals(myInfo.getHostName()));
+            uri = new URI(url);
         } catch (URISyntaxException e) {
-            logger.error("Error in syntax", e);
-            return false;
+            logger.warn("Cannot parse service URI " + url, e);
+            return null;
         }
+        return uri.getHost();
     }
 }

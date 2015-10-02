@@ -230,6 +230,7 @@ public final class Converters {
 
         private static final String ELEM_OVERRIDDEN_STATUS = "overriddenstatus";
         private static final String ELEM_HOST = "hostName";
+        private static final String ELEM_INSTANCE_ID = "instanceId";
         private static final String ELEM_APP = "app";
         private static final String ELEM_IP = "ipAddr";
         private static final String ELEM_SID = "sid";
@@ -264,6 +265,12 @@ public final class Converters {
         public void marshal(Object source, HierarchicalStreamWriter writer,
                             MarshallingContext context) {
             InstanceInfo info = (InstanceInfo) source;
+
+            if (info.getInstanceId() != null) {
+                writer.startNode(ELEM_INSTANCE_ID);
+                writer.setValue(info.getInstanceId());
+                writer.endNode();
+            }
 
             writer.startNode(ELEM_HOST);
             writer.setValue(info.getHostName());
@@ -365,6 +372,8 @@ public final class Converters {
 
                 if (ELEM_HOST.equals(nodeName)) {
                     builder.setHostName(reader.getValue());
+                } else if (ELEM_INSTANCE_ID.equals(nodeName)) {
+                    builder.setInstanceId(reader.getValue());
                 } else if (ELEM_APP.equals(nodeName)) {
                     builder.setAppName(reader.getValue());
                 } else if (ELEM_IP.equals(nodeName)) {
