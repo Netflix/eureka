@@ -134,13 +134,13 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
             case 1:
                 return Status.x100;
             case 2:
-                return Status.x100;
+                return Status.x200;
             case 3:
-                return Status.x100;
+                return Status.x300;
             case 4:
-                return Status.x100;
+                return Status.x400;
             case 5:
-                return Status.x100;
+                return Status.x500;
         }
         return Status.Unknown;
     }

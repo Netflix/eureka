@@ -105,6 +105,10 @@ public final class EurekaEntityComparators {
     }
 
     public static boolean equal(InstanceInfo first, InstanceInfo second) {
+        return equal(first, second, new ResolvedIdEqualFunc());
+    }
+
+    public static boolean equal(InstanceInfo first, InstanceInfo second, EqualFunc<InstanceInfo> idEqualFunc) {
         if (first == second) {
             return true;
         }
@@ -125,6 +129,12 @@ public final class EurekaEntityComparators {
             return false;
         }
         if (first.getAppGroupName() != null ? !first.getAppGroupName().equals(second.getAppGroupName()) : second.getAppGroupName() != null) {
+            return false;
+        }
+        if (!idEqualFunc.equals(first, second)) {
+            return false;
+        }
+        if (first.getSID() != null ? !first.getSID().equals(second.getSID()) : second.getSID() != null) {
             return false;
         }
         if (first.getAppName() != null ? !first.getAppName().equals(second.getAppName()) : second.getAppName() != null) {
@@ -182,6 +192,10 @@ public final class EurekaEntityComparators {
     }
 
 
+    private static boolean idEqual(InstanceInfo first, InstanceInfo second) {
+        return first.getId().equals(second.getId());
+    }
+
     public static boolean equalMini(InstanceInfo first, InstanceInfo second) {
         if (first == second) {
             return true;
@@ -197,6 +211,9 @@ public final class EurekaEntityComparators {
             return false;
         }
         if (first.getActionType() != second.getActionType()) {
+            return false;
+        }
+        if (first.getInstanceId() != null ? !first.getInstanceId().equals(second.getInstanceId()) : second.getInstanceId() != null) {
             return false;
         }
         if (first.getAppName() != null ? !first.getAppName().equals(second.getAppName()) : second.getAppName() != null) {
@@ -301,5 +318,44 @@ public final class EurekaEntityComparators {
             }
         }
         return true;
+    }
+
+    public interface EqualFunc<T> {
+        boolean equals(T first, T second);
+    }
+
+    public static class RawIdEqualFunc implements EqualFunc<InstanceInfo> {
+        @Override
+        public boolean equals(InstanceInfo first, InstanceInfo second) {
+            return first.getInstanceId() != null
+                    ? first.getInstanceId().equals(second.getInstanceId())
+                    : second.getInstanceId() == null;
+        }
+    }
+
+    public static class RawIdHandleEmptyEqualFunc implements EqualFunc<InstanceInfo> {
+        @Override
+        public boolean equals(InstanceInfo first, InstanceInfo second) {
+            String firstId = (first.getInstanceId() == null || first.getInstanceId().isEmpty())
+                    ? null
+                    : first.getInstanceId();
+
+            String secondId = (second.getInstanceId() == null || second.getInstanceId().isEmpty())
+                    ? null
+                    : second.getInstanceId();
+
+            return firstId != null
+                    ? firstId.equals(secondId)
+                    : secondId == null;
+        }
+    }
+
+    public static class ResolvedIdEqualFunc implements EqualFunc<InstanceInfo> {
+        @Override
+        public boolean equals(InstanceInfo first, InstanceInfo second) {
+            return first.getId() != null
+                    ? first.getId().equals(second.getId())
+                    : second.getId() == null;
+        }
     }
 }

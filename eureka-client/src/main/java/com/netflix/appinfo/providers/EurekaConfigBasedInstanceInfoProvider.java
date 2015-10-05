@@ -50,18 +50,18 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
             InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
 
             // set the appropriate id for the InstanceInfo, falling back to datacenter Id if applicable, else hostname
-            String sid = config.getSID();
+            String instanceId = config.getInstanceId();
             DataCenterInfo dataCenterInfo = config.getDataCenterInfo();
-            if (sid == null || sid.isEmpty()) {
+            if (instanceId == null || instanceId.isEmpty()) {
                 if (dataCenterInfo instanceof UniqueIdentifier) {
-                    sid = ((UniqueIdentifier) dataCenterInfo).getId();
+                    instanceId = ((UniqueIdentifier) dataCenterInfo).getId();
                 } else {
-                    sid = config.getHostName(false);
+                    instanceId = config.getHostName(false);
                 }
             }
 
             builder.setNamespace(config.getNamespace())
-                    .setSID(sid)
+                    .setInstanceId(instanceId)
                     .setAppName(config.getAppname())
                     .setAppGroupName(config.getAppGroupName())
                     .setDataCenterInfo(config.getDataCenterInfo())

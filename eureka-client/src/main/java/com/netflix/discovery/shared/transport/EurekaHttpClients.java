@@ -16,9 +16,13 @@
 
 package com.netflix.discovery.shared.transport;
 
+import java.util.List;
+
 import com.netflix.appinfo.ApplicationInfoManager;
+import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
+import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.resolver.LegacyClusterResolver;
 import com.netflix.discovery.shared.transport.decorator.MetricsCollectingEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.RebalancingEurekaHttpClient;
@@ -41,20 +45,26 @@ public final class EurekaHttpClients {
     /**
      * Standard client, with legacy server resolver.
      */
-    public static EurekaHttpClient createStandardClient(EurekaClientConfig clientConfig,
-                                                        ApplicationInfoManager applicationInfoManager,
-                                                        String myZone) {
-        return createStandardClient(clientConfig, applicationInfoManager, new LegacyClusterResolver(clientConfig, myZone));
+    public static EurekaHttpClientFactory createStandardClientFactory(EurekaClientConfig clientConfig,
+                                                                      ApplicationInfoManager applicationInfoManager) {
+        String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
+        String myZone = InstanceInfo.getZone(availZones, applicationInfoManager.getInfo());
+        return createStandardClientFactory(clientConfig, applicationInfoManager, new LegacyClusterResolver(clientConfig, myZone));
     }
 
     /**
      * Standard client supports: registration/query connectivity split, connection re-balancing and retry.
      */
-    public static EurekaHttpClient createStandardClient(EurekaClientConfig clientConfig,
-                                                        ApplicationInfoManager applicationInfoManager,
-                                                        ClusterResolver clusterResolver) {
-        EurekaHttpClientFactory jerseyFactory = new JerseyEurekaHttpClientFactory(clientConfig, applicationInfoManager, clusterResolver);
-        EurekaHttpClientFactory metricsFactory = MetricsCollectingEurekaHttpClient.createFactory(jerseyFactory);
+    public static EurekaHttpClientFactory createStandardClientFactory(EurekaClientConfig clientConfig,
+                                                                      ApplicationInfoManager applicationInfoManager,
+                                                                      ClusterResolver clusterResolver) {
+        List<EurekaEndpoint> clusterEndpoints = clusterResolver.getClusterEndpoints();
+        if (clusterEndpoints.isEmpty()) {
+            throw new TransportException("Cluster server pool is empty");
+        }
+        boolean isSecure = clusterEndpoints.get(0).isSecure();
+        final EurekaHttpClientFactory jerseyFactory = JerseyEurekaHttpClientFactory.create(clientConfig, applicationInfoManager, isSecure);
+        final EurekaHttpClientFactory metricsFactory = MetricsCollectingEurekaHttpClient.createFactory(jerseyFactory);
 
         RebalancingEurekaHttpClient registrationClient = new RebalancingEurekaHttpClient(
                 RetryableEurekaHttpClient.createFactory(
@@ -71,6 +81,18 @@ public final class EurekaHttpClients {
                 RECONNECT_INTERVAL_MINUTES * 60 * 1000
         );
 
-        return new SplitEurekaHttpClient(registrationClient, queryClient);
+        final SplitEurekaHttpClient splitEurekaHttpClient = new SplitEurekaHttpClient(registrationClient, queryClient);
+        return new EurekaHttpClientFactory() {
+            @Override
+            public EurekaHttpClient create(String... serviceUrls) {
+                return splitEurekaHttpClient;
+            }
+
+            @Override
+            public void shutdown() {
+                jerseyFactory.shutdown();
+                metricsFactory.shutdown();
+            }
+        };
     }
 }

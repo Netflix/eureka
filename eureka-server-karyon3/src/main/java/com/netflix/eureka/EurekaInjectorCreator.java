@@ -1,6 +1,8 @@
 package com.netflix.eureka;
 
+import com.netflix.archaius.bridge.StaticArchaiusBridgeModule;
 import com.netflix.archaius.guice.ArchaiusModule;
+import com.netflix.eureka.guice.EurekaServerModule;
 import com.netflix.eureka.guice.LocalEurekaServerModule;
 import com.netflix.governator.GovernatorFeatures;
 import com.netflix.governator.LifecycleInjector;
@@ -46,6 +48,7 @@ public class EurekaInjectorCreator {
                 .addModules(
                         new LocalEurekaServerModule(),  // server
                         new ArchaiusModule(),
+                        new StaticArchaiusBridgeModule(),
                         new ProvisionDebugModule(),
                         new JerseyServletModule() {
                             @Override

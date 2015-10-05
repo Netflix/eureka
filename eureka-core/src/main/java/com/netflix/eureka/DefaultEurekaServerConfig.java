@@ -32,6 +32,7 @@ import com.netflix.config.DynamicIntProperty;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
 import com.netflix.config.DynamicStringSetProperty;
+import com.netflix.eureka.aws.AwsBindingStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -625,6 +626,32 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     @Override
     public String getListAutoScalingGroupsRoleName() {
         return listAutoScalingGroupsRoleName.get();
+    }
+
+    @Override
+    public int getRoute53BindRebindRetries() {
+        return configInstance.getIntProperty(
+                namespace + "route53BindRebindRetries", 3).get();
+
+    }
+
+    @Override
+    public int getRoute53BindingRetryIntervalMs() {
+        return configInstance.getIntProperty(
+                namespace + "route53BindRebindRetryIntervalMs", (5 * 60 * 1000))
+                .get();
+    }
+
+    @Override
+    public long getRoute53DomainTTL() {
+        return configInstance.getLongProperty(
+                namespace + "route53DomainTTL", 30l)
+                .get();
+    }
+
+    @Override
+    public AwsBindingStrategy getBindingStrategy() {
+        return AwsBindingStrategy.valueOf(configInstance.getStringProperty(namespace + "awsBindingStrategy", AwsBindingStrategy.EIP.name()).get().toUpperCase());
     }
 
     @Override

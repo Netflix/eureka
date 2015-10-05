@@ -61,6 +61,7 @@ public class EurekaCodecCompatibilityTest {
                 // convert the field from the json string to what the legacy json would encode as
                 encodedString = encodedString.replaceFirst("lastRenewalTimestamp", "renewalTimestamp");
                 InstanceInfo decodedValue = decodingCodec.decode(encodedString, InstanceInfo.class);
+                assertThat(EurekaEntityComparators.equal(instanceInfo, decodedValue, new EurekaEntityComparators.RawIdEqualFunc()), is(true));
                 assertThat(EurekaEntityComparators.equal(instanceInfo, decodedValue), is(true));
             }
         };
@@ -166,6 +167,7 @@ public class EurekaCodecCompatibilityTest {
                 String encodedString = encodingCodec.encode(instanceInfo);
                 InstanceInfo decodedValue = decodingCodec.decode(encodedString, InstanceInfo.class);
                 assertThat(EurekaEntityComparators.equal(instanceInfo, decodedValue), is(true));
+                assertThat(EurekaEntityComparators.equal(instanceInfo, decodedValue, new EurekaEntityComparators.RawIdEqualFunc()), is(true));
             }
         };
 

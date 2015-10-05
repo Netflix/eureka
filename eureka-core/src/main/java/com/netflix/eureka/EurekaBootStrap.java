@@ -37,6 +37,8 @@ import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.converters.JsonXStream;
 import com.netflix.discovery.converters.XmlXStream;
+import com.netflix.eureka.aws.AwsBinder;
+import com.netflix.eureka.aws.AwsBinderDelegate;
 import com.netflix.eureka.aws.EIPManager;
 import com.netflix.eureka.cluster.PeerEurekaNodes;
 import com.netflix.eureka.registry.AwsInstanceRegistry;
@@ -81,7 +83,7 @@ public class EurekaBootStrap implements ServletContextListener {
     private static final String EUREKA_DATACENTER = "eureka.datacenter";
 
     protected volatile EurekaServerContext serverContext;
-    protected volatile EIPManager eipManager;
+    protected volatile AwsBinder awsBinder;
 
     /**
      * Initializes Eureka, including syncing up with other Eureka peers and publishing the registry.
@@ -155,8 +157,8 @@ public class EurekaBootStrap implements ServletContextListener {
                     serverCodecs,
                     eurekaClient
             );
-            eipManager = new EIPManager(eurekaServerConfig, eurekaClientConfig, registry, applicationInfoManager);
-            eipManager.start();
+            awsBinder = new AwsBinderDelegate(eurekaServerConfig, eurekaClientConfig, registry, applicationInfoManager);
+            awsBinder.start();
         } else {
             registry = new PeerAwareInstanceRegistryImpl(
                     eurekaServerConfig,
@@ -221,8 +223,8 @@ public class EurekaBootStrap implements ServletContextListener {
      */
     protected void destroyEurekaServerContext() throws Exception {
         EurekaMonitors.shutdown();
-        if (eipManager != null) {
-            eipManager.shutdown();
+        if (awsBinder != null) {
+            awsBinder.shutdown();
         }
         if (serverContext != null) {
             serverContext.shutdown();

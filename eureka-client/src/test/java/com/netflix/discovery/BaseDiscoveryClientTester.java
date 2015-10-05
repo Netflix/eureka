@@ -3,6 +3,7 @@ package com.netflix.discovery;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.LeaseInfo;
+import com.netflix.discovery.junit.resource.DiscoveryClientResource;
 import com.netflix.discovery.shared.Application;
 import org.junit.Rule;
 
@@ -44,7 +45,7 @@ public abstract class BaseDiscoveryClientTester {
     protected EurekaClient client;
 
     protected void setupProperties() {
-        DiscoveryClientRule.setupDiscoveryClientConfig(mockLocalEurekaServer.getPort(),
+        DiscoveryClientResource.setupDiscoveryClientConfig(mockLocalEurekaServer.getPort(),
                 MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
     }
 
@@ -54,11 +55,11 @@ public abstract class BaseDiscoveryClientTester {
 
     protected void setupDiscoveryClient(int renewalIntervalInSecs) {
         InstanceInfo instanceInfo = newInstanceInfoBuilder(renewalIntervalInSecs).build();
-        client = DiscoveryClientRule.setupDiscoveryClient(instanceInfo);
+        client = DiscoveryClientResource.setupDiscoveryClient(instanceInfo);
     }
 
     protected InstanceInfo.Builder newInstanceInfoBuilder(int renewalIntervalInSecs) {
-        return DiscoveryClientRule.newInstanceInfoBuilder(renewalIntervalInSecs);
+        return DiscoveryClientResource.newInstanceInfoBuilder(renewalIntervalInSecs);
     }
 
     protected void shutdownDiscoveryClient() {

@@ -1,5 +1,6 @@
 package com.netflix.discovery;
 
+import com.netflix.discovery.junit.resource.DiscoveryClientResource;
 import org.junit.After;
 import org.junit.Before;
 
@@ -22,6 +23,6 @@ public abstract class AbstractDiscoveryClientTester extends BaseDiscoveryClientT
     @After
     public void tearDown() throws Exception {
         shutdownDiscoveryClient();
-        DiscoveryClientRule.clearDiscoveryClientConfig();
+        DiscoveryClientResource.clearDiscoveryClientConfig();
     }
 }

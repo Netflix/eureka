@@ -1,189 +1,268 @@
 package com.netflix.discovery;
 
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.config.ConfigurationManager;
-import com.netflix.discovery.shared.Application;
+import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.discovery.junit.resource.DiscoveryClientResource;
 import com.netflix.discovery.shared.Applications;
-import org.junit.Assert;
+import com.netflix.discovery.shared.transport.EurekaHttpClient;
+import com.netflix.discovery.shared.transport.EurekaHttpResponse;
+import com.netflix.discovery.shared.transport.SimpleEurekaHttpServer;
+import com.netflix.discovery.util.InstanceInfoGenerator;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+
+import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEurekaHttpResponse;
+import static com.netflix.discovery.util.EurekaEntityFunctions.copyApplications;
+import static com.netflix.discovery.util.EurekaEntityFunctions.countInstances;
+import static com.netflix.discovery.util.EurekaEntityFunctions.mergeApplications;
+import static com.netflix.discovery.util.EurekaEntityFunctions.takeFirst;
+import static com.netflix.discovery.util.EurekaEntityFunctions.toApplications;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Nitesh Kant
  */
-public class DiscoveryClientRegistryTest extends AbstractDiscoveryClientTester {
+public class DiscoveryClientRegistryTest {
+
+    private static final String TEST_LOCAL_REGION = "us-east-1";
+    private static final String TEST_REMOTE_REGION = "us-west-2";
+    private static final String TEST_REMOTE_ZONE = "us-west-2c";
+
+    private static final EurekaHttpClient requestHandler = mock(EurekaHttpClient.class);
+    private static SimpleEurekaHttpServer eurekaHttpServer;
+
+    @Rule
+    public DiscoveryClientResource discoveryClientResource = DiscoveryClientResource.newBuilder()
+            .withRegistration(false)
+            .withRegistryFetch(true)
+            .withRemoteRegions(TEST_REMOTE_REGION)
+            .connectWith(eurekaHttpServer)
+            .build();
+
+    /**
+     * Share server stub by all tests.
+     */
+    @BeforeClass
+    public static void setUpClass() throws IOException {
+        eurekaHttpServer = new SimpleEurekaHttpServer(requestHandler);
+    }
+
+    @AfterClass
+    public static void tearDownClass() throws Exception {
+        if (eurekaHttpServer != null) {
+            eurekaHttpServer.shutdown();
+        }
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        reset(requestHandler);
+        when(requestHandler.cancel(anyString(), anyString())).thenReturn(EurekaHttpResponse.status(200));
+        when(requestHandler.getDelta()).thenReturn(
+                anEurekaHttpResponse(200, new Applications()).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
+    }
 
     @Test
     public void testGetByVipInLocalRegion() throws Exception {
-        List<InstanceInfo> instancesByVipAddress = client.getInstancesByVipAddress(ALL_REGIONS_VIP1_ADDR, false);
-        Assert.assertEquals("Unexpected number of instances found for local region.", 1, instancesByVipAddress.size());
-        InstanceInfo instance = instancesByVipAddress.iterator().next();
-        Assert.assertEquals("Local instance not returned for local region vip address",
-                LOCAL_REGION_APP1_INSTANCE1_HOSTNAME, instance.getHostName());
+        Applications applications = InstanceInfoGenerator.newBuilder(4, "app1", "app2").build().toApplications();
+        InstanceInfo instance = applications.getRegisteredApplications("app1").getInstances().get(0);
+
+        when(requestHandler.getApplications()).thenReturn(
+                anEurekaHttpResponse(200, applications).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
+
+        List<InstanceInfo> result = discoveryClientResource.getClient().getInstancesByVipAddress(instance.getVIPAddress(), false);
+        assertThat(result.size(), is(equalTo(2)));
+        assertThat(result.get(0).getVIPAddress(), is(equalTo(instance.getVIPAddress())));
     }
 
     @Test
     public void testGetAllKnownRegions() throws Exception {
+        prepareRemoteRegionRegistry();
+
+        EurekaClient client = discoveryClientResource.getClient();
+
         Set<String> allKnownRegions = client.getAllKnownRegions();
-        Assert.assertEquals("Unexpected number of known regions." + allKnownRegions, 2, allKnownRegions.size());
-        Assert.assertTrue("Remote region not found in set of known regions." + allKnownRegions, allKnownRegions.contains(REMOTE_REGION));
+        assertThat(allKnownRegions.size(), is(equalTo(2)));
+        assertThat(allKnownRegions, hasItem(TEST_REMOTE_REGION));
     }
 
     @Test
     public void testAllAppsForRegions() throws Exception {
-        Applications appsForRemoteRegion = client.getApplicationsForARegion(REMOTE_REGION);
-        Assert.assertTrue("No apps for remote region found.", null != appsForRemoteRegion && !appsForRemoteRegion.getRegisteredApplications().isEmpty());
-        Applications appsForLocalRegion = client.getApplicationsForARegion("us-east-1");
-        Assert.assertTrue("No apps for local region found.", null != appsForLocalRegion && !appsForLocalRegion.getRegisteredApplications().isEmpty());
+        prepareRemoteRegionRegistry();
+        EurekaClient client = discoveryClientResource.getClient();
+
+        Applications appsForRemoteRegion = client.getApplicationsForARegion(TEST_REMOTE_REGION);
+        assertThat(countInstances(appsForRemoteRegion), is(equalTo(4)));
+
+        Applications appsForLocalRegion = client.getApplicationsForARegion(TEST_LOCAL_REGION);
+        assertThat(countInstances(appsForLocalRegion), is(equalTo(4)));
     }
 
     @Test
     public void testCacheRefreshSingleAppForLocalRegion() throws Exception {
-        final String propertyName = "eureka.registryRefreshSingleVipAddress";
-        try {
-            shutdownDiscoveryClient();  // shutdown and restart to pick up new configs
-            ConfigurationManager.getConfigInstance().setProperty(propertyName, ALL_REGIONS_VIP1_ADDR);
-            setupDiscoveryClient();
+        InstanceInfoGenerator instanceGen = InstanceInfoGenerator.newBuilder(2, "testApp").build();
+        Applications initialApps = instanceGen.takeDelta(1);
+        String vipAddress = initialApps.getRegisteredApplications().get(0).getInstances().get(0).getVIPAddress();
 
-            List<Application> registeredApps = client.getApplications().getRegisteredApplications();
-            Assert.assertEquals(1, registeredApps.size());
+        DiscoveryClientResource vipClientResource = discoveryClientResource.fork().withVipFetch(vipAddress).build();
 
-            Application app = registeredApps.get(0);
-            Assert.assertEquals(LOCAL_REGION_APP1_NAME, app.getName());
+        // Take first portion
+        when(requestHandler.getVip(vipAddress)).thenReturn(
+                anEurekaHttpResponse(200, initialApps).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
+        EurekaClient vipClient = vipClientResource.getClient();
+        assertThat(countInstances(vipClient.getApplications()), is(equalTo(1)));
 
-            List<InstanceInfo> instances = app.getInstances();
-            Assert.assertEquals(1, instances.size());
-        } finally {
-            ConfigurationManager.getConfigInstance().clearProperty(propertyName);
-        }
+        // Now second one
+        when(requestHandler.getVip(vipAddress)).thenReturn(
+                anEurekaHttpResponse(200, instanceGen.toApplications()).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
+        assertThat(vipClientResource.awaitCacheUpdate(5, TimeUnit.SECONDS), is(true));
+        assertThat(countInstances(vipClient.getApplications()), is(equalTo(2)));
     }
 
     @Test
     public void testEurekaClientPeriodicHeartbeat() throws Exception {
-        final String shouldFetchRegistryPropName = "eureka.shouldFetchRegistry";
-        final String fetchRegistryOrigValue =
-                (String) ConfigurationManager.getConfigInstance().getProperty(shouldFetchRegistryPropName);
+        DiscoveryClientResource registeringClientResource = discoveryClientResource.fork().withRegistration(true).withRegistryFetch(false).build();
+        InstanceInfo instance = registeringClientResource.getMyInstanceInfo();
+        when(requestHandler.register(any(InstanceInfo.class))).thenReturn(EurekaHttpResponse.status(204));
+        when(requestHandler.sendHeartBeat(instance.getAppName(), instance.getId(), null, null)).thenReturn(anEurekaHttpResponse(200, InstanceInfo.class).build());
 
-        final String enableHeartbeartPropName = "eureka.registration.enabled";
-        final String heartbeatOrigValue =
-                (String) ConfigurationManager.getConfigInstance().getProperty(enableHeartbeartPropName);
-
-        try {
-            shutdownDiscoveryClient();  // shutdown and restart to pick up new configs
-            ConfigurationManager.getConfigInstance().setProperty(shouldFetchRegistryPropName, "false");
-            ConfigurationManager.getConfigInstance().setProperty(enableHeartbeartPropName, "true");
-            setupDiscoveryClient(3);
-
-            Assert.assertEquals(0, mockLocalEurekaServer.heartbeatCount.get());
-
-            // let the test run for just over 6 seconds to get two heartbeats
-            Thread.sleep(7 * 1000);
-
-            Assert.assertEquals(2, mockLocalEurekaServer.heartbeatCount.get());
-
-        } finally {
-            ConfigurationManager.getConfigInstance().setProperty(enableHeartbeartPropName, heartbeatOrigValue);
-            ConfigurationManager.getConfigInstance().setProperty(shouldFetchRegistryPropName, fetchRegistryOrigValue);
-        }
+        registeringClientResource.getClient(); // Initialize
+        verify(requestHandler, timeout(5 * 1000).atLeast(2)).sendHeartBeat(instance.getAppName(), instance.getId(), null, null);
     }
 
     @Test
     public void testEurekaClientPeriodicCacheRefresh() throws Exception {
-        final String shouldFetchRegistryPropName = "eureka.shouldFetchRegistry";
-        final String fetchRegistryOrigValue =
-                (String) ConfigurationManager.getConfigInstance().getProperty(shouldFetchRegistryPropName);
+        InstanceInfoGenerator instanceGen = InstanceInfoGenerator.newBuilder(3, 1).build();
+        Applications initialApps = instanceGen.takeDelta(1);
 
-        final String fetchRegistryIntervalPropName = "eureka.client.refresh.interval";
-        final int fetchRegistryIntervalOrigValue =
-                (Integer) ConfigurationManager.getConfigInstance().getProperty(fetchRegistryIntervalPropName);
+        // Full fetch
+        when(requestHandler.getApplications()).thenReturn(
+                anEurekaHttpResponse(200, initialApps).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
 
-        try {
-            shutdownDiscoveryClient();  // shutdown and restart to pick up new configs
-            ConfigurationManager.getConfigInstance().setProperty(shouldFetchRegistryPropName, "true");
-            ConfigurationManager.getConfigInstance().setProperty(fetchRegistryIntervalPropName, 3);
-            setupDiscoveryClient();
+        EurekaClient client = discoveryClientResource.getClient();
+        assertThat(countInstances(client.getApplications()), is(equalTo(1)));
 
-            // initial setup calls getFull, and we setup the client twice
-            Assert.assertEquals(2, mockLocalEurekaServer.getFullRegistryCount.get());
-            Assert.assertEquals(0, mockLocalEurekaServer.getDeltaCount.get());
+        // Delta 1
+        when(requestHandler.getDelta()).thenReturn(
+                anEurekaHttpResponse(200, instanceGen.takeDelta(1)).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
+        assertThat(discoveryClientResource.awaitCacheUpdate(5, TimeUnit.SECONDS), is(true));
 
-            // let the test run for just over 6 seconds to get two registry (delta) fetches
-            Thread.sleep(7 * 1000);
+        // Delta 2
+        when(requestHandler.getDelta()).thenReturn(
+                anEurekaHttpResponse(200, instanceGen.takeDelta(1)).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
+        assertThat(discoveryClientResource.awaitCacheUpdate(5, TimeUnit.SECONDS), is(true));
 
-            Assert.assertEquals(2, mockLocalEurekaServer.getFullRegistryCount.get());  // assert no more calls
-            Assert.assertEquals(2, mockLocalEurekaServer.getDeltaCount.get());
-
-        } finally {
-            ConfigurationManager.getConfigInstance().setProperty(fetchRegistryIntervalPropName, fetchRegistryIntervalOrigValue);
-            ConfigurationManager.getConfigInstance().setProperty(shouldFetchRegistryPropName, fetchRegistryOrigValue);
-        }
+        assertThat(countInstances(client.getApplications()), is(equalTo(3)));
     }
 
     @Test
     public void testGetInvalidVIP() throws Exception {
+        Applications applications = InstanceInfoGenerator.newBuilder(1, "testApp").build().toApplications();
+        when(requestHandler.getApplications()).thenReturn(
+                anEurekaHttpResponse(200, applications).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
+
+        EurekaClient client = discoveryClientResource.getClient();
+        assertThat(countInstances(client.getApplications()), is(equalTo(1)));
+
         List<InstanceInfo> instancesByVipAddress = client.getInstancesByVipAddress("XYZ", false);
-        Assert.assertEquals("Unexpected number of instances found for local region.", 0, instancesByVipAddress.size());
+        assertThat(instancesByVipAddress.isEmpty(), is(true));
     }
 
     @Test
     public void testGetInvalidVIPForRemoteRegion() throws Exception {
-        List<InstanceInfo> instancesByVipAddress = client.getInstancesByVipAddress("XYZ", false,
-                REMOTE_REGION);
-        Assert.assertEquals("Unexpected number of instances found for local region.", 0,
-                instancesByVipAddress.size());
+        prepareRemoteRegionRegistry();
+
+        EurekaClient client = discoveryClientResource.getClient();
+        List<InstanceInfo> instancesByVipAddress = client.getInstancesByVipAddress("XYZ", false, TEST_REMOTE_REGION);
+        assertThat(instancesByVipAddress.isEmpty(), is(true));
     }
 
     @Test
     public void testGetByVipInRemoteRegion() throws Exception {
-        List<InstanceInfo> instancesByVipAddress = client.getInstancesByVipAddress(ALL_REGIONS_VIP1_ADDR, false, REMOTE_REGION);
-        Assert.assertEquals("Unexpected number of instances found for remote region.", 1, instancesByVipAddress.size());
+        prepareRemoteRegionRegistry();
+
+        EurekaClient client = discoveryClientResource.getClient();
+        String vipAddress = takeFirst(client.getApplicationsForARegion(TEST_REMOTE_REGION)).getVIPAddress();
+
+        List<InstanceInfo> instancesByVipAddress = client.getInstancesByVipAddress(vipAddress, false, TEST_REMOTE_REGION);
+        assertThat(instancesByVipAddress.size(), is(equalTo(2)));
         InstanceInfo instance = instancesByVipAddress.iterator().next();
-        Assert.assertEquals("Remote instance not returned for remote region vip address", REMOTE_REGION_APP1_INSTANCE1_HOSTNAME, instance.getHostName());
-    }
-
-    @Test
-    public void testDelta() throws Exception {
-        mockLocalEurekaServer.waitForDeltaToBeRetrieved(CLIENT_REFRESH_RATE);
-
-        checkInstancesFromARegion("local", LOCAL_REGION_APP1_INSTANCE1_HOSTNAME,
-                LOCAL_REGION_APP1_INSTANCE2_HOSTNAME);
-        checkInstancesFromARegion(REMOTE_REGION, REMOTE_REGION_APP1_INSTANCE1_HOSTNAME,
-                REMOTE_REGION_APP1_INSTANCE2_HOSTNAME);
+        assertThat(instance.getVIPAddress(), is(equalTo(vipAddress)));
     }
 
     @Test
     public void testAppsHashCodeAfterRefresh() throws Exception {
-        Assert.assertEquals("UP_4_", client.getApplications().getAppsHashCode());
+        InstanceInfoGenerator instanceGen = InstanceInfoGenerator.newBuilder(2, "testApp").build();
 
-        addLocalAppDelta();
-        mockLocalEurekaServer.waitForDeltaToBeRetrieved(CLIENT_REFRESH_RATE);
+        // Full fetch with one item
+        InstanceInfo first = instanceGen.first();
+        Applications initial = toApplications(first);
+        when(requestHandler.getApplications()).thenReturn(
+                anEurekaHttpResponse(200, initial).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
+        EurekaClient client = discoveryClientResource.getClient();
+        assertThat(client.getApplications().getAppsHashCode(), is(equalTo("UP_1_")));
 
-        Assert.assertEquals("UP_5_", client.getApplications().getAppsHashCode());
+        // Delta with one add
+        InstanceInfo second = new InstanceInfo.Builder(instanceGen.take(1)).setStatus(InstanceStatus.DOWN).build();
+        Applications delta = toApplications(second);
+        delta.setAppsHashCode("DOWN_1_UP_1_");
+
+        when(requestHandler.getDelta()).thenReturn(
+                anEurekaHttpResponse(200, delta).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
+
+        assertThat(discoveryClientResource.awaitCacheUpdate(5, TimeUnit.SECONDS), is(true));
+        assertThat(client.getApplications().getAppsHashCode(), is(equalTo("DOWN_1_UP_1_")));
     }
 
-    private void checkInstancesFromARegion(String region, String instance1Hostname, String instance2Hostname) {
-        List<InstanceInfo> instancesByVipAddress;
-        if ("local".equals(region)) {
-            instancesByVipAddress = client.getInstancesByVipAddress(ALL_REGIONS_VIP1_ADDR, false);
-        } else {
-            instancesByVipAddress = client.getInstancesByVipAddress(ALL_REGIONS_VIP1_ADDR, false, region);
-        }
-        Assert.assertEquals("Unexpected number of instances found for " + region + " region.", 2,
-                instancesByVipAddress.size());
-        InstanceInfo localInstance1 = null;
-        InstanceInfo localInstance2 = null;
-        for (InstanceInfo instance : instancesByVipAddress) {
-            if (instance.getHostName().equals(instance1Hostname)) {
-                localInstance1 = instance;
-            } else if (instance.getHostName().equals(instance2Hostname)) {
-                localInstance2 = instance;
-            }
-        }
+    /**
+     * There is a bug, because of which remote registry data structures are not initialized during full registry fetch, only during delta.
+     */
+    private void prepareRemoteRegionRegistry() throws Exception {
+        Applications localApplications = InstanceInfoGenerator.newBuilder(4, "app1", "app2").build().toApplications();
+        Applications remoteApplications = InstanceInfoGenerator.newBuilder(4, "remote1", "remote2").withZone(TEST_REMOTE_ZONE).build().toApplications();
 
-        Assert.assertNotNull("Expected instance not returned for " + region + " region vip address", localInstance1);
-        Assert.assertNotNull("Instance added as delta not returned for " + region + " region vip address", localInstance2);
+        Applications allApplications = mergeApplications(localApplications, remoteApplications);
+
+        // Load remote data in delta, to go around exiting bug in DiscoveryClient
+        Applications delta = copyApplications(remoteApplications);
+        delta.setAppsHashCode(allApplications.getAppsHashCode());
+
+        when(requestHandler.getApplications()).thenReturn(
+                anEurekaHttpResponse(200, localApplications).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
+        when(requestHandler.getDelta()).thenReturn(
+                anEurekaHttpResponse(200, delta).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
+
+        assertThat(discoveryClientResource.awaitCacheUpdate(5, TimeUnit.SECONDS), is(true));
     }
-
 }

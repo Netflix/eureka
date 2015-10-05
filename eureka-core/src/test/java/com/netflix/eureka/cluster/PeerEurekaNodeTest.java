@@ -17,14 +17,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static com.netflix.eureka.cluster.ClusterSampleData.MAX_PROCESSING_DELAY_MS;
 import static com.netflix.eureka.cluster.ClusterSampleData.RETRY_SLEEP_TIME_MS;
 import static com.netflix.eureka.cluster.ClusterSampleData.SERVER_UNAVAILABLE_SLEEP_TIME_MS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
@@ -34,6 +32,9 @@ import static org.mockito.Mockito.verify;
  * @author Tomasz Bak
  */
 public class PeerEurekaNodeTest {
+
+    private static final int BATCH_SIZE = 10;
+    private static final long MAX_BATCHING_DELAY_MS = 10;
 
     private final PeerAwareInstanceRegistry registry = mock(PeerAwareInstanceRegistry.class);
 
@@ -56,58 +57,34 @@ public class PeerEurekaNodeTest {
     }
 
     @Test
-    public void testRegistrationInBatchMode() throws Exception {
-        createPeerEurekaNode(true).register(instanceInfo);
+    public void testRegistrationBatchReplication() throws Exception {
+        createPeerEurekaNode().register(instanceInfo);
 
         ReplicationInstance replicationInstance = expectSingleBatchRequest();
         assertThat(replicationInstance.getAction(), is(equalTo(Action.Register)));
     }
 
     @Test
-    public void testRegistrationInNonBatchMode() throws Exception {
-        createPeerEurekaNode(false).register(instanceInfo);
-
-        InstanceInfo capturedInstanceInfo = (InstanceInfo) expectRequestType(RequestType.Register);
-        assertThat(capturedInstanceInfo, is(equalTo(instanceInfo)));
-    }
-
-    @Test
-    public void testCancelInBatchMode() throws Exception {
-        createPeerEurekaNode(true).cancel(instanceInfo.getAppName(), instanceInfo.getId());
+    public void testCancelBatchReplication() throws Exception {
+        createPeerEurekaNode().cancel(instanceInfo.getAppName(), instanceInfo.getId());
 
         ReplicationInstance replicationInstance = expectSingleBatchRequest();
         assertThat(replicationInstance.getAction(), is(equalTo(Action.Cancel)));
     }
 
     @Test
-    public void testCancelInNonBatchMode() throws Exception {
-        createPeerEurekaNode(false).cancel(instanceInfo.getAppName(), instanceInfo.getId());
-
-        String capturedId = (String) expectRequestType(RequestType.Cancel);
-        assertThat(capturedId, is(equalTo(instanceInfo.getId())));
-    }
-
-    @Test
-    public void testHeartbeatInBatchMode() throws Throwable {
-        createPeerEurekaNode(true).heartbeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null, false);
+    public void testHeartbeatBatchReplication() throws Throwable {
+        createPeerEurekaNode().heartbeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null, false);
 
         ReplicationInstance replicationInstance = expectSingleBatchRequest();
         assertThat(replicationInstance.getAction(), is(equalTo(Action.Heartbeat)));
     }
 
     @Test
-    public void testHeartbeatInNonBatchMode() throws Throwable {
-        createPeerEurekaNode(false).heartbeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null, false);
-
-        Object capturedValue = expectRequestType(RequestType.Heartbeat);
-        assertThat(capturedValue, is(nullValue()));
-    }
-
-    @Test
-    public void testHeartbeatFailureInBatchMode() throws Throwable {
+    public void testHeartbeatReplicationFailure() throws Throwable {
         httpReplicationClient.withNetworkStatusCode(200, 200);
         httpReplicationClient.withBatchReply(404); // Not found, to trigger registration
-        createPeerEurekaNode(true).heartbeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null, false);
+        createPeerEurekaNode().heartbeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null, false);
 
         // Heartbeat replied with an error
         ReplicationInstance replicationInstance = expectSingleBatchRequest();
@@ -119,27 +96,16 @@ public class PeerEurekaNodeTest {
     }
 
     @Test
-    public void testHeartbeatFailureInNonBatchMode() throws Throwable {
-        httpReplicationClient.withNetworkStatusCode(404, 200);
-
-        // Heartbeat replied with an error
-        createPeerEurekaNode(false).heartbeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null, false);
-        expectRequestType(RequestType.Heartbeat);
-
-        // Second, registration task is scheduled
-        expectRequestType(RequestType.Register);
-    }
-
-    @Test
     public void testHeartbeatWithInstanceInfoFromPeer() throws Throwable {
         InstanceInfo instanceInfoFromPeer = ClusterSampleData.newInstanceInfo(2);
 
-        httpReplicationClient.withNetworkStatusCode(400);
+        httpReplicationClient.withNetworkStatusCode(200);
+        httpReplicationClient.withBatchReply(400);
         httpReplicationClient.withInstanceInfo(instanceInfoFromPeer);
 
         // InstanceInfo in response from peer will trigger local registry call
-        createPeerEurekaNode(false).heartbeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null, false);
-        expectRequestType(RequestType.Heartbeat);
+        createPeerEurekaNode().heartbeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null, false);
+        expectRequestType(RequestType.Batch);
 
         // Check that registry has instanceInfo from peer
         verify(registry, timeout(1000).times(1)).register(instanceInfoFromPeer, true);
@@ -147,50 +113,37 @@ public class PeerEurekaNodeTest {
 
     @Test
     public void testAsgStatusUpdate() throws Throwable {
-        createPeerEurekaNode(true).statusUpdate(instanceInfo.getASGName(), ASGStatus.DISABLED);
+        createPeerEurekaNode().statusUpdate(instanceInfo.getASGName(), ASGStatus.DISABLED);
 
         Object newAsgStatus = expectRequestType(RequestType.AsgStatusUpdate);
         assertThat(newAsgStatus, is(equalTo((Object) ASGStatus.DISABLED)));
     }
 
     @Test
-    public void testStatusUpdateInBatchMode() throws Throwable {
-        createPeerEurekaNode(true).statusUpdate(instanceInfo.getAppName(), instanceInfo.getId(), InstanceStatus.DOWN, instanceInfo);
+    public void testStatusUpdateBatchReplication() throws Throwable {
+        createPeerEurekaNode().statusUpdate(instanceInfo.getAppName(), instanceInfo.getId(), InstanceStatus.DOWN, instanceInfo);
 
         ReplicationInstance replicationInstance = expectSingleBatchRequest();
         assertThat(replicationInstance.getAction(), is(equalTo(Action.StatusUpdate)));
     }
 
     @Test
-    public void testStatusUpdateInNonBatchMode() throws Throwable {
-        createPeerEurekaNode(false).statusUpdate(instanceInfo.getAppName(), instanceInfo.getId(), InstanceStatus.DOWN, instanceInfo);
-
-        InstanceStatus capturedStatus = (InstanceStatus) expectRequestType(RequestType.StatusUpdate);
-        assertThat(capturedStatus, is(equalTo(InstanceStatus.DOWN)));
-    }
-
-    @Test
-    public void testDeleteStatusOverrideInBatchMode() throws Throwable {
-        createPeerEurekaNode(true).deleteStatusOverride(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo);
+    public void testDeleteStatusOverrideBatchReplication() throws Throwable {
+        createPeerEurekaNode().deleteStatusOverride(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo);
 
         ReplicationInstance replicationInstance = expectSingleBatchRequest();
         assertThat(replicationInstance.getAction(), is(equalTo(Action.DeleteStatusOverride)));
     }
 
-    @Test
-    public void testDeleteStatusOverrideInNonBatchMode() throws Throwable {
-        createPeerEurekaNode(false).deleteStatusOverride(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo);
-        expectRequestType(RequestType.DeleteStatusOverride);
-    }
-
-    private PeerEurekaNode createPeerEurekaNode(boolean batchEnabled) {
-        EurekaServerConfig config = ClusterSampleData.newEurekaServerConfig(batchEnabled);
+    private PeerEurekaNode createPeerEurekaNode() {
+        EurekaServerConfig config = ClusterSampleData.newEurekaServerConfig();
 
         peerEurekaNode = new PeerEurekaNode(
                 registry, "test", "http://test.host.com",
                 httpReplicationClient,
                 config,
-                MAX_PROCESSING_DELAY_MS,
+                BATCH_SIZE,
+                MAX_BATCHING_DELAY_MS,
                 RETRY_SLEEP_TIME_MS,
                 SERVER_UNAVAILABLE_SLEEP_TIME_MS
         );

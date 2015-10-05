@@ -27,7 +27,19 @@ import com.netflix.discovery.shared.transport.EurekaHttpResponse;
  */
 public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
 
-    public enum RequestType {Register, Cancel, SendHeartBeat, StatusUpdate, DeleteStatusOverride, GetApplications, GetDelta, GetInstance}
+    public enum RequestType {
+        Register,
+        Cancel,
+        SendHeartBeat,
+        StatusUpdate,
+        DeleteStatusOverride,
+        GetApplications,
+        GetDelta,
+        GetVip,
+        GetSecureVip,
+        GetInstance,
+        GetApplicationInstance
+    }
 
     public interface RequestExecutor<R> {
         EurekaHttpResponse<R> execute(EurekaHttpClient delegate);
@@ -135,12 +147,57 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
         return execute(new RequestExecutor<Applications>() {
             @Override
             public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
-                return delegate.getApplications();
+                return delegate.getDelta();
             }
 
             @Override
             public RequestType getRequestType() {
                 return RequestType.GetDelta;
+            }
+        });
+    }
+
+    @Override
+    public EurekaHttpResponse<Applications> getVip(final String vipAddress) {
+        return execute(new RequestExecutor<Applications>() {
+            @Override
+            public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
+                return delegate.getVip(vipAddress);
+            }
+
+            @Override
+            public RequestType getRequestType() {
+                return RequestType.GetVip;
+            }
+        });
+    }
+
+    @Override
+    public EurekaHttpResponse<Applications> getSecureVip(final String secureVipAddress) {
+        return execute(new RequestExecutor<Applications>() {
+            @Override
+            public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
+                return delegate.getVip(secureVipAddress);
+            }
+
+            @Override
+            public RequestType getRequestType() {
+                return RequestType.GetSecureVip;
+            }
+        });
+    }
+
+    @Override
+    public EurekaHttpResponse<InstanceInfo> getInstance(final String id) {
+        return execute(new RequestExecutor<InstanceInfo>() {
+            @Override
+            public EurekaHttpResponse<InstanceInfo> execute(EurekaHttpClient delegate) {
+                return delegate.getInstance(id);
+            }
+
+            @Override
+            public RequestType getRequestType() {
+                return RequestType.GetInstance;
             }
         });
     }
@@ -155,7 +212,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
 
             @Override
             public RequestType getRequestType() {
-                return RequestType.GetInstance;
+                return RequestType.GetApplicationInstance;
             }
         });
     }

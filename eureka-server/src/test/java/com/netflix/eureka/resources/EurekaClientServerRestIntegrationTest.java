@@ -11,21 +11,18 @@ import java.util.regex.Pattern;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.discovery.shared.transport.EurekaHttpClient;
+import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
-import com.netflix.discovery.shared.transport.jersey.AbstractJerseyEurekaHttpClient;
-import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
-import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
-import com.netflix.discovery.shared.transport.jersey.JerseyApplicationClient;
+import com.netflix.discovery.shared.transport.jersey.JerseyEurekaHttpClientFactory;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.transport.JerseyReplicationClient;
 import com.netflix.eureka.cluster.protocol.ReplicationInstance;
 import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
-import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
-import com.sun.jersey.client.apache4.ApacheHttpClient4;
+import com.netflix.eureka.transport.JerseyReplicationClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.AfterClass;
@@ -56,8 +53,9 @@ public class EurekaClientServerRestIntegrationTest {
     private static EurekaServerConfig eurekaServerConfig;
 
     private static Server server;
+    private static EurekaHttpClientFactory httpClientFactory;
 
-    private static AbstractJerseyEurekaHttpClient jerseyEurekaClient;
+    private static EurekaHttpClient jerseyEurekaClient;
     private static JerseyReplicationClient jerseyReplicationClient;
 
     /**
@@ -74,7 +72,7 @@ public class EurekaClientServerRestIntegrationTest {
         startServer();
         createEurekaServerConfig();
 
-        EurekaJerseyClient jerseyClient = new EurekaJerseyClientBuilder()
+        httpClientFactory = JerseyEurekaHttpClientFactory.newBuilder()
                 .withClientName("testEurekaClient")
                 .withConnectionTimeout(1000)
                 .withReadTimeout(1000)
@@ -83,10 +81,7 @@ public class EurekaClientServerRestIntegrationTest {
                 .withConnectionIdleTimeout(1000)
                 .build();
 
-        ApacheHttpClient4 jerseyApacheClient = jerseyClient.getClient();
-        jerseyApacheClient.addFilter(new GZIPContentEncodingFilter(true));
-
-        jerseyEurekaClient = new JerseyApplicationClient(jerseyClient, eurekaServiceUrl, false);
+        jerseyEurekaClient = httpClientFactory.create(eurekaServiceUrl);
 
         ServerCodecs serverCodecs = new DefaultServerCodecs(eurekaServerConfig);
         jerseyReplicationClient = JerseyReplicationClient.createReplicationClient(
@@ -104,6 +99,9 @@ public class EurekaClientServerRestIntegrationTest {
         }
         if (server != null) {
             server.stop();
+        }
+        if (httpClientFactory != null) {
+            httpClientFactory.shutdown();
         }
     }
 

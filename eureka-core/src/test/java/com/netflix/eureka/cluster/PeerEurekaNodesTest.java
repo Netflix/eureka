@@ -34,8 +34,7 @@ public class PeerEurekaNodesTest {
 
     private final PeerAwareInstanceRegistry registry = mock(PeerAwareInstanceRegistry.class);
 
-    private final TestablePeerEurekaNodes peerEurekaNodes = new TestablePeerEurekaNodes(
-            registry, ClusterSampleData.newEurekaServerConfig(false));
+    private final TestablePeerEurekaNodes peerEurekaNodes = new TestablePeerEurekaNodes(registry, ClusterSampleData.newEurekaServerConfig());
 
     @Test
     public void testInitialStartupShutdown() throws Exception {
