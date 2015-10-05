@@ -60,7 +60,7 @@ public class SimpleEurekaHttpServer {
         this.requestHandler = requestHandler;
 
         this.httpServer = HttpServer.create(new InetSocketAddress(0), 1);
-        httpServer.createContext("/v2/apps", createAppsHandle());
+        httpServer.createContext("/v2", createEurekaV2Handle());
         httpServer.setExecutor(null);
         httpServer.start();
     }
@@ -71,7 +71,7 @@ public class SimpleEurekaHttpServer {
 
     public URI getServiceURI() {
         try {
-            return new URI("http://localhost:" + getServerPort() + "/v2");
+            return new URI("http://localhost:" + getServerPort() + "/v2/");
         } catch (URISyntaxException e) {
             throw new IllegalStateException("Cannot parse service URI", e);
         }
@@ -81,22 +81,31 @@ public class SimpleEurekaHttpServer {
         return httpServer.getAddress().getPort();
     }
 
-    private HttpHandler createAppsHandle() {
+    private HttpHandler createEurekaV2Handle() {
         return new HttpHandler() {
             @Override
             public void handle(HttpExchange httpExchange) throws IOException {
                 try {
                     String method = httpExchange.getRequestMethod();
-                    if ("GET".equals(method)) {
-                        handleAppsGET(httpExchange);
-                    } else if ("POST".equals(method)) {
-                        handleAppsPost(httpExchange);
-                    } else if ("PUT".equals(method)) {
-                        handleAppsPut(httpExchange);
-                    } else if ("DELETE".equals(method)) {
-                        handleAppsDelete(httpExchange);
-                    } else {
-                        httpExchange.sendResponseHeaders(HttpServletResponse.SC_NOT_FOUND, 0);
+                    String path = httpExchange.getRequestURI().getPath();
+                    if (path.startsWith("/v2/apps")) {
+                        if ("GET".equals(method)) {
+                            handleAppsGET(httpExchange);
+                        } else if ("POST".equals(method)) {
+                            handleAppsPost(httpExchange);
+                        } else if ("PUT".equals(method)) {
+                            handleAppsPut(httpExchange);
+                        } else if ("DELETE".equals(method)) {
+                            handleAppsDelete(httpExchange);
+                        } else {
+                            httpExchange.sendResponseHeaders(HttpServletResponse.SC_NOT_FOUND, 0);
+                        }
+                    } else if (path.startsWith("/v2/vips")) {
+                        handleVipsGET(httpExchange);
+                    } else if (path.startsWith("/v2/svips")) {
+                        handleSecureVipsGET(httpExchange);
+                    } else if (path.startsWith("/v2/instances")) {
+                        handleInstanceGET(httpExchange);
                     }
                 } catch (Exception e) {
                     logger.error("HttpServer error", e);
@@ -178,6 +187,33 @@ public class SimpleEurekaHttpServer {
             return;
         }
         mapResponse(httpExchange, httpResponse);
+    }
+
+    private void handleVipsGET(HttpExchange httpExchange) throws IOException {
+        Matcher matcher = Pattern.compile("/v2/vips/([^/]+)").matcher(httpExchange.getRequestURI().getPath());
+        if (matcher.matches()) {
+            mapResponse(httpExchange, requestHandler.getVip(matcher.group(1)));
+        } else {
+            httpExchange.sendResponseHeaders(HttpServletResponse.SC_NOT_FOUND, 0);
+        }
+    }
+
+    private void handleSecureVipsGET(HttpExchange httpExchange) throws IOException {
+        Matcher matcher = Pattern.compile("/v2/svips/([^/]+)").matcher(httpExchange.getRequestURI().getPath());
+        if (matcher.matches()) {
+            mapResponse(httpExchange, requestHandler.getSecureVip(matcher.group(1)));
+        } else {
+            httpExchange.sendResponseHeaders(HttpServletResponse.SC_NOT_FOUND, 0);
+        }
+    }
+
+    private void handleInstanceGET(HttpExchange httpExchange) throws IOException {
+        Matcher matcher = Pattern.compile("/v2/instances/([^/]+)").matcher(httpExchange.getRequestURI().getPath());
+        if (matcher.matches()) {
+            mapResponse(httpExchange, requestHandler.getInstance(matcher.group(1)));
+        } else {
+            httpExchange.sendResponseHeaders(HttpServletResponse.SC_NOT_FOUND, 0);
+        }
     }
 
     private <T> void mapResponse(HttpExchange httpExchange, EurekaHttpResponse<T> response) throws IOException {

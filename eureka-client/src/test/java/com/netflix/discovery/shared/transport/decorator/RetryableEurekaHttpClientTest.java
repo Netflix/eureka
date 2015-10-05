@@ -79,7 +79,7 @@ public class RetryableEurekaHttpClientTest {
     @Test
     public void testRequestsReuseSameConnectionIfThereIsNoError() throws Exception {
         when(clientFactory.create(Matchers.<String>anyVararg())).thenReturn(clusterDelegates.get(0));
-        when(requestExecutor.execute(clusterDelegates.get(0))).thenReturn(EurekaHttpResponse.<Void>responseWith(200));
+        when(requestExecutor.execute(clusterDelegates.get(0))).thenReturn(EurekaHttpResponse.status(200));
 
         // First request creates delegate, second reuses it
         for (int i = 0; i < 3; i++) {
@@ -95,7 +95,7 @@ public class RetryableEurekaHttpClientTest {
     public void testRequestIsRetriedOnConnectionError() throws Exception {
         when(clientFactory.create(Matchers.<String>anyVararg())).thenReturn(clusterDelegates.get(0), clusterDelegates.get(1));
         when(requestExecutor.execute(clusterDelegates.get(0))).thenThrow(new TransportException("simulated network error"));
-        when(requestExecutor.execute(clusterDelegates.get(1))).thenReturn(EurekaHttpResponse.<Void>responseWith(200));
+        when(requestExecutor.execute(clusterDelegates.get(1))).thenReturn(EurekaHttpResponse.status(200));
 
         EurekaHttpResponse<Void> httpResponse = retryableClient.execute(requestExecutor);
         assertThat(httpResponse.getStatusCode(), is(equalTo(200)));
@@ -122,7 +122,7 @@ public class RetryableEurekaHttpClientTest {
         // Second call, should reset cluster quarantine list, and hit health node 0
         when(clientFactory.create(Matchers.<String>anyVararg())).thenReturn(clusterDelegates.get(0));
         reset(requestExecutor);
-        when(requestExecutor.execute(clusterDelegates.get(0))).thenReturn(EurekaHttpResponse.<Void>responseWith(200));
+        when(requestExecutor.execute(clusterDelegates.get(0))).thenReturn(EurekaHttpResponse.status(200));
 
         retryableClient.execute(requestExecutor);
     }
@@ -130,8 +130,8 @@ public class RetryableEurekaHttpClientTest {
     @Test
     public void test5xxStatusCodeResultsInRequestRetry() throws Exception {
         when(clientFactory.create(Matchers.<String>anyVararg())).thenReturn(clusterDelegates.get(0), clusterDelegates.get(1));
-        when(requestExecutor.execute(clusterDelegates.get(0))).thenReturn(EurekaHttpResponse.<Void>responseWith(500));
-        when(requestExecutor.execute(clusterDelegates.get(1))).thenReturn(EurekaHttpResponse.<Void>responseWith(200));
+        when(requestExecutor.execute(clusterDelegates.get(0))).thenReturn(EurekaHttpResponse.status(500));
+        when(requestExecutor.execute(clusterDelegates.get(1))).thenReturn(EurekaHttpResponse.status(200));
 
         EurekaHttpResponse<Void> httpResponse = retryableClient.execute(requestExecutor);
         assertThat(httpResponse.getStatusCode(), is(equalTo(200)));
@@ -164,7 +164,7 @@ public class RetryableEurekaHttpClientTest {
         thread1.join();
 
         // Verify subsequent request done on delegate1
-        when(requestExecutor.execute(clusterDelegates.get(1))).thenReturn(EurekaHttpResponse.<Void>responseWith(200));
+        when(requestExecutor.execute(clusterDelegates.get(1))).thenReturn(EurekaHttpResponse.status(200));
 
         EurekaHttpResponse<Void> httpResponse = retryableClient.execute(requestExecutor);
         assertThat(httpResponse.getStatusCode(), is(equalTo(200)));
@@ -217,7 +217,7 @@ public class RetryableEurekaHttpClientTest {
             } catch (InterruptedException e) {
                 throw new IllegalStateException("never released");
             }
-            return EurekaHttpResponse.responseWith(200);
+            return EurekaHttpResponse.status(200);
         }
 
         @Override

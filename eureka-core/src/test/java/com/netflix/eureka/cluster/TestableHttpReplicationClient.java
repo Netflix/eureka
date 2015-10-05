@@ -1,5 +1,6 @@
 package com.netflix.eureka.cluster;
 
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +17,8 @@ import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
+
+import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEurekaHttpResponse;
 
 /**
  * This stub implementation is primarily useful for batch updates, and complex failure scenarios.
@@ -65,37 +68,38 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
     @Override
     public EurekaHttpResponse<Void> register(InstanceInfo info) {
         handledRequests.add(new HandledRequest(RequestType.Register, info));
-        return EurekaHttpResponse.responseWith(networkStatusCodes[callCounter.getAndIncrement()]);
+        return EurekaHttpResponse.status(networkStatusCodes[callCounter.getAndIncrement()]);
     }
 
     @Override
     public EurekaHttpResponse<Void> cancel(String appName, String id) {
         handledRequests.add(new HandledRequest(RequestType.Cancel, id));
-        return EurekaHttpResponse.responseWith(networkStatusCodes[callCounter.getAndIncrement()]);
+        return EurekaHttpResponse.status(networkStatusCodes[callCounter.getAndIncrement()]);
     }
 
     @Override
     public EurekaHttpResponse<InstanceInfo> sendHeartBeat(String appName, String id, InstanceInfo info, InstanceStatus overriddenStatus) {
         handledRequests.add(new HandledRequest(RequestType.Heartbeat, instanceInfoFromPeer));
-        return EurekaHttpResponse.responseWith(networkStatusCodes[callCounter.getAndIncrement()], instanceInfoFromPeer);
+        int statusCode = networkStatusCodes[callCounter.getAndIncrement()];
+        return anEurekaHttpResponse(statusCode, instanceInfoFromPeer).type(MediaType.APPLICATION_JSON_TYPE).build();
     }
 
     @Override
     public EurekaHttpResponse<Void> statusUpdate(String asgName, ASGStatus newStatus) {
         handledRequests.add(new HandledRequest(RequestType.AsgStatusUpdate, newStatus));
-        return EurekaHttpResponse.responseWith(networkStatusCodes[callCounter.getAndIncrement()]);
+        return EurekaHttpResponse.status(networkStatusCodes[callCounter.getAndIncrement()]);
     }
 
     @Override
     public EurekaHttpResponse<Void> statusUpdate(String appName, String id, InstanceStatus newStatus, InstanceInfo info) {
         handledRequests.add(new HandledRequest(RequestType.StatusUpdate, newStatus));
-        return EurekaHttpResponse.responseWith(networkStatusCodes[callCounter.getAndIncrement()]);
+        return EurekaHttpResponse.status(networkStatusCodes[callCounter.getAndIncrement()]);
     }
 
     @Override
     public EurekaHttpResponse<Void> deleteStatusOverride(String appName, String id, InstanceInfo info) {
         handledRequests.add(new HandledRequest(RequestType.DeleteStatusOverride, null));
-        return EurekaHttpResponse.responseWith(networkStatusCodes[callCounter.getAndIncrement()]);
+        return EurekaHttpResponse.status(networkStatusCodes[callCounter.getAndIncrement()]);
     }
 
     @Override
@@ -105,6 +109,21 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
 
     @Override
     public EurekaHttpResponse<Applications> getDelta() {
+        throw new IllegalStateException("method not supported");
+    }
+
+    @Override
+    public EurekaHttpResponse<Applications> getVip(String vipAddress) {
+        throw new IllegalStateException("method not supported");
+    }
+
+    @Override
+    public EurekaHttpResponse<Applications> getSecureVip(String secureVipAddress) {
+        throw new IllegalStateException("method not supported");
+    }
+
+    @Override
+    public EurekaHttpResponse<InstanceInfo> getInstance(String id) {
         throw new IllegalStateException("method not supported");
     }
 
@@ -134,7 +153,8 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
 
         handledRequests.add(new HandledRequest(RequestType.Batch, replicationList));
 
-        return EurekaHttpResponse.responseWith(networkStatusCodes[callCounter.getAndIncrement()], replicationListResponse);
+        int statusCode = networkStatusCodes[callCounter.getAndIncrement()];
+        return anEurekaHttpResponse(statusCode, replicationListResponse).type(MediaType.APPLICATION_JSON_TYPE).build();
     }
 
     @Override

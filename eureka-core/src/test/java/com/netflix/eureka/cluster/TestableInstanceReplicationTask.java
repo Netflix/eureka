@@ -39,7 +39,7 @@ class TestableInstanceReplicationTask extends InstanceReplicationTask {
             triggeredNetworkFailures++;
             throw new IOException("simulated network failure");
         }
-        return EurekaHttpResponse.responseWith(replyStatusCode);
+        return EurekaHttpResponse.status(replyStatusCode);
     }
 
     @Override

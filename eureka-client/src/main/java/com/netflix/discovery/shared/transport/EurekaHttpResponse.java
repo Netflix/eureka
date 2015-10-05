@@ -17,6 +17,7 @@
 package com.netflix.discovery.shared.transport;
 
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -73,16 +74,20 @@ public class EurekaHttpResponse<T> {
         return entity;
     }
 
-    public static <T> EurekaHttpResponse<T> responseWith(int status) {
+    public static EurekaHttpResponse<Void> status(int status) {
         return new EurekaHttpResponse<>(status, null);
     }
 
-    public static <T> EurekaHttpResponse<T> responseWith(int status, T entity) {
-        return new EurekaHttpResponse<>(status, entity);
+    public static EurekaHttpResponseBuilder<Void> anEurekaHttpResponse(int statusCode) {
+        return new EurekaHttpResponseBuilder<>(statusCode);
     }
 
-    public static <T> EurekaHttpResponseBuilder<T> anEurekaHttpResponse(int statusCode) {
-        return new EurekaHttpResponseBuilder<>(statusCode);
+    public static <T> EurekaHttpResponseBuilder<T> anEurekaHttpResponse(int statusCode, Class<T> entityType) {
+        return new EurekaHttpResponseBuilder<T>(statusCode);
+    }
+
+    public static <T> EurekaHttpResponseBuilder<T> anEurekaHttpResponse(int statusCode, T entity) {
+        return new EurekaHttpResponseBuilder<T>(statusCode).entity(entity);
     }
 
     public static class EurekaHttpResponseBuilder<T> {
@@ -95,12 +100,21 @@ public class EurekaHttpResponse<T> {
             this.statusCode = statusCode;
         }
 
-        public EurekaHttpResponseBuilder<T> withEntity(T entity) {
+        public EurekaHttpResponseBuilder<T> entity(T entity) {
             this.entity = entity;
             return this;
         }
 
-        public EurekaHttpResponseBuilder<T> withHeader(String name, Object value) {
+        public EurekaHttpResponseBuilder<T> entity(T entity, MediaType contentType) {
+            return entity(entity).type(contentType);
+        }
+
+        public EurekaHttpResponseBuilder<T> type(MediaType contentType) {
+            headers(HttpHeaders.CONTENT_TYPE, contentType.toString());
+            return this;
+        }
+
+        public EurekaHttpResponseBuilder<T> headers(String name, Object value) {
             if (headers == null) {
                 headers = new HashMap<>();
             }
@@ -108,7 +122,7 @@ public class EurekaHttpResponse<T> {
             return this;
         }
 
-        public EurekaHttpResponseBuilder<T> withHeaders(Map<String, String> headers) {
+        public EurekaHttpResponseBuilder<T> headers(Map<String, String> headers) {
             this.headers = headers;
             return this;
         }

@@ -17,16 +17,17 @@
 package com.netflix.discovery.shared.transport.decorator;
 
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.resolver.DnsService;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
-import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.TransportException;
 import org.junit.Test;
 import org.mockito.Matchers;
 
+import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEurekaHttpResponse;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -50,21 +51,24 @@ public class RedirectingEurekaHttpClientTest {
     public void setupRedirect() {
         when(factory.create(Matchers.<String>anyVararg())).thenReturn(sourceClient, redirectedClient);
         when(sourceClient.getApplications()).thenReturn(
-                EurekaHttpResponse.<Applications>anEurekaHttpResponse(302)
-                        .withHeader(HttpHeaders.LOCATION, "http://another.discovery.test/eureka/v2/apps")
+                anEurekaHttpResponse(302, Applications.class)
+                        .headers(HttpHeaders.LOCATION, "http://another.discovery.test/eureka/v2/apps")
                         .build()
         );
         when(dnsService.resolveIp("another.discovery.test")).thenReturn("192.168.0.1");
-        when(redirectedClient.getApplications()).thenReturn(EurekaHttpResponse.responseWith(200, new Applications()));
+        when(redirectedClient.getApplications()).thenReturn(
+                anEurekaHttpResponse(200, new Applications()).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
     }
 
     @Test
     public void testNonRedirectedRequestsAreServedByFirstClient() throws Exception {
         when(factory.create(Matchers.<String>anyVararg())).thenReturn(sourceClient);
-        when(sourceClient.getApplications()).thenReturn(EurekaHttpResponse.responseWith(200, new Applications()));
+        when(sourceClient.getApplications()).thenReturn(
+                anEurekaHttpResponse(200, new Applications()).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
 
         RedirectingEurekaHttpClient httpClient = new RedirectingEurekaHttpClient(SERVICE_URL, factory, dnsService);
-
         httpClient.getApplications();
 
         verify(factory, times(1)).create(Matchers.<String>anyVararg());

@@ -120,6 +120,7 @@ public class InstanceInfoGenerator {
         }
 
         applications.setAppsHashCode(applications.getReconcileHashCode());
+        applications.setVersion(1L);
 
         return applications;
     }
@@ -210,8 +211,8 @@ public class InstanceInfoGenerator {
                 .setStatusPageUrl("/status", unsecureURL + "/status")
                 .setLeaseInfo(leaseInfo)
                 .setStatus(InstanceStatus.UP)
-                .setVIPAddress(hostName + ":8080")
-                .setSecureVIPAddress(hostName + ":8081")
+                .setVIPAddress(appName + ":8080")
+                .setSecureVIPAddress(appName + ":8081")
                 .setDataCenterInfo(dataCenterInfo)
                 .setLastUpdatedTimestamp(System.currentTimeMillis() - 100)
                 .setLastDirtyTimestamp(System.currentTimeMillis() - 100)

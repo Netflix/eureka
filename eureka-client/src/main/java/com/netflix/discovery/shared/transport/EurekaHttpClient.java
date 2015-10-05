@@ -25,7 +25,13 @@ public interface EurekaHttpClient {
 
     EurekaHttpResponse<Applications> getDelta();
 
+    EurekaHttpResponse<Applications> getVip(String vipAddress);
+
+    EurekaHttpResponse<Applications> getSecureVip(String secureVipAddress);
+
     EurekaHttpResponse<InstanceInfo> getInstance(String appName, String id);
+
+    EurekaHttpResponse<InstanceInfo> getInstance(String id);
 
     void shutdown();
 }

@@ -33,6 +33,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEurekaHttpResponse;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -94,20 +95,13 @@ public class EurekaHttpClientsTest {
         Applications apps = instanceGen.toApplications();
 
         when(writeRequestHandler.getApplications()).thenReturn(
-                EurekaHttpResponse.<Applications>anEurekaHttpResponse(302)
-                        .withHeader("Location", readServerURI + "/v2/apps")
-                        .build()
+                anEurekaHttpResponse(302, Applications.class).headers("Location", readServerURI + "/v2/apps").build()
         );
-
         when(readRequestHandler.getApplications()).thenReturn(
-                EurekaHttpResponse.<Applications>anEurekaHttpResponse(200)
-                        .withEntity(apps)
-                        .withHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-                        .build()
+                anEurekaHttpResponse(200, apps).headers(HttpHeaders.CONTENT_TYPE, "application/json").build()
         );
 
         EurekaHttpClient eurekaHttpClient = clientFactory.create();
-
         EurekaHttpResponse<Applications> result = eurekaHttpClient.getApplications();
 
         assertThat(result.getStatusCode(), is(equalTo(200)));

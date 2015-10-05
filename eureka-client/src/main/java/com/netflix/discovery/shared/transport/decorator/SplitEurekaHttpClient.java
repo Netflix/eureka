@@ -75,6 +75,21 @@ public class SplitEurekaHttpClient implements EurekaHttpClient {
     }
 
     @Override
+    public EurekaHttpResponse<Applications> getVip(String vipAddress) {
+        return queryClient.getVip(vipAddress);
+    }
+
+    @Override
+    public EurekaHttpResponse<Applications> getSecureVip(String secureVipAddress) {
+        return queryClient.getSecureVip(secureVipAddress);
+    }
+
+    @Override
+    public EurekaHttpResponse<InstanceInfo> getInstance(String id) {
+        return queryClient.getInstance(id);
+    }
+
+    @Override
     public EurekaHttpResponse<InstanceInfo> getInstance(String appName, String id) {
         return queryClient.getInstance(appName, id);
     }

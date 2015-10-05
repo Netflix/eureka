@@ -33,7 +33,7 @@ import com.netflix.discovery.util.EurekaEntityTransformers.Transformer;
  * Collection of functions operating on {@link Applications} and {@link Application} data
  * structures. The functions are organized into groups with common prefix name:
  * <ul>
- *     <li>select - queries over Eureka entity objects</li>
+ *     <li>select, take - queries over Eureka entity objects</li>
  *     <li>to - Eureka entity object transformers</li>
  *     <li>copy - copy Eureka entities, with aggregated {@link InstanceInfo} objects copied by reference</li>
  *     <li>deepCopy - copy Eureka entities, with aggregated {@link InstanceInfo} objects copied by value</li>
@@ -87,6 +87,15 @@ public final class EurekaEntityFunctions {
         return null;
     }
 
+    public static InstanceInfo takeFirst(Applications applications) {
+        for (Application application : applications.getRegisteredApplications()) {
+            if (!application.getInstances().isEmpty()) {
+                return application.getInstances().get(0);
+            }
+        }
+        return null;
+    }
+
     public static Map<String, Application> toApplicationMap(List<InstanceInfo> instances) {
         Map<String, Application> applicationMap = new HashMap<String, Application>();
         for (InstanceInfo instance : instances) {
@@ -132,7 +141,7 @@ public final class EurekaEntityFunctions {
     }
 
     public static void copyApplications(Applications source, Applications result) {
-        if(source != null) {
+        if (source != null) {
             for (Application app : source.getRegisteredApplications()) {
                 result.addApplication(new Application(app.getName(), app.getInstances()));
             }
@@ -148,7 +157,7 @@ public final class EurekaEntityFunctions {
     }
 
     public static void copyApplication(Application source, Application result) {
-        if(source != null) {
+        if (source != null) {
             for (InstanceInfo instance : source.getInstances()) {
                 result.addInstance(instance);
             }

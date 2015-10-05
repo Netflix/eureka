@@ -30,6 +30,8 @@ import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEurekaHttpResponse;
+
 /**
  * @author Tomasz Bak
  */
@@ -74,7 +76,7 @@ public class JerseyReplicationClient extends AbstractJerseyEurekaHttpClient impl
             if (response.getStatus() == Status.CONFLICT.getStatusCode() && response.hasEntity()) {
                 infoFromPeer = response.getEntity(InstanceInfo.class);
             }
-            return EurekaHttpResponse.responseWith(response.getStatus(), infoFromPeer);
+            return anEurekaHttpResponse(response.getStatus(), infoFromPeer).type(MediaType.APPLICATION_JSON_TYPE).build();
         } finally {
             if (logger.isDebugEnabled()) {
                 logger.debug("[heartbeat] Jersey HTTP PUT {}; statusCode={}", urlPath, response == null ? "N/A" : response.getStatus());
@@ -95,7 +97,7 @@ public class JerseyReplicationClient extends AbstractJerseyEurekaHttpClient impl
                     .queryParam("value", newStatus.name())
                     .header(PeerEurekaNode.HEADER_REPLICATION, "true")
                     .put(ClientResponse.class);
-            return EurekaHttpResponse.responseWith(response.getStatus());
+            return EurekaHttpResponse.status(response.getStatus());
         } finally {
             if (response != null) {
                 response.close();
@@ -113,10 +115,10 @@ public class JerseyReplicationClient extends AbstractJerseyEurekaHttpClient impl
                     .type(MediaType.APPLICATION_JSON_TYPE)
                     .post(ClientResponse.class, replicationList);
             if (!isSuccess(response.getStatus())) {
-                return EurekaHttpResponse.responseWith(response.getStatus());
+                return anEurekaHttpResponse(response.getStatus(), ReplicationListResponse.class).build();
             }
             ReplicationListResponse batchResponse = response.getEntity(ReplicationListResponse.class);
-            return EurekaHttpResponse.responseWith(response.getStatus(), batchResponse);
+            return anEurekaHttpResponse(response.getStatus(), batchResponse).type(MediaType.APPLICATION_JSON_TYPE).build();
         } finally {
             if (response != null) {
                 response.close();

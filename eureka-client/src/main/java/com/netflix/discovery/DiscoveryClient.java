@@ -686,7 +686,9 @@ public class DiscoveryClient implements EurekaClient {
     public Applications getApplications(String serviceUrl) {
         if (shouldUseExperimentalTransport()) {
             try {
-                EurekaHttpResponse<Applications> response = eurekaHttpClient.getApplications();
+                EurekaHttpResponse<Applications> response = clientConfig.getRegistryRefreshSingleVipAddress() == null
+                        ? eurekaHttpClient.getApplications()
+                        : eurekaHttpClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
                 if (response.getStatusCode() == 200) {
                     logger.debug(PREFIX + appPathIdentifier + " -  refresh status: " + response.getStatusCode());
                     return response.getEntity();
@@ -1007,7 +1009,9 @@ public class DiscoveryClient implements EurekaClient {
 
         Applications apps = null;
         if (shouldUseExperimentalTransport()) {
-            EurekaHttpResponse<Applications> httpResponse = eurekaHttpClient.getApplications();
+            EurekaHttpResponse<Applications> httpResponse = clientConfig.getRegistryRefreshSingleVipAddress() == null
+                    ? eurekaHttpClient.getApplications()
+                    : eurekaHttpClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
             if (httpResponse.getStatusCode() == Status.OK.getStatusCode()) {
                 apps = httpResponse.getEntity();
             }
@@ -1136,7 +1140,9 @@ public class DiscoveryClient implements EurekaClient {
 
         Applications serverApps = null;
         if (shouldUseExperimentalTransport()) {
-            EurekaHttpResponse<Applications> httpResponse = eurekaHttpClient.getApplications();
+            EurekaHttpResponse<Applications> httpResponse = clientConfig.getRegistryRefreshSingleVipAddress() == null
+                    ? eurekaHttpClient.getApplications()
+                    : eurekaHttpClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
             serverApps = httpResponse.getEntity();
         } else {
             ClientResponse response = makeRemoteCall(Action.Refresh);
