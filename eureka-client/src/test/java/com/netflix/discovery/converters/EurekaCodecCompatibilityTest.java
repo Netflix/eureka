@@ -275,7 +275,7 @@ public class EurekaCodecCompatibilityTest {
                 new CodecWrappers.LegacyJacksonJson()
         );
 
-        verifyAllPairs(codingAction, Applications.class, jsonCodes);
+        verifyAllPairs(codingAction, ReplicationList.class, jsonCodes);
     }
 
     @Test
@@ -300,7 +300,7 @@ public class EurekaCodecCompatibilityTest {
                 new CodecWrappers.LegacyJacksonJson()
         );
 
-        verifyAllPairs(codingAction, Applications.class, jsonCodes);
+        verifyAllPairs(codingAction, ReplicationListResponse.class, jsonCodes);
     }
 
     public void verifyAllPairs(Action2 codingAction, Class<?> typeToEncode, List<CodecWrapper> codecHolders) throws Exception {
