@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonRootName;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
@@ -26,14 +27,14 @@ public abstract class AbstractEurekaJacksonCodec {
             Arrays.asList("instance-id", "public-ipv4", "public-hostname", "local-ipv4", "availability-zone")
     );
 
-    public abstract ObjectMapper getObjectMapper();
+    public abstract <T> ObjectMapper getObjectMapper(Class<T> type);
 
     public <T> void writeTo(T object, OutputStream entityStream) throws IOException {
-        getObjectMapper().writeValue(entityStream, object);
+        getObjectMapper(object.getClass()).writeValue(entityStream, object);
     }
 
     protected void addMiniConfig(ObjectMapper mapper) {
-        mapper.addMixInAnnotations(InstanceInfo.class, MiniInstanceInfoMixIn.class);
+        mapper.addMixIn(InstanceInfo.class, MiniInstanceInfoMixIn.class);
         bindAmazonInfoFilter(mapper);
     }
 
@@ -61,5 +62,9 @@ public abstract class AbstractEurekaJacksonCodec {
             }
         });
         mapper.setFilters(filters);
+    }
+
+    static boolean hasJsonRootName(Class<?> type) {
+        return type.getAnnotation(JsonRootName.class) != null;
     }
 }

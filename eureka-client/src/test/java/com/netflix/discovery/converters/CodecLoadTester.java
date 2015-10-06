@@ -240,7 +240,7 @@ public class CodecLoadTester {
                     codec.writeTo(object, captureStream);
                     byte[] bytes = captureStream.toByteArray();
                     InputStream source = new ByteArrayInputStream(bytes);
-                    Applications readValue = (Applications) codec.getObjectMapper().readValue(source, object.getClass());
+                    Applications readValue = codec.getObjectMapper(object.getClass()).readValue(source, Applications.class);
                     secondHolder.value = readValue;
 
                     return bytes.length;

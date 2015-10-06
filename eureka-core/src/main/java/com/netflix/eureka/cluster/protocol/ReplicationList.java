@@ -6,13 +6,11 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonRootName;
 import com.netflix.discovery.provider.Serializer;
 
 /**
  * @author Tomasz Bak
  */
-@JsonRootName("replicationList")
 @Serializer("jackson") // For backwards compatibility with DiscoveryJerseyProvider
 public class ReplicationList {
     private final List<ReplicationInstance> replicationList;
