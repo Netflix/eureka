@@ -10,6 +10,7 @@ import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.LeaseInfo;
+import com.netflix.discovery.converters.jackson.AbstractEurekaJacksonCodec;
 import com.netflix.discovery.converters.jackson.EurekaJsonJacksonCodec;
 import com.netflix.discovery.converters.jackson.EurekaXmlJacksonCodec;
 import com.netflix.discovery.shared.Application;
@@ -33,52 +34,52 @@ public class EurekaJsonAndXmlJacksonCodecTest {
 
     @Test
     public void testAmazonInfoEncodeDecodeWithJson() throws Exception {
-        doAmazonInfoEncodeDecodeTest(new EurekaJsonJacksonCodec().getObjectMapper());
+        doAmazonInfoEncodeDecodeTest(new EurekaJsonJacksonCodec());
     }
 
     @Test
     public void testAmazonInfoEncodeDecodeWithXml() throws Exception {
-        doAmazonInfoEncodeDecodeTest(new EurekaXmlJacksonCodec().getObjectMapper());
+        doAmazonInfoEncodeDecodeTest(new EurekaXmlJacksonCodec());
     }
 
-    private void doAmazonInfoEncodeDecodeTest(ObjectMapper mapper) throws Exception {
+    private void doAmazonInfoEncodeDecodeTest(AbstractEurekaJacksonCodec codec) throws Exception {
         AmazonInfo amazonInfo = (AmazonInfo) infoIterator.next().getDataCenterInfo();
-        String encodedString = mapper.writeValueAsString(amazonInfo);
+        String encodedString = codec.getObjectMapper(DataCenterInfo.class).writeValueAsString(amazonInfo);
 
-        DataCenterInfo decodedValue = mapper.readValue(encodedString, DataCenterInfo.class);
+        DataCenterInfo decodedValue = codec.getObjectMapper(DataCenterInfo.class).readValue(encodedString, DataCenterInfo.class);
         assertThat(EurekaEntityComparators.equal(amazonInfo, decodedValue), is(true));
     }
 
     @Test
     public void testAmazonInfoCompactEncodeDecodeWithJson() throws Exception {
-        doAmazonInfoCompactEncodeDecodeTest(new EurekaJsonJacksonCodec(KeyFormatter.defaultKeyFormatter(), true).getObjectMapper());
+        doAmazonInfoCompactEncodeDecodeTest(new EurekaJsonJacksonCodec(KeyFormatter.defaultKeyFormatter(), true));
     }
 
     @Test
     public void testAmazonInfoCompactEncodeDecodeWithXml() throws Exception {
-        doAmazonInfoCompactEncodeDecodeTest(new EurekaXmlJacksonCodec(KeyFormatter.defaultKeyFormatter(), true).getObjectMapper());
+        doAmazonInfoCompactEncodeDecodeTest(new EurekaXmlJacksonCodec(KeyFormatter.defaultKeyFormatter(), true));
     }
 
-    private void doAmazonInfoCompactEncodeDecodeTest(ObjectMapper mapper) throws Exception {
+    private void doAmazonInfoCompactEncodeDecodeTest(AbstractEurekaJacksonCodec codec) throws Exception {
         AmazonInfo amazonInfo = (AmazonInfo) infoIterator.next().getDataCenterInfo();
-        String encodedString = mapper.writeValueAsString(amazonInfo);
+        String encodedString = codec.getObjectMapper(DataCenterInfo.class).writeValueAsString(amazonInfo);
 
-        AmazonInfo decodedValue = (AmazonInfo) mapper.readValue(encodedString, DataCenterInfo.class);
+        AmazonInfo decodedValue = (AmazonInfo) codec.getObjectMapper(DataCenterInfo.class).readValue(encodedString, DataCenterInfo.class);
 
         assertThat(decodedValue.get(MetaDataKey.publicHostname), is(equalTo(amazonInfo.get(MetaDataKey.publicHostname))));
     }
 
     @Test
     public void testMyDataCenterInfoEncodeDecodeWithJson() throws Exception {
-        doMyDataCenterInfoEncodeDecodeTest(new EurekaJsonJacksonCodec().getObjectMapper());
+        doMyDataCenterInfoEncodeDecodeTest(new EurekaJsonJacksonCodec());
     }
 
     @Test
     public void testMyDataCenterInfoEncodeDecodeWithXml() throws Exception {
-        doMyDataCenterInfoEncodeDecodeTest(new EurekaXmlJacksonCodec().getObjectMapper());
+        doMyDataCenterInfoEncodeDecodeTest(new EurekaXmlJacksonCodec());
     }
 
-    private void doMyDataCenterInfoEncodeDecodeTest(ObjectMapper mapper) throws Exception {
+    private void doMyDataCenterInfoEncodeDecodeTest(AbstractEurekaJacksonCodec codec) throws Exception {
         DataCenterInfo myDataCenterInfo = new DataCenterInfo() {
             @Override
             public Name getName() {
@@ -86,68 +87,68 @@ public class EurekaJsonAndXmlJacksonCodecTest {
             }
         };
 
-        String encodedString = mapper.writeValueAsString(myDataCenterInfo);
-        DataCenterInfo decodedValue = mapper.readValue(encodedString, DataCenterInfo.class);
+        String encodedString = codec.getObjectMapper(DataCenterInfo.class).writeValueAsString(myDataCenterInfo);
+        DataCenterInfo decodedValue = codec.getObjectMapper(DataCenterInfo.class).readValue(encodedString, DataCenterInfo.class);
         assertThat(decodedValue.getName(), is(equalTo(Name.MyOwn)));
     }
 
     @Test
     public void testLeaseInfoEncodeDecodeWithJson() throws Exception {
-        doLeaseInfoEncodeDecode(new EurekaJsonJacksonCodec().getObjectMapper());
+        doLeaseInfoEncodeDecode(new EurekaJsonJacksonCodec());
     }
 
     @Test
     public void testLeaseInfoEncodeDecodeWithXml() throws Exception {
-        doLeaseInfoEncodeDecode(new EurekaXmlJacksonCodec().getObjectMapper());
+        doLeaseInfoEncodeDecode(new EurekaXmlJacksonCodec());
     }
 
-    private void doLeaseInfoEncodeDecode(ObjectMapper mapper) throws Exception {
+    private void doLeaseInfoEncodeDecode(AbstractEurekaJacksonCodec codec) throws Exception {
         LeaseInfo leaseInfo = infoIterator.next().getLeaseInfo();
 
-        String encodedString = mapper.writeValueAsString(leaseInfo);
-        LeaseInfo decodedValue = mapper.readValue(encodedString, LeaseInfo.class);
+        String encodedString = codec.getObjectMapper(LeaseInfo.class).writeValueAsString(leaseInfo);
+        LeaseInfo decodedValue = codec.getObjectMapper(LeaseInfo.class).readValue(encodedString, LeaseInfo.class);
         assertThat(EurekaEntityComparators.equal(leaseInfo, decodedValue), is(true));
     }
 
     @Test
     public void testInstanceInfoEncodeDecodeWithJson() throws Exception {
-        doInstanceInfoEncodeDecode(new EurekaJsonJacksonCodec().getObjectMapper());
+        doInstanceInfoEncodeDecode(new EurekaJsonJacksonCodec());
     }
 
     @Test
     public void testInstanceInfoEncodeDecodeWithXml() throws Exception {
-        doInstanceInfoEncodeDecode(new EurekaXmlJacksonCodec().getObjectMapper());
+        doInstanceInfoEncodeDecode(new EurekaXmlJacksonCodec());
     }
 
-    private void doInstanceInfoEncodeDecode(ObjectMapper mapper) throws Exception {
+    private void doInstanceInfoEncodeDecode(AbstractEurekaJacksonCodec codec) throws Exception {
         InstanceInfo instanceInfo = infoIterator.next();
 
-        String encodedString = mapper.writeValueAsString(instanceInfo);
-        InstanceInfo decodedValue = mapper.readValue(encodedString, InstanceInfo.class);
+        String encodedString = codec.getObjectMapper(InstanceInfo.class).writeValueAsString(instanceInfo);
+        InstanceInfo decodedValue = codec.getObjectMapper(InstanceInfo.class).readValue(encodedString, InstanceInfo.class);
         assertThat(EurekaEntityComparators.equal(instanceInfo, decodedValue), is(true));
     }
 
     @Test
     public void testInstanceInfoCompactEncodeDecodeWithJson() throws Exception {
-        doInstanceInfoCompactEncodeDecode(new EurekaJsonJacksonCodec(KeyFormatter.defaultKeyFormatter(), true).getObjectMapper(), true);
+        doInstanceInfoCompactEncodeDecode(new EurekaJsonJacksonCodec(KeyFormatter.defaultKeyFormatter(), true), true);
     }
 
     @Test
     public void testInstanceInfoCompactEncodeDecodeWithXml() throws Exception {
-        doInstanceInfoCompactEncodeDecode(new EurekaXmlJacksonCodec(KeyFormatter.defaultKeyFormatter(), true).getObjectMapper(), false);
+        doInstanceInfoCompactEncodeDecode(new EurekaXmlJacksonCodec(KeyFormatter.defaultKeyFormatter(), true), false);
     }
 
-    private void doInstanceInfoCompactEncodeDecode(ObjectMapper mapper, boolean isJson) throws Exception {
+    private void doInstanceInfoCompactEncodeDecode(AbstractEurekaJacksonCodec codec, boolean isJson) throws Exception {
         InstanceInfo instanceInfo = infoIterator.next();
 
-        String encodedString = mapper.writeValueAsString(instanceInfo);
+        String encodedString = codec.getObjectMapper(InstanceInfo.class).writeValueAsString(instanceInfo);
 
         if (isJson) {
             JsonNode metadataNode = new ObjectMapper().readTree(encodedString).get("instance").get("metadata");
             assertThat(metadataNode, is(nullValue()));
         }
 
-        InstanceInfo decodedValue = mapper.readValue(encodedString, InstanceInfo.class);
+        InstanceInfo decodedValue = codec.getObjectMapper(InstanceInfo.class).readValue(encodedString, InstanceInfo.class);
 
         assertThat(decodedValue.getId(), is(equalTo(instanceInfo.getId())));
         assertThat(decodedValue.getMetadata().isEmpty(), is(true));
@@ -156,25 +157,26 @@ public class EurekaJsonAndXmlJacksonCodecTest {
     @Test
     public void testInstanceInfoIgnoredFieldsAreFilteredOutDuringDeserializationProcessWithJson() throws Exception {
         doInstanceInfoIgnoredFieldsAreFilteredOutDuringDeserializationProcess(
-                new EurekaJsonJacksonCodec().getObjectMapper(),
-                new EurekaJsonJacksonCodec(KeyFormatter.defaultKeyFormatter(), true).getObjectMapper()
+                new EurekaJsonJacksonCodec(),
+                new EurekaJsonJacksonCodec(KeyFormatter.defaultKeyFormatter(), true)
         );
     }
 
     @Test
     public void testInstanceInfoIgnoredFieldsAreFilteredOutDuringDeserializationProcessWithXml() throws Exception {
         doInstanceInfoIgnoredFieldsAreFilteredOutDuringDeserializationProcess(
-                new EurekaXmlJacksonCodec().getObjectMapper(),
-                new EurekaXmlJacksonCodec(KeyFormatter.defaultKeyFormatter(), true).getObjectMapper()
+                new EurekaXmlJacksonCodec(),
+                new EurekaXmlJacksonCodec(KeyFormatter.defaultKeyFormatter(), true)
         );
     }
 
-    public void doInstanceInfoIgnoredFieldsAreFilteredOutDuringDeserializationProcess(ObjectMapper fullMapper, ObjectMapper compactMapper) throws Exception {
+    public void doInstanceInfoIgnoredFieldsAreFilteredOutDuringDeserializationProcess(AbstractEurekaJacksonCodec fullCodec,
+                                                                                      AbstractEurekaJacksonCodec compactCodec) throws Exception {
         InstanceInfo instanceInfo = infoIterator.next();
 
         // We use regular codec here to have all fields serialized
-        String encodedString = fullMapper.writeValueAsString(instanceInfo);
-        InstanceInfo decodedValue = compactMapper.readValue(encodedString, InstanceInfo.class);
+        String encodedString = fullCodec.getObjectMapper(InstanceInfo.class).writeValueAsString(instanceInfo);
+        InstanceInfo decodedValue = compactCodec.getObjectMapper(InstanceInfo.class).readValue(encodedString, InstanceInfo.class);
 
         assertThat(decodedValue.getId(), is(equalTo(instanceInfo.getId())));
         assertThat(decodedValue.getAppName(), is(equalTo(instanceInfo.getAppName())));
@@ -194,64 +196,64 @@ public class EurekaJsonAndXmlJacksonCodecTest {
 
     @Test
     public void testInstanceInfoWithNoMetaEncodeDecodeWithJson() throws Exception {
-        doInstanceInfoWithNoMetaEncodeDecode(new EurekaJsonJacksonCodec().getObjectMapper(), true);
+        doInstanceInfoWithNoMetaEncodeDecode(new EurekaJsonJacksonCodec(), true);
     }
 
     @Test
     public void testInstanceInfoWithNoMetaEncodeDecodeWithXml() throws Exception {
-        doInstanceInfoWithNoMetaEncodeDecode(new EurekaXmlJacksonCodec().getObjectMapper(), false);
+        doInstanceInfoWithNoMetaEncodeDecode(new EurekaXmlJacksonCodec(), false);
     }
 
-    private void doInstanceInfoWithNoMetaEncodeDecode(ObjectMapper mapper, boolean json) throws Exception {
+    private void doInstanceInfoWithNoMetaEncodeDecode(AbstractEurekaJacksonCodec codec, boolean json) throws Exception {
         InstanceInfo noMetaDataInfo = new InstanceInfo.Builder(infoIterator.next()).setMetadata(null).build();
 
-        String encodedString = mapper.writeValueAsString(noMetaDataInfo);
+        String encodedString = codec.getObjectMapper(InstanceInfo.class).writeValueAsString(noMetaDataInfo);
 
         // Backward compatibility with old codec
         if (json) {
             assertThat(encodedString.contains("\"@class\":\"java.util.Collections$EmptyMap\""), is(true));
         }
 
-        InstanceInfo decodedValue = mapper.readValue(encodedString, InstanceInfo.class);
+        InstanceInfo decodedValue = codec.getObjectMapper(InstanceInfo.class).readValue(encodedString, InstanceInfo.class);
         assertThat(decodedValue.getId(), is(equalTo(noMetaDataInfo.getId())));
         assertThat(decodedValue.getMetadata().isEmpty(), is(true));
     }
 
     @Test
     public void testApplicationEncodeDecodeWithJson() throws Exception {
-        doApplicationEncodeDecode(new EurekaJsonJacksonCodec().getObjectMapper());
+        doApplicationEncodeDecode(new EurekaJsonJacksonCodec());
     }
 
     @Test
     public void testApplicationEncodeDecodeWithXml() throws Exception {
-        doApplicationEncodeDecode(new EurekaXmlJacksonCodec().getObjectMapper());
+        doApplicationEncodeDecode(new EurekaXmlJacksonCodec());
     }
 
-    private void doApplicationEncodeDecode(ObjectMapper mapper) throws Exception {
+    private void doApplicationEncodeDecode(AbstractEurekaJacksonCodec codec) throws Exception {
         Application application = new Application("testApp");
         application.addInstance(infoIterator.next());
         application.addInstance(infoIterator.next());
 
-        String encodedString = mapper.writeValueAsString(application);
-        Application decodedValue = mapper.readValue(encodedString, Application.class);
+        String encodedString = codec.getObjectMapper(Application.class).writeValueAsString(application);
+        Application decodedValue = codec.getObjectMapper(Application.class).readValue(encodedString, Application.class);
         assertThat(EurekaEntityComparators.equal(application, decodedValue), is(true));
     }
 
     @Test
     public void testApplicationsEncodeDecodeWithJson() throws Exception {
-        doApplicationsEncodeDecode(new EurekaJsonJacksonCodec().getObjectMapper());
+        doApplicationsEncodeDecode(new EurekaJsonJacksonCodec());
     }
 
     @Test
     public void testApplicationsEncodeDecodeWithXml() throws Exception {
-        doApplicationsEncodeDecode(new EurekaXmlJacksonCodec().getObjectMapper());
+        doApplicationsEncodeDecode(new EurekaXmlJacksonCodec());
     }
 
-    private void doApplicationsEncodeDecode(ObjectMapper mapper) throws Exception {
+    private void doApplicationsEncodeDecode(AbstractEurekaJacksonCodec codec) throws Exception {
         Applications applications = infoGenerator.takeDelta(2);
 
-        String encodedString = mapper.writeValueAsString(applications);
-        Applications decodedValue = mapper.readValue(encodedString, Applications.class);
+        String encodedString = codec.getObjectMapper(Applications.class).writeValueAsString(applications);
+        Applications decodedValue = codec.getObjectMapper(Applications.class).readValue(encodedString, Applications.class);
         assertThat(EurekaEntityComparators.equal(applications, decodedValue), is(true));
     }
 }

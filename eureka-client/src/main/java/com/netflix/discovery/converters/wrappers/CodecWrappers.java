@@ -156,7 +156,7 @@ public final class CodecWrappers {
 
         @Override
         public <T> String encode(T object) throws IOException {
-            return codec.getObjectMapper().writeValueAsString(object);
+            return codec.getObjectMapper(object.getClass()).writeValueAsString(object);
         }
 
         @Override
@@ -166,12 +166,12 @@ public final class CodecWrappers {
 
         @Override
         public <T> T decode(String textValue, Class<T> type) throws IOException {
-            return codec.getObjectMapper().readValue(textValue, type);
+            return codec.getObjectMapper(type).readValue(textValue, type);
         }
 
         @Override
         public <T> T decode(InputStream inputStream, Class<T> type) throws IOException {
-            return codec.getObjectMapper().readValue(inputStream, type);
+            return codec.getObjectMapper(type).readValue(inputStream, type);
         }
     }
 
@@ -191,7 +191,7 @@ public final class CodecWrappers {
 
         @Override
         public <T> String encode(T object) throws IOException {
-            return codec.getObjectMapper().writeValueAsString(object);
+            return codec.getObjectMapper(object.getClass()).writeValueAsString(object);
         }
 
         @Override
@@ -201,12 +201,12 @@ public final class CodecWrappers {
 
         @Override
         public <T> T decode(String textValue, Class<T> type) throws IOException {
-            return codec.getObjectMapper().readValue(textValue, type);
+            return codec.getObjectMapper(type).readValue(textValue, type);
         }
 
         @Override
         public <T> T decode(InputStream inputStream, Class<T> type) throws IOException {
-            return codec.getObjectMapper().readValue(inputStream, type);
+            return codec.getObjectMapper(type).readValue(inputStream, type);
         }
     }
 
@@ -226,7 +226,7 @@ public final class CodecWrappers {
 
         @Override
         public <T> String encode(T object) throws IOException {
-            return codec.getObjectMapper().writeValueAsString(object);
+            return codec.getObjectMapper(object.getClass()).writeValueAsString(object);
         }
 
         @Override
@@ -236,12 +236,12 @@ public final class CodecWrappers {
 
         @Override
         public <T> T decode(String textValue, Class<T> type) throws IOException {
-            return codec.getObjectMapper().readValue(textValue, type);
+            return codec.getObjectMapper(type).readValue(textValue, type);
         }
 
         @Override
         public <T> T decode(InputStream inputStream, Class<T> type) throws IOException {
-            return codec.getObjectMapper().readValue(inputStream, type);
+            return codec.getObjectMapper(type).readValue(inputStream, type);
         }
     }
 
@@ -261,7 +261,7 @@ public final class CodecWrappers {
 
         @Override
         public <T> String encode(T object) throws IOException {
-            return codec.getObjectMapper().writeValueAsString(object);
+            return codec.getObjectMapper(object.getClass()).writeValueAsString(object);
         }
 
         @Override
@@ -271,12 +271,12 @@ public final class CodecWrappers {
 
         @Override
         public <T> T decode(String textValue, Class<T> type) throws IOException {
-            return codec.getObjectMapper().readValue(textValue, type);
+            return codec.getObjectMapper(type).readValue(textValue, type);
         }
 
         @Override
         public <T> T decode(InputStream inputStream, Class<T> type) throws IOException {
-            return codec.getObjectMapper().readValue(inputStream, type);
+            return codec.getObjectMapper(type).readValue(inputStream, type);
         }
     }
 

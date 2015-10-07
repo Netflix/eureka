@@ -18,8 +18,14 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
+import com.netflix.eureka.cluster.protocol.ReplicationInstance;
+import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
+import com.netflix.eureka.cluster.protocol.ReplicationList;
+import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 import org.junit.Test;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -236,6 +242,65 @@ public class EurekaCodecCompatibilityTest {
         );
 
         verifyAllPairs(codingAction, Applications.class, jsonCodes);
+    }
+
+    @Test
+    public void testBatchRequestEncoding() throws Exception {
+        InstanceInfo instance = InstanceInfoGenerator.takeOne();
+        List<ReplicationInstance> replicationInstances = new ArrayList<>();
+        replicationInstances.add(new ReplicationInstance(
+                instance.getAppName(),
+                instance.getId(),
+                System.currentTimeMillis(),
+                null,
+                instance.getStatus().name(),
+                instance,
+                Action.Register
+        ));
+        final ReplicationList replicationList = new ReplicationList(replicationInstances);
+
+        Action2 codingAction = new Action2() {
+            @Override
+            public void call(EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws IOException {
+                String encodedString = encodingCodec.encode(replicationList);
+
+                ReplicationList decodedValue = decodingCodec.decode(encodedString, ReplicationList.class);
+                assertThat(decodedValue.getReplicationList().size(), is(equalTo(1)));
+            }
+        };
+
+        // In replication channel we use JSON only
+        List<CodecWrapper> jsonCodes = Arrays.asList(
+                new CodecWrappers.JacksonJson(),
+                new CodecWrappers.LegacyJacksonJson()
+        );
+
+        verifyAllPairs(codingAction, ReplicationList.class, jsonCodes);
+    }
+
+    @Test
+    public void testBatchResponseEncoding() throws Exception {
+        List<ReplicationInstanceResponse> responseList = new ArrayList<>();
+        responseList.add(new ReplicationInstanceResponse(200, InstanceInfoGenerator.takeOne()));
+        final ReplicationListResponse replicationListResponse = new ReplicationListResponse(responseList);
+
+        Action2 codingAction = new Action2() {
+            @Override
+            public void call(EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws IOException {
+                String encodedString = encodingCodec.encode(replicationListResponse);
+
+                ReplicationListResponse decodedValue = decodingCodec.decode(encodedString, ReplicationListResponse.class);
+                assertThat(decodedValue.getResponseList().size(), is(equalTo(1)));
+            }
+        };
+
+        // In replication channel we use JSON only
+        List<CodecWrapper> jsonCodes = Arrays.asList(
+                new CodecWrappers.JacksonJson(),
+                new CodecWrappers.LegacyJacksonJson()
+        );
+
+        verifyAllPairs(codingAction, ReplicationListResponse.class, jsonCodes);
     }
 
     public void verifyAllPairs(Action2 codingAction, Class<?> typeToEncode, List<CodecWrapper> codecHolders) throws Exception {

@@ -31,6 +31,7 @@ import static com.netflix.eureka.util.batcher.RecordingProcessor.transientErrorT
 import static java.util.Arrays.asList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -82,7 +83,7 @@ public class TaskExecutorsTest {
 
         // Verify that transient task is be re-scheduled
         processor.expectTransientErrors(1);
-        verify(acceptorExecutor, times(1)).reprocess(taskHolder, ProcessingResult.TransientError);
+        verify(acceptorExecutor, timeout(500).times(1)).reprocess(taskHolder, ProcessingResult.TransientError);
     }
 
     @Test
@@ -94,7 +95,7 @@ public class TaskExecutorsTest {
 
         // Verify that transient task is be re-scheduled
         processor.expectTransientErrors(2);
-        verify(acceptorExecutor, times(1)).reprocess(taskHolderBatch, ProcessingResult.TransientError);
+        verify(acceptorExecutor, timeout(500).times(1)).reprocess(taskHolderBatch, ProcessingResult.TransientError);
     }
 
     @Test

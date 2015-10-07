@@ -5,13 +5,11 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonRootName;
 import com.netflix.discovery.provider.Serializer;
 
 /**
  * The jersey resource class that generates the replication batch response.
  */
-@JsonRootName("replicationListResponse")
 @Serializer("jackson") // For backwards compatibility with DiscoveryJerseyProvider
 public class ReplicationListResponse {
     private List<ReplicationInstanceResponse> responseList;
