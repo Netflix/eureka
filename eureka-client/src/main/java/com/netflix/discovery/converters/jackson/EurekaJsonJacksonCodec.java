@@ -16,6 +16,9 @@
 
 package com.netflix.discovery.converters.jackson;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,36 +29,54 @@ import com.netflix.discovery.converters.KeyFormatter;
 import com.netflix.discovery.converters.jackson.mixin.InstanceInfoJsonMixIn;
 
 /**
+ * JSON codec defaults to unwrapped mode, as ReplicationList in the replication channel, must be serialized
+ * unwrapped. The wrapping mode is configured separately for each type, based on presence of
+ * {@link com.fasterxml.jackson.annotation.JsonRootName} annotation.
+ *
  * @author Tomasz Bak
  */
 public class EurekaJsonJacksonCodec extends AbstractEurekaJacksonCodec {
 
-    private final ObjectMapper jsonMapper = new ObjectMapper();
+    private final ObjectMapper wrappedJsonMapper;
+    private final ObjectMapper unwrappedJsonMapper;
+
+    private final Map<Class<?>, ObjectMapper> mappers = new ConcurrentHashMap<>();
 
     public EurekaJsonJacksonCodec() {
         this(KeyFormatter.defaultKeyFormatter(), false);
     }
 
     public EurekaJsonJacksonCodec(final KeyFormatter keyFormatter, boolean compact) {
-        // JSON
+        this.unwrappedJsonMapper = createObjectMapper(keyFormatter, compact, false);
+        this.wrappedJsonMapper = createObjectMapper(keyFormatter, compact, true);
+    }
+
+    private ObjectMapper createObjectMapper(KeyFormatter keyFormatter, boolean compact, boolean wrapped) {
+        ObjectMapper newMapper = new ObjectMapper();
         SimpleModule jsonModule = new SimpleModule();
         jsonModule.setSerializerModifier(EurekaJacksonJsonModifiers.createJsonSerializerModifier(keyFormatter, compact));
         jsonModule.setDeserializerModifier(EurekaJacksonJsonModifiers.createJsonDeserializerModifier(keyFormatter, compact));
-        jsonMapper.registerModule(jsonModule);
-        jsonMapper.setSerializationInclusion(Include.NON_NULL);
-        jsonMapper.configure(SerializationFeature.WRAP_ROOT_VALUE, true);
-        jsonMapper.configure(SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED, false);
-        jsonMapper.configure(DeserializationFeature.UNWRAP_ROOT_VALUE, true);
-        jsonMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+        newMapper.registerModule(jsonModule);
+        newMapper.setSerializationInclusion(Include.NON_NULL);
+        newMapper.configure(SerializationFeature.WRAP_ROOT_VALUE, wrapped);
+        newMapper.configure(SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED, false);
+        newMapper.configure(DeserializationFeature.UNWRAP_ROOT_VALUE, wrapped);
+        newMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
         if (compact) {
-            addMiniConfig(jsonMapper);
+            addMiniConfig(newMapper);
         } else {
-            jsonMapper.addMixIn(InstanceInfo.class, InstanceInfoJsonMixIn.class);
+            newMapper.addMixIn(InstanceInfo.class, InstanceInfoJsonMixIn.class);
         }
+        return newMapper;
     }
 
     @Override
-    public ObjectMapper getObjectMapper() {
-        return jsonMapper;
+    public <T> ObjectMapper getObjectMapper(Class<T> type) {
+        ObjectMapper mapper = mappers.get(type);
+        if (mapper == null) {
+            mapper = hasJsonRootName(type) ? wrappedJsonMapper : unwrappedJsonMapper;
+            mappers.put(type, mapper);
+        }
+        return mapper;
     }
 }

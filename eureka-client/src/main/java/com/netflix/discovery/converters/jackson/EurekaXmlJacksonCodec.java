@@ -63,7 +63,7 @@ public class EurekaXmlJacksonCodec extends AbstractEurekaJacksonCodec {
     }
 
     @Override
-    public ObjectMapper getObjectMapper() {
+    public <T> ObjectMapper getObjectMapper(Class<T> type) {
         return xmlMapper;
     }
 }
