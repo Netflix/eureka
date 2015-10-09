@@ -2,10 +2,10 @@ package com.netflix.discovery.shared.resolver.aws;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
-import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.ResolverUtils;
+import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,10 +20,14 @@ public class ApplicationsResolver implements ClusterResolver<AwsEndpoint> {
     private static final Logger logger = LoggerFactory.getLogger(ApplicationsResolver.class);
 
     private final EurekaClientConfig clientConfig;
+    private final EurekaTransportConfig transportConfig;
     private final ApplicationsSource applicationsSource;
 
-    public ApplicationsResolver(EurekaClientConfig clientConfig, ApplicationsSource applicationsSource) {
+    public ApplicationsResolver(EurekaClientConfig clientConfig,
+                                EurekaTransportConfig transportConfig,
+                                ApplicationsSource applicationsSource) {
         this.clientConfig = clientConfig;
+        this.transportConfig = transportConfig;
         this.applicationsSource = applicationsSource;
     }
 
@@ -37,15 +41,12 @@ public class ApplicationsResolver implements ClusterResolver<AwsEndpoint> {
         List<AwsEndpoint> result = new ArrayList<>();
 
         Applications applications = applicationsSource.getApplications(5, TimeUnit.MINUTES);
-        String appName = clientConfig.getReadClusterAppName();
-        if (applications != null && appName != null) {
-            Application application = applications.getRegisteredApplications(appName);
-            if (application != null) {
-                List<InstanceInfo> validInstanceInfos = application.getInstances();
-                for (InstanceInfo instanceInfo : validInstanceInfos) {
-                    if (instanceInfo.getStatus() == InstanceInfo.InstanceStatus.UP) {
-                        result.add(ResolverUtils.instanceInfoToEndpoint(clientConfig, instanceInfo));
-                    }
+        String vipAddress = transportConfig.getReadClusterVip();
+        if (applications != null && vipAddress != null) {
+            List<InstanceInfo> validInstanceInfos = applications.getInstancesByVirtualHostName(vipAddress);
+            for (InstanceInfo instanceInfo : validInstanceInfos) {
+                if (instanceInfo.getStatus() == InstanceInfo.InstanceStatus.UP) {
+                    result.add(ResolverUtils.instanceInfoToEndpoint(clientConfig, instanceInfo));
                 }
             }
         }

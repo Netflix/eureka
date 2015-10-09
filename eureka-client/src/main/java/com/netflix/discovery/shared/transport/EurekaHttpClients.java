@@ -17,12 +17,11 @@
 package com.netflix.discovery.shared.transport;
 
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.resolver.AsyncResolver;
+import com.netflix.discovery.shared.resolver.ClosableResolver;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.resolver.LegacyClusterResolver;
@@ -43,8 +42,6 @@ import com.netflix.discovery.shared.transport.jersey.JerseyEurekaHttpClientFacto
  */
 public final class EurekaHttpClients {
 
-    public static final long RECONNECT_INTERVAL_MINUTES = 30;
-
     private EurekaHttpClients() {
     }
 
@@ -52,22 +49,22 @@ public final class EurekaHttpClients {
      * Standard client, with legacy server resolver.
      */
     public static EurekaHttpClientFactory createStandardClientFactory(EurekaClientConfig clientConfig,
+                                                                      EurekaTransportConfig transportConfig,
                                                                       InstanceInfo myInstanceInfo,
-                                                                      ApplicationsResolver.ApplicationsSource applicationsSource,
-                                                                      ScheduledExecutorService executorService,
-                                                                      ThreadPoolExecutor threadPoolExecutor) {
-        ClusterResolver resolver = createStandardClusterResolver(
-                clientConfig, myInstanceInfo, applicationsSource, executorService, threadPoolExecutor
-        );
-        return createStandardClientFactory(clientConfig, myInstanceInfo, resolver);
+                                                                      ApplicationsResolver.ApplicationsSource applicationsSource) {
+        ClosableResolver resolver = createStandardClusterResolver(
+                clientConfig, transportConfig, myInstanceInfo, applicationsSource);
+        return createStandardClientFactory(clientConfig, transportConfig, myInstanceInfo, resolver);
     }
 
     /**
      * Standard client supports: registration/query connectivity split, connection re-balancing and retry.
      */
-    static EurekaHttpClientFactory createStandardClientFactory(EurekaClientConfig clientConfig,
-                                                               InstanceInfo myInstanceInfo,
+    static EurekaHttpClientFactory createStandardClientFactory(final EurekaClientConfig clientConfig,
+                                                               final EurekaTransportConfig transportConfig,
+                                                               final InstanceInfo myInstanceInfo,
                                                                final ClusterResolver<EurekaEndpoint> clusterResolver) {
+        final ClosableResolver<EurekaEndpoint> closableResolver = wrap(clusterResolver);
         final TransportClientFactory jerseyFactory = JerseyEurekaHttpClientFactory.create(clientConfig, myInstanceInfo);
         final TransportClientFactory metricsFactory = MetricsCollectingEurekaHttpClient.createFactory(jerseyFactory);
 
@@ -76,17 +73,17 @@ public final class EurekaHttpClients {
             public EurekaHttpClient newClient() {
                 SessionedEurekaHttpClient registrationClient = new SessionedEurekaHttpClient(
                         RetryableEurekaHttpClient.createFactory(
-                                clusterResolver,
+                                closableResolver,
                                 RedirectingEurekaHttpClient.createFactory(metricsFactory),
                                 ServerStatusEvaluators.legacyEvaluator()),
-                        RECONNECT_INTERVAL_MINUTES * 60 * 1000
+                        transportConfig.getSessionedClientReconnectIntervalSeconds() * 1000
                 );
                 SessionedEurekaHttpClient queryClient = new SessionedEurekaHttpClient(
                         RetryableEurekaHttpClient.createFactory(
-                                clusterResolver,
+                                closableResolver,
                                 RedirectingEurekaHttpClient.createFactory(metricsFactory),
                                 ServerStatusEvaluators.legacyEvaluator()),
-                        RECONNECT_INTERVAL_MINUTES * 60 * 1000
+                        transportConfig.getSessionedClientReconnectIntervalSeconds() * 1000
                 );
 
                 return new SplitEurekaHttpClient(registrationClient, queryClient);
@@ -94,30 +91,31 @@ public final class EurekaHttpClients {
 
             @Override
             public void shutdown() {
+                closableResolver.shutdown();
                 jerseyFactory.shutdown();
                 metricsFactory.shutdown();
             }
         };
     }
 
-    static ClusterResolver<AwsEndpoint> createStandardClusterResolver(final EurekaClientConfig clientConfig,
-                                                                      InstanceInfo myInstanceInfo,
-                                                                      ApplicationsResolver.ApplicationsSource applicationsSource,
-                                                                      ScheduledExecutorService executorService,
-                                                                      ThreadPoolExecutor threadPoolExecutor) {
+    static ClosableResolver<AwsEndpoint> createStandardClusterResolver(final EurekaClientConfig clientConfig,
+                                                                       final EurekaTransportConfig transportConfig,
+                                                                       final InstanceInfo myInstanceInfo,
+                                                                       final ApplicationsResolver.ApplicationsSource applicationsSource) {
         String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
         String myZone = InstanceInfo.getZone(availZones, myInstanceInfo);
         ClusterResolver bootstrapResolver = new LegacyClusterResolver(clientConfig, myZone);
 
-        EurekaHttpResolver remoteResolver = new EurekaHttpResolver(
+        final EurekaHttpResolver remoteResolver = new EurekaHttpResolver(
                 clientConfig,
                 myInstanceInfo,
                 bootstrapResolver,
-                clientConfig.getReadClusterAppName()
+                transportConfig.getReadClusterVip()
         );
 
-        ApplicationsResolver localResolver = new ApplicationsResolver(
+        final ApplicationsResolver localResolver = new ApplicationsResolver(
                 clientConfig,
+                transportConfig,
                 applicationsSource
         );
 
@@ -138,11 +136,51 @@ public final class EurekaHttpClients {
             }
         };
 
-        return new AsyncResolver<>(
-                clientConfig,
-                new ZoneAffinityClusterResolver(compoundResolver, myZone, true),
-                executorService,
-                threadPoolExecutor
+        final AsyncResolver<AwsEndpoint> asyncResolver = new AsyncResolver<>(
+                transportConfig,
+                new ZoneAffinityClusterResolver(compoundResolver, myZone, true)
         );
+
+        return new ClosableResolver<AwsEndpoint>() {
+            @Override
+            public void shutdown() {
+                asyncResolver.shutdown();
+                remoteResolver.shutdown();
+            }
+
+            @Override
+            public String getRegion() {
+                return asyncResolver.getRegion();
+            }
+
+            @Override
+            public List<AwsEndpoint> getClusterEndpoints() {
+                return asyncResolver.getClusterEndpoints();
+            }
+        };
+    }
+
+
+    static <T extends EurekaEndpoint> ClosableResolver<T> wrap(final ClusterResolver<T> clusterResolver) {
+        if (clusterResolver instanceof ClosableResolver) {
+            return (ClosableResolver) clusterResolver;
+        }
+
+        return new ClosableResolver<T>() {
+            @Override
+            public void shutdown() {
+                // no-op
+            }
+
+            @Override
+            public String getRegion() {
+                return clusterResolver.getRegion();
+            }
+
+            @Override
+            public List<T> getClusterEndpoints() {
+                return clusterResolver.getClusterEndpoints();
+            }
+        };
     }
 }

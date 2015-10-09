@@ -20,6 +20,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 import com.google.inject.ImplementedBy;
+import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 
 /**
  * Configuration information required by the eureka clients to register an
@@ -528,15 +529,13 @@ public interface EurekaClientConfig {
     String getClientDataAccept();
 
     /**
-     * @return the appName for the readonly cluster to redirect to, if applicable (can be the same as the bootstrap)
-     */
-    String getReadClusterAppName();
-
-    /**
      * To avoid configuration API pollution when trying new/experimental or features or for the migration process,
      * the corresponding configuration can be put into experimental configuration section.
      *
      * @return a property of experimental feature
      */
     String getExperimental(String name);
+
+
+    EurekaTransportConfig getTransportConfig();
 }

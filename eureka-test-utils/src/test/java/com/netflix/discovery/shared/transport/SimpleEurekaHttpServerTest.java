@@ -18,7 +18,7 @@ package com.netflix.discovery.shared.transport;
 
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.discovery.converters.wrappers.CodecWrappers.JacksonJson;
-import com.netflix.discovery.endpoint.EndpointUtils;
+import com.netflix.discovery.shared.resolver.DefaultEndpoint;
 import com.netflix.discovery.shared.transport.jersey.JerseyEurekaHttpClientFactory;
 import org.junit.After;
 import org.junit.Before;
@@ -44,7 +44,7 @@ public class SimpleEurekaHttpServerTest extends EurekaHttpClientCompatibilityTes
                 .withEncoder(JacksonJson.class.getSimpleName())
                 .build();
         int port = getHttpServer().getServerPort();
-        this.eurekaHttpClient = httpClientFactory.newClient(EndpointUtils.fromTargetUrl("http://localhost:" + port + "/v2"));
+        this.eurekaHttpClient = httpClientFactory.newClient(new DefaultEndpoint("http://localhost:" + port + "/v2"));
     }
 
     @Override

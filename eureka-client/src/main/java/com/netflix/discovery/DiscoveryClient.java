@@ -41,6 +41,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -72,6 +73,7 @@ import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpClients;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
+import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
 import com.netflix.discovery.util.ThresholdLevelsMetric;
@@ -130,8 +132,6 @@ public class DiscoveryClient implements EurekaClient {
 
     private static final Pattern REDIRECT_PATH_REGEX = Pattern.compile("(.*/v2/)apps(/.*)?$");
 
-    protected static EurekaClientConfig clientConfig;
-
     // Timers
     private static final String PREFIX = "DiscoveryClient_";
     private final com.netflix.servo.monitor.Timer GET_SERVICE_URLS_DNS_TIMER = Monitors
@@ -164,7 +164,6 @@ public class DiscoveryClient implements EurekaClient {
      */
     private final ScheduledExecutorService scheduler;
     // additional executors for supervised subtasks
-    private final ThreadPoolExecutor clusterResolverExecutor;
     private final ThreadPoolExecutor heartbeatExecutor;
     private final ThreadPoolExecutor cacheRefreshExecutor;
 
@@ -204,6 +203,11 @@ public class DiscoveryClient implements EurekaClient {
     private volatile long lastSuccessfulHeartbeatTimestamp = -1;
     private final ThresholdLevelsMetric heartbeatStalenessMonitor;
     private final ThresholdLevelsMetric registryStalenessMonitor;
+
+    private final AtomicBoolean isShutdown = new AtomicBoolean(false);
+
+    protected final EurekaClientConfig clientConfig;
+    protected final EurekaTransportConfig transportConfig;
 
     private enum Action {
         Register, Cancel, Renew, Refresh, Refresh_Delta
@@ -273,14 +277,14 @@ public class DiscoveryClient implements EurekaClient {
         this(applicationInfoManager, config, null);
     }
 
-    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
+    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
         this(applicationInfoManager, config, args, new Provider<BackupRegistry>() {
             private volatile BackupRegistry backupRegistryInstance;
 
             @Override
             public synchronized BackupRegistry get() {
                 if (backupRegistryInstance == null) {
-                    String backupRegistryClassName = clientConfig.getBackupRegistryImpl();
+                    String backupRegistryClassName = config.getBackupRegistryImpl();
                     if (null != backupRegistryClassName) {
                         try {
                             backupRegistryInstance = (BackupRegistry) Class.forName(backupRegistryClassName).newInstance();
@@ -323,12 +327,13 @@ public class DiscoveryClient implements EurekaClient {
         this.backupRegistryProvider = backupRegistryProvider;
 
         try {
-            scheduler = Executors.newScheduledThreadPool(4,
+            scheduler = Executors.newScheduledThreadPool(3,
                     new ThreadFactoryBuilder()
                             .setNameFormat("DiscoveryClient-%d")
                             .setDaemon(true)
                             .build());
             clientConfig = config;
+            transportConfig = config.getTransportConfig();
             instanceInfo = myInfo;
             if (myInfo != null) {
                 appPathIdentifier = instanceInfo.getAppName() + "/" + instanceInfo.getId();
@@ -340,10 +345,6 @@ public class DiscoveryClient implements EurekaClient {
             String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
             final String zone = InstanceInfo.getZone(availZones, myInfo);
             localRegionApps.set(new Applications());
-
-            clusterResolverExecutor = new ThreadPoolExecutor(
-                    1, 5, 0, TimeUnit.SECONDS,
-                    new SynchronousQueue<Runnable>());  // use direct handoff
 
             heartbeatExecutor = new ThreadPoolExecutor(
                     1, clientConfig.getHeartbeatExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
@@ -460,6 +461,7 @@ public class DiscoveryClient implements EurekaClient {
             try {
                 newEurekaHttpClientFactory = EurekaHttpClients.createStandardClientFactory(
                         clientConfig,
+                        transportConfig,
                         applicationInfoManager.getInfo(),
                         new ApplicationsResolver.ApplicationsSource() {
                             @Override
@@ -474,9 +476,7 @@ public class DiscoveryClient implements EurekaClient {
                                     return localRegionApps.get();
                                 }
                             }
-                        },
-                        scheduler,
-                        clusterResolverExecutor
+                        }
                 );
                 newEurekaHttpClient = newEurekaHttpClientFactory.newClient();
             } catch (Exception e) {
@@ -858,45 +858,38 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     /**
-     * @deprecated use {@link #getServiceUrlsFromConfig(String, boolean)} instead.
-     */
-    @Deprecated
-    public static List<String> getEurekaServiceUrlsFromConfig(String instanceZone, boolean preferSameZone) {
-        return EndpointUtils.getServiceUrlsFromConfig(clientConfig, instanceZone, preferSameZone);
-    }
-
-    /**
      * Shuts down Eureka Client. Also sends a deregistration request to the
      * eureka server.
      */
     @PreDestroy
     @Override
     public void shutdown() {
-        if (statusChangeListener != null && applicationInfoManager != null) {
-            applicationInfoManager.unregisterStatusChangeListener(statusChangeListener.getId());
-        }
+        if (isShutdown.compareAndSet(false, true)) {
+            if (statusChangeListener != null && applicationInfoManager != null) {
+                applicationInfoManager.unregisterStatusChangeListener(statusChangeListener.getId());
+            }
 
-        cancelScheduledTasks();
-        clusterResolverExecutor.shutdown();
+            cancelScheduledTasks();
 
-        // If APPINFO was registered
-        if (instanceInfo != null && shouldRegister(instanceInfo)) {
-            instanceInfo.setStatus(InstanceStatus.DOWN);
-            unregister();
-        }
+            // If APPINFO was registered
+            if (instanceInfo != null && shouldRegister(instanceInfo)) {
+                instanceInfo.setStatus(InstanceStatus.DOWN);
+                unregister();
+            }
 
-        if (discoveryJerseyClient != null) {
-            discoveryJerseyClient.destroyResources();
-        }
-        if (eurekaHttpClientFactory != null) {
-            eurekaHttpClientFactory.shutdown();
-        }
-        if (eurekaHttpClient != null) {
-            eurekaHttpClient.shutdown();
-        }
+            if (discoveryJerseyClient != null) {
+                discoveryJerseyClient.destroyResources();
+            }
+            if (eurekaHttpClientFactory != null) {
+                eurekaHttpClientFactory.shutdown();
+            }
+            if (eurekaHttpClient != null) {
+                eurekaHttpClient.shutdown();
+            }
 
-        heartbeatStalenessMonitor.shutdown();
-        registryStalenessMonitor.shutdown();
+            heartbeatStalenessMonitor.shutdown();
+            registryStalenessMonitor.shutdown();
+        }
     }
 
     /**
@@ -1643,38 +1636,6 @@ public class DiscoveryClient implements EurekaClient {
             return result;
         }
         return EndpointUtils.getServiceUrlsFromConfig(clientConfig, zone, clientConfig.shouldPreferSameZoneEureka());
-    }
-
-    /**
-     * @deprecated see {@link com.netflix.appinfo.InstanceInfo#getZone(String[], com.netflix.appinfo.InstanceInfo)}
-     *
-     * Get the zone that a particular instance is in.
-     *
-     * @param myInfo
-     *            - The InstanceInfo object of the instance.
-     * @return - The zone in which the particular instance belongs to.
-     */
-    @Deprecated
-    public static String getZone(InstanceInfo myInfo) {
-        String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
-        return InstanceInfo.getZone(availZones, myInfo);
-    }
-
-    /**
-     * @deprecated see replacement in {@link com.netflix.discovery.endpoint.EndpointUtils}
-     *
-     * Get the region that this particular instance is in.
-     *
-     * @return - The region in which the particular instance belongs to.
-     */
-    @Deprecated
-    public static String getRegion() {
-        String region = clientConfig.getRegion();
-        if (region == null) {
-            region = "default";
-        }
-        region = region.trim().toLowerCase();
-        return region;
     }
 
     /**

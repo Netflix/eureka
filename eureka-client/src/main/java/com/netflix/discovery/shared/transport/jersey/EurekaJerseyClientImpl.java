@@ -99,12 +99,8 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
      */
     @Override
     public void destroyResources() {
-        if (eurekaConnCleaner != null) {
-            eurekaConnCleaner.shutdown();
-        }
-        if (apacheHttpClient != null) {
-            apacheHttpClient.destroy();
-        }
+        eurekaConnCleaner.shutdown();
+        apacheHttpClient.destroy();
     }
 
     public static class EurekaJerseyClientBuilder {

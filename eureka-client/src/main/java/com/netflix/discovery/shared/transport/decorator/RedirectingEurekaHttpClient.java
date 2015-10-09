@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.discovery.shared.dns.DnsService;
 import com.netflix.discovery.shared.dns.DnsServiceImpl;
+import com.netflix.discovery.shared.resolver.DefaultEndpoint;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
@@ -60,7 +61,7 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
      * The delegate client should pass through 3xx responses without further processing.
      */
     public RedirectingEurekaHttpClient(String serviceUrl, TransportClientFactory factory, DnsService dnsService) {
-        this.serviceEndpoint = EndpointUtils.fromTargetUrl(serviceUrl);
+        this.serviceEndpoint = new DefaultEndpoint(serviceUrl);
         this.factory = factory;
         this.dnsService = dnsService;
     }
@@ -131,7 +132,7 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
             }
 
             currentHttpClientRef.getAndSet(null).shutdown();
-            currentHttpClientRef.set(factory.newClient(EndpointUtils.fromTargetUrl(targetUrl.toString())));
+            currentHttpClientRef.set(factory.newClient(new DefaultEndpoint(targetUrl.toString())));
         }
         String message = "Follow redirect limit crossed for URI " + serviceEndpoint.getServiceUrl();
         logger.warn(message);

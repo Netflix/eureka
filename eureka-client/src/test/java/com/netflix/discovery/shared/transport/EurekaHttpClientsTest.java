@@ -48,6 +48,7 @@ public class EurekaHttpClientsTest {
 
     private static final InstanceInfo MY_INSTANCE = InstanceInfoGenerator.newBuilder(1, "myApp").build().first();
     private final EurekaClientConfig clientConfig = mock(EurekaClientConfig.class);
+    private final EurekaTransportConfig transportConfig = mock(EurekaTransportConfig.class);
     private final EurekaInstanceConfig instanceConfig = mock(EurekaInstanceConfig.class);
     private final ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(instanceConfig, MY_INSTANCE);
 
@@ -68,6 +69,7 @@ public class EurekaHttpClientsTest {
     public void setUp() throws IOException {
         when(clientConfig.getEurekaServerTotalConnectionsPerHost()).thenReturn(10);
         when(clientConfig.getEurekaServerTotalConnections()).thenReturn(10);
+        when(transportConfig.getSessionedClientReconnectIntervalSeconds()).thenReturn(10);
 
         writeServer = new SimpleEurekaHttpServer(writeRequestHandler);
         clusterResolver = new StaticClusterResolver<EurekaEndpoint>("regionA", new DefaultEndpoint("localhost", writeServer.getServerPort(), false, "/v2/"));
@@ -75,7 +77,11 @@ public class EurekaHttpClientsTest {
         readServer = new SimpleEurekaHttpServer(readRequestHandler);
         readServerURI = "http://localhost:" + readServer.getServerPort();
 
-        clientFactory = EurekaHttpClients.createStandardClientFactory(clientConfig, applicationInfoManager.getInfo(), clusterResolver);
+        clientFactory = EurekaHttpClients.createStandardClientFactory(
+                clientConfig,
+                transportConfig,
+                applicationInfoManager.getInfo(),
+                clusterResolver);
     }
 
     @After

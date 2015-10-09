@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
-import com.netflix.discovery.endpoint.EndpointUtils;
+import com.netflix.discovery.shared.resolver.DefaultEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
@@ -82,7 +82,7 @@ public class EurekaClientServerRestIntegrationTest {
                 .withConnectionIdleTimeout(1000)
                 .build();
 
-        jerseyEurekaClient = httpClientFactory.newClient(EndpointUtils.fromTargetUrl(eurekaServiceUrl));
+        jerseyEurekaClient = httpClientFactory.newClient(new DefaultEndpoint(eurekaServiceUrl));
 
         ServerCodecs serverCodecs = new DefaultServerCodecs(eurekaServerConfig);
         jerseyReplicationClient = JerseyReplicationClient.createReplicationClient(

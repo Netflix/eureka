@@ -1,7 +1,6 @@
 package com.netflix.discovery;
 
 import java.util.Set;
-
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -16,7 +15,7 @@ public class DiscoveryClientCloseJerseyThreadTest extends AbstractDiscoveryClien
         assertThat(containsJerseyThread(), equalTo(true));
         client.shutdown();
         // Give up control for cleaner thread to die
-        Thread.sleep(1);
+        Thread.sleep(5);
         assertThat(containsJerseyThread(), equalTo(false));
     }
 

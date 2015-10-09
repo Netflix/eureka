@@ -16,6 +16,7 @@
 
 package com.netflix.discovery.shared.resolver;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +31,20 @@ public class DefaultEndpoint implements EurekaEndpoint {
     protected final boolean isSecure;
     protected final String relativeUri;
     protected final String serviceUrl;
+
+    public DefaultEndpoint(String serviceUrl) {
+        this.serviceUrl = serviceUrl;
+
+        try {
+            URL url = new URL(serviceUrl);
+            this.hostName = url.getHost();
+            this.port = url.getPort();
+            this.isSecure = "https".equals(url.getProtocol());
+            this.relativeUri = url.getPath();
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Malformed serviceUrl: " + serviceUrl);
+        }
+    }
 
     public DefaultEndpoint(String hostName, int port, boolean isSecure, String relativeUri) {
         this.hostName = hostName;

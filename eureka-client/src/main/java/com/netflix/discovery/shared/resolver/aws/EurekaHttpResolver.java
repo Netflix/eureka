@@ -4,14 +4,15 @@ import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Application;
+import com.netflix.discovery.shared.resolver.ClosableResolver;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.resolver.ResolverUtils;
+import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
-import com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator;
 import com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient;
-import com.netflix.discovery.shared.transport.decorator.ServerStatusEvaluator;
+import com.netflix.discovery.shared.transport.decorator.ServerStatusEvaluators;
 import com.netflix.discovery.shared.transport.jersey.JerseyEurekaHttpClientFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +25,7 @@ import java.util.List;
 /**
  * @author David Liu
  */
-public class EurekaHttpResolver implements ClusterResolver<AwsEndpoint> {
+public class EurekaHttpResolver implements ClosableResolver<AwsEndpoint> {
     private static final Logger logger = LoggerFactory.getLogger(EurekaHttpResolver.class);
 
     private final EurekaClientConfig clientConfig;
@@ -42,16 +43,15 @@ public class EurekaHttpResolver implements ClusterResolver<AwsEndpoint> {
         this.clientFactory = RetryableEurekaHttpClient.createFactory(
                 bootstrapResolver,
                 JerseyEurekaHttpClientFactory.create(clientConfig, myInstanceInfo, resolverIdentity),
-                new ServerStatusEvaluator() {
-                    @Override
-                    public boolean accept(int statusCode, EurekaHttpClientDecorator.RequestType requestType) {
-                        if (requestType == EurekaHttpClientDecorator.RequestType.GetApplication) {
-                            return statusCode >= 200 && statusCode < 300;
-                        }
-                        return false;
-                    }
-                }
+                ServerStatusEvaluators.httpSuccessEvaluator()
         );
+    }
+
+    @Override
+    public void shutdown() {
+        if (clientFactory != null) {
+            clientFactory.shutdown();
+        }
     }
 
     @Override
@@ -63,8 +63,10 @@ public class EurekaHttpResolver implements ClusterResolver<AwsEndpoint> {
     public List<AwsEndpoint> getClusterEndpoints() {
         List<AwsEndpoint> result = new ArrayList<>();
 
+        EurekaHttpClient client = null;
         try {
-            EurekaHttpResponse<Application> response = clientFactory.newClient().getApplication(appName);
+            client = clientFactory.newClient();
+            EurekaHttpResponse<Application> response = client.getApplication(appName);
             if (validResponse(response)) {
                 Application application = response.getEntity();
                 if (application != null) {
@@ -80,6 +82,10 @@ public class EurekaHttpResolver implements ClusterResolver<AwsEndpoint> {
             }
         } catch (Exception e) {
             logger.error("Error contacting server for endpoints with appName:{}", appName, e);
+        } finally {
+            if (client != null) {
+                client.shutdown();
+            }
         }
 
         logger.info("Returning empty endpoint list");

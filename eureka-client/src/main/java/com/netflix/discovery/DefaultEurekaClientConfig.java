@@ -29,6 +29,8 @@ import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
 import com.netflix.discovery.providers.DefaultEurekaClientConfigProvider;
+import com.netflix.discovery.shared.transport.DefaultEurekaTransportConfig;
+import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,41 +60,39 @@ import org.slf4j.LoggerFactory;
 @Singleton
 @ProvidedBy(DefaultEurekaClientConfigProvider.class)
 public class DefaultEurekaClientConfig implements EurekaClientConfig {
+    private static final Logger logger = LoggerFactory.getLogger(DefaultEurekaClientConfig.class);
+
+    public static final String DEFAULT_NAMESPACE = "eureka.";
+    public static final String DEFAULT_ZONE = "defaultZone";
+    private static final int DEFAULT_EXECUTOR_THREAD_POOL_SIZE = 5;
     private static final String ARCHAIUS_DEPLOYMENT_ENVIRONMENT = "archaius.deployment.environment";
     private static final String TEST = "test";
     private static final String EUREKA_ENVIRONMENT = "eureka.environment";
-    private static final Logger logger = LoggerFactory
-            .getLogger(DefaultEurekaClientConfig.class);
-    private static final DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory
-            .getInstance();
-    private static final DynamicStringProperty EUREKA_PROPS_FILE = DynamicPropertyFactory
-            .getInstance().getStringProperty("eureka.client.props",
-                    "eureka-client");
-    public static final String DEFAULT_ZONE = "defaultZone";
-    private static final int DEFAULT_EXECUTOR_THREAD_POOL_SIZE = 5;
-    private String namespace = "eureka.";
+
+    private static final DynamicPropertyFactory configInstance = DynamicPropertyFactory.getInstance();
+    private static final DynamicStringProperty EUREKA_PROPS_FILE = DynamicPropertyFactory.getInstance()
+            .getStringProperty("eureka.client.props", "eureka-client");
+
+    private final String namespace;
+    private final EurekaTransportConfig transportConfig;
 
     public DefaultEurekaClientConfig() {
-        init();
+        this(DEFAULT_NAMESPACE);
     }
 
     public DefaultEurekaClientConfig(String namespace) {
         this.namespace = namespace;
         init();
+        this.transportConfig = new DefaultEurekaTransportConfig(namespace, configInstance);
     }
 
     private void init() {
-        String env = ConfigurationManager.getConfigInstance().getString(
-                EUREKA_ENVIRONMENT, TEST);
-        ConfigurationManager.getConfigInstance().setProperty(
-                ARCHAIUS_DEPLOYMENT_ENVIRONMENT, env);
+        String env = ConfigurationManager.getConfigInstance().getString(EUREKA_ENVIRONMENT, TEST);
+        ConfigurationManager.getConfigInstance().setProperty(ARCHAIUS_DEPLOYMENT_ENVIRONMENT, env);
 
         String eurekaPropsFile = EUREKA_PROPS_FILE.get();
         try {
-            // ConfigurationManager
-            // .loadPropertiesFromResources(eurekaPropsFile);
-            ConfigurationManager
-                    .loadCascadedPropertiesFromResources(eurekaPropsFile);
+            ConfigurationManager.loadCascadedPropertiesFromResources(eurekaPropsFile);
         } catch (IOException e) {
             logger.warn(
                     "Cannot find the properties specified : {}. This may be okay if there are other environment "
@@ -513,13 +513,12 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     }
 
     @Override
-    public String getReadClusterAppName() {
-        return configInstance.getStringProperty(
-                namespace + "readClusterAppName", null).get();
+    public String getExperimental(String name) {
+        return configInstance.getStringProperty(namespace + "experimental." + name, null).get();
     }
 
     @Override
-    public String getExperimental(String name) {
-        return configInstance.getStringProperty(namespace + "experimental." + name, null).get();
+    public EurekaTransportConfig getTransportConfig() {
+        return transportConfig;
     }
 }
