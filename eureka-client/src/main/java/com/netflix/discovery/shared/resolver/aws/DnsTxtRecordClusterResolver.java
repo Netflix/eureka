@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.discovery.shared.resolver;
+package com.netflix.discovery.shared.resolver.aws;
 
 import javax.naming.NamingException;
 import java.util.ArrayList;
@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.Set;
 
 import com.netflix.discovery.endpoint.DnsResolver;
+import com.netflix.discovery.shared.resolver.ClusterResolver;
+import com.netflix.discovery.shared.resolver.ClusterResolverException;
+import com.netflix.discovery.shared.resolver.ResolverUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,11 +75,11 @@ import org.slf4j.LoggerFactory;
  *
  * @author Tomasz Bak
  */
-public class DnsTxtRecordClusterResolver implements ClusterResolver {
+public class DnsTxtRecordClusterResolver implements ClusterResolver<AwsEndpoint> {
 
     private static final Logger logger = LoggerFactory.getLogger(DnsTxtRecordClusterResolver.class);
 
-    private final List<EurekaEndpoint> eurekaEndpoints;
+    private final List<AwsEndpoint> eurekaEndpoints;
     private final String region;
 
     /**
@@ -88,7 +91,7 @@ public class DnsTxtRecordClusterResolver implements ClusterResolver {
      */
     public DnsTxtRecordClusterResolver(String region, String rootClusterDNS, boolean extractZoneFromDNS, int port, boolean isSecure, String relativeUri) {
         this.region = region;
-        this.eurekaEndpoints = resolve(rootClusterDNS, extractZoneFromDNS, port, isSecure, relativeUri);
+        this.eurekaEndpoints = resolve(region, rootClusterDNS, extractZoneFromDNS, port, isSecure, relativeUri);
         if (logger.isDebugEnabled()) {
             logger.debug("Resolved {} to {}", rootClusterDNS, eurekaEndpoints);
         }
@@ -100,22 +103,22 @@ public class DnsTxtRecordClusterResolver implements ClusterResolver {
     }
 
     @Override
-    public List<EurekaEndpoint> getClusterEndpoints() {
+    public List<AwsEndpoint> getClusterEndpoints() {
         return eurekaEndpoints;
     }
 
-    private static List<EurekaEndpoint> resolve(String rootClusterDNS, boolean extractZone, int port, boolean isSecure, String relativeUri) {
+    private static List<AwsEndpoint> resolve(String region, String rootClusterDNS, boolean extractZone, int port, boolean isSecure, String relativeUri) {
         try {
             Set<String> zoneDomainNames = resolve(rootClusterDNS);
             if (zoneDomainNames.isEmpty()) {
                 throw new ClusterResolverException("Cannot resolve Eureka cluster addresses; there are no data in TXT record for DN " + rootClusterDNS);
             }
-            List<EurekaEndpoint> endpoints = new ArrayList<>();
+            List<AwsEndpoint> endpoints = new ArrayList<>();
             for (String zoneDomain : zoneDomainNames) {
                 String zone = extractZone ? ResolverUtils.extractZoneFromHostName(zoneDomain) : null;
                 Set<String> zoneAddresses = resolve(zoneDomain);
                 for (String address : zoneAddresses) {
-                    endpoints.add(new EurekaEndpoint(address, port, isSecure, relativeUri, zone));
+                    endpoints.add(new AwsEndpoint(address, port, isSecure, relativeUri, region, zone));
                 }
             }
             return endpoints;

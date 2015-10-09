@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package com.netflix.discovery.shared.resolver;
+package com.netflix.discovery.shared.resolver.aws;
 
 import java.util.Collections;
 import java.util.List;
 
+import com.netflix.discovery.shared.resolver.ClusterResolver;
+import com.netflix.discovery.shared.resolver.ResolverUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,22 +31,22 @@ import org.slf4j.LoggerFactory;
  *
  * @author Tomasz Bak
  */
-public class ZoneAffinityClusterResolver implements ClusterResolver {
+public class ZoneAffinityClusterResolver implements ClusterResolver<AwsEndpoint> {
 
     private static final Logger logger = LoggerFactory.getLogger(ZoneAffinityClusterResolver.class);
 
-    private final List<EurekaEndpoint> eurekaEndpoints;
+    private final List<AwsEndpoint> eurekaEndpoints;
     private final String region;
 
     /**
      * A zoneAffinity defines zone affinity (true) or anti-affinity rules (false).
      */
-    public ZoneAffinityClusterResolver(ClusterResolver delegate, String myZone, boolean zoneAffinity) {
+    public ZoneAffinityClusterResolver(ClusterResolver<AwsEndpoint> delegate, String myZone, boolean zoneAffinity) {
         this.region = delegate.getRegion();
-        List<EurekaEndpoint>[] parts = ResolverUtils.splitByZone(delegate.getClusterEndpoints(), myZone);
-        List<EurekaEndpoint> myZoneEndpoints = parts[0];
-        List<EurekaEndpoint> remainingEndpoints = parts[1];
-        List<EurekaEndpoint> randomizedList = randomizeAndMerge(myZoneEndpoints, remainingEndpoints);
+        List<AwsEndpoint>[] parts = ResolverUtils.splitByZone(delegate.getClusterEndpoints(), myZone);
+        List<AwsEndpoint> myZoneEndpoints = parts[0];
+        List<AwsEndpoint> remainingEndpoints = parts[1];
+        List<AwsEndpoint> randomizedList = randomizeAndMerge(myZoneEndpoints, remainingEndpoints);
         if (!zoneAffinity) {
             Collections.reverse(randomizedList);
         }
@@ -61,18 +63,18 @@ public class ZoneAffinityClusterResolver implements ClusterResolver {
     }
 
     @Override
-    public List<EurekaEndpoint> getClusterEndpoints() {
+    public List<AwsEndpoint> getClusterEndpoints() {
         return eurekaEndpoints;
     }
 
-    private static List<EurekaEndpoint> randomizeAndMerge(List<EurekaEndpoint> myZoneEndpoints, List<EurekaEndpoint> remainingEndpoints) {
+    private static List<AwsEndpoint> randomizeAndMerge(List<AwsEndpoint> myZoneEndpoints, List<AwsEndpoint> remainingEndpoints) {
         if (myZoneEndpoints.isEmpty()) {
             return ResolverUtils.randomize(remainingEndpoints);
         }
         if (remainingEndpoints.isEmpty()) {
             return ResolverUtils.randomize(myZoneEndpoints);
         }
-        List<EurekaEndpoint> mergedList = ResolverUtils.randomize(myZoneEndpoints);
+        List<AwsEndpoint> mergedList = ResolverUtils.randomize(myZoneEndpoints);
         mergedList.addAll(ResolverUtils.randomize(remainingEndpoints));
         return mergedList;
     }

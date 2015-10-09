@@ -26,8 +26,10 @@ import java.security.KeyStore;
 import java.util.Collections;
 
 import com.netflix.discovery.provider.DiscoveryJerseyProvider;
+import com.netflix.discovery.shared.resolver.EurekaEndpoint;
+import com.netflix.discovery.shared.transport.EurekaClientFactoryBuilder;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
-import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
+import com.netflix.discovery.shared.transport.TransportClientFactory;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.client.JerseyClient;
@@ -37,7 +39,7 @@ import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
 /**
  * @author Tomasz Bak
  */
-public class Jersey2ApplicationClientFactory implements EurekaHttpClientFactory {
+public class Jersey2ApplicationClientFactory implements TransportClientFactory {
 
     private static final String KEY_STORE_TYPE = "JKS";
 
@@ -50,11 +52,8 @@ public class Jersey2ApplicationClientFactory implements EurekaHttpClientFactory 
     }
 
     @Override
-    public EurekaHttpClient create(String... serviceUrls) {
-        if (serviceUrls.length != 1) {
-            throw new IllegalArgumentException("Expected single service URI, but got " + serviceUrls.length);
-        }
-        return new Jersey2ApplicationClient(jersey2Client, serviceUrls[0], allowRedirect);
+    public EurekaHttpClient newClient(EurekaEndpoint endpoint) {
+        return new Jersey2ApplicationClient(jersey2Client, endpoint.getServiceUrl(), allowRedirect);
     }
 
     @Override
@@ -66,10 +65,10 @@ public class Jersey2ApplicationClientFactory implements EurekaHttpClientFactory 
         return new Jersey2ApplicationClientFactoryBuilder();
     }
 
-    public static class Jersey2ApplicationClientFactoryBuilder extends EurekaHttpClientFactoryBuilder<Jersey2ApplicationClientFactoryBuilder> {
+    public static class Jersey2ApplicationClientFactoryBuilder extends EurekaClientFactoryBuilder<Jersey2ApplicationClientFactory, Jersey2ApplicationClientFactoryBuilder> {
 
         @Override
-        public EurekaHttpClientFactory build() {
+        public Jersey2ApplicationClientFactory build() {
             ClientBuilder clientBuilder = ClientBuilder.newBuilder();
             ClientConfig clientConfig = new ClientConfig();
 

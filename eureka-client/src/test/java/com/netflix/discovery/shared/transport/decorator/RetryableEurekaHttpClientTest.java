@@ -23,9 +23,10 @@ import java.util.concurrent.CountDownLatch;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.resolver.SampleCluster;
+import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
-import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
+import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.TransportException;
 import com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.RequestExecutor;
 import com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.RequestType;
@@ -53,10 +54,10 @@ public class RetryableEurekaHttpClientTest {
 
     public static final RequestType TEST_REQUEST_TYPE = RequestType.Register;
 
-    private static final List<EurekaEndpoint> CLUSTER_ENDPOINTS = SampleCluster.UsEast1a.builder().withServerPool(CLUSTER_SIZE).build();
+    private static final List<AwsEndpoint> CLUSTER_ENDPOINTS = SampleCluster.UsEast1a.builder().withServerPool(CLUSTER_SIZE).build();
 
     private final ClusterResolver clusterResolver = mock(ClusterResolver.class);
-    private final EurekaHttpClientFactory clientFactory = mock(EurekaHttpClientFactory.class);
+    private final TransportClientFactory clientFactory = mock(TransportClientFactory.class);
     private final ServerStatusEvaluator serverStatusEvaluator = ServerStatusEvaluators.legacyEvaluator();
     private final RequestExecutor<Void> requestExecutor = mock(RequestExecutor.class);
 
@@ -78,7 +79,7 @@ public class RetryableEurekaHttpClientTest {
 
     @Test
     public void testRequestsReuseSameConnectionIfThereIsNoError() throws Exception {
-        when(clientFactory.create(Matchers.<String>anyVararg())).thenReturn(clusterDelegates.get(0));
+        when(clientFactory.newClient(Matchers.<EurekaEndpoint>anyVararg())).thenReturn(clusterDelegates.get(0));
         when(requestExecutor.execute(clusterDelegates.get(0))).thenReturn(EurekaHttpResponse.status(200));
 
         // First request creates delegate, second reuses it
@@ -87,20 +88,20 @@ public class RetryableEurekaHttpClientTest {
             assertThat(httpResponse.getStatusCode(), is(equalTo(200)));
         }
 
-        verify(clientFactory, times(1)).create(Matchers.<String>anyVararg());
+        verify(clientFactory, times(1)).newClient(Matchers.<EurekaEndpoint>anyVararg());
         verify(requestExecutor, times(3)).execute(clusterDelegates.get(0));
     }
 
     @Test
     public void testRequestIsRetriedOnConnectionError() throws Exception {
-        when(clientFactory.create(Matchers.<String>anyVararg())).thenReturn(clusterDelegates.get(0), clusterDelegates.get(1));
+        when(clientFactory.newClient(Matchers.<EurekaEndpoint>anyVararg())).thenReturn(clusterDelegates.get(0), clusterDelegates.get(1));
         when(requestExecutor.execute(clusterDelegates.get(0))).thenThrow(new TransportException("simulated network error"));
         when(requestExecutor.execute(clusterDelegates.get(1))).thenReturn(EurekaHttpResponse.status(200));
 
         EurekaHttpResponse<Void> httpResponse = retryableClient.execute(requestExecutor);
         assertThat(httpResponse.getStatusCode(), is(equalTo(200)));
 
-        verify(clientFactory, times(2)).create(Matchers.<String>anyVararg());
+        verify(clientFactory, times(2)).newClient(Matchers.<EurekaEndpoint>anyVararg());
         verify(requestExecutor, times(1)).execute(clusterDelegates.get(0));
         verify(requestExecutor, times(1)).execute(clusterDelegates.get(1));
     }
@@ -120,7 +121,7 @@ public class RetryableEurekaHttpClientTest {
         }
 
         // Second call, should reset cluster quarantine list, and hit health node 0
-        when(clientFactory.create(Matchers.<String>anyVararg())).thenReturn(clusterDelegates.get(0));
+        when(clientFactory.newClient(Matchers.<EurekaEndpoint>anyVararg())).thenReturn(clusterDelegates.get(0));
         reset(requestExecutor);
         when(requestExecutor.execute(clusterDelegates.get(0))).thenReturn(EurekaHttpResponse.status(200));
 
@@ -129,7 +130,7 @@ public class RetryableEurekaHttpClientTest {
 
     @Test
     public void test5xxStatusCodeResultsInRequestRetry() throws Exception {
-        when(clientFactory.create(Matchers.<String>anyVararg())).thenReturn(clusterDelegates.get(0), clusterDelegates.get(1));
+        when(clientFactory.newClient(Matchers.<EurekaEndpoint>anyVararg())).thenReturn(clusterDelegates.get(0), clusterDelegates.get(1));
         when(requestExecutor.execute(clusterDelegates.get(0))).thenReturn(EurekaHttpResponse.status(500));
         when(requestExecutor.execute(clusterDelegates.get(1))).thenReturn(EurekaHttpResponse.status(200));
 
@@ -142,7 +143,7 @@ public class RetryableEurekaHttpClientTest {
 
     @Test(timeout = 10000)
     public void testConcurrentRequestsLeaveLastSuccessfulDelegate() throws Exception {
-        when(clientFactory.create(Matchers.<String>anyVararg())).thenReturn(clusterDelegates.get(0), clusterDelegates.get(1));
+        when(clientFactory.newClient(Matchers.<EurekaEndpoint>anyVararg())).thenReturn(clusterDelegates.get(0), clusterDelegates.get(1));
 
         BlockingRequestExecutor executor0 = new BlockingRequestExecutor();
         BlockingRequestExecutor executor1 = new BlockingRequestExecutor();
@@ -169,7 +170,7 @@ public class RetryableEurekaHttpClientTest {
         EurekaHttpResponse<Void> httpResponse = retryableClient.execute(requestExecutor);
         assertThat(httpResponse.getStatusCode(), is(equalTo(200)));
 
-        verify(clientFactory, times(2)).create(Matchers.<String>anyVararg());
+        verify(clientFactory, times(2)).newClient(Matchers.<EurekaEndpoint>anyVararg());
         verify(requestExecutor, times(0)).execute(clusterDelegates.get(0));
         verify(requestExecutor, times(1)).execute(clusterDelegates.get(1));
     }
@@ -177,7 +178,7 @@ public class RetryableEurekaHttpClientTest {
     private void simulateTransportError(int delegateFrom, int count) {
         for (int i = 0; i < count; i++) {
             int delegateId = delegateFrom + i;
-            when(clientFactory.create(Matchers.<String>anyVararg())).thenReturn(clusterDelegates.get(delegateId));
+            when(clientFactory.newClient(Matchers.<EurekaEndpoint>anyVararg())).thenReturn(clusterDelegates.get(delegateId));
             when(requestExecutor.execute(clusterDelegates.get(delegateId))).thenThrow(new TransportException("simulated network error"));
         }
     }

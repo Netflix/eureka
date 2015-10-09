@@ -2,6 +2,7 @@ package com.netflix.discovery.shared.transport;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 
 /**
@@ -28,6 +29,8 @@ public interface EurekaHttpClient {
     EurekaHttpResponse<Applications> getVip(String vipAddress);
 
     EurekaHttpResponse<Applications> getSecureVip(String secureVipAddress);
+
+    EurekaHttpResponse<Application> getApplication(String appName);
 
     EurekaHttpResponse<InstanceInfo> getInstance(String appName, String id);
 

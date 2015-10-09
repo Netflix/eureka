@@ -20,9 +20,10 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
 import com.netflix.discovery.shared.Applications;
-import com.netflix.discovery.shared.resolver.DnsService;
+import com.netflix.discovery.shared.dns.DnsService;
+import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
-import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
+import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.TransportException;
 import org.junit.Test;
 import org.mockito.Matchers;
@@ -42,14 +43,14 @@ public class RedirectingEurekaHttpClientTest {
 
     private static final String SERVICE_URL = "http://mydiscovery.test";
 
-    private final EurekaHttpClientFactory factory = mock(EurekaHttpClientFactory.class);
+    private final TransportClientFactory factory = mock(TransportClientFactory.class);
 
     private final EurekaHttpClient sourceClient = mock(EurekaHttpClient.class);
     private final EurekaHttpClient redirectedClient = mock(EurekaHttpClient.class);
     private final DnsService dnsService = mock(DnsService.class);
 
     public void setupRedirect() {
-        when(factory.create(Matchers.<String>anyVararg())).thenReturn(sourceClient, redirectedClient);
+        when(factory.newClient(Matchers.<EurekaEndpoint>anyVararg())).thenReturn(sourceClient, redirectedClient);
         when(sourceClient.getApplications()).thenReturn(
                 anEurekaHttpResponse(302, Applications.class)
                         .headers(HttpHeaders.LOCATION, "http://another.discovery.test/eureka/v2/apps")
@@ -63,7 +64,7 @@ public class RedirectingEurekaHttpClientTest {
 
     @Test
     public void testNonRedirectedRequestsAreServedByFirstClient() throws Exception {
-        when(factory.create(Matchers.<String>anyVararg())).thenReturn(sourceClient);
+        when(factory.newClient(Matchers.<EurekaEndpoint>anyVararg())).thenReturn(sourceClient);
         when(sourceClient.getApplications()).thenReturn(
                 anEurekaHttpResponse(200, new Applications()).type(MediaType.APPLICATION_JSON_TYPE).build()
         );
@@ -71,7 +72,7 @@ public class RedirectingEurekaHttpClientTest {
         RedirectingEurekaHttpClient httpClient = new RedirectingEurekaHttpClient(SERVICE_URL, factory, dnsService);
         httpClient.getApplications();
 
-        verify(factory, times(1)).create(Matchers.<String>anyVararg());
+        verify(factory, times(1)).newClient(Matchers.<EurekaEndpoint>anyVararg());
         verify(sourceClient, times(1)).getApplications();
     }
 
@@ -84,7 +85,7 @@ public class RedirectingEurekaHttpClientTest {
         // First call pins client to resolved IP
         httpClient.getApplications();
 
-        verify(factory, times(2)).create(Matchers.<String>anyVararg());
+        verify(factory, times(2)).newClient(Matchers.<EurekaEndpoint>anyVararg());
         verify(sourceClient, times(1)).getApplications();
         verify(dnsService, times(1)).resolveIp("another.discovery.test");
         verify(redirectedClient, times(1)).getApplications();
@@ -92,7 +93,7 @@ public class RedirectingEurekaHttpClientTest {
         // Second call goes straight to the same address
         httpClient.getApplications();
 
-        verify(factory, times(2)).create(Matchers.<String>anyVararg());
+        verify(factory, times(2)).newClient(Matchers.<EurekaEndpoint>anyVararg());
         verify(sourceClient, times(1)).getApplications();
         verify(dnsService, times(1)).resolveIp("another.discovery.test");
         verify(redirectedClient, times(2)).getApplications();
@@ -122,7 +123,7 @@ public class RedirectingEurekaHttpClientTest {
 
         httpClient.getApplications();
 
-        verify(factory, times(2)).create(Matchers.<String>anyVararg());
+        verify(factory, times(2)).newClient(Matchers.<EurekaEndpoint>anyVararg());
         verify(sourceClient, times(1)).getApplications();
         verify(dnsService, times(1)).resolveIp("another.discovery.test");
         verify(redirectedClient, times(1)).getApplications();

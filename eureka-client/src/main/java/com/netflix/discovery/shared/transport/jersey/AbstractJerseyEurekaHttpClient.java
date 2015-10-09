@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
@@ -191,6 +192,33 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
             return anEurekaHttpResponse(response.getStatus(), Applications.class)
                     .headers(headersOf(response))
                     .entity(applications)
+                    .build();
+        } finally {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Jersey HTTP GET {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
+            }
+            if (response != null) {
+                response.close();
+            }
+        }
+    }
+
+    @Override
+    public EurekaHttpResponse<Application> getApplication(String appName) {
+        String urlPath = "apps/" + appName;
+        ClientResponse response = null;
+        try {
+            Builder requestBuilder = jerseyClient.resource(serviceUrl).path(urlPath).getRequestBuilder();
+            addExtraHeaders(requestBuilder);
+            response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);
+
+            Application application = null;
+            if (response.getStatus() == Status.OK.getStatusCode() && response.hasEntity()) {
+                application = response.getEntity(Application.class);
+            }
+            return anEurekaHttpResponse(response.getStatus(), Application.class)
+                    .headers(headersOf(response))
+                    .entity(application)
                     .build();
         } finally {
             if (logger.isDebugEnabled()) {

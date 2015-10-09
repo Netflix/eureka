@@ -19,6 +19,7 @@ package com.netflix.discovery.shared.resolver;
 import java.util.Collections;
 import java.util.List;
 
+import com.netflix.discovery.shared.dns.DnsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +31,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Tomasz Bak
  */
-public class DnsClusterResolver implements ClusterResolver {
+public class DnsClusterResolver implements ClusterResolver<EurekaEndpoint> {
 
     private static final Logger logger = LoggerFactory.getLogger(DnsClusterResolver.class);
 
@@ -46,9 +47,9 @@ public class DnsClusterResolver implements ClusterResolver {
         this.region = region;
         List<String> addresses = dnsService.resolveARecord(rootClusterDNS);
         if (addresses == null) {
-            this.eurekaEndpoints = Collections.singletonList(new EurekaEndpoint(rootClusterDNS, port, isSecure, relativeUri, null));
+            this.eurekaEndpoints = Collections.<EurekaEndpoint>singletonList(new DefaultEndpoint(rootClusterDNS, port, isSecure, relativeUri));
         } else {
-            this.eurekaEndpoints = EurekaEndpoint.createForServerList(addresses, port, isSecure, relativeUri, null);
+            this.eurekaEndpoints = DefaultEndpoint.createForServerList(addresses, port, isSecure, relativeUri);
         }
         if (logger.isDebugEnabled()) {
             logger.debug("Resolved {} to {}", rootClusterDNS, eurekaEndpoints);

@@ -22,11 +22,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.netflix.discovery.shared.resolver.DnsService;
-import com.netflix.discovery.shared.resolver.DnsServiceImpl;
+import com.netflix.discovery.endpoint.EndpointUtils;
+import com.netflix.discovery.shared.dns.DnsService;
+import com.netflix.discovery.shared.dns.DnsServiceImpl;
+import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
-import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
+import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.TransportException;
 import com.netflix.discovery.shared.transport.TransportUtils;
 import org.slf4j.Logger;
@@ -48,8 +50,8 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
     public static final int MAX_FOLLOWED_REDIRECTS = 10;
     private static final Pattern REDIRECT_PATH_REGEX = Pattern.compile("(.*/v2/)apps(/.*)?$");
 
-    private final String serviceUrl;
-    private final EurekaHttpClientFactory factory;
+    private final EurekaEndpoint serviceEndpoint;
+    private final TransportClientFactory factory;
     private final DnsService dnsService;
 
     private final AtomicReference<EurekaHttpClient> delegateRef = new AtomicReference<>();
@@ -57,8 +59,8 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
     /**
      * The delegate client should pass through 3xx responses without further processing.
      */
-    public RedirectingEurekaHttpClient(String serviceUrl, EurekaHttpClientFactory factory, DnsService dnsService) {
-        this.serviceUrl = serviceUrl;
+    public RedirectingEurekaHttpClient(String serviceUrl, TransportClientFactory factory, DnsService dnsService) {
+        this.serviceEndpoint = EndpointUtils.fromTargetUrl(serviceUrl);
         this.factory = factory;
         this.dnsService = dnsService;
     }
@@ -72,7 +74,7 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
     protected <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor) {
         EurekaHttpClient currentEurekaClient = delegateRef.get();
         if (currentEurekaClient == null) {
-            AtomicReference<EurekaHttpClient> currentEurekaClientRef = new AtomicReference<>(factory.create(serviceUrl));
+            AtomicReference<EurekaHttpClient> currentEurekaClientRef = new AtomicReference<>(factory.newClient(serviceEndpoint));
             try {
                 EurekaHttpResponse<R> response = executeOnNewServer(requestExecutor, currentEurekaClientRef);
                 TransportUtils.shutdown(delegateRef.getAndSet(currentEurekaClientRef.get()));
@@ -94,12 +96,12 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
         }
     }
 
-    public static EurekaHttpClientFactory createFactory(final EurekaHttpClientFactory delegateFactory) {
+    public static TransportClientFactory createFactory(final TransportClientFactory delegateFactory) {
         final DnsServiceImpl dnsService = new DnsServiceImpl();
-        return new EurekaHttpClientFactory() {
+        return new TransportClientFactory() {
             @Override
-            public EurekaHttpClient create(String... serviceUrls) {
-                return new RedirectingEurekaHttpClient(serviceUrls[0], delegateFactory, dnsService);
+            public EurekaHttpClient newClient(EurekaEndpoint endpoint) {
+                return new RedirectingEurekaHttpClient(endpoint.getServiceUrl(), delegateFactory, dnsService);
             }
 
             @Override
@@ -129,9 +131,9 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
             }
 
             currentHttpClientRef.getAndSet(null).shutdown();
-            currentHttpClientRef.set(factory.create(targetUrl.toString()));
+            currentHttpClientRef.set(factory.newClient(EndpointUtils.fromTargetUrl(targetUrl.toString())));
         }
-        String message = "Follow redirect limit crossed for URI " + serviceUrl;
+        String message = "Follow redirect limit crossed for URI " + serviceEndpoint.getServiceUrl();
         logger.warn(message);
         throw new TransportException(message);
     }

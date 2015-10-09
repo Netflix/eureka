@@ -18,6 +18,8 @@ package com.netflix.discovery.shared.resolver;
 
 import java.util.List;
 
+import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
+import com.netflix.discovery.shared.resolver.aws.ZoneAffinityClusterResolver;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -31,33 +33,33 @@ public class ZoneAffinityClusterResolverTest {
 
     @Test
     public void testApplicationZoneIsFirstOnTheList() throws Exception {
-        List<EurekaEndpoint> endpoints = SampleCluster.merge(SampleCluster.UsEast1a, SampleCluster.UsEast1b, SampleCluster.UsEast1c);
+        List<AwsEndpoint> endpoints = SampleCluster.merge(SampleCluster.UsEast1a, SampleCluster.UsEast1b, SampleCluster.UsEast1c);
 
-        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver("regionA", endpoints), "us-east-1b", true);
+        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver<>("regionA", endpoints), "us-east-1b", true);
 
-        List<EurekaEndpoint> result = resolver.getClusterEndpoints();
+        List<AwsEndpoint> result = resolver.getClusterEndpoints();
         assertThat(result.size(), is(equalTo(endpoints.size())));
         assertThat(result.get(0).getZone(), is(equalTo("us-east-1b")));
     }
 
     @Test
     public void testAntiAffinity() throws Exception {
-        List<EurekaEndpoint> endpoints = SampleCluster.merge(SampleCluster.UsEast1a, SampleCluster.UsEast1b);
+        List<AwsEndpoint> endpoints = SampleCluster.merge(SampleCluster.UsEast1a, SampleCluster.UsEast1b);
 
-        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver("regionA", endpoints), "us-east-1b", false);
+        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver<>("regionA", endpoints), "us-east-1b", false);
 
-        List<EurekaEndpoint> result = resolver.getClusterEndpoints();
+        List<AwsEndpoint> result = resolver.getClusterEndpoints();
         assertThat(result.size(), is(equalTo(endpoints.size())));
         assertThat(result.get(0).getZone(), is(equalTo("us-east-1a")));
     }
 
     @Test
     public void testUnrecognizedZoneIsIgnored() throws Exception {
-        List<EurekaEndpoint> endpoints = SampleCluster.merge(SampleCluster.UsEast1a, SampleCluster.UsEast1b);
+        List<AwsEndpoint> endpoints = SampleCluster.merge(SampleCluster.UsEast1a, SampleCluster.UsEast1b);
 
-        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver("regionA", endpoints), "us-east-1c", true);
+        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver<>("regionA", endpoints), "us-east-1c", true);
 
-        List<EurekaEndpoint> result = resolver.getClusterEndpoints();
+        List<AwsEndpoint> result = resolver.getClusterEndpoints();
         assertThat(result.size(), is(equalTo(endpoints.size())));
     }
 }

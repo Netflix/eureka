@@ -18,6 +18,7 @@ package com.netflix.discovery.shared.transport.decorator;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
@@ -37,6 +38,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
         GetDelta,
         GetVip,
         GetSecureVip,
+        GetApplication,
         GetInstance,
         GetApplicationInstance
     }
@@ -183,6 +185,21 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
             @Override
             public RequestType getRequestType() {
                 return RequestType.GetSecureVip;
+            }
+        });
+    }
+
+    @Override
+    public EurekaHttpResponse<Application> getApplication(final String appName) {
+        return execute(new RequestExecutor<Application>() {
+            @Override
+            public EurekaHttpResponse<Application> execute(EurekaHttpClient delegate) {
+                return delegate.getApplication(appName);
+            }
+
+            @Override
+            public RequestType getRequestType() {
+                return RequestType.GetApplication;
             }
         });
     }

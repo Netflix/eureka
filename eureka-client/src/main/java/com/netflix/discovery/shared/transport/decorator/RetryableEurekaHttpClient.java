@@ -28,6 +28,7 @@ import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
+import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.TransportException;
 import com.netflix.discovery.shared.transport.TransportUtils;
 import com.netflix.discovery.util.ServoUtil;
@@ -58,7 +59,7 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
     public static final int DEFAULT_NUMBER_OF_RETRIES = 3;
 
     private final ClusterResolver clusterResolver;
-    private final EurekaHttpClientFactory clientFactory;
+    private final TransportClientFactory clientFactory;
     private final ServerStatusEvaluator serverStatusEvaluator;
     private final int numberOfRetries;
 
@@ -68,7 +69,7 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
     private final Counter retryCounter;
 
     public RetryableEurekaHttpClient(ClusterResolver clusterResolver,
-                                     EurekaHttpClientFactory clientFactory,
+                                     TransportClientFactory clientFactory,
                                      ServerStatusEvaluator serverStatusEvaluator,
                                      int numberOfRetries) {
         this.clusterResolver = clusterResolver;
@@ -105,7 +106,7 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
                 }
 
                 currentEndpoint = candidateHosts.get(endpointIdx++);
-                currentHttpClient = clientFactory.create(currentEndpoint.getServiceUrl());
+                currentHttpClient = clientFactory.newClient(currentEndpoint);
             }
 
             try {
@@ -128,12 +129,12 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
         throw new TransportException("Retry limit reached; giving up on completing the request");
     }
 
-    public static EurekaHttpClientFactory createFactory(final ClusterResolver clusterResolver,
-                                                        final EurekaHttpClientFactory delegateFactory,
+    public static EurekaHttpClientFactory createFactory(final ClusterResolver<EurekaEndpoint> clusterResolver,
+                                                        final TransportClientFactory delegateFactory,
                                                         final ServerStatusEvaluator serverStatusEvaluator) {
         return new EurekaHttpClientFactory() {
             @Override
-            public EurekaHttpClient create(String... serviceUrls) {
+            public EurekaHttpClient newClient() {
                 return new RetryableEurekaHttpClient(clusterResolver, delegateFactory, serverStatusEvaluator, DEFAULT_NUMBER_OF_RETRIES);
             }
 

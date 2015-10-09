@@ -2,6 +2,7 @@ package com.netflix.discovery.endpoint;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -322,4 +323,38 @@ public class EndpointUtils {
         return 0;
     }
 
+
+    public static EurekaEndpoint fromTargetUrl(final String targetUrl) {
+        return new EurekaEndpoint() {
+            @Override
+            public String getServiceUrl() {
+                return targetUrl;
+            }
+
+            @Override
+            public String getHostName() {
+                throw new IllegalStateException("not implemented");
+            }
+
+            @Override
+            public int getPort() {
+                throw new IllegalStateException("not implemented");
+            }
+
+            @Override
+            public boolean isSecure() {
+                throw new IllegalStateException("not implemented");
+            }
+
+            @Override
+            public String getRelativeUri() {
+                throw new IllegalStateException("not implemented");
+            }
+
+            @Override
+            public int compareTo(Object o) {
+                return targetUrl.compareTo(((EurekaEndpoint)o).getServiceUrl());
+            }
+        };
+    }
 }

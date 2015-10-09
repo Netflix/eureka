@@ -25,6 +25,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
+import com.netflix.discovery.shared.resolver.DefaultEndpoint;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.resolver.StaticClusterResolver;
 import com.netflix.discovery.util.EurekaEntityComparators;
@@ -56,7 +57,7 @@ public class EurekaHttpClientsTest {
     private SimpleEurekaHttpServer writeServer;
     private SimpleEurekaHttpServer readServer;
 
-    private ClusterResolver clusterResolver;
+    private ClusterResolver<EurekaEndpoint> clusterResolver;
     private EurekaHttpClientFactory clientFactory;
 
     private String readServerURI;
@@ -69,12 +70,12 @@ public class EurekaHttpClientsTest {
         when(clientConfig.getEurekaServerTotalConnections()).thenReturn(10);
 
         writeServer = new SimpleEurekaHttpServer(writeRequestHandler);
-        clusterResolver = new StaticClusterResolver("regionA", new EurekaEndpoint("localhost", writeServer.getServerPort(), false, "/v2/", null));
+        clusterResolver = new StaticClusterResolver<EurekaEndpoint>("regionA", new DefaultEndpoint("localhost", writeServer.getServerPort(), false, "/v2/"));
 
         readServer = new SimpleEurekaHttpServer(readRequestHandler);
         readServerURI = "http://localhost:" + readServer.getServerPort();
 
-        clientFactory = EurekaHttpClients.createStandardClientFactory(clientConfig, applicationInfoManager, clusterResolver);
+        clientFactory = EurekaHttpClients.createStandardClientFactory(clientConfig, applicationInfoManager.getInfo(), clusterResolver);
     }
 
     @After
@@ -101,7 +102,7 @@ public class EurekaHttpClientsTest {
                 anEurekaHttpResponse(200, apps).headers(HttpHeaders.CONTENT_TYPE, "application/json").build()
         );
 
-        EurekaHttpClient eurekaHttpClient = clientFactory.create();
+        EurekaHttpClient eurekaHttpClient = clientFactory.newClient();
         EurekaHttpResponse<Applications> result = eurekaHttpClient.getApplications();
 
         assertThat(result.getStatusCode(), is(equalTo(200)));

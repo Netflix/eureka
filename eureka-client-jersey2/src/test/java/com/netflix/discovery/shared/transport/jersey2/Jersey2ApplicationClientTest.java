@@ -16,9 +16,10 @@
 
 package com.netflix.discovery.shared.transport.jersey2;
 
+import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientCompatibilityTestSuite;
-import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
+import com.netflix.discovery.shared.transport.TransportClientFactory;
 import org.junit.After;
 import org.junit.Before;
 
@@ -33,8 +34,8 @@ public class Jersey2ApplicationClientTest extends EurekaHttpClientCompatibilityT
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        EurekaHttpClientFactory clientFactory = Jersey2ApplicationClientFactory.newBuilder().build();
-        jersey2HttpClient = (Jersey2ApplicationClient) clientFactory.create(getHttpServer().getServiceURI().toString());
+        TransportClientFactory clientFactory = Jersey2ApplicationClientFactory.newBuilder().build();
+        jersey2HttpClient = (Jersey2ApplicationClient) clientFactory.newClient(EndpointUtils.fromTargetUrl(getHttpServer().getServiceURI().toString()));
     }
 
     @Override

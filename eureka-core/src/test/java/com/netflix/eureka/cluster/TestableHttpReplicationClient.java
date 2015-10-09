@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
@@ -119,6 +120,11 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
 
     @Override
     public EurekaHttpResponse<Applications> getSecureVip(String secureVipAddress) {
+        throw new IllegalStateException("method not supported");
+    }
+
+    @Override
+    public EurekaHttpResponse<Application> getApplication(String appName) {
         throw new IllegalStateException("method not supported");
     }
 

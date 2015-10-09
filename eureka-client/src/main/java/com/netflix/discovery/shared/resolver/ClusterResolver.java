@@ -21,9 +21,9 @@ import java.util.List;
 /**
  * @author Tomasz Bak
  */
-public interface ClusterResolver {
+public interface ClusterResolver<T extends EurekaEndpoint> {
 
     String getRegion();
 
-    List<EurekaEndpoint> getClusterEndpoints();
+    List<T> getClusterEndpoints();
 }

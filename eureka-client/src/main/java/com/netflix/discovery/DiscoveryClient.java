@@ -425,8 +425,8 @@ public class DiscoveryClient implements EurekaClient {
         EurekaHttpClientFactory newEurekaHttpClientFactory = null;
         EurekaHttpClient newEurekaHttpClient = null;
         try {
-            newEurekaHttpClientFactory = EurekaHttpClients.createStandardClientFactory(clientConfig, applicationInfoManager);
-            newEurekaHttpClient = newEurekaHttpClientFactory.create();
+            newEurekaHttpClientFactory = EurekaHttpClients.createStandardClientFactory(clientConfig, applicationInfoManager.getInfo());
+            newEurekaHttpClient = newEurekaHttpClientFactory.newClient();
         } catch (Exception e) {
             logger.warn("Experimental transport initialization failure", e);
         }

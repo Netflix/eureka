@@ -23,6 +23,9 @@ import java.util.List;
 
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.endpoint.EndpointUtils;
+import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
+import com.netflix.discovery.shared.resolver.aws.DnsTxtRecordClusterResolver;
+import com.netflix.discovery.shared.resolver.aws.ZoneAffinityClusterResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,14 +39,14 @@ import org.slf4j.LoggerFactory;
  *
  * @author Tomasz Bak
  */
-public class LegacyClusterResolver implements ClusterResolver {
+public class LegacyClusterResolver implements ClusterResolver<AwsEndpoint> {
 
     private static final Logger logger = LoggerFactory.getLogger(LegacyClusterResolver.class);
 
-    private final ClusterResolver delegate;
+    private final ClusterResolver<AwsEndpoint> delegate;
 
     public LegacyClusterResolver(EurekaClientConfig clientConfig, String myZone) {
-        this.delegate = new ReloadingClusterResolver(
+        this.delegate = new ReloadingClusterResolver<>(
                 new LegacyClusterResolverFactory(clientConfig, myZone),
                 clientConfig.getEurekaServiceUrlPollIntervalSeconds() * 1000
         );
@@ -55,11 +58,11 @@ public class LegacyClusterResolver implements ClusterResolver {
     }
 
     @Override
-    public List<EurekaEndpoint> getClusterEndpoints() {
+    public List<AwsEndpoint> getClusterEndpoints() {
         return delegate.getClusterEndpoints();
     }
 
-    static class LegacyClusterResolverFactory implements ClusterResolverFactory {
+    static class LegacyClusterResolverFactory implements ClusterResolverFactory<AwsEndpoint> {
 
         private final EurekaClientConfig clientConfig;
         private final String myRegion;
@@ -72,8 +75,8 @@ public class LegacyClusterResolver implements ClusterResolver {
         }
 
         @Override
-        public ClusterResolver createClusterResolver() {
-            ClusterResolver newResolver;
+        public ClusterResolver<AwsEndpoint> createClusterResolver() {
+            ClusterResolver<AwsEndpoint> newResolver;
             if (clientConfig.shouldUseDnsForFetchingServiceUrls()) {
                 String discoveryDnsName = "txt." + myRegion + '.' + clientConfig.getEurekaServerDNSName();
                 newResolver = new DnsTxtRecordClusterResolver(
@@ -87,23 +90,24 @@ public class LegacyClusterResolver implements ClusterResolver {
                 newResolver = new ZoneAffinityClusterResolver(newResolver, myZone, clientConfig.shouldPreferSameZoneEureka());
             } else {
                 // FIXME Not randomized in the EndpointUtils.getServiceUrlsFromConfig, and no zone info to do this here
-                newResolver = new StaticClusterResolver(myRegion, createEurekaEndpointsFromConfig());
+                newResolver = new StaticClusterResolver<>(myRegion, createEurekaEndpointsFromConfig());
             }
 
             return newResolver;
         }
 
-        private List<EurekaEndpoint> createEurekaEndpointsFromConfig() {
+        private List<AwsEndpoint> createEurekaEndpointsFromConfig() {
             List<String> serviceUrls = EndpointUtils.getServiceUrlsFromConfig(clientConfig, myZone, clientConfig.shouldPreferSameZoneEureka());
-            List<EurekaEndpoint> endpoints = new ArrayList<>(serviceUrls.size());
+            List<AwsEndpoint> endpoints = new ArrayList<>(serviceUrls.size());
             for (String serviceUrl : serviceUrls) {
                 try {
                     URI serviceURI = new URI(serviceUrl);
-                    endpoints.add(new EurekaEndpoint(
+                    endpoints.add(new AwsEndpoint(
                             serviceURI.getHost(),
                             serviceURI.getPort(),
                             "https".equalsIgnoreCase(serviceURI.getSchemeSpecificPart()),
                             serviceURI.getPath(),
+                            myRegion,
                             myZone
                     ));
                 } catch (URISyntaxException ignore) {

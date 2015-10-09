@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -33,19 +34,19 @@ public class ReloadingClusterResolverTest {
 
     private final InjectableFactory factory = new InjectableFactory();
 
-    private ReloadingClusterResolver resolver;
+    private ReloadingClusterResolver<AwsEndpoint> resolver;
 
     @Test(timeout = 30000)
     public void testDataAreReloadedPeriodically() throws Exception {
-        List<EurekaEndpoint> firstEndpointList = SampleCluster.UsEast1a.build();
+        List<AwsEndpoint> firstEndpointList = SampleCluster.UsEast1a.build();
         factory.setEndpoints(firstEndpointList);
 
         // First endpoint list is loaded eagerly
-        resolver = new ReloadingClusterResolver(factory, 1);
+        resolver = new ReloadingClusterResolver<>(factory, 1);
         assertThat(resolver.getClusterEndpoints(), is(equalTo(firstEndpointList)));
 
         // Swap with a different one
-        List<EurekaEndpoint> secondEndpointList = SampleCluster.UsEast1b.build();
+        List<AwsEndpoint> secondEndpointList = SampleCluster.UsEast1b.build();
         factory.setEndpoints(secondEndpointList);
 
         assertThat(awaitUpdate(resolver, secondEndpointList), is(true));
@@ -53,7 +54,7 @@ public class ReloadingClusterResolverTest {
 
     @Test(timeout = 30000)
     public void testIdenticalListsDoNotCauseReload() throws Exception {
-        List<EurekaEndpoint> firstEndpointList = SampleCluster.UsEast1a.build();
+        List<AwsEndpoint> firstEndpointList = SampleCluster.UsEast1a.build();
         factory.setEndpoints(firstEndpointList);
 
         // First endpoint list is loaded eagerly
@@ -61,23 +62,23 @@ public class ReloadingClusterResolverTest {
         assertThat(resolver.getClusterEndpoints(), is(equalTo(firstEndpointList)));
 
         // Now inject the same one but in the different order
-        List<EurekaEndpoint> snapshot = resolver.getClusterEndpoints();
+        List<AwsEndpoint> snapshot = resolver.getClusterEndpoints();
         factory.setEndpoints(ResolverUtils.randomize(firstEndpointList));
         Thread.sleep(5);
 
         assertThat(resolver.getClusterEndpoints(), is(equalTo(snapshot)));
 
         // Now inject different list
-        List<EurekaEndpoint> secondEndpointList = SampleCluster.UsEast1b.build();
+        List<AwsEndpoint> secondEndpointList = SampleCluster.UsEast1b.build();
         factory.setEndpoints(secondEndpointList);
 
         assertThat(awaitUpdate(resolver, secondEndpointList), is(true));
     }
 
-    private static boolean awaitUpdate(ReloadingClusterResolver resolver, List<EurekaEndpoint> expected) throws Exception {
+    private static boolean awaitUpdate(ReloadingClusterResolver<AwsEndpoint> resolver, List<AwsEndpoint> expected) throws Exception {
         long deadline = System.currentTimeMillis() + 5 * 1000;
         do {
-            List<EurekaEndpoint> current = resolver.getClusterEndpoints();
+            List<AwsEndpoint> current = resolver.getClusterEndpoints();
             if (ResolverUtils.identical(current, expected)) {
                 return true;
             }
@@ -86,16 +87,16 @@ public class ReloadingClusterResolverTest {
         throw new TimeoutException("Endpoint list not reloaded on time");
     }
 
-    static class InjectableFactory implements ClusterResolverFactory {
+    static class InjectableFactory implements ClusterResolverFactory<AwsEndpoint> {
 
-        private final AtomicReference<List<EurekaEndpoint>> currentEndpointsRef = new AtomicReference<>();
+        private final AtomicReference<List<AwsEndpoint>> currentEndpointsRef = new AtomicReference<>();
 
         @Override
-        public ClusterResolver createClusterResolver() {
-            return new StaticClusterResolver("regionA", currentEndpointsRef.get());
+        public ClusterResolver<AwsEndpoint> createClusterResolver() {
+            return new StaticClusterResolver<>("regionA", currentEndpointsRef.get());
         }
 
-        void setEndpoints(List<EurekaEndpoint> endpoints) {
+        void setEndpoints(List<AwsEndpoint> endpoints) {
             currentEndpointsRef.set(endpoints);
         }
     }
