@@ -205,6 +205,11 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
     }
 
     @Override
+    public String getReadClusterAppName() {
+        return config.getString("readClusterAppName", null);
+    }
+
+    @Override
     public String getExperimental(String name) {
         return config.getString("experimental." + name);
     }

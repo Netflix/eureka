@@ -21,6 +21,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
+import com.netflix.discovery.shared.resolver.aws.SampleCluster;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;

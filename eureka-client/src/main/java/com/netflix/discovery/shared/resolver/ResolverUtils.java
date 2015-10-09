@@ -24,6 +24,10 @@ import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.netflix.appinfo.AmazonInfo;
+import com.netflix.appinfo.DataCenterInfo;
+import com.netflix.appinfo.InstanceInfo;
+import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
 import com.netflix.discovery.util.SystemUtil;
 
@@ -102,5 +106,22 @@ public final class ResolverUtils {
         HashSet<T> compareSet = new HashSet<>(firstList);
         compareSet.removeAll(secondList);
         return compareSet.isEmpty();
+    }
+
+    public static AwsEndpoint instanceInfoToEndpoint(EurekaClientConfig clientConfig, InstanceInfo instanceInfo) {
+        String zone = null;
+        DataCenterInfo dataCenterInfo = instanceInfo.getDataCenterInfo();
+        if (dataCenterInfo instanceof AmazonInfo) {
+            zone = ((AmazonInfo) dataCenterInfo).get(AmazonInfo.MetaDataKey.availabilityZone);
+        }
+
+        return new AwsEndpoint(
+                instanceInfo.getHostName(),
+                instanceInfo.getPort(),
+                false,
+                clientConfig.getEurekaServerURLContext(),
+                clientConfig.getRegion(),
+                zone
+        );
     }
 }

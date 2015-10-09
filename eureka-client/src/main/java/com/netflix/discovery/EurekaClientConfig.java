@@ -528,6 +528,11 @@ public interface EurekaClientConfig {
     String getClientDataAccept();
 
     /**
+     * @return the appName for the readonly cluster to redirect to, if applicable (can be the same as the bootstrap)
+     */
+    String getReadClusterAppName();
+
+    /**
      * To avoid configuration API pollution when trying new/experimental or features or for the migration process,
      * the corresponding configuration can be put into experimental configuration section.
      *

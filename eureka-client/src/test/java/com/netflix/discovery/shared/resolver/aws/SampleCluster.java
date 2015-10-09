@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.discovery.shared.resolver;
-
-import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
+package com.netflix.discovery.shared.resolver.aws;
 
 import java.util.ArrayList;
 import java.util.List;

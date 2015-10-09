@@ -513,6 +513,12 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     }
 
     @Override
+    public String getReadClusterAppName() {
+        return configInstance.getStringProperty(
+                namespace + "readClusterAppName", null).get();
+    }
+
+    @Override
     public String getExperimental(String name) {
         return configInstance.getStringProperty(namespace + "experimental." + name, null).get();
     }

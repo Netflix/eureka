@@ -118,7 +118,7 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
             EurekaHttpResponse<R> httpResponse = requestExecutor.execute(currentHttpClientRef.get());
             if (httpResponse.getStatusCode() != 302) {
                 if (followRedirectCount == 0) {
-                    logger.info("Pinning to endpoint {}", targetUrl);
+                    logger.debug("Pinning to endpoint {}", targetUrl);
                 } else {
                     logger.info("Pinning to endpoint {}, after {} redirect(s)", targetUrl, followRedirectCount);
                 }

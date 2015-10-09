@@ -333,22 +333,22 @@ public class EndpointUtils {
 
             @Override
             public String getHostName() {
-                throw new IllegalStateException("not implemented");
+                throw new UnsupportedOperationException("not implemented");
             }
 
             @Override
             public int getPort() {
-                throw new IllegalStateException("not implemented");
+                throw new UnsupportedOperationException("not implemented");
             }
 
             @Override
             public boolean isSecure() {
-                throw new IllegalStateException("not implemented");
+                throw new UnsupportedOperationException("not implemented");
             }
 
             @Override
             public String getRelativeUri() {
-                throw new IllegalStateException("not implemented");
+                throw new UnsupportedOperationException("not implemented");
             }
 
             @Override

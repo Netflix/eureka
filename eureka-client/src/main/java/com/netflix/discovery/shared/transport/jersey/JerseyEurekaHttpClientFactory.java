@@ -60,7 +60,6 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
 
     public static JerseyEurekaHttpClientFactory create(EurekaClientConfig clientConfig,
                                                  InstanceInfo myInstanceInfo,
-                                                 boolean isSecure,
                                                  AbstractEurekaIdentity clientIdentity) {
         JerseyEurekaHttpClientFactoryBuilder clientBuilder = newBuilder()
                 .withMyInstanceInfo(myInstanceInfo)
@@ -75,7 +74,7 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
                 .withDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept())
                 .withClientIdentity(clientIdentity);
 
-        if (isSecure && "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
+        if ("true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
             clientBuilder.withClientName("DiscoveryClient-HTTPClient-System").withSystemSSLConfiguration();
         } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
             clientBuilder.withClientName("Proxy-DiscoveryClient-HTTPClient")
@@ -91,9 +90,8 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
     }
 
     public static JerseyEurekaHttpClientFactory create(EurekaClientConfig clientConfig,
-                                                 InstanceInfo myInstanceInfo,
-                                                 boolean isSecure) {
-        return create(clientConfig, myInstanceInfo, isSecure, new EurekaClientIdentity(myInstanceInfo.getIPAddr()));
+                                                 InstanceInfo myInstanceInfo) {
+        return create(clientConfig, myInstanceInfo, new EurekaClientIdentity(myInstanceInfo.getIPAddr()));
     }
 
     public static JerseyEurekaHttpClientFactoryBuilder newBuilder() {

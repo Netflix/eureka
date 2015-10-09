@@ -17,12 +17,19 @@
 package com.netflix.discovery.shared.transport;
 
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.shared.resolver.AsyncResolver;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.resolver.LegacyClusterResolver;
+import com.netflix.discovery.shared.resolver.aws.ApplicationsResolver;
+import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
+import com.netflix.discovery.shared.resolver.aws.EurekaHttpResolver;
+import com.netflix.discovery.shared.resolver.aws.ZoneAffinityClusterResolver;
 import com.netflix.discovery.shared.transport.decorator.MetricsCollectingEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.SessionedEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.RedirectingEurekaHttpClient;
@@ -45,25 +52,23 @@ public final class EurekaHttpClients {
      * Standard client, with legacy server resolver.
      */
     public static EurekaHttpClientFactory createStandardClientFactory(EurekaClientConfig clientConfig,
-                                                                      InstanceInfo myInstanceInfo) {
-        String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
-        String myZone = InstanceInfo.getZone(availZones, myInstanceInfo);
-        ClusterResolver resolver = new LegacyClusterResolver(clientConfig, myZone);
+                                                                      InstanceInfo myInstanceInfo,
+                                                                      ApplicationsResolver.ApplicationsSource applicationsSource,
+                                                                      ScheduledExecutorService executorService,
+                                                                      ThreadPoolExecutor threadPoolExecutor) {
+        ClusterResolver resolver = createStandardClusterResolver(
+                clientConfig, myInstanceInfo, applicationsSource, executorService, threadPoolExecutor
+        );
         return createStandardClientFactory(clientConfig, myInstanceInfo, resolver);
     }
 
     /**
      * Standard client supports: registration/query connectivity split, connection re-balancing and retry.
      */
-    public static EurekaHttpClientFactory createStandardClientFactory(EurekaClientConfig clientConfig,
-                                                                      InstanceInfo myInstanceInfo,
-                                                                      final ClusterResolver<EurekaEndpoint> clusterResolver) {
-        List<EurekaEndpoint> clusterEndpoints = clusterResolver.getClusterEndpoints();
-        if (clusterEndpoints.isEmpty()) {
-            throw new TransportException("Cluster server pool is empty");
-        }
-        boolean isSecure = clusterEndpoints.get(0).isSecure();
-        final TransportClientFactory jerseyFactory = JerseyEurekaHttpClientFactory.create(clientConfig, myInstanceInfo, isSecure);
+    static EurekaHttpClientFactory createStandardClientFactory(EurekaClientConfig clientConfig,
+                                                               InstanceInfo myInstanceInfo,
+                                                               final ClusterResolver<EurekaEndpoint> clusterResolver) {
+        final TransportClientFactory jerseyFactory = JerseyEurekaHttpClientFactory.create(clientConfig, myInstanceInfo);
         final TransportClientFactory metricsFactory = MetricsCollectingEurekaHttpClient.createFactory(jerseyFactory);
 
         return new EurekaHttpClientFactory() {
@@ -93,5 +98,51 @@ public final class EurekaHttpClients {
                 metricsFactory.shutdown();
             }
         };
+    }
+
+    static ClusterResolver<AwsEndpoint> createStandardClusterResolver(final EurekaClientConfig clientConfig,
+                                                                      InstanceInfo myInstanceInfo,
+                                                                      ApplicationsResolver.ApplicationsSource applicationsSource,
+                                                                      ScheduledExecutorService executorService,
+                                                                      ThreadPoolExecutor threadPoolExecutor) {
+        String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
+        String myZone = InstanceInfo.getZone(availZones, myInstanceInfo);
+        ClusterResolver bootstrapResolver = new LegacyClusterResolver(clientConfig, myZone);
+
+        EurekaHttpResolver remoteResolver = new EurekaHttpResolver(
+                clientConfig,
+                myInstanceInfo,
+                bootstrapResolver,
+                clientConfig.getReadClusterAppName()
+        );
+
+        ApplicationsResolver localResolver = new ApplicationsResolver(
+                clientConfig,
+                applicationsSource
+        );
+
+        ClusterResolver<AwsEndpoint> compoundResolver = new ClusterResolver<AwsEndpoint>() {
+            @Override
+            public String getRegion() {
+                return clientConfig.getRegion();
+            }
+
+            @Override
+            public List<AwsEndpoint> getClusterEndpoints() {
+                List<AwsEndpoint> result = localResolver.getClusterEndpoints();
+                if (result.isEmpty()) {
+                    result = remoteResolver.getClusterEndpoints();
+                }
+
+                return result;
+            }
+        };
+
+        return new AsyncResolver<>(
+                clientConfig,
+                new ZoneAffinityClusterResolver(compoundResolver, myZone, true),
+                executorService,
+                threadPoolExecutor
+        );
     }
 }

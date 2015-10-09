@@ -35,14 +35,26 @@ public class ZoneAffinityClusterResolver implements ClusterResolver<AwsEndpoint>
 
     private static final Logger logger = LoggerFactory.getLogger(ZoneAffinityClusterResolver.class);
 
-    private final List<AwsEndpoint> eurekaEndpoints;
-    private final String region;
+    private final ClusterResolver<AwsEndpoint> delegate;
+    private final String myZone;
+    private final boolean zoneAffinity;
 
     /**
      * A zoneAffinity defines zone affinity (true) or anti-affinity rules (false).
      */
     public ZoneAffinityClusterResolver(ClusterResolver<AwsEndpoint> delegate, String myZone, boolean zoneAffinity) {
-        this.region = delegate.getRegion();
+        this.delegate = delegate;
+        this.myZone = myZone;
+        this.zoneAffinity = zoneAffinity;
+    }
+
+    @Override
+    public String getRegion() {
+        return delegate.getRegion();
+    }
+
+    @Override
+    public List<AwsEndpoint> getClusterEndpoints() {
         List<AwsEndpoint>[] parts = ResolverUtils.splitByZone(delegate.getClusterEndpoints(), myZone);
         List<AwsEndpoint> myZoneEndpoints = parts[0];
         List<AwsEndpoint> remainingEndpoints = parts[1];
@@ -50,21 +62,12 @@ public class ZoneAffinityClusterResolver implements ClusterResolver<AwsEndpoint>
         if (!zoneAffinity) {
             Collections.reverse(randomizedList);
         }
-        this.eurekaEndpoints = randomizedList;
 
         if (logger.isDebugEnabled()) {
-            logger.debug("Local zone={}; resolved to: {}", myZone, eurekaEndpoints);
+            logger.debug("Local zone={}; resolved to: {}", myZone, randomizedList);
         }
-    }
 
-    @Override
-    public String getRegion() {
-        return region;
-    }
-
-    @Override
-    public List<AwsEndpoint> getClusterEndpoints() {
-        return eurekaEndpoints;
+        return randomizedList;
     }
 
     private static List<AwsEndpoint> randomizeAndMerge(List<AwsEndpoint> myZoneEndpoints, List<AwsEndpoint> remainingEndpoints) {

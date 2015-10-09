@@ -19,6 +19,7 @@ package com.netflix.discovery.shared.resolver;
 import java.util.List;
 
 import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
+import com.netflix.discovery.shared.resolver.aws.SampleCluster;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;

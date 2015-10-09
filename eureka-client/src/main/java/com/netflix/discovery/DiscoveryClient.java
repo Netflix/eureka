@@ -67,6 +67,7 @@ import com.netflix.discovery.endpoint.DnsResolver;
 import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.shared.resolver.aws.ApplicationsResolver;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpClients;
@@ -162,7 +163,8 @@ public class DiscoveryClient implements EurekaClient {
      * - scheduling a TimedSuperVisorTask
      */
     private final ScheduledExecutorService scheduler;
-    // additional executors for executing hearbeat and cacheRefresh tasks
+    // additional executors for supervised subtasks
+    private final ThreadPoolExecutor clusterResolverExecutor;
     private final ThreadPoolExecutor heartbeatExecutor;
     private final ThreadPoolExecutor cacheRefreshExecutor;
 
@@ -184,8 +186,8 @@ public class DiscoveryClient implements EurekaClient {
     private final EndpointUtils.ServiceUrlRandomizer urlRandomizer;
     private final Provider<BackupRegistry> backupRegistryProvider;
     private final ApacheHttpClient4 discoveryApacheClient;
-    private final EurekaHttpClient eurekaHttpClient;
-    private final EurekaHttpClientFactory eurekaHttpClientFactory;
+    private EurekaHttpClient eurekaHttpClient;
+    private EurekaHttpClientFactory eurekaHttpClientFactory;
     private EurekaJerseyClient discoveryJerseyClient;
 
     private volatile HealthCheckHandler healthCheckHandler;
@@ -321,7 +323,7 @@ public class DiscoveryClient implements EurekaClient {
         this.backupRegistryProvider = backupRegistryProvider;
 
         try {
-            scheduler = Executors.newScheduledThreadPool(3,
+            scheduler = Executors.newScheduledThreadPool(4,
                     new ThreadFactoryBuilder()
                             .setNameFormat("DiscoveryClient-%d")
                             .setDaemon(true)
@@ -337,11 +339,11 @@ public class DiscoveryClient implements EurekaClient {
             this.urlRandomizer = new EndpointUtils.InstanceInfoBasedUrlRandomizer(instanceInfo);
             String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
             final String zone = InstanceInfo.getZone(availZones, myInfo);
-            eurekaServiceUrls.set(timedGetDiscoveryServiceUrls(zone));
-            scheduler.scheduleWithFixedDelay(getServiceUrlUpdateTask(zone),
-                    clientConfig.getEurekaServiceUrlPollIntervalSeconds(),
-                    clientConfig.getEurekaServiceUrlPollIntervalSeconds(), TimeUnit.SECONDS);
             localRegionApps.set(new Applications());
+
+            clusterResolverExecutor = new ThreadPoolExecutor(
+                    1, 5, 0, TimeUnit.SECONDS,
+                    new SynchronousQueue<Runnable>());  // use direct handoff
 
             heartbeatExecutor = new ThreadPoolExecutor(
                     1, clientConfig.getHeartbeatExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
@@ -350,6 +352,8 @@ public class DiscoveryClient implements EurekaClient {
             cacheRefreshExecutor = new ThreadPoolExecutor(
                     1, clientConfig.getCacheRefreshExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
                     new SynchronousQueue<Runnable>());  // use direct handoff
+
+            scheduleServerEndpointTask(zone);
 
             fetchRegistryGeneration = new AtomicLong(0);
 
@@ -421,18 +425,6 @@ public class DiscoveryClient implements EurekaClient {
             throw new RuntimeException("Failed to initialize DiscoveryClient!", e);
         }
 
-        // Configure new transport layer (candidate for injecting in the future)
-        EurekaHttpClientFactory newEurekaHttpClientFactory = null;
-        EurekaHttpClient newEurekaHttpClient = null;
-        try {
-            newEurekaHttpClientFactory = EurekaHttpClients.createStandardClientFactory(clientConfig, applicationInfoManager.getInfo());
-            newEurekaHttpClient = newEurekaHttpClientFactory.newClient();
-        } catch (Exception e) {
-            logger.warn("Experimental transport initialization failure", e);
-        }
-        this.eurekaHttpClientFactory = newEurekaHttpClientFactory;
-        this.eurekaHttpClient = newEurekaHttpClient;
-
         if (clientConfig.shouldFetchRegistry() && !fetchRegistry(false)) {
             fetchRegistryFromBackup();
         }
@@ -450,6 +442,49 @@ public class DiscoveryClient implements EurekaClient {
         // to work with DI'd DiscoveryClient
         DiscoveryManager.getInstance().setDiscoveryClient(this);
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
+    }
+
+    private void scheduleServerEndpointTask(String zone) {
+
+        // old method (just from dns)
+        eurekaServiceUrls.set(timedGetDiscoveryServiceUrls(zone));
+        scheduler.scheduleWithFixedDelay(getServiceUrlUpdateTask(zone),
+                clientConfig.getEurekaServiceUrlPollIntervalSeconds(),
+                clientConfig.getEurekaServiceUrlPollIntervalSeconds(), TimeUnit.SECONDS);
+
+        // new method (resolve from primary servers for read)
+        // Configure new transport layer (candidate for injecting in the future)
+        if (clientConfig.shouldFetchRegistry()) {
+            EurekaHttpClientFactory newEurekaHttpClientFactory = null;
+            EurekaHttpClient newEurekaHttpClient = null;
+            try {
+                newEurekaHttpClientFactory = EurekaHttpClients.createStandardClientFactory(
+                        clientConfig,
+                        applicationInfoManager.getInfo(),
+                        new ApplicationsResolver.ApplicationsSource() {
+                            @Override
+                            public Applications getApplications(int stalenessThreshold, TimeUnit timeUnit) {
+                                long thresholdInMs = TimeUnit.MILLISECONDS.convert(stalenessThreshold, timeUnit);
+                                long delay = getLastSuccessfulRegistryFetchTimePeriod();
+                                if (delay > thresholdInMs) {
+                                    logger.info("Local registry is too stale for local lookup. Threshold:{}, actual:{}",
+                                            thresholdInMs, delay);
+                                    return null;
+                                } else {
+                                    return localRegionApps.get();
+                                }
+                            }
+                        },
+                        scheduler,
+                        clusterResolverExecutor
+                );
+                newEurekaHttpClient = newEurekaHttpClientFactory.newClient();
+            } catch (Exception e) {
+                logger.warn("Experimental transport initialization failure", e);
+            }
+            this.eurekaHttpClientFactory = newEurekaHttpClientFactory;
+            this.eurekaHttpClient = newEurekaHttpClient;
+        }
     }
 
     /*
@@ -842,6 +877,7 @@ public class DiscoveryClient implements EurekaClient {
         }
 
         cancelScheduledTasks();
+        clusterResolverExecutor.shutdown();
 
         // If APPINFO was registered
         if (instanceInfo != null && shouldRegister(instanceInfo)) {
@@ -1991,10 +2027,15 @@ public class DiscoveryClient implements EurekaClient {
         return delay;
     }
 
+    public long getLastSuccessfulRegistryFetchTimePeriod() {
+        return lastSuccessfulRegistryFetchTimestamp < 0 ? 0 : System.currentTimeMillis() - lastSuccessfulRegistryFetchTimestamp;
+    }
+
+    // for metrics only
     @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "lastSuccessfulRegistryFetchTimePeriod",
             description = "How much time has passed from last successful local registry update", type = DataSourceType.GAUGE)
-    public long getLastSuccessfulRegistryFetchTimePeriod() {
-        long delay = lastSuccessfulRegistryFetchTimestamp < 0 ? 0 : System.currentTimeMillis() - lastSuccessfulRegistryFetchTimestamp;
+    private long getLastSuccessfulRegistryFetchTimePeriodInternal() {
+        long delay = getLastSuccessfulHeartbeatTimePeriod();
         registryStalenessMonitor.update(delay);
         return delay;
     }

@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.netflix.discovery.shared.resolver;
+package com.netflix.discovery.shared.resolver.aws;
 
 import java.util.List;
 
-import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
-import com.netflix.discovery.shared.resolver.aws.ZoneAffinityClusterResolver;
+import com.netflix.discovery.shared.resolver.StaticClusterResolver;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
