@@ -57,6 +57,7 @@ public class DiscoveryClientResource extends ExternalResource {
     private EurekaClient client;
 
     private final List<DiscoveryClientResource> forkedDiscoveryClientResources = new ArrayList<>();
+    private ApplicationInfoManager applicationInfoManager;
 
     DiscoveryClientResource(DiscoveryClientRuleBuilder builder) {
         this.registrationEnabled = builder.registrationEnabled;
@@ -79,10 +80,14 @@ public class DiscoveryClientResource extends ExternalResource {
         return eventBus;
     }
 
+    public ApplicationInfoManager getApplicationInfoManager() {
+        return applicationInfoManager;
+    }
+
     public EurekaClient getClient() {
         if (client == null) {
             try {
-                ApplicationInfoManager applicationInfoManager = createApplicationManager();
+                applicationInfoManager = createApplicationManager();
                 EurekaClientConfig clientConfig = createEurekaClientConfig();
 
                 DiscoveryClientOptionalArgs optionalArgs = new DiscoveryClientOptionalArgs();
@@ -136,6 +141,7 @@ public class DiscoveryClientResource extends ExternalResource {
     }
 
     private EurekaClientConfig createEurekaClientConfig() throws Exception {
+        // Cluster connectivity
         String serviceURI;
         if (portResolverCallable != null) {
             serviceURI = "http://localhost:" + portResolverCallable.call() + "/eureka/v2/";
@@ -153,7 +159,12 @@ public class DiscoveryClientResource extends ExternalResource {
             bindProperty(EUREKA_TEST_NAMESPACE + "fetchRemoteRegionsRegistry", regions.substring(1));
         }
 
+        // Registration
         bindProperty(EUREKA_TEST_NAMESPACE + "registration.enabled", Boolean.toString(registrationEnabled));
+        bindProperty(EUREKA_TEST_NAMESPACE + "appinfo.initial.replicate.time", Integer.toString(0));
+        bindProperty(EUREKA_TEST_NAMESPACE + "appinfo.replicate.interval", Integer.toString(1));
+
+        // Registry fetch
         bindProperty(EUREKA_TEST_NAMESPACE + "shouldFetchRegistry", Boolean.toString(registryFetchEnabled));
 
         bindProperty(EUREKA_TEST_NAMESPACE + "client.refresh.interval", Integer.toString(1));
