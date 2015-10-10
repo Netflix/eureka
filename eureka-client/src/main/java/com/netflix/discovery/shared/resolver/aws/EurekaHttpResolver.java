@@ -3,7 +3,7 @@ package com.netflix.discovery.shared.resolver.aws;
 import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
-import com.netflix.discovery.shared.Application;
+import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.resolver.ClosableResolver;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
@@ -29,22 +29,30 @@ public class EurekaHttpResolver implements ClosableResolver<AwsEndpoint> {
     private static final Logger logger = LoggerFactory.getLogger(EurekaHttpResolver.class);
 
     private final EurekaClientConfig clientConfig;
-    private final InstanceInfo myInstanceInfo;
-    private final String appName;
+    private final String vipAddress;
     private final EurekaHttpClientFactory clientFactory;
 
     public EurekaHttpResolver(EurekaClientConfig clientConfig,
-                              InstanceInfo myInstanceInfo,
-                              ClusterResolver<EurekaEndpoint> bootstrapResolver,
-                              String appName) {
-        this.clientConfig = clientConfig;
-        this.myInstanceInfo = myInstanceInfo;
-        this.appName = appName;
-        this.clientFactory = RetryableEurekaHttpClient.createFactory(
-                bootstrapResolver,
-                JerseyEurekaHttpClientFactory.create(clientConfig, myInstanceInfo, resolverIdentity),
-                ServerStatusEvaluators.httpSuccessEvaluator()
+                                   InstanceInfo myInstanceInfo,
+                                   ClusterResolver<EurekaEndpoint> bootstrapResolver,
+                                   String vipAddress) {
+        this(
+                clientConfig,
+                RetryableEurekaHttpClient.createFactory(
+                        bootstrapResolver,
+                        JerseyEurekaHttpClientFactory.create(clientConfig, myInstanceInfo, resolverIdentity(myInstanceInfo.getId())),
+                        ServerStatusEvaluators.httpSuccessEvaluator()
+                ),
+                vipAddress
         );
+    }
+
+    /* visible for testing */ EurekaHttpResolver(EurekaClientConfig clientConfig,
+                                                 EurekaHttpClientFactory clientFactory,
+                                                 String vipAddress) {
+        this.clientConfig = clientConfig;
+        this.clientFactory = clientFactory;
+        this.vipAddress = vipAddress;
     }
 
     @Override
@@ -66,22 +74,21 @@ public class EurekaHttpResolver implements ClosableResolver<AwsEndpoint> {
         EurekaHttpClient client = null;
         try {
             client = clientFactory.newClient();
-            EurekaHttpResponse<Application> response = client.getApplication(appName);
+            EurekaHttpResponse<Applications> response = client.getVip(vipAddress);
             if (validResponse(response)) {
-                Application application = response.getEntity();
-                if (application != null) {
-                    List<InstanceInfo> validInstanceInfos = application.getInstances();
+                Applications applications = response.getEntity();
+                if (applications != null) {
+                    applications.shuffleInstances(true);  // filter out non-UP instances
+                    List<InstanceInfo> validInstanceInfos = applications.getInstancesByVirtualHostName(vipAddress);
                     for (InstanceInfo instanceInfo : validInstanceInfos) {
-                        if (instanceInfo.getStatus() == InstanceInfo.InstanceStatus.UP) {
                             result.add(ResolverUtils.instanceInfoToEndpoint(clientConfig, instanceInfo));
-                        }
                     }
                     logger.debug("Retrieved endpoint list {}", result);
                     return result;
                 }
             }
         } catch (Exception e) {
-            logger.error("Error contacting server for endpoints with appName:{}", appName, e);
+            logger.error("Error contacting server for endpoints with vipAddress:{}", vipAddress, e);
         } finally {
             if (client != null) {
                 client.shutdown();
@@ -101,27 +108,28 @@ public class EurekaHttpResolver implements ClosableResolver<AwsEndpoint> {
         return responseCode >= 200 && responseCode < 300;
     }
 
+    private static AbstractEurekaIdentity resolverIdentity(final String id) {
+        return new AbstractEurekaIdentity() {
+            @Override
+            public String getName() {
+                return EurekaHttpResolver.class.getSimpleName();
+            }
 
-    private final AbstractEurekaIdentity resolverIdentity = new AbstractEurekaIdentity() {
-        @Override
-        public String getName() {
-            return EurekaHttpResolver.class.getSimpleName();
-        }
+            @Override
+            public String getVersion() {
+                return "1.0";
+            }
 
-        @Override
-        public String getVersion() {
-            return "1.0";
-        }
+            @Nullable
+            @Override
+            public String getId() {
+                return id;
+            }
 
-        @Nullable
-        @Override
-        public String getId() {
-            return myInstanceInfo.getId();
-        }
-
-        @Override
-        public String toString() {
-            return getName() + "-" + getVersion() + "-" + getId();
-        }
-    };
+            @Override
+            public String toString() {
+                return getName() + "-" + getVersion() + "-" + getId();
+            }
+        };
+    }
 }

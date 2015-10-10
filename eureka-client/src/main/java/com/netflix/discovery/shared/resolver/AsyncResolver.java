@@ -9,10 +9,12 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -24,7 +26,9 @@ import java.util.concurrent.atomic.AtomicReference;
 public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver<T> {
     private static final Logger logger = LoggerFactory.getLogger(AsyncResolver.class);
 
-    private volatile boolean warmedUp = false;
+    // Note that warm up is best effort. If the resolver is accessed by multiple threads pre warmup, only the first
+    // thread will block for the warmup (up to the configurable timeout).
+    private final AtomicBoolean warmedUp = new AtomicBoolean(false);
 
     private final EurekaTransportConfig transportConfig;
     private final ClusterResolver<T> delegate;
@@ -39,7 +43,7 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
         this.delegate = delegate;
         this.executorService = Executors.newScheduledThreadPool(1,
                 new ThreadFactoryBuilder()
-                        .setNameFormat("AsynResolver-%d")
+                        .setNameFormat("AsyncResolver-%d")
                         .setDaemon(true)
                         .build());
 
@@ -47,22 +51,24 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
                 1, transportConfig.getAsyncExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
                 new SynchronousQueue<Runnable>());  // use direct handoff
 
-        this.resultsRef = new AtomicReference<>(Collections.<T>emptyList());
         this.backgroundTask = new TimedSupervisorTask(
                 this.getClass().getSimpleName(),
                 executorService,
                 threadPoolExecutor,
-                transportConfig.getAsyncResolverRefreshIntervalSeconds(),
-                TimeUnit.SECONDS,
+                transportConfig.getAsyncResolverRefreshIntervalMs(),
+                TimeUnit.MILLISECONDS,
                 5,
                 updateTask
         );
+
+        this.resultsRef = new AtomicReference<>(Collections.<T>emptyList());
     }
 
     @Override
     public void shutdown() {
         executorService.shutdown();
         threadPoolExecutor.shutdown();
+        backgroundTask.cancel();
     }
 
 
@@ -73,13 +79,26 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
 
     @Override
     public List<T> getClusterEndpoints() {
-        if (!warmedUp) {
-            updateTask.run();
+        if (warmedUp.compareAndSet(false, true)) {
+            doWarmUp();
             executorService.schedule(
-                    backgroundTask, transportConfig.getAsyncResolverRefreshIntervalSeconds(), TimeUnit.SECONDS);
-            warmedUp = true;
+                    backgroundTask, transportConfig.getAsyncResolverRefreshIntervalMs(), TimeUnit.MILLISECONDS);
         }
         return resultsRef.get();
+    }
+
+    /* visible for testing */ void doWarmUp() {
+        Future future = null;
+        try {
+            future = threadPoolExecutor.submit(updateTask);
+            future.get(transportConfig.getAsyncResolverWarmupTimeoutMs(), TimeUnit.MILLISECONDS);  // block until done or timeout
+        } catch (Exception e) {
+            logger.warn("Best effort warm up failed", e);
+        } finally {
+            if (future != null) {
+                future.cancel(true);
+            }
+        }
     }
 
     private final Runnable updateTask = new Runnable() {
@@ -87,7 +106,11 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
         public void run() {
             try {
                 List<T> newList = delegate.getClusterEndpoints();
-                resultsRef.getAndSet(newList);
+                if (newList != null) {
+                    resultsRef.getAndSet(newList);
+                } else {
+                    logger.warn("Delegate returned null list of cluster endpoints");
+                }
             } catch (Exception e) {
                 logger.warn("Failed to retrieve cluster endpoints from the delegate", e);
             }

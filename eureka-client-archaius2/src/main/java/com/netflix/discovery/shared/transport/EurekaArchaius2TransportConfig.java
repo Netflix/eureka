@@ -35,8 +35,18 @@ public class EurekaArchaius2TransportConfig implements EurekaTransportConfig {
     }
 
     @Override
-    public int getAsyncResolverRefreshIntervalSeconds() {
-        return config.getInteger("asyncResolverRefreshIntervalSeconds", 5 * 60);
+    public int getApplicationsResolverDataStalenessThresholdSeconds() {
+        return config.getInteger("applicationsResolverDataStalenessThresholdSeconds", 5*60);
+    }
+
+    @Override
+    public int getAsyncResolverRefreshIntervalMs() {
+        return config.getInteger("asyncResolverRefreshIntervalMs", 5 * 60 * 1000);
+    }
+
+    @Override
+    public int getAsyncResolverWarmupTimeoutMs() {
+        return config.getInteger("asyncResolverWarmupTimeoutMs", 1000);
     }
 
     @Override

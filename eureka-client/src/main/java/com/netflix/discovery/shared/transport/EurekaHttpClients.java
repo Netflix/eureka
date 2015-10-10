@@ -20,6 +20,7 @@ import java.util.List;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.resolver.AsyncResolver;
 import com.netflix.discovery.shared.resolver.ClosableResolver;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
@@ -64,7 +65,6 @@ public final class EurekaHttpClients {
                                                                final EurekaTransportConfig transportConfig,
                                                                final InstanceInfo myInstanceInfo,
                                                                final ClusterResolver<EurekaEndpoint> clusterResolver) {
-        final ClosableResolver<EurekaEndpoint> closableResolver = wrap(clusterResolver);
         final TransportClientFactory jerseyFactory = JerseyEurekaHttpClientFactory.create(clientConfig, myInstanceInfo);
         final TransportClientFactory metricsFactory = MetricsCollectingEurekaHttpClient.createFactory(jerseyFactory);
 
@@ -73,14 +73,14 @@ public final class EurekaHttpClients {
             public EurekaHttpClient newClient() {
                 SessionedEurekaHttpClient registrationClient = new SessionedEurekaHttpClient(
                         RetryableEurekaHttpClient.createFactory(
-                                closableResolver,
+                                clusterResolver,
                                 RedirectingEurekaHttpClient.createFactory(metricsFactory),
                                 ServerStatusEvaluators.legacyEvaluator()),
                         transportConfig.getSessionedClientReconnectIntervalSeconds() * 1000
                 );
                 SessionedEurekaHttpClient queryClient = new SessionedEurekaHttpClient(
                         RetryableEurekaHttpClient.createFactory(
-                                closableResolver,
+                                clusterResolver,
                                 RedirectingEurekaHttpClient.createFactory(metricsFactory),
                                 ServerStatusEvaluators.legacyEvaluator()),
                         transportConfig.getSessionedClientReconnectIntervalSeconds() * 1000
@@ -91,7 +91,7 @@ public final class EurekaHttpClients {
 
             @Override
             public void shutdown() {
-                closableResolver.shutdown();
+                wrapClosable(clusterResolver).shutdown();
                 jerseyFactory.shutdown();
                 metricsFactory.shutdown();
             }
@@ -118,6 +118,18 @@ public final class EurekaHttpClients {
                 transportConfig,
                 applicationsSource
         );
+
+        return createStandardClusterResolver(remoteResolver, localResolver, clientConfig, transportConfig, myInstanceInfo);
+    }
+
+    /* testing */ static ClosableResolver<AwsEndpoint> createStandardClusterResolver(
+            final EurekaHttpResolver remoteResolver,
+            final ApplicationsResolver localResolver,
+            final EurekaClientConfig clientConfig,
+            final EurekaTransportConfig transportConfig,
+            final InstanceInfo myInstanceInfo) {
+        String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
+        String myZone = InstanceInfo.getZone(availZones, myInstanceInfo);
 
         ClusterResolver<AwsEndpoint> compoundResolver = new ClusterResolver<AwsEndpoint>() {
             @Override
@@ -161,7 +173,7 @@ public final class EurekaHttpClients {
     }
 
 
-    static <T extends EurekaEndpoint> ClosableResolver<T> wrap(final ClusterResolver<T> clusterResolver) {
+    static <T extends EurekaEndpoint> ClosableResolver<T> wrapClosable(final ClusterResolver<T> clusterResolver) {
         if (clusterResolver instanceof ClosableResolver) {
             return (ClosableResolver) clusterResolver;
         }

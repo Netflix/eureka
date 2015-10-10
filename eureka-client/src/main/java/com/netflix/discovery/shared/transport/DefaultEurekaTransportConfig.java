@@ -29,8 +29,18 @@ public class DefaultEurekaTransportConfig implements EurekaTransportConfig {
     }
 
     @Override
-    public int getAsyncResolverRefreshIntervalSeconds() {
-        return configInstance.getIntProperty(namespace + "asyncResolverRefreshIntervalSeconds", 5*60).get();
+    public int getApplicationsResolverDataStalenessThresholdSeconds() {
+        return configInstance.getIntProperty(namespace + "applicationsResolverDataStalenessThresholdSeconds", 5*60).get();
+    }
+
+    @Override
+    public int getAsyncResolverRefreshIntervalMs() {
+        return configInstance.getIntProperty(namespace + "asyncResolverRefreshIntervalMs", 5*60*1000).get();
+    }
+
+    @Override
+    public int getAsyncResolverWarmupTimeoutMs() {
+        return configInstance.getIntProperty(namespace + "asyncResolverWarmupTimeoutMs", 1000).get();
     }
 
     @Override

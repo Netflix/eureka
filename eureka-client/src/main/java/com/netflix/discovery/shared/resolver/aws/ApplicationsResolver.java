@@ -40,7 +40,9 @@ public class ApplicationsResolver implements ClusterResolver<AwsEndpoint> {
     public List<AwsEndpoint> getClusterEndpoints() {
         List<AwsEndpoint> result = new ArrayList<>();
 
-        Applications applications = applicationsSource.getApplications(5, TimeUnit.MINUTES);
+        Applications applications = applicationsSource.getApplications(
+                transportConfig.getApplicationsResolverDataStalenessThresholdSeconds(), TimeUnit.SECONDS);
+
         String vipAddress = transportConfig.getReadClusterVip();
         if (applications != null && vipAddress != null) {
             List<InstanceInfo> validInstanceInfos = applications.getInstancesByVirtualHostName(vipAddress);

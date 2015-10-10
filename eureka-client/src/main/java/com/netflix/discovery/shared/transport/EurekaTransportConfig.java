@@ -18,9 +18,19 @@ public interface EurekaTransportConfig {
     int getBootstrapResolverRefreshIntervalSeconds();
 
     /**
+     * @return the max staleness threshold tolerated by the applications resolver
+     */
+    int getApplicationsResolverDataStalenessThresholdSeconds();
+
+    /**
      * @return the interval to poll for the async resolver.
      */
-    int getAsyncResolverRefreshIntervalSeconds();
+    int getAsyncResolverRefreshIntervalMs();
+
+    /**
+     * @return the async refresh timeout threshold in ms.
+     */
+    int getAsyncResolverWarmupTimeoutMs();
 
     /**
      * @return the max threadpool size for the async resolver's executor
