@@ -41,6 +41,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -67,10 +68,12 @@ import com.netflix.discovery.endpoint.DnsResolver;
 import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.shared.resolver.aws.ApplicationsResolver;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpClients;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
+import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
 import com.netflix.discovery.util.ThresholdLevelsMetric;
@@ -129,8 +132,6 @@ public class DiscoveryClient implements EurekaClient {
 
     private static final Pattern REDIRECT_PATH_REGEX = Pattern.compile("(.*/v2/)apps(/.*)?$");
 
-    protected static EurekaClientConfig clientConfig;
-
     // Timers
     private static final String PREFIX = "DiscoveryClient_";
     private final com.netflix.servo.monitor.Timer GET_SERVICE_URLS_DNS_TIMER = Monitors
@@ -162,7 +163,7 @@ public class DiscoveryClient implements EurekaClient {
      * - scheduling a TimedSuperVisorTask
      */
     private final ScheduledExecutorService scheduler;
-    // additional executors for executing hearbeat and cacheRefresh tasks
+    // additional executors for supervised subtasks
     private final ThreadPoolExecutor heartbeatExecutor;
     private final ThreadPoolExecutor cacheRefreshExecutor;
 
@@ -184,8 +185,8 @@ public class DiscoveryClient implements EurekaClient {
     private final EndpointUtils.ServiceUrlRandomizer urlRandomizer;
     private final Provider<BackupRegistry> backupRegistryProvider;
     private final ApacheHttpClient4 discoveryApacheClient;
-    private final EurekaHttpClient eurekaHttpClient;
-    private final EurekaHttpClientFactory eurekaHttpClientFactory;
+    private EurekaHttpClient eurekaHttpClient;
+    private EurekaHttpClientFactory eurekaHttpClientFactory;
     private EurekaJerseyClient discoveryJerseyClient;
 
     private volatile HealthCheckHandler healthCheckHandler;
@@ -202,6 +203,11 @@ public class DiscoveryClient implements EurekaClient {
     private volatile long lastSuccessfulHeartbeatTimestamp = -1;
     private final ThresholdLevelsMetric heartbeatStalenessMonitor;
     private final ThresholdLevelsMetric registryStalenessMonitor;
+
+    private final AtomicBoolean isShutdown = new AtomicBoolean(false);
+
+    protected final EurekaClientConfig clientConfig;
+    protected final EurekaTransportConfig transportConfig;
 
     private enum Action {
         Register, Cancel, Renew, Refresh, Refresh_Delta
@@ -271,14 +277,14 @@ public class DiscoveryClient implements EurekaClient {
         this(applicationInfoManager, config, null);
     }
 
-    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
+    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
         this(applicationInfoManager, config, args, new Provider<BackupRegistry>() {
             private volatile BackupRegistry backupRegistryInstance;
 
             @Override
             public synchronized BackupRegistry get() {
                 if (backupRegistryInstance == null) {
-                    String backupRegistryClassName = clientConfig.getBackupRegistryImpl();
+                    String backupRegistryClassName = config.getBackupRegistryImpl();
                     if (null != backupRegistryClassName) {
                         try {
                             backupRegistryInstance = (BackupRegistry) Class.forName(backupRegistryClassName).newInstance();
@@ -327,6 +333,7 @@ public class DiscoveryClient implements EurekaClient {
                             .setDaemon(true)
                             .build());
             clientConfig = config;
+            transportConfig = config.getTransportConfig();
             instanceInfo = myInfo;
             if (myInfo != null) {
                 appPathIdentifier = instanceInfo.getAppName() + "/" + instanceInfo.getId();
@@ -337,10 +344,6 @@ public class DiscoveryClient implements EurekaClient {
             this.urlRandomizer = new EndpointUtils.InstanceInfoBasedUrlRandomizer(instanceInfo);
             String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
             final String zone = InstanceInfo.getZone(availZones, myInfo);
-            eurekaServiceUrls.set(timedGetDiscoveryServiceUrls(zone));
-            scheduler.scheduleWithFixedDelay(getServiceUrlUpdateTask(zone),
-                    clientConfig.getEurekaServiceUrlPollIntervalSeconds(),
-                    clientConfig.getEurekaServiceUrlPollIntervalSeconds(), TimeUnit.SECONDS);
             localRegionApps.set(new Applications());
 
             heartbeatExecutor = new ThreadPoolExecutor(
@@ -350,6 +353,8 @@ public class DiscoveryClient implements EurekaClient {
             cacheRefreshExecutor = new ThreadPoolExecutor(
                     1, clientConfig.getCacheRefreshExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
                     new SynchronousQueue<Runnable>());  // use direct handoff
+
+            scheduleServerEndpointTask(zone);
 
             fetchRegistryGeneration = new AtomicLong(0);
 
@@ -421,18 +426,6 @@ public class DiscoveryClient implements EurekaClient {
             throw new RuntimeException("Failed to initialize DiscoveryClient!", e);
         }
 
-        // Configure new transport layer (candidate for injecting in the future)
-        EurekaHttpClientFactory newEurekaHttpClientFactory = null;
-        EurekaHttpClient newEurekaHttpClient = null;
-        try {
-            newEurekaHttpClientFactory = EurekaHttpClients.createStandardClientFactory(clientConfig, applicationInfoManager);
-            newEurekaHttpClient = newEurekaHttpClientFactory.create();
-        } catch (Exception e) {
-            logger.warn("Experimental transport initialization failure", e);
-        }
-        this.eurekaHttpClientFactory = newEurekaHttpClientFactory;
-        this.eurekaHttpClient = newEurekaHttpClient;
-
         if (clientConfig.shouldFetchRegistry() && !fetchRegistry(false)) {
             fetchRegistryFromBackup();
         }
@@ -450,6 +443,48 @@ public class DiscoveryClient implements EurekaClient {
         // to work with DI'd DiscoveryClient
         DiscoveryManager.getInstance().setDiscoveryClient(this);
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
+    }
+
+    private void scheduleServerEndpointTask(String zone) {
+
+        // old method (just from dns)
+        eurekaServiceUrls.set(timedGetDiscoveryServiceUrls(zone));
+        scheduler.scheduleWithFixedDelay(getServiceUrlUpdateTask(zone),
+                clientConfig.getEurekaServiceUrlPollIntervalSeconds(),
+                clientConfig.getEurekaServiceUrlPollIntervalSeconds(), TimeUnit.SECONDS);
+
+        // new method (resolve from primary servers for read)
+        // Configure new transport layer (candidate for injecting in the future)
+        if (clientConfig.shouldFetchRegistry()) {
+            EurekaHttpClientFactory newEurekaHttpClientFactory = null;
+            EurekaHttpClient newEurekaHttpClient = null;
+            try {
+                newEurekaHttpClientFactory = EurekaHttpClients.createStandardClientFactory(
+                        clientConfig,
+                        transportConfig,
+                        applicationInfoManager.getInfo(),
+                        new ApplicationsResolver.ApplicationsSource() {
+                            @Override
+                            public Applications getApplications(int stalenessThreshold, TimeUnit timeUnit) {
+                                long thresholdInMs = TimeUnit.MILLISECONDS.convert(stalenessThreshold, timeUnit);
+                                long delay = getLastSuccessfulRegistryFetchTimePeriod();
+                                if (delay > thresholdInMs) {
+                                    logger.info("Local registry is too stale for local lookup. Threshold:{}, actual:{}",
+                                            thresholdInMs, delay);
+                                    return null;
+                                } else {
+                                    return localRegionApps.get();
+                                }
+                            }
+                        }
+                );
+                newEurekaHttpClient = newEurekaHttpClientFactory.newClient();
+            } catch (Exception e) {
+                logger.warn("Experimental transport initialization failure", e);
+            }
+            this.eurekaHttpClientFactory = newEurekaHttpClientFactory;
+            this.eurekaHttpClient = newEurekaHttpClient;
+        }
     }
 
     /*
@@ -823,44 +858,38 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     /**
-     * @deprecated use {@link #getServiceUrlsFromConfig(String, boolean)} instead.
-     */
-    @Deprecated
-    public static List<String> getEurekaServiceUrlsFromConfig(String instanceZone, boolean preferSameZone) {
-        return EndpointUtils.getServiceUrlsFromConfig(clientConfig, instanceZone, preferSameZone);
-    }
-
-    /**
      * Shuts down Eureka Client. Also sends a deregistration request to the
      * eureka server.
      */
     @PreDestroy
     @Override
     public void shutdown() {
-        if (statusChangeListener != null && applicationInfoManager != null) {
-            applicationInfoManager.unregisterStatusChangeListener(statusChangeListener.getId());
-        }
+        if (isShutdown.compareAndSet(false, true)) {
+            if (statusChangeListener != null && applicationInfoManager != null) {
+                applicationInfoManager.unregisterStatusChangeListener(statusChangeListener.getId());
+            }
 
-        cancelScheduledTasks();
+            cancelScheduledTasks();
 
-        // If APPINFO was registered
-        if (instanceInfo != null && shouldRegister(instanceInfo)) {
-            instanceInfo.setStatus(InstanceStatus.DOWN);
-            unregister();
-        }
+            // If APPINFO was registered
+            if (instanceInfo != null && shouldRegister(instanceInfo)) {
+                instanceInfo.setStatus(InstanceStatus.DOWN);
+                unregister();
+            }
 
-        if (discoveryJerseyClient != null) {
-            discoveryJerseyClient.destroyResources();
-        }
-        if (eurekaHttpClientFactory != null) {
-            eurekaHttpClientFactory.shutdown();
-        }
-        if (eurekaHttpClient != null) {
-            eurekaHttpClient.shutdown();
-        }
+            if (discoveryJerseyClient != null) {
+                discoveryJerseyClient.destroyResources();
+            }
+            if (eurekaHttpClientFactory != null) {
+                eurekaHttpClientFactory.shutdown();
+            }
+            if (eurekaHttpClient != null) {
+                eurekaHttpClient.shutdown();
+            }
 
-        heartbeatStalenessMonitor.shutdown();
-        registryStalenessMonitor.shutdown();
+            heartbeatStalenessMonitor.shutdown();
+            registryStalenessMonitor.shutdown();
+        }
     }
 
     /**
@@ -1610,38 +1639,6 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     /**
-     * @deprecated see {@link com.netflix.appinfo.InstanceInfo#getZone(String[], com.netflix.appinfo.InstanceInfo)}
-     *
-     * Get the zone that a particular instance is in.
-     *
-     * @param myInfo
-     *            - The InstanceInfo object of the instance.
-     * @return - The zone in which the particular instance belongs to.
-     */
-    @Deprecated
-    public static String getZone(InstanceInfo myInfo) {
-        String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
-        return InstanceInfo.getZone(availZones, myInfo);
-    }
-
-    /**
-     * @deprecated see replacement in {@link com.netflix.discovery.endpoint.EndpointUtils}
-     *
-     * Get the region that this particular instance is in.
-     *
-     * @return - The region in which the particular instance belongs to.
-     */
-    @Deprecated
-    public static String getRegion() {
-        String region = clientConfig.getRegion();
-        if (region == null) {
-            region = "default";
-        }
-        region = region.trim().toLowerCase();
-        return region;
-    }
-
-    /**
      * @deprecated see replacement in {@link com.netflix.discovery.endpoint.EndpointUtils}
      *
      * Get the list of EC2 URLs given the zone name.
@@ -1991,10 +1988,15 @@ public class DiscoveryClient implements EurekaClient {
         return delay;
     }
 
+    public long getLastSuccessfulRegistryFetchTimePeriod() {
+        return lastSuccessfulRegistryFetchTimestamp < 0 ? 0 : System.currentTimeMillis() - lastSuccessfulRegistryFetchTimestamp;
+    }
+
+    // for metrics only
     @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "lastSuccessfulRegistryFetchTimePeriod",
             description = "How much time has passed from last successful local registry update", type = DataSourceType.GAUGE)
-    public long getLastSuccessfulRegistryFetchTimePeriod() {
-        long delay = lastSuccessfulRegistryFetchTimestamp < 0 ? 0 : System.currentTimeMillis() - lastSuccessfulRegistryFetchTimestamp;
+    private long getLastSuccessfulRegistryFetchTimePeriodInternal() {
+        long delay = getLastSuccessfulHeartbeatTimePeriod();
         registryStalenessMonitor.update(delay);
         return delay;
     }

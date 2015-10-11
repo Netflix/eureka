@@ -21,9 +21,11 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.discovery.EurekaClientNames;
+import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
+import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.decorator.MetricsCollectingEurekaHttpClient.EurekaHttpClientRequestMetrics.Status;
 import com.netflix.discovery.util.ExceptionsMetric;
 import com.netflix.discovery.util.ServoUtil;
@@ -93,9 +95,31 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
         final ExceptionsMetric exceptionMetrics = new ExceptionsMetric(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "exceptions");
         return new EurekaHttpClientFactory() {
             @Override
-            public EurekaHttpClient create(String... serviceUrls) {
+            public EurekaHttpClient newClient() {
                 return new MetricsCollectingEurekaHttpClient(
-                        delegateFactory.create(serviceUrls),
+                        delegateFactory.newClient(),
+                        metricsByRequestType,
+                        exceptionMetrics,
+                        false
+                );
+            }
+
+            @Override
+            public void shutdown() {
+                shutdownMetrics(metricsByRequestType);
+                exceptionMetrics.shutdown();
+            }
+        };
+    }
+
+    public static TransportClientFactory createFactory(final TransportClientFactory delegateFactory) {
+        final Map<RequestType, EurekaHttpClientRequestMetrics> metricsByRequestType = initializeMetrics();
+        final ExceptionsMetric exceptionMetrics = new ExceptionsMetric(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "exceptions");
+        return new TransportClientFactory() {
+            @Override
+            public EurekaHttpClient newClient(EurekaEndpoint endpoint) {
+                return new MetricsCollectingEurekaHttpClient(
+                        delegateFactory.newClient(endpoint),
                         metricsByRequestType,
                         exceptionMetrics,
                         false

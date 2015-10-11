@@ -24,6 +24,11 @@ import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.netflix.appinfo.AmazonInfo;
+import com.netflix.appinfo.DataCenterInfo;
+import com.netflix.appinfo.InstanceInfo;
+import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
 import com.netflix.discovery.util.SystemUtil;
 
 /**
@@ -42,17 +47,17 @@ public final class ResolverUtils {
      * @return returns two element array with first item containing list of endpoints from client's zone,
      *         and in the second list all the remaining ones
      */
-    public static List<EurekaEndpoint>[] splitByZone(List<EurekaEndpoint> eurekaEndpoints, String myZone) {
+    public static List<AwsEndpoint>[] splitByZone(List<AwsEndpoint> eurekaEndpoints, String myZone) {
         if (eurekaEndpoints.isEmpty()) {
             return new List[]{Collections.emptyList(), Collections.emptyList()};
         }
         if (myZone == null) {
             return new List[]{Collections.emptyList(), new ArrayList<>(eurekaEndpoints)};
         }
-        List<EurekaEndpoint> myZoneList = new ArrayList<>(eurekaEndpoints.size());
-        List<EurekaEndpoint> remainingZonesList = new ArrayList<>(eurekaEndpoints.size());
+        List<AwsEndpoint> myZoneList = new ArrayList<>(eurekaEndpoints.size());
+        List<AwsEndpoint> remainingZonesList = new ArrayList<>(eurekaEndpoints.size());
 
-        for (EurekaEndpoint endpoint : eurekaEndpoints) {
+        for (AwsEndpoint endpoint : eurekaEndpoints) {
             if (myZone.equalsIgnoreCase(endpoint.getZone())) {
                 myZoneList.add(endpoint);
             } else {
@@ -75,8 +80,8 @@ public final class ResolverUtils {
      *
      * @return a copy of the original list with elements in the random order
      */
-    public static List<EurekaEndpoint> randomize(List<EurekaEndpoint> list) {
-        List<EurekaEndpoint> randomList = new ArrayList<>(list);
+    public static <T extends EurekaEndpoint> List<T> randomize(List<T> list) {
+        List<T> randomList = new ArrayList<>(list);
         if (randomList.size() < 2) {
             return randomList;
         }
@@ -94,12 +99,29 @@ public final class ResolverUtils {
     /**
      * @return true if both list are the same, possibly in a different order
      */
-    public static boolean identical(List<EurekaEndpoint> firstList, List<EurekaEndpoint> secondList) {
+    public static <T extends EurekaEndpoint> boolean identical(List<T> firstList, List<T> secondList) {
         if (firstList.size() != secondList.size()) {
             return false;
         }
-        HashSet<EurekaEndpoint> compareSet = new HashSet<>(firstList);
+        HashSet<T> compareSet = new HashSet<>(firstList);
         compareSet.removeAll(secondList);
         return compareSet.isEmpty();
+    }
+
+    public static AwsEndpoint instanceInfoToEndpoint(EurekaClientConfig clientConfig, InstanceInfo instanceInfo) {
+        String zone = null;
+        DataCenterInfo dataCenterInfo = instanceInfo.getDataCenterInfo();
+        if (dataCenterInfo instanceof AmazonInfo) {
+            zone = ((AmazonInfo) dataCenterInfo).get(AmazonInfo.MetaDataKey.availabilityZone);
+        }
+
+        return new AwsEndpoint(
+                instanceInfo.getHostName(),
+                instanceInfo.getPort(),
+                false,
+                clientConfig.getEurekaServerURLContext(),
+                clientConfig.getRegion(),
+                zone
+        );
     }
 }

@@ -18,6 +18,8 @@ package com.netflix.discovery.shared.resolver;
 
 import java.util.List;
 
+import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
+import com.netflix.discovery.shared.resolver.aws.SampleCluster;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -31,11 +33,11 @@ public class ResolverUtilsTest {
 
     @Test
     public void testSplitByZone() throws Exception {
-        List<EurekaEndpoint> endpoints = SampleCluster.merge(SampleCluster.UsEast1a, SampleCluster.UsEast1b, SampleCluster.UsEast1c);
-        List<EurekaEndpoint>[] parts = ResolverUtils.splitByZone(endpoints, "us-east-1b");
+        List<AwsEndpoint> endpoints = SampleCluster.merge(SampleCluster.UsEast1a, SampleCluster.UsEast1b, SampleCluster.UsEast1c);
+        List<AwsEndpoint>[] parts = ResolverUtils.splitByZone(endpoints, "us-east-1b");
 
-        List<EurekaEndpoint> myZoneServers = parts[0];
-        List<EurekaEndpoint> remainingServers = parts[1];
+        List<AwsEndpoint> myZoneServers = parts[0];
+        List<AwsEndpoint> remainingServers = parts[1];
 
         assertThat(myZoneServers, is(equalTo(SampleCluster.UsEast1b.build())));
         assertThat(remainingServers, is(equalTo(SampleCluster.merge(SampleCluster.UsEast1a, SampleCluster.UsEast1c))));
@@ -49,8 +51,8 @@ public class ResolverUtilsTest {
 
     @Test
     public void testIdentical() throws Exception {
-        List<EurekaEndpoint> firstList = SampleCluster.UsEast1a.builder().withServerPool(10).build();
-        List<EurekaEndpoint> secondList = ResolverUtils.randomize(firstList);
+        List<AwsEndpoint> firstList = SampleCluster.UsEast1a.builder().withServerPool(10).build();
+        List<AwsEndpoint> secondList = ResolverUtils.randomize(firstList);
 
         assertThat(ResolverUtils.identical(firstList, secondList), is(true));
 

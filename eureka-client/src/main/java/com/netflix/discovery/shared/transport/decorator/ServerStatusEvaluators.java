@@ -37,6 +37,14 @@ public final class ServerStatusEvaluators {
         }
     };
 
+    private static final ServerStatusEvaluator HTTP_SUCCESS_EVALUATOR = new ServerStatusEvaluator() {
+        @Override
+        public boolean accept(int statusCode, RequestType requestType) {
+            return statusCode >= 200 && statusCode < 300;
+        }
+    };
+
+
     private ServerStatusEvaluators() {
     }
 
@@ -45,5 +53,12 @@ public final class ServerStatusEvaluators {
      */
     public static ServerStatusEvaluator legacyEvaluator() {
         return LEGACY_EVALUATOR;
+    }
+
+    /**
+     * An evaluator that only care about http 2xx responses
+     */
+    public static ServerStatusEvaluator httpSuccessEvaluator() {
+        return HTTP_SUCCESS_EVALUATOR;
     }
 }

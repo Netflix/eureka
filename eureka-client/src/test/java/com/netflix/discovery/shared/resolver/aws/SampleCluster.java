@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.discovery.shared.resolver;
+package com.netflix.discovery.shared.resolver.aws;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,30 +27,30 @@ public enum SampleCluster {
     UsEast1a() {
         @Override
         public SampleClusterBuilder builder() {
-            return new SampleClusterBuilder("us-east-1a", "10.10.10.");
+            return new SampleClusterBuilder("us-east-1", "us-east-1a", "10.10.10.");
         }
     },
     UsEast1b() {
         @Override
         public SampleClusterBuilder builder() {
-            return new SampleClusterBuilder("us-east-1b", "10.10.20.");
+            return new SampleClusterBuilder("us-east-1", "us-east-1b", "10.10.20.");
         }
     },
     UsEast1c() {
         @Override
         public SampleClusterBuilder builder() {
-            return new SampleClusterBuilder("us-east-1c", "10.10.30.");
+            return new SampleClusterBuilder("us-east-1", "us-east-1c", "10.10.30.");
         }
     };
 
     public abstract SampleClusterBuilder builder();
 
-    public List<EurekaEndpoint> build() {
+    public List<AwsEndpoint> build() {
         return builder().build();
     }
 
-    public static List<EurekaEndpoint> merge(SampleCluster... sampleClusters) {
-        List<EurekaEndpoint> endpoints = new ArrayList<>();
+    public static List<AwsEndpoint> merge(SampleCluster... sampleClusters) {
+        List<AwsEndpoint> endpoints = new ArrayList<>();
         for (SampleCluster cluster : sampleClusters) {
             endpoints.addAll(cluster.build());
         }
@@ -58,11 +58,13 @@ public enum SampleCluster {
     }
 
     public static class SampleClusterBuilder {
+        private final String region;
         private final String zone;
         private final String networkPrefix;
         private int serverPoolSize = 2;
 
-        public SampleClusterBuilder(String zone, String networkPrefix) {
+        public SampleClusterBuilder(String region, String zone, String networkPrefix) {
+            this.region = region;
             this.zone = zone;
             this.networkPrefix = networkPrefix;
         }
@@ -72,15 +74,16 @@ public enum SampleCluster {
             return this;
         }
 
-        public List<EurekaEndpoint> build() {
-            List<EurekaEndpoint> endpoints = new ArrayList<>();
+        public List<AwsEndpoint> build() {
+            List<AwsEndpoint> endpoints = new ArrayList<>();
             for (int i = 0; i < serverPoolSize; i++) {
                 String hostName = networkPrefix + i;
-                endpoints.add(new EurekaEndpoint(
+                endpoints.add(new AwsEndpoint(
                         hostName,
                         80,
                         false,
                         "/eureka/v2",
+                        region,
                         zone
                 ));
             }

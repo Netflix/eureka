@@ -33,23 +33,23 @@ public class StaticClusterResolverTest {
     public void testClusterResolverFromURL() throws Exception {
         verifyEqual(
                 StaticClusterResolver.fromURL("regionA", new URL("http://eureka.test:8080/eureka/v2/apps")),
-                new EurekaEndpoint("eureka.test", 8080, false, "/eureka/v2/apps", "regionA")
+                new DefaultEndpoint("eureka.test", 8080, false, "/eureka/v2/apps")
         );
         verifyEqual(
                 StaticClusterResolver.fromURL("regionA", new URL("https://eureka.test:8081/eureka/v2/apps")),
-                new EurekaEndpoint("eureka.test", 8081, true, "/eureka/v2/apps", "regionA")
+                new DefaultEndpoint("eureka.test", 8081, true, "/eureka/v2/apps")
         );
         verifyEqual(
                 StaticClusterResolver.fromURL("regionA", new URL("http://eureka.test/eureka/v2/apps")),
-                new EurekaEndpoint("eureka.test", 80, false, "/eureka/v2/apps", "regionA")
+                new DefaultEndpoint("eureka.test", 80, false, "/eureka/v2/apps")
         );
         verifyEqual(
                 StaticClusterResolver.fromURL("regionA", new URL("https://eureka.test/eureka/v2/apps")),
-                new EurekaEndpoint("eureka.test", 443, true, "/eureka/v2/apps", "regionA")
+                new DefaultEndpoint("eureka.test", 443, true, "/eureka/v2/apps")
         );
     }
 
-    private static void verifyEqual(ClusterResolver actual, EurekaEndpoint expected) {
+    private static void verifyEqual(ClusterResolver<EurekaEndpoint> actual, EurekaEndpoint expected) {
         assertThat(actual.getClusterEndpoints().get(0), is(equalTo(expected)));
     }
 }

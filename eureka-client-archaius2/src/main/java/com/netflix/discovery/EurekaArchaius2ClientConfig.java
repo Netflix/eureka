@@ -9,6 +9,8 @@ import com.netflix.appinfo.EurekaAccept;
 import com.netflix.archaius.Config;
 import com.netflix.archaius.annotations.Configuration;
 import com.netflix.archaius.annotations.ConfigurationSource;
+import com.netflix.discovery.shared.transport.EurekaArchaius2TransportConfig;
+import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 
 @Configuration(prefix = "eureka")
 @ConfigurationSource("eureka-client")
@@ -19,14 +21,16 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
 
     private final Config config;
     private final String defaultRegion;
+    private final EurekaTransportConfig transportConfig;
 
     @Inject
-    public EurekaArchaius2ClientConfig(Config config) {
-        this(config, DEFAULT_NAMESPACE);
+    public EurekaArchaius2ClientConfig(Config config, EurekaTransportConfig transportConfig) {
+        this(config, transportConfig, DEFAULT_NAMESPACE);
     }
 
-    public EurekaArchaius2ClientConfig(Config config, String namespace) {
+    public EurekaArchaius2ClientConfig(Config config, EurekaTransportConfig transportConfig, String namespace) {
         this.defaultRegion = config.getString("@region", null);
+        this.transportConfig = transportConfig;
         this.config = config.getPrefixedView(namespace);
     }
 
@@ -207,5 +211,10 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
     @Override
     public String getExperimental(String name) {
         return config.getString("experimental." + name);
+    }
+
+    @Override
+    public EurekaTransportConfig getTransportConfig() {
+        return transportConfig;
     }
 }

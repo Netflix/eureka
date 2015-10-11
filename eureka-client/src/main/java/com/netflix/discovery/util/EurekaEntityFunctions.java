@@ -16,7 +16,10 @@
 
 package com.netflix.discovery.util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -39,6 +42,7 @@ import com.netflix.discovery.util.EurekaEntityTransformers.Transformer;
  *     <li>deepCopy - copy Eureka entities, with aggregated {@link InstanceInfo} objects copied by value</li>
  *     <li>merge - merge two identical data structures</li>
  *     <li>count - statistical functions</li>
+ *     <li>comparator - comparators for the domain objects</li>
  * </ul>
  *
  * @author Tomasz Bak
@@ -94,6 +98,14 @@ public final class EurekaEntityFunctions {
             }
         }
         return null;
+    }
+
+    public static Collection<InstanceInfo> selectAll(Applications applications) {
+        List<InstanceInfo> all = new ArrayList<>();
+        for (Application a : applications.getRegisteredApplications()) {
+            all.addAll(a.getInstances());
+        }
+        return all;
     }
 
     public static Map<String, Application> toApplicationMap(List<InstanceInfo> instances) {
@@ -164,7 +176,7 @@ public final class EurekaEntityFunctions {
         }
     }
 
-    public static void copyInstances(List<InstanceInfo> instances, Applications result) {
+    public static void copyInstances(Collection<InstanceInfo> instances, Applications result) {
         if (instances != null) {
             for (InstanceInfo instance : instances) {
                 Application app = result.getRegisteredApplications(instance.getAppName());
@@ -175,6 +187,14 @@ public final class EurekaEntityFunctions {
                 app.addInstance(instance);
             }
         }
+    }
+
+    public static Collection<InstanceInfo> copyInstances(Collection<InstanceInfo> instances, ActionType actionType) {
+        List<InstanceInfo> result = new ArrayList<>();
+        for (InstanceInfo instance : instances) {
+            result.add(copyInstance(instance, actionType));
+        }
+        return result;
     }
 
     public static InstanceInfo copyInstance(InstanceInfo original, ActionType actionType) {
@@ -259,4 +279,33 @@ public final class EurekaEntityFunctions {
         }
         return count;
     }
+
+    public static Comparator<InstanceInfo> comparatorByAppNameAndId() {
+        return INSTANCE_APP_ID_COMPARATOR;
+    }
+
+    private static class InstanceAppIdComparator implements Comparator<InstanceInfo> {
+        @Override
+        public int compare(InstanceInfo o1, InstanceInfo o2) {
+            int ac = compareStrings(o1.getAppName(), o2.getAppName());
+            if (ac != 0) {
+                return ac;
+            }
+            return compareStrings(o1.getId(), o2.getId());
+        }
+
+        private int compareStrings(String s1, String s2) {
+            if (s1 == null) {
+                if (s2 != null) {
+                    return -1;
+                }
+            }
+            if (s2 == null) {
+                return 1;
+            }
+            return s1.compareTo(s2);
+        }
+    }
+
+    private static final Comparator<InstanceInfo> INSTANCE_APP_ID_COMPARATOR = new InstanceAppIdComparator();
 }

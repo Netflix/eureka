@@ -321,5 +321,4 @@ public class EndpointUtils {
 
         return 0;
     }
-
 }

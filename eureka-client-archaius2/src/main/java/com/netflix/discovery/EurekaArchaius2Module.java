@@ -6,6 +6,8 @@ import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.archaius.Config;
+import com.netflix.discovery.shared.transport.EurekaArchaius2TransportConfig;
+import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 
 /**
  * Add this module to your project to enable Eureka client and registration
@@ -20,6 +22,7 @@ public final class EurekaArchaius2Module extends AbstractModule {
 
         // Bindings for eureka
         bind(EurekaInstanceConfig.class).to(CloudInstanceConfig.class);
+        bind(EurekaTransportConfig.class).to(EurekaArchaius2TransportConfig.class);
         bind(EurekaArchaius2ClientConfig.class).to(EurekaArchaius2ClientConfig.class);
         bind(InstanceInfo.class).toProvider(EurekaConfigBasedInstanceInfoProvider.class);
         bind(EurekaClient.class).to(DiscoveryClient.class);

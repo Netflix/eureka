@@ -18,6 +18,7 @@ package com.netflix.discovery.shared.transport.decorator;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
@@ -82,6 +83,11 @@ public class SplitEurekaHttpClient implements EurekaHttpClient {
     @Override
     public EurekaHttpResponse<Applications> getSecureVip(String secureVipAddress) {
         return queryClient.getSecureVip(secureVipAddress);
+    }
+
+    @Override
+    public EurekaHttpResponse<Application> getApplication(String appName) {
+        return queryClient.getApplication(appName);
     }
 
     @Override

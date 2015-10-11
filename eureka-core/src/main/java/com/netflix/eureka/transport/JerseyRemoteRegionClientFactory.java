@@ -21,9 +21,9 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import com.netflix.discovery.EurekaIdentityHeaderFilter;
-import com.netflix.discovery.shared.resolver.ClusterResolver;
+import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
-import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
+import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
 import com.netflix.discovery.shared.transport.jersey.JerseyApplicationClient;
@@ -38,13 +38,13 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Tomasz Bak
  */
-public class JerseyRemoteRegionClientFactory implements EurekaHttpClientFactory {
+public class JerseyRemoteRegionClientFactory implements TransportClientFactory {
 
     private static final Logger logger = LoggerFactory.getLogger(JerseyRemoteRegionClientFactory.class);
 
     private final EurekaServerConfig serverConfig;
     private final ServerCodecs serverCodecs;
-    private final ClusterResolver clusterResolver;
+    private final String region;
 
     private volatile EurekaJerseyClient jerseyClient;
     private final Object lock = new Object();
@@ -52,15 +52,15 @@ public class JerseyRemoteRegionClientFactory implements EurekaHttpClientFactory 
     @Inject
     public JerseyRemoteRegionClientFactory(EurekaServerConfig serverConfig,
                                            ServerCodecs serverCodecs,
-                                           ClusterResolver clusterResolver) {
+                                           String region) {
         this.serverConfig = serverConfig;
         this.serverCodecs = serverCodecs;
-        this.clusterResolver = clusterResolver;
+        this.region = region;
     }
 
     @Override
-    public EurekaHttpClient create(String... serviceUrl) {
-        return new JerseyApplicationClient(getOrCreateJerseyClient().getClient(), serviceUrl[0], false);
+    public EurekaHttpClient newClient(EurekaEndpoint endpoint) {
+        return new JerseyApplicationClient(getOrCreateJerseyClient(region, endpoint).getClient(), endpoint.getServiceUrl(), false);
     }
 
     @Override
@@ -70,17 +70,13 @@ public class JerseyRemoteRegionClientFactory implements EurekaHttpClientFactory 
         }
     }
 
-    private EurekaJerseyClient getOrCreateJerseyClient() {
+    private EurekaJerseyClient getOrCreateJerseyClient(String region, EurekaEndpoint endpoint) {
         if (jerseyClient != null) {
             return jerseyClient;
         }
 
         synchronized (lock) {
             if (jerseyClient == null) {
-                if (clusterResolver.getClusterEndpoints().isEmpty()) {
-                    throw new IllegalStateException("Eureka server list is empty; cannot setup connection to any server");
-                }
-
                 EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
                         .withUserAgent("Java-EurekaClient-RemoteRegion")
                         .withEncoderWrapper(serverCodecs.getFullJsonCodec())
@@ -91,13 +87,13 @@ public class JerseyRemoteRegionClientFactory implements EurekaHttpClientFactory 
                         .withMaxTotalConnections(serverConfig.getRemoteRegionTotalConnections())
                         .withConnectionIdleTimeout(serverConfig.getRemoteRegionConnectionIdleTimeoutSeconds());
 
-                if (clusterResolver.getClusterEndpoints().get(0).isSecure()) {
-                    clientBuilder.withClientName("Discovery-RemoteRegionClient-" + clusterResolver.getRegion());
+                if (endpoint.isSecure()) {
+                    clientBuilder.withClientName("Discovery-RemoteRegionClient-" + region);
                 } else if ("true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
-                    clientBuilder.withClientName("Discovery-RemoteRegionSystemSecureClient-" + clusterResolver.getRegion())
+                    clientBuilder.withClientName("Discovery-RemoteRegionSystemSecureClient-" + region)
                             .withSystemSSLConfiguration();
                 } else {
-                    clientBuilder.withClientName("Discovery-RemoteRegionSecureClient-" + clusterResolver.getRegion())
+                    clientBuilder.withClientName("Discovery-RemoteRegionSecureClient-" + region)
                             .withTrustStoreFile(
                                     serverConfig.getRemoteRegionTrustStore(),
                                     serverConfig.getRemoteRegionTrustStorePassword()

@@ -119,6 +119,7 @@ public class InstanceInfoGenerator {
             applications.addApplication(app);
         }
 
+        applications.shuffleInstances(false);
         applications.setAppsHashCode(applications.getReconcileHashCode());
         applications.setVersion(1L);
 

@@ -18,15 +18,22 @@ package com.netflix.discovery.shared.transport;
 
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.shared.resolver.ClosableResolver;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
+import com.netflix.discovery.shared.resolver.DefaultEndpoint;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.resolver.StaticClusterResolver;
+import com.netflix.discovery.shared.resolver.aws.ApplicationsResolver;
+import com.netflix.discovery.shared.resolver.aws.EurekaHttpResolver;
+import com.netflix.discovery.shared.resolver.aws.TestEurekaHttpResolver;
 import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.junit.After;
@@ -37,7 +44,13 @@ import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEureka
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -47,6 +60,7 @@ public class EurekaHttpClientsTest {
 
     private static final InstanceInfo MY_INSTANCE = InstanceInfoGenerator.newBuilder(1, "myApp").build().first();
     private final EurekaClientConfig clientConfig = mock(EurekaClientConfig.class);
+    private final EurekaTransportConfig transportConfig = mock(EurekaTransportConfig.class);
     private final EurekaInstanceConfig instanceConfig = mock(EurekaInstanceConfig.class);
     private final ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(instanceConfig, MY_INSTANCE);
 
@@ -56,7 +70,7 @@ public class EurekaHttpClientsTest {
     private SimpleEurekaHttpServer writeServer;
     private SimpleEurekaHttpServer readServer;
 
-    private ClusterResolver clusterResolver;
+    private ClusterResolver<EurekaEndpoint> clusterResolver;
     private EurekaHttpClientFactory clientFactory;
 
     private String readServerURI;
@@ -67,14 +81,19 @@ public class EurekaHttpClientsTest {
     public void setUp() throws IOException {
         when(clientConfig.getEurekaServerTotalConnectionsPerHost()).thenReturn(10);
         when(clientConfig.getEurekaServerTotalConnections()).thenReturn(10);
+        when(transportConfig.getSessionedClientReconnectIntervalSeconds()).thenReturn(10);
 
         writeServer = new SimpleEurekaHttpServer(writeRequestHandler);
-        clusterResolver = new StaticClusterResolver("regionA", new EurekaEndpoint("localhost", writeServer.getServerPort(), false, "/v2/", null));
+        clusterResolver = new StaticClusterResolver<EurekaEndpoint>("regionA", new DefaultEndpoint("localhost", writeServer.getServerPort(), false, "/v2/"));
 
         readServer = new SimpleEurekaHttpServer(readRequestHandler);
         readServerURI = "http://localhost:" + readServer.getServerPort();
 
-        clientFactory = EurekaHttpClients.createStandardClientFactory(clientConfig, applicationInfoManager, clusterResolver);
+        clientFactory = EurekaHttpClients.createStandardClientFactory(
+                clientConfig,
+                transportConfig,
+                applicationInfoManager.getInfo(),
+                clusterResolver);
     }
 
     @After
@@ -101,10 +120,68 @@ public class EurekaHttpClientsTest {
                 anEurekaHttpResponse(200, apps).headers(HttpHeaders.CONTENT_TYPE, "application/json").build()
         );
 
-        EurekaHttpClient eurekaHttpClient = clientFactory.create();
+        EurekaHttpClient eurekaHttpClient = clientFactory.newClient();
         EurekaHttpResponse<Applications> result = eurekaHttpClient.getApplications();
 
         assertThat(result.getStatusCode(), is(equalTo(200)));
         assertThat(EurekaEntityComparators.equal(result.getEntity(), apps), is(true));
+    }
+
+    @Test
+    public void testCanonicalResolver() throws Exception {
+        when(clientConfig.getEurekaServerURLContext()).thenReturn("context");
+        when(clientConfig.getRegion()).thenReturn("region");
+
+        when(transportConfig.getAsyncExecutorThreadPoolSize()).thenReturn(3);
+        when(transportConfig.getAsyncResolverRefreshIntervalMs()).thenReturn(300);
+        when(transportConfig.getAsyncResolverWarmupTimeoutMs()).thenReturn(200);
+
+        Applications applications = InstanceInfoGenerator.newBuilder(5, "eurekaRead", "someOther").build().toApplications();
+        String vipAddress = applications.getRegisteredApplications("eurekaRead").getInstances().get(0).getVIPAddress();
+
+        ApplicationsResolver.ApplicationsSource applicationsSource = mock(ApplicationsResolver.ApplicationsSource.class);
+        when(applicationsSource.getApplications(anyInt(), eq(TimeUnit.SECONDS)))
+                .thenReturn(null)  // first time
+                .thenReturn(applications);  // subsequent times
+
+        EurekaHttpClientFactory remoteResolverClientFactory = mock(EurekaHttpClientFactory.class);
+        EurekaHttpClient httpClient = mock(EurekaHttpClient.class);
+        when(remoteResolverClientFactory.newClient()).thenReturn(httpClient);
+        when(httpClient.getVip(vipAddress)).thenReturn(EurekaHttpResponse.anEurekaHttpResponse(200, applications).build());
+
+        EurekaHttpResolver remoteResolver = spy(new TestEurekaHttpResolver(clientConfig, remoteResolverClientFactory, vipAddress));
+        when(transportConfig.getReadClusterVip()).thenReturn(vipAddress);
+
+        ApplicationsResolver localResolver = spy(new ApplicationsResolver(clientConfig, transportConfig, applicationsSource));
+
+        ClosableResolver resolver = null;
+        try {
+            resolver = EurekaHttpClients.createStandardClusterResolver(
+                    remoteResolver,
+                    localResolver,
+                    clientConfig,
+                    transportConfig,
+                    applicationInfoManager.getInfo()
+            );
+
+            List endpoints = resolver.getClusterEndpoints();
+            assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
+            verify(remoteResolver, times(1)).getClusterEndpoints();
+            verify(localResolver, times(1)).getClusterEndpoints();
+
+            // wait for the second cycle that hits the app source
+            verify(applicationsSource, timeout(1000).times(2)).getApplications(anyInt(), eq(TimeUnit.SECONDS));
+            endpoints = resolver.getClusterEndpoints();
+            assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
+
+            verify(remoteResolver, times(1)).getClusterEndpoints();
+            verify(localResolver, times(2)).getClusterEndpoints();
+
+        } finally {
+            if (resolver != null) {
+                resolver.shutdown();
+                verify(remoteResolver, times(1)).shutdown();
+            }
+        }
     }
 }

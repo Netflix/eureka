@@ -16,117 +16,19 @@
 
 package com.netflix.discovery.shared.resolver;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 /**
- * @author Tomasz Bak
+ * @author David Liu
  */
-public class EurekaEndpoint implements Comparable<EurekaEndpoint> {
+public interface EurekaEndpoint extends Comparable<Object> {
 
-    private final String hostName;
-    private final int port;
-    private final boolean isSecure;
-    private final String relativeUri;
-    private final String zone;
-    private final String serviceUrl;
+    String getServiceUrl();
 
-    public EurekaEndpoint(String hostName, int port, boolean isSecure, String relativeUri, String zone) {
-        this.hostName = hostName;
-        this.port = port;
-        this.isSecure = isSecure;
-        this.relativeUri = relativeUri;
-        this.zone = zone;
+    String getHostName();
 
-        StringBuilder sb = new StringBuilder()
-                .append(isSecure ? "https" : "http")
-                .append("://")
-                .append(hostName)
-                .append(':')
-                .append(port);
-        if (relativeUri != null) {
-            if (!relativeUri.startsWith("/")) {
-                sb.append('/');
-            }
-            sb.append(relativeUri);
-        }
-        this.serviceUrl = sb.toString();
-    }
+    int getPort();
 
-    public String getServiceUrl() {
-        return serviceUrl;
-    }
+    boolean isSecure();
 
-    public String getHostName() {
-        return hostName;
-    }
+    String getRelativeUri();
 
-    public int getPort() {
-        return port;
-    }
-
-    public boolean isSecure() {
-        return isSecure;
-    }
-
-    public String getRelativeUri() {
-        return relativeUri;
-    }
-
-    public String getZone() {
-        return zone;
-    }
-
-    public static List<EurekaEndpoint> createForServerList(List<String> hostNames, int port, boolean isSecure, String relativeUri, String zone) {
-        if (hostNames.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<EurekaEndpoint> eurekaEndpoints = new ArrayList<>(hostNames.size());
-        for (String hostName : hostNames) {
-            eurekaEndpoints.add(new EurekaEndpoint(hostName, port, isSecure, relativeUri, zone));
-        }
-        return eurekaEndpoints;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        EurekaEndpoint endpoint = (EurekaEndpoint) o;
-
-        if (port != endpoint.port)
-            return false;
-        if (isSecure != endpoint.isSecure)
-            return false;
-        if (hostName != null ? !hostName.equals(endpoint.hostName) : endpoint.hostName != null)
-            return false;
-        if (relativeUri != null ? !relativeUri.equals(endpoint.relativeUri) : endpoint.relativeUri != null)
-            return false;
-        return !(zone != null ? !zone.equals(endpoint.zone) : endpoint.zone != null);
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = hostName != null ? hostName.hashCode() : 0;
-        result = 31 * result + port;
-        result = 31 * result + (isSecure ? 1 : 0);
-        result = 31 * result + (relativeUri != null ? relativeUri.hashCode() : 0);
-        result = 31 * result + (zone != null ? zone.hashCode() : 0);
-        return result;
-    }
-
-    @Override
-    public int compareTo(EurekaEndpoint that) {
-        return serviceUrl.compareTo(that.serviceUrl);
-    }
-
-    @Override
-    public String toString() {
-        return "EurekaEndpoint{ serviceUrl='" + serviceUrl + '\'' + ", zone='" + zone + '\'' + '}';
-    }
 }

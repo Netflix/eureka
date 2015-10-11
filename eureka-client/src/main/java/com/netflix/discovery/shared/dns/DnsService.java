@@ -14,25 +14,26 @@
  * limitations under the License.
  */
 
-package com.netflix.discovery.shared.resolver;
+package com.netflix.discovery.shared.dns;
 
 import javax.annotation.Nullable;
 import java.util.List;
 
-import com.netflix.discovery.endpoint.DnsResolver;
-
 /**
  * @author Tomasz Bak
  */
-public class DnsServiceImpl implements DnsService {
-    @Override
-    public String resolveIp(String hostName) {
-        return DnsResolver.resolve(hostName);
-    }
+public interface DnsService {
 
+    /**
+     * Resolve host name to the bottom A-Record or the latest available CNAME
+     *
+     * @return IP address
+     */
+    String resolveIp(String hostName);
+
+    /**
+     * Resolve A-record entry for a given domain name.
+     */
     @Nullable
-    @Override
-    public List<String> resolveARecord(String rootDomainName) {
-        return DnsResolver.resolveARecord(rootDomainName);
-    }
+    List<String> resolveARecord(String rootDomainName);
 }

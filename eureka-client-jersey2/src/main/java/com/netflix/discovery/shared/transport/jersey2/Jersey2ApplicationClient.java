@@ -30,6 +30,7 @@ import java.util.Map.Entry;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.DiscoveryClient;
+import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
@@ -194,6 +195,30 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
     @Override
     public EurekaHttpResponse<Applications> getSecureVip(String secureVipAddress) {
         return getApplicationsInternal("svips/" + secureVipAddress);
+    }
+
+    @Override
+    public EurekaHttpResponse<Application> getApplication(String appName) {
+        String urlPath = "apps/" + appName;
+        Response response = null;
+        try {
+            Builder requestBuilder = jerseyClient.target(serviceUrl).path(urlPath).request();
+            addExtraHeaders(requestBuilder);
+            response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).get();
+
+            Application application = null;
+            if (response.getStatus() == Status.OK.getStatusCode() && response.hasEntity()) {
+                application = response.readEntity(Application.class);
+            }
+            return anEurekaHttpResponse(response.getStatus(), application).headers(headersOf(response)).build();
+        } finally {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Jersey HTTP GET {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
+            }
+            if (response != null) {
+                response.close();
+            }
+        }
     }
 
     private EurekaHttpResponse<Applications> getApplicationsInternal(String urlPath) {

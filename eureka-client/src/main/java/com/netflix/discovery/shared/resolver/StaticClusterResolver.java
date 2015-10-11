@@ -28,18 +28,19 @@ import org.slf4j.LoggerFactory;
  *
  * @author Tomasz Bak
  */
-public class StaticClusterResolver implements ClusterResolver {
+public class StaticClusterResolver<T extends EurekaEndpoint> implements ClusterResolver<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(StaticClusterResolver.class);
 
-    private final List<EurekaEndpoint> eurekaEndpoints;
+    private final List<T> eurekaEndpoints;
     private final String region;
 
-    public StaticClusterResolver(String region, EurekaEndpoint... eurekaEndpoints) {
+    @SafeVarargs
+    public StaticClusterResolver(String region, T... eurekaEndpoints) {
         this(region, Arrays.asList(eurekaEndpoints));
     }
 
-    public StaticClusterResolver(String region, List<EurekaEndpoint> eurekaEndpoints) {
+    public StaticClusterResolver(String region, List<T> eurekaEndpoints) {
         this.eurekaEndpoints = eurekaEndpoints;
         this.region = region;
         if (logger.isDebugEnabled()) {
@@ -53,18 +54,18 @@ public class StaticClusterResolver implements ClusterResolver {
     }
 
     @Override
-    public List<EurekaEndpoint> getClusterEndpoints() {
+    public List<T> getClusterEndpoints() {
         return eurekaEndpoints;
     }
 
-    public static ClusterResolver fromURL(String regionName, URL serviceUrl) {
+    public static ClusterResolver<EurekaEndpoint> fromURL(String regionName, URL serviceUrl) {
         boolean isSecure = "https".equalsIgnoreCase(serviceUrl.getProtocol());
         int defaultPort = isSecure ? 443 : 80;
         int port = serviceUrl.getPort() == -1 ? defaultPort : serviceUrl.getPort();
 
-        return new StaticClusterResolver(
+        return new StaticClusterResolver<EurekaEndpoint>(
                 regionName,
-                new EurekaEndpoint(serviceUrl.getHost(), port, isSecure, serviceUrl.getPath(), regionName)
+                new DefaultEndpoint(serviceUrl.getHost(), port, isSecure, serviceUrl.getPath())
         );
     }
 }

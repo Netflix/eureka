@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import org.junit.Test;
-import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -33,7 +32,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Tomasz Bak
  */
-public class RebalancingEurekaHttpClientTest {
+public class SessionedEurekaHttpClientTest {
 
     private final EurekaHttpClient firstClient = mock(EurekaHttpClient.class);
     private final EurekaHttpClient secondClient = mock(EurekaHttpClient.class);
@@ -42,14 +41,14 @@ public class RebalancingEurekaHttpClientTest {
     @Test
     public void testReconnectIsEnforcedAtConfiguredInterval() throws Exception {
         final AtomicReference<EurekaHttpClient> clientRef = new AtomicReference<>(firstClient);
-        when(factory.create(Matchers.<String>anyVararg())).thenAnswer(new Answer<EurekaHttpClient>() {
+        when(factory.newClient()).thenAnswer(new Answer<EurekaHttpClient>() {
             @Override
             public EurekaHttpClient answer(InvocationOnMock invocation) throws Throwable {
                 return clientRef.get();
             }
         });
 
-        RebalancingEurekaHttpClient httpClient = new RebalancingEurekaHttpClient(factory, 1);
+        SessionedEurekaHttpClient httpClient = new SessionedEurekaHttpClient(factory, 1);
         httpClient.getApplications();
         verify(firstClient, times(1)).getApplications();
 

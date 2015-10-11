@@ -37,17 +37,17 @@ import static com.netflix.discovery.EurekaClientNames.METRIC_RESOLVER_PREFIX;
  *
  * @author Tomasz Bak
  */
-public class ReloadingClusterResolver implements ClusterResolver {
+public class ReloadingClusterResolver<T extends EurekaEndpoint> implements ClusterResolver<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(ReloadingClusterResolver.class);
 
     private static final long MAX_RELOAD_INTERVAL_MULTIPLIER = 5;
 
-    private final ClusterResolverFactory factory;
+    private final ClusterResolverFactory<T> factory;
     private final long reloadIntervalMs;
     private final long maxReloadIntervalMs;
 
-    private final AtomicReference<ClusterResolver> delegateRef;
+    private final AtomicReference<ClusterResolver<T>> delegateRef;
 
     private volatile long lastUpdateTime;
     private volatile long currentReloadIntervalMs;
@@ -55,7 +55,7 @@ public class ReloadingClusterResolver implements ClusterResolver {
     // Metric timestamp, tracking last time when data were effectively changed.
     private volatile long lastReloadTimestamp = -1;
 
-    public ReloadingClusterResolver(final ClusterResolverFactory factory, final long reloadIntervalMs) {
+    public ReloadingClusterResolver(final ClusterResolverFactory<T> factory, final long reloadIntervalMs) {
         this.factory = factory;
         this.reloadIntervalMs = reloadIntervalMs;
         this.maxReloadIntervalMs = MAX_RELOAD_INTERVAL_MULTIPLIER * reloadIntervalMs;
@@ -64,7 +64,7 @@ public class ReloadingClusterResolver implements ClusterResolver {
         this.lastUpdateTime = System.currentTimeMillis();
         this.currentReloadIntervalMs = reloadIntervalMs;
 
-        List<EurekaEndpoint> clusterEndpoints = delegateRef.get().getClusterEndpoints();
+        List<T> clusterEndpoints = delegateRef.get().getClusterEndpoints();
         if (clusterEndpoints.isEmpty()) {
             logger.error("Empty Eureka server endpoint list during initialization process");
             throw new ClusterResolverException("Resolved to an empty endpoint list");
@@ -89,11 +89,11 @@ public class ReloadingClusterResolver implements ClusterResolver {
     }
 
     @Override
-    public List<EurekaEndpoint> getClusterEndpoints() {
+    public List<T> getClusterEndpoints() {
         long expiryTime = lastUpdateTime + currentReloadIntervalMs;
         if (expiryTime <= System.currentTimeMillis()) {
             try {
-                ClusterResolver newDelegate = reload();
+                ClusterResolver<T> newDelegate = reload();
 
                 this.lastUpdateTime = System.currentTimeMillis();
                 this.currentReloadIntervalMs = reloadIntervalMs;
@@ -115,9 +115,9 @@ public class ReloadingClusterResolver implements ClusterResolver {
         return delegateRef.get().getClusterEndpoints();
     }
 
-    private ClusterResolver reload() {
-        ClusterResolver newDelegate = factory.createClusterResolver();
-        List<EurekaEndpoint> newEndpoints = newDelegate.getClusterEndpoints();
+    private ClusterResolver<T> reload() {
+        ClusterResolver<T> newDelegate = factory.createClusterResolver();
+        List<T> newEndpoints = newDelegate.getClusterEndpoints();
 
         if (newEndpoints.isEmpty()) {
             logger.info("Tried to reload but empty endpoint list returned; keeping the current endpoints");

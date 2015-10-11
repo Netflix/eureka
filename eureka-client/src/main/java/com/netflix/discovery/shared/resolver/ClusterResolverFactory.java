@@ -19,7 +19,7 @@ package com.netflix.discovery.shared.resolver;
 /**
  * @author Tomasz Bak
  */
-public interface ClusterResolverFactory {
+public interface ClusterResolverFactory<T extends EurekaEndpoint> {
 
-    ClusterResolver createClusterResolver();
+    ClusterResolver<T> createClusterResolver();
 }

@@ -24,37 +24,37 @@ import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.TransportUtils;
 
 /**
- * {@link RebalancingEurekaHttpClient} enforces full reconnect at a regular interval, preventing
+ * {@link SessionedEurekaHttpClient} enforces full reconnect at a regular interval (a session), preventing
  * a client to sticking to a particular Eureka server instance forever. This in turn guarantees even
  * load distribution in case of cluster topology change.
  *
  * @author Tomasz Bak
  */
-public class RebalancingEurekaHttpClient extends EurekaHttpClientDecorator {
+public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
 
     private final EurekaHttpClientFactory clientFactory;
-    private final long reconnectIntervalMs;
+    private final long sessionDurationMs;
 
     private volatile long lastReconnectTimeStamp;
     private final AtomicReference<EurekaHttpClient> eurekaHttpClientRef = new AtomicReference<>();
 
-    public RebalancingEurekaHttpClient(EurekaHttpClientFactory clientFactory, long reconnectIntervalMs) {
+    public SessionedEurekaHttpClient(EurekaHttpClientFactory clientFactory, long sessionDurationMs) {
         this.clientFactory = clientFactory;
-        this.reconnectIntervalMs = reconnectIntervalMs;
+        this.sessionDurationMs = sessionDurationMs;
     }
 
     @Override
     protected <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor) {
         long now = System.currentTimeMillis();
         long delay = now - lastReconnectTimeStamp;
-        if (delay >= reconnectIntervalMs) {
+        if (delay >= sessionDurationMs) {
             lastReconnectTimeStamp = now;
             TransportUtils.shutdown(eurekaHttpClientRef.getAndSet(null));
         }
 
         EurekaHttpClient eurekaHttpClient = eurekaHttpClientRef.get();
         if (eurekaHttpClient == null) {
-            eurekaHttpClient = TransportUtils.getOrSetAnotherClient(eurekaHttpClientRef, clientFactory.create());
+            eurekaHttpClient = TransportUtils.getOrSetAnotherClient(eurekaHttpClientRef, clientFactory.newClient());
         }
         return requestExecutor.execute(eurekaHttpClient);
     }

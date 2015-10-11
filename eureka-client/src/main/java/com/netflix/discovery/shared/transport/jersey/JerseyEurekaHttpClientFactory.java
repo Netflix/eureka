@@ -16,12 +16,15 @@
 
 package com.netflix.discovery.shared.transport.jersey;
 
-import com.netflix.appinfo.ApplicationInfoManager;
+import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.appinfo.EurekaClientIdentity;
+import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.EurekaIdentityHeaderFilter;
+import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
-import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
+import com.netflix.discovery.shared.transport.TransportClientFactory;
+import com.netflix.discovery.shared.transport.EurekaClientFactoryBuilder;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
 import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
@@ -29,7 +32,7 @@ import com.sun.jersey.client.apache4.ApacheHttpClient4;
 /**
  * @author Tomasz Bak
  */
-public class JerseyEurekaHttpClientFactory implements EurekaHttpClientFactory {
+public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
 
     private final EurekaJerseyClient jerseyClient;
     private final boolean allowRedirects;
@@ -39,9 +42,13 @@ public class JerseyEurekaHttpClientFactory implements EurekaHttpClientFactory {
         this.allowRedirects = allowRedirects;
     }
 
+    public JerseyEurekaHttpClientFactory(JerseyEurekaHttpClientFactory delegate) {
+        this(delegate.jerseyClient, delegate.allowRedirects);
+    }
+
     @Override
-    public EurekaHttpClient create(String... serviceUrl) {
-        return new JerseyApplicationClient(jerseyClient.getClient(), serviceUrl[0], allowRedirects);
+    public EurekaHttpClient newClient(EurekaEndpoint endpoint) {
+        return new JerseyApplicationClient(jerseyClient.getClient(), endpoint.getServiceUrl(), allowRedirects);
     }
 
     @Override
@@ -51,11 +58,11 @@ public class JerseyEurekaHttpClientFactory implements EurekaHttpClientFactory {
         }
     }
 
-    public static EurekaHttpClientFactory create(EurekaClientConfig clientConfig,
-                                                 ApplicationInfoManager applicationInfoManager,
-                                                 boolean isSecure) {
+    public static JerseyEurekaHttpClientFactory create(EurekaClientConfig clientConfig,
+                                                 InstanceInfo myInstanceInfo,
+                                                 AbstractEurekaIdentity clientIdentity) {
         JerseyEurekaHttpClientFactoryBuilder clientBuilder = newBuilder()
-                .withMyInstanceInfo(applicationInfoManager.getInfo())
+                .withMyInstanceInfo(myInstanceInfo)
                 .withUserAgent("Java-EurekaClient")
                 .withAllowRedirect(clientConfig.allowRedirects())
                 .withConnectionTimeout(clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000)
@@ -64,9 +71,10 @@ public class JerseyEurekaHttpClientFactory implements EurekaHttpClientFactory {
                 .withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections())
                 .withConnectionIdleTimeout(clientConfig.getEurekaConnectionIdleTimeoutSeconds())
                 .withEncoder(clientConfig.getEncoderName())
-                .withDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept());
+                .withDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept())
+                .withClientIdentity(clientIdentity);
 
-        if (isSecure && "true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
+        if ("true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
             clientBuilder.withClientName("DiscoveryClient-HTTPClient-System").withSystemSSLConfiguration();
         } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
             clientBuilder.withClientName("Proxy-DiscoveryClient-HTTPClient")
@@ -81,6 +89,11 @@ public class JerseyEurekaHttpClientFactory implements EurekaHttpClientFactory {
         return clientBuilder.build();
     }
 
+    public static JerseyEurekaHttpClientFactory create(EurekaClientConfig clientConfig,
+                                                 InstanceInfo myInstanceInfo) {
+        return create(clientConfig, myInstanceInfo, new EurekaClientIdentity(myInstanceInfo.getIPAddr()));
+    }
+
     public static JerseyEurekaHttpClientFactoryBuilder newBuilder() {
         return new JerseyEurekaHttpClientFactoryBuilder();
     }
@@ -89,9 +102,9 @@ public class JerseyEurekaHttpClientFactory implements EurekaHttpClientFactory {
      * Currently use EurekaJerseyClientBuilder. Once old transport in DiscoveryClient is removed, incorporate
      * EurekaJerseyClientBuilder here, and remove it.
      */
-    public static class JerseyEurekaHttpClientFactoryBuilder extends EurekaHttpClientFactoryBuilder<JerseyEurekaHttpClientFactoryBuilder> {
+    public static class JerseyEurekaHttpClientFactoryBuilder extends EurekaClientFactoryBuilder<JerseyEurekaHttpClientFactory, JerseyEurekaHttpClientFactoryBuilder> {
         @Override
-        public EurekaHttpClientFactory build() {
+        public JerseyEurekaHttpClientFactory build() {
             EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
                     .withClientName(clientName)
                     .withUserAgent("Java-EurekaClient")
@@ -111,7 +124,7 @@ public class JerseyEurekaHttpClientFactory implements EurekaHttpClientFactory {
 
             // always enable client identity headers
             String ip = myInstanceInfo == null ? null : myInstanceInfo.getIPAddr();
-            EurekaClientIdentity identity = new EurekaClientIdentity(ip);
+            AbstractEurekaIdentity identity = clientIdentity == null ? new EurekaClientIdentity(ip) : clientIdentity;
             discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
 
             return new JerseyEurekaHttpClientFactory(jerseyClient, allowRedirect);
