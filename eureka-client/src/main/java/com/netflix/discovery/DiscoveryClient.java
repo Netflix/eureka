@@ -132,6 +132,12 @@ public class DiscoveryClient implements EurekaClient {
 
     private static final Pattern REDIRECT_PATH_REGEX = Pattern.compile("(.*/v2/)apps(/.*)?$");
 
+    /**
+     * @deprecated here for legacy support as the client config has moved to be an instance variable
+     */
+    @Deprecated
+    private static EurekaClientConfig staticClientConfig;
+
     // Timers
     private static final String PREFIX = "DiscoveryClient_";
     private final com.netflix.servo.monitor.Timer GET_SERVICE_URLS_DNS_TIMER = Monitors
@@ -333,6 +339,7 @@ public class DiscoveryClient implements EurekaClient {
                             .setDaemon(true)
                             .build());
             clientConfig = config;
+            staticClientConfig = clientConfig;
             transportConfig = config.getTransportConfig();
             instanceInfo = myInfo;
             if (myInfo != null) {
@@ -1978,6 +1985,47 @@ public class DiscoveryClient implements EurekaClient {
         if (eventBus != null) {
             eventBus.publish(event);
         }
+    }
+
+
+    /**
+     * @deprecated see {@link com.netflix.appinfo.InstanceInfo#getZone(String[], com.netflix.appinfo.InstanceInfo)}
+     *
+     * Get the zone that a particular instance is in.
+     *
+     * @param myInfo
+     *            - The InstanceInfo object of the instance.
+     * @return - The zone in which the particular instance belongs to.
+     */
+    @Deprecated
+    public static String getZone(InstanceInfo myInfo) {
+        String[] availZones = staticClientConfig.getAvailabilityZones(staticClientConfig.getRegion());
+        return InstanceInfo.getZone(availZones, myInfo);
+    }
+
+    /**
+     * @deprecated see replacement in {@link com.netflix.discovery.endpoint.EndpointUtils}
+     *
+     * Get the region that this particular instance is in.
+     *
+     * @return - The region in which the particular instance belongs to.
+     */
+    @Deprecated
+    public static String getRegion() {
+        String region = staticClientConfig.getRegion();
+        if (region == null) {
+            region = "default";
+        }
+        region = region.trim().toLowerCase();
+        return region;
+    }
+
+    /**
+     * @deprecated use {@link #getServiceUrlsFromConfig(String, boolean)} instead.
+     */
+    @Deprecated
+    public static List<String> getEurekaServiceUrlsFromConfig(String instanceZone, boolean preferSameZone) {
+        return EndpointUtils.getServiceUrlsFromConfig(staticClientConfig, instanceZone, preferSameZone);
     }
 
     @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRATION_PREFIX + "lastSuccessfulHeartbeatTimePeriod",
