@@ -3,6 +3,8 @@ package com.netflix.discovery.shared.resolver;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.discovery.TimedSupervisorTask;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
+import com.netflix.servo.annotations.DataSourceType;
+import com.netflix.servo.annotations.Monitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +19,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.netflix.discovery.EurekaClientNames.METRIC_RESOLVER_PREFIX;
+
 /**
  * An async resolver that keeps a cached version of the endpoint list value for gets, and updates this cache
  * periodically in a different thread.
@@ -26,8 +30,8 @@ import java.util.concurrent.atomic.AtomicReference;
 public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver<T> {
     private static final Logger logger = LoggerFactory.getLogger(AsyncResolver.class);
 
-    // Note that warm up is best effort. If the resolver is accessed by multiple threads pre warmup, only the first
-    // thread will block for the warmup (up to the configurable timeout).
+    // Note that warm up is best effort. If the resolver is accessed by multiple threads pre warmup,
+    // only the first thread will block for the warmup (up to the configurable timeout).
     private final AtomicBoolean warmedUp = new AtomicBoolean(false);
 
     private final ClusterResolver<T> delegate;
@@ -38,6 +42,9 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
 
     private final int refreshIntervalMs;
     private final int warmUpTimeoutMs;
+
+    // Metric timestamp, tracking last time when data were effectively changed.
+    private volatile long lastLoadTimestamp = -1;
 
     public AsyncResolver(EurekaTransportConfig transportConfig,
                          ClusterResolver<T> delegate) {
@@ -117,6 +124,12 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
         }
     }
 
+    @Monitor(name = METRIC_RESOLVER_PREFIX + "lastLoadTimestamp",
+            description = "How much time has passed from last successful async load", type = DataSourceType.GAUGE)
+    public long getLastLoadTimestamp() {
+        return lastLoadTimestamp < 0 ? 0 : System.currentTimeMillis() - lastLoadTimestamp;
+    }
+
     private final Runnable updateTask = new Runnable() {
         @Override
         public void run() {
@@ -124,6 +137,7 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
                 List<T> newList = delegate.getClusterEndpoints();
                 if (newList != null) {
                     resultsRef.getAndSet(newList);
+                    lastLoadTimestamp = System.currentTimeMillis();
                 } else {
                     logger.warn("Delegate returned null list of cluster endpoints");
                 }

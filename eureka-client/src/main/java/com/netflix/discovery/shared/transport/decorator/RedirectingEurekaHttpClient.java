@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.discovery.shared.dns.DnsService;
 import com.netflix.discovery.shared.dns.DnsServiceImpl;
 import com.netflix.discovery.shared.resolver.DefaultEndpoint;
