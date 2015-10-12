@@ -191,9 +191,13 @@ public class DiscoveryClient implements EurekaClient {
     private final EndpointUtils.ServiceUrlRandomizer urlRandomizer;
     private final Provider<BackupRegistry> backupRegistryProvider;
     private final ApacheHttpClient4 discoveryApacheClient;
-    private EurekaHttpClient eurekaHttpClient;
-    private EurekaHttpClientFactory eurekaHttpClientFactory;
     private EurekaJerseyClient discoveryJerseyClient;
+
+    private EurekaHttpClient registrationClient;
+    private EurekaHttpClientFactory registrationClientFactory;
+
+    private EurekaHttpClient queryClient;
+    private EurekaHttpClientFactory queryClientFactory;
 
     private volatile HealthCheckHandler healthCheckHandler;
     private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<String, Applications>();
@@ -460,13 +464,30 @@ public class DiscoveryClient implements EurekaClient {
                 clientConfig.getEurekaServiceUrlPollIntervalSeconds(),
                 clientConfig.getEurekaServiceUrlPollIntervalSeconds(), TimeUnit.SECONDS);
 
+        if (clientConfig.shouldRegisterWithEureka()) {
+            EurekaHttpClientFactory newRegistrationClientFactory = null;
+            EurekaHttpClient newRegistrationClient = null;
+            try {
+                newRegistrationClientFactory = EurekaHttpClients.registrationClientFactory(
+                        clientConfig,
+                        transportConfig,
+                        applicationInfoManager.getInfo()
+                );
+                newRegistrationClient = newRegistrationClientFactory.newClient();
+            } catch (Exception e) {
+                logger.warn("Experimental transport initialization failure", e);
+            }
+            this.registrationClientFactory = newRegistrationClientFactory;
+            this.registrationClient = newRegistrationClient;
+        }
+
         // new method (resolve from primary servers for read)
         // Configure new transport layer (candidate for injecting in the future)
         if (clientConfig.shouldFetchRegistry()) {
-            EurekaHttpClientFactory newEurekaHttpClientFactory = null;
-            EurekaHttpClient newEurekaHttpClient = null;
+            EurekaHttpClientFactory newQueryClientFactory = null;
+            EurekaHttpClient newQueryClient = null;
             try {
-                newEurekaHttpClientFactory = EurekaHttpClients.createStandardClientFactory(
+                newQueryClientFactory = EurekaHttpClients.queryClientFactory(
                         clientConfig,
                         transportConfig,
                         applicationInfoManager.getInfo(),
@@ -485,12 +506,12 @@ public class DiscoveryClient implements EurekaClient {
                             }
                         }
                 );
-                newEurekaHttpClient = newEurekaHttpClientFactory.newClient();
+                newQueryClient = newQueryClientFactory.newClient();
             } catch (Exception e) {
                 logger.warn("Experimental transport initialization failure", e);
             }
-            this.eurekaHttpClientFactory = newEurekaHttpClientFactory;
-            this.eurekaHttpClient = newEurekaHttpClient;
+            this.queryClientFactory = newQueryClientFactory;
+            this.queryClient = newQueryClient;
         }
     }
 
@@ -726,11 +747,11 @@ public class DiscoveryClient implements EurekaClient {
      */
     @Override
     public Applications getApplications(String serviceUrl) {
-        if (shouldUseExperimentalTransport()) {
+        if (shouldUseExperimentalTransportForQuery()) {
             try {
                 EurekaHttpResponse<Applications> response = clientConfig.getRegistryRefreshSingleVipAddress() == null
-                        ? eurekaHttpClient.getApplications()
-                        : eurekaHttpClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
+                        ? queryClient.getApplications()
+                        : queryClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
                 if (response.getStatusCode() == 200) {
                     logger.debug(PREFIX + appPathIdentifier + " -  refresh status: " + response.getStatusCode());
                     return response.getEntity();
@@ -776,10 +797,10 @@ public class DiscoveryClient implements EurekaClient {
      */
     boolean register() throws Throwable {
         logger.info(PREFIX + appPathIdentifier + ": registering service...");
-        if (shouldUseExperimentalTransport()) {
+        if (shouldUseExperimentalTransportForRegistration()) {
             EurekaHttpResponse<Void> httpResponse;
             try {
-                httpResponse = eurekaHttpClient.register(instanceInfo);
+                httpResponse = registrationClient.register(instanceInfo);
             } catch (Exception e) {
                 logger.warn("{} - registration failed {}", PREFIX + appPathIdentifier, e.getMessage(), e);
                 throw e;
@@ -809,10 +830,10 @@ public class DiscoveryClient implements EurekaClient {
      * Renew with the eureka service by making the appropriate REST call
      */
     boolean renew() {
-        if (shouldUseExperimentalTransport()) {
+        if (shouldUseExperimentalTransportForRegistration()) {
             EurekaHttpResponse<InstanceInfo> httpResponse;
             try {
-                httpResponse = eurekaHttpClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
+                httpResponse = registrationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
                 logger.debug("{} - Heartbeat status: {}", PREFIX + appPathIdentifier, httpResponse.getStatusCode());
                 if (httpResponse.getStatusCode() == 404) {
                     REREGISTER_COUNTER.increment();
@@ -887,11 +908,21 @@ public class DiscoveryClient implements EurekaClient {
             if (discoveryJerseyClient != null) {
                 discoveryJerseyClient.destroyResources();
             }
-            if (eurekaHttpClientFactory != null) {
-                eurekaHttpClientFactory.shutdown();
+
+            if (queryClientFactory != null) {
+                queryClientFactory.shutdown();
             }
-            if (eurekaHttpClient != null) {
-                eurekaHttpClient.shutdown();
+
+            if (registrationClientFactory != null) {
+                registrationClientFactory.shutdown();
+            }
+
+            if (queryClient != null) {
+                queryClient.shutdown();
+            }
+
+            if (registrationClient != null) {
+                registrationClient.shutdown();
             }
 
             heartbeatStalenessMonitor.shutdown();
@@ -903,9 +934,9 @@ public class DiscoveryClient implements EurekaClient {
      * unregister w/ the eureka service.
      */
     void unregister() {
-        if (shouldUseExperimentalTransport()) {
+        if (shouldUseExperimentalTransportForRegistration()) {
             try {
-                EurekaHttpResponse<Void> httpResponse = eurekaHttpClient.cancel(instanceInfo.getAppName(), instanceInfo.getId());
+                EurekaHttpResponse<Void> httpResponse = registrationClient.cancel(instanceInfo.getAppName(), instanceInfo.getId());
                 logger.info(PREFIX + appPathIdentifier + " - deregister  status: " + httpResponse.getStatusCode());
             } catch (Exception e) {
                 logger.error(PREFIX + appPathIdentifier + " - de-registration failed" + e.getMessage(), e);
@@ -1044,10 +1075,10 @@ public class DiscoveryClient implements EurekaClient {
         logger.info("Getting all instance registry info from the eureka server");
 
         Applications apps = null;
-        if (shouldUseExperimentalTransport()) {
+        if (shouldUseExperimentalTransportForQuery()) {
             EurekaHttpResponse<Applications> httpResponse = clientConfig.getRegistryRefreshSingleVipAddress() == null
-                    ? eurekaHttpClient.getApplications()
-                    : eurekaHttpClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
+                    ? queryClient.getApplications()
+                    : queryClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
             if (httpResponse.getStatusCode() == Status.OK.getStatusCode()) {
                 apps = httpResponse.getEntity();
             }
@@ -1091,8 +1122,8 @@ public class DiscoveryClient implements EurekaClient {
         long currentUpdateGeneration = fetchRegistryGeneration.get();
 
         Applications delta = null;
-        if (shouldUseExperimentalTransport()) {
-            EurekaHttpResponse<Applications> httpResponse = eurekaHttpClient.getDelta();
+        if (shouldUseExperimentalTransportForQuery()) {
+            EurekaHttpResponse<Applications> httpResponse = queryClient.getDelta();
             if (httpResponse.getStatusCode() == Status.OK.getStatusCode()) {
                 delta = httpResponse.getEntity();
             }
@@ -1175,10 +1206,10 @@ public class DiscoveryClient implements EurekaClient {
         long currentUpdateGeneration = fetchRegistryGeneration.get();
 
         Applications serverApps = null;
-        if (shouldUseExperimentalTransport()) {
+        if (shouldUseExperimentalTransportForQuery()) {
             EurekaHttpResponse<Applications> httpResponse = clientConfig.getRegistryRefreshSingleVipAddress() == null
-                    ? eurekaHttpClient.getApplications()
-                    : eurekaHttpClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
+                    ? queryClient.getApplications()
+                    : queryClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
             serverApps = httpResponse.getEntity();
         } else {
             ClientResponse response = makeRemoteCall(Action.Refresh);
@@ -1945,11 +1976,19 @@ public class DiscoveryClient implements EurekaClient {
         return null != remoteRegionsToFetch.get();
     }
 
-    private boolean shouldUseExperimentalTransport() {
-        if (eurekaHttpClient == null) {
+    private boolean shouldUseExperimentalTransportForQuery() {
+        if (queryClient == null) {
             return false;
         }
-        String enabled = clientConfig.getExperimental("transport.enabled");
+        String enabled = clientConfig.getExperimental("transport.query.enabled");
+        return enabled != null && "true".equalsIgnoreCase(enabled);
+    }
+
+    private boolean shouldUseExperimentalTransportForRegistration() {
+        if (registrationClient == null) {
+            return false;
+        }
+        String enabled = clientConfig.getExperimental("transport.registration.enabled");
         return enabled != null && "true".equalsIgnoreCase(enabled);
     }
 

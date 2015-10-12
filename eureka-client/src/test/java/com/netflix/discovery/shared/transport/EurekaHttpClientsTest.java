@@ -89,7 +89,7 @@ public class EurekaHttpClientsTest {
         readServer = new SimpleEurekaHttpServer(readRequestHandler);
         readServerURI = "http://localhost:" + readServer.getServerPort();
 
-        clientFactory = EurekaHttpClients.createStandardClientFactory(
+        clientFactory = EurekaHttpClients.canonicalClientFactory(
                 clientConfig,
                 transportConfig,
                 applicationInfoManager.getInfo(),
@@ -156,7 +156,7 @@ public class EurekaHttpClientsTest {
 
         ClosableResolver resolver = null;
         try {
-            resolver = EurekaHttpClients.createStandardClusterResolver(
+            resolver = EurekaHttpClients.queryClientResolver(
                     remoteResolver,
                     localResolver,
                     clientConfig,
