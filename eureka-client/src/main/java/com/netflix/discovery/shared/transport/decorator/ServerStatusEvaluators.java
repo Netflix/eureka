@@ -30,6 +30,10 @@ public final class ServerStatusEvaluators {
                 return true;
             } else if (requestType == RequestType.Register && statusCode == 404) {
                 return true;
+            } else if (requestType == RequestType.SendHeartBeat && statusCode == 404) {
+                return true;
+            } else if (requestType == RequestType.Cancel) {  // cancel is best effort
+                return true;
             } else if (requestType == RequestType.GetDelta && (statusCode == 403 || statusCode == 404)) {
                 return true;
             }

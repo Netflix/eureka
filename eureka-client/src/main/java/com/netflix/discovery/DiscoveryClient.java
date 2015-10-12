@@ -68,12 +68,15 @@ import com.netflix.discovery.endpoint.DnsResolver;
 import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.aws.ApplicationsResolver;
+import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpClients;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
+import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
 import com.netflix.discovery.util.ThresholdLevelsMetric;
@@ -192,6 +195,8 @@ public class DiscoveryClient implements EurekaClient {
     private final Provider<BackupRegistry> backupRegistryProvider;
     private final ApacheHttpClient4 discoveryApacheClient;
     private EurekaJerseyClient discoveryJerseyClient;
+
+    private TransportClientFactory transportClientFactory;
 
     private EurekaHttpClient registrationClient;
     private EurekaHttpClientFactory registrationClientFactory;
@@ -464,14 +469,22 @@ public class DiscoveryClient implements EurekaClient {
                 clientConfig.getEurekaServiceUrlPollIntervalSeconds(),
                 clientConfig.getEurekaServiceUrlPollIntervalSeconds(), TimeUnit.SECONDS);
 
+        ClusterResolver<AwsEndpoint> bootstrapResolver = EurekaHttpClients
+                .newBootstrapResolver(clientConfig, applicationInfoManager.getInfo());
+
+        transportClientFactory = EurekaHttpClients
+                .newTransportClientFactory(clientConfig, applicationInfoManager.getInfo());
+
         if (clientConfig.shouldRegisterWithEureka()) {
+            bootstrapResolver.getClusterEndpoints();  // do warm-up
+
             EurekaHttpClientFactory newRegistrationClientFactory = null;
             EurekaHttpClient newRegistrationClient = null;
             try {
                 newRegistrationClientFactory = EurekaHttpClients.registrationClientFactory(
-                        clientConfig,
-                        transportConfig,
-                        applicationInfoManager.getInfo()
+                        bootstrapResolver,
+                        transportClientFactory,
+                        transportConfig
                 );
                 newRegistrationClient = newRegistrationClientFactory.newClient();
             } catch (Exception e) {
@@ -484,10 +497,14 @@ public class DiscoveryClient implements EurekaClient {
         // new method (resolve from primary servers for read)
         // Configure new transport layer (candidate for injecting in the future)
         if (clientConfig.shouldFetchRegistry()) {
+            bootstrapResolver.getClusterEndpoints();  // do warm-up
+
             EurekaHttpClientFactory newQueryClientFactory = null;
             EurekaHttpClient newQueryClient = null;
             try {
                 newQueryClientFactory = EurekaHttpClients.queryClientFactory(
+                        bootstrapResolver,
+                        transportClientFactory,
                         clientConfig,
                         transportConfig,
                         applicationInfoManager.getInfo(),
@@ -923,6 +940,10 @@ public class DiscoveryClient implements EurekaClient {
 
             if (registrationClient != null) {
                 registrationClient.shutdown();
+            }
+
+            if (transportClientFactory != null) {
+                transportClientFactory.shutdown();
             }
 
             heartbeatStalenessMonitor.shutdown();

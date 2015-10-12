@@ -30,17 +30,33 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
     // thread will block for the warmup (up to the configurable timeout).
     private final AtomicBoolean warmedUp = new AtomicBoolean(false);
 
-    private final EurekaTransportConfig transportConfig;
     private final ClusterResolver<T> delegate;
     private final ScheduledExecutorService executorService;
     private final ThreadPoolExecutor threadPoolExecutor;
     private final TimedSupervisorTask backgroundTask;
     private final AtomicReference<List<T>> resultsRef;
 
+    private final int refreshIntervalMs;
+    private final int warmUpTimeoutMs;
+
     public AsyncResolver(EurekaTransportConfig transportConfig,
                          ClusterResolver<T> delegate) {
-        this.transportConfig = transportConfig;
+        this(
+                delegate,
+                transportConfig.getAsyncExecutorThreadPoolSize(),
+                transportConfig.getAsyncResolverRefreshIntervalMs(),
+                transportConfig.getAsyncResolverWarmupTimeoutMs()
+        );
+    }
+
+    public AsyncResolver(ClusterResolver<T> delegate,
+                         int executorThreadPoolSize,
+                         int refreshIntervalMs,
+                         int warmUpTimeoutMs) {
         this.delegate = delegate;
+        this.refreshIntervalMs = refreshIntervalMs;
+        this.warmUpTimeoutMs = warmUpTimeoutMs;
+
         this.executorService = Executors.newScheduledThreadPool(1,
                 new ThreadFactoryBuilder()
                         .setNameFormat("AsyncResolver-%d")
@@ -48,14 +64,14 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
                         .build());
 
         this.threadPoolExecutor = new ThreadPoolExecutor(
-                1, transportConfig.getAsyncExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
+                1, executorThreadPoolSize, 0, TimeUnit.SECONDS,
                 new SynchronousQueue<Runnable>());  // use direct handoff
 
         this.backgroundTask = new TimedSupervisorTask(
                 this.getClass().getSimpleName(),
                 executorService,
                 threadPoolExecutor,
-                transportConfig.getAsyncResolverRefreshIntervalMs(),
+                refreshIntervalMs,
                 TimeUnit.MILLISECONDS,
                 5,
                 updateTask
@@ -82,7 +98,7 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
         if (warmedUp.compareAndSet(false, true)) {
             doWarmUp();
             executorService.schedule(
-                    backgroundTask, transportConfig.getAsyncResolverRefreshIntervalMs(), TimeUnit.MILLISECONDS);
+                    backgroundTask, refreshIntervalMs, TimeUnit.MILLISECONDS);
         }
         return resultsRef.get();
     }
@@ -91,7 +107,7 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
         Future future = null;
         try {
             future = threadPoolExecutor.submit(updateTask);
-            future.get(transportConfig.getAsyncResolverWarmupTimeoutMs(), TimeUnit.MILLISECONDS);  // block until done or timeout
+            future.get(warmUpTimeoutMs, TimeUnit.MILLISECONDS);  // block until done or timeout
         } catch (Exception e) {
             logger.warn("Best effort warm up failed", e);
         } finally {
@@ -111,6 +127,7 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
                 } else {
                     logger.warn("Delegate returned null list of cluster endpoints");
                 }
+                logger.debug("Resolved to {}", newList);
             } catch (Exception e) {
                 logger.warn("Failed to retrieve cluster endpoints from the delegate", e);
             }

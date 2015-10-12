@@ -90,10 +90,12 @@ public class EurekaHttpClientsTest {
         readServerURI = "http://localhost:" + readServer.getServerPort();
 
         clientFactory = EurekaHttpClients.canonicalClientFactory(
-                clientConfig,
                 transportConfig,
-                applicationInfoManager.getInfo(),
-                clusterResolver);
+                clusterResolver,
+                EurekaHttpClients.newTransportClientFactory(
+                        clientConfig,
+                        applicationInfoManager.getInfo()
+                ));
     }
 
     @After
@@ -154,34 +156,26 @@ public class EurekaHttpClientsTest {
 
         ApplicationsResolver localResolver = spy(new ApplicationsResolver(clientConfig, transportConfig, applicationsSource));
 
-        ClosableResolver resolver = null;
-        try {
-            resolver = EurekaHttpClients.queryClientResolver(
-                    remoteResolver,
-                    localResolver,
-                    clientConfig,
-                    transportConfig,
-                    applicationInfoManager.getInfo()
-            );
+        ClosableResolver resolver = EurekaHttpClients.queryClientResolver(
+                remoteResolver,
+                localResolver,
+                clientConfig,
+                transportConfig,
+                applicationInfoManager.getInfo()
+        );
 
-            List endpoints = resolver.getClusterEndpoints();
-            assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
-            verify(remoteResolver, times(1)).getClusterEndpoints();
-            verify(localResolver, times(1)).getClusterEndpoints();
+        List endpoints = resolver.getClusterEndpoints();
+        assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
+        verify(remoteResolver, times(1)).getClusterEndpoints();
+        verify(localResolver, times(1)).getClusterEndpoints();
 
-            // wait for the second cycle that hits the app source
-            verify(applicationsSource, timeout(1000).times(2)).getApplications(anyInt(), eq(TimeUnit.SECONDS));
-            endpoints = resolver.getClusterEndpoints();
-            assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
+        // wait for the second cycle that hits the app source
+        verify(applicationsSource, timeout(1000).times(2)).getApplications(anyInt(), eq(TimeUnit.SECONDS));
+        endpoints = resolver.getClusterEndpoints();
+        assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
 
-            verify(remoteResolver, times(1)).getClusterEndpoints();
-            verify(localResolver, times(2)).getClusterEndpoints();
+        verify(remoteResolver, times(1)).getClusterEndpoints();
+        verify(localResolver, times(2)).getClusterEndpoints();
 
-        } finally {
-            if (resolver != null) {
-                resolver.shutdown();
-                verify(remoteResolver, times(1)).shutdown();
-            }
-        }
     }
 }
