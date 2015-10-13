@@ -2,7 +2,6 @@ package com.netflix.discovery.shared.resolver;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.discovery.TimedSupervisorTask;
-import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.annotations.Monitor;
 import org.slf4j.Logger;
@@ -46,17 +45,53 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
     // Metric timestamp, tracking last time when data were effectively changed.
     private volatile long lastLoadTimestamp = -1;
 
-    public AsyncResolver(EurekaTransportConfig transportConfig,
-                         ClusterResolver<T> delegate) {
+    /**
+     * Create an async resolver with an empty initial value. When this resolver is called for the first time,
+     * an initial warm up will be executed.
+     */
+    public AsyncResolver(ClusterResolver<T> delegate,
+                         int executorThreadPoolSize,
+                         int refreshIntervalMs,
+                         int warmUpTimeoutMs) {
         this(
                 delegate,
-                transportConfig.getAsyncExecutorThreadPoolSize(),
-                transportConfig.getAsyncResolverRefreshIntervalMs(),
-                transportConfig.getAsyncResolverWarmupTimeoutMs()
+                Collections.<T>emptyList(),
+                executorThreadPoolSize,
+                refreshIntervalMs,
+                warmUpTimeoutMs
         );
     }
 
+    /**
+     * Create an async resolver with a preset initial value. WHen this resolver is called for the first time,
+     * there will be no warm up and the initial value will be returned (unless the background process has
+     * since updated the value).
+     */
     public AsyncResolver(ClusterResolver<T> delegate,
+                         List<T> initialValue,
+                         int executorThreadPoolSize,
+                         int refreshIntervalMs) {
+        this(
+                delegate,
+                initialValue,
+                executorThreadPoolSize,
+                refreshIntervalMs,
+                0
+        );
+
+        warmedUp.set(true);
+        scheduleTask(refreshIntervalMs);
+    }
+
+    /**
+     * @param delegate the delegate resolver to async resolve from
+     * @param initialValue the initial value to use
+     * @param executorThreadPoolSize the max number of threads for the threadpool
+     * @param refreshIntervalMs the async refresh interval
+     * @param warmUpTimeoutMs the time to wait for the initial warm up
+     */
+    AsyncResolver(ClusterResolver<T> delegate,
+                         List<T> initialValue,
                          int executorThreadPoolSize,
                          int refreshIntervalMs,
                          int warmUpTimeoutMs) {
@@ -84,7 +119,7 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
                 updateTask
         );
 
-        this.resultsRef = new AtomicReference<>(Collections.<T>emptyList());
+        this.resultsRef = new AtomicReference<>(initialValue);
     }
 
     @Override
@@ -103,18 +138,18 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
     @Override
     public List<T> getClusterEndpoints() {
         if (warmedUp.compareAndSet(false, true)) {
-            doWarmUp();
-            executorService.schedule(
-                    backgroundTask, refreshIntervalMs, TimeUnit.MILLISECONDS);
+            long delay = doWarmUp() ? refreshIntervalMs : 0;
+            scheduleTask(delay);
         }
         return resultsRef.get();
     }
 
-    /* visible for testing */ void doWarmUp() {
+    /* visible for testing */ boolean doWarmUp() {
         Future future = null;
         try {
             future = threadPoolExecutor.submit(updateTask);
             future.get(warmUpTimeoutMs, TimeUnit.MILLISECONDS);  // block until done or timeout
+            return true;
         } catch (Exception e) {
             logger.warn("Best effort warm up failed", e);
         } finally {
@@ -122,6 +157,12 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
                 future.cancel(true);
             }
         }
+        return false;
+    }
+
+    private void scheduleTask(long delay) {
+        executorService.schedule(
+                backgroundTask, delay, TimeUnit.MILLISECONDS);
     }
 
     @Monitor(name = METRIC_RESOLVER_PREFIX + "lastLoadTimestamp",

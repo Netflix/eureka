@@ -127,11 +127,13 @@ public final class EurekaHttpClients {
                 true
         );
 
+        List<AwsEndpoint> initialValue = delegateResolver.getClusterEndpoints();
+
         return new AsyncResolver<>(
                 delegateResolver,
-                2,
-                clientConfig.getEurekaServiceUrlPollIntervalSeconds() * 1000,
-                clientConfig.getTransportConfig().getAsyncResolverWarmupTimeoutMs()
+                initialValue,
+                1,
+                clientConfig.getEurekaServiceUrlPollIntervalSeconds() * 1000
         );
     }
 
@@ -228,8 +230,10 @@ public final class EurekaHttpClients {
         };
 
         final AsyncResolver<AwsEndpoint> asyncResolver = new AsyncResolver<>(
-                transportConfig,
-                new ZoneAffinityClusterResolver(compoundResolver, myZone, true)
+                new ZoneAffinityClusterResolver(compoundResolver, myZone, true),
+                transportConfig.getAsyncExecutorThreadPoolSize(),
+                transportConfig.getAsyncResolverRefreshIntervalMs(),
+                transportConfig.getAsyncResolverWarmUpTimeoutMs()
         );
 
         return new ClosableResolver<AwsEndpoint>() {

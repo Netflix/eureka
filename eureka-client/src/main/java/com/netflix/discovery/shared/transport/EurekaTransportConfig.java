@@ -30,7 +30,7 @@ public interface EurekaTransportConfig {
     /**
      * @return the async refresh timeout threshold in ms.
      */
-    int getAsyncResolverWarmupTimeoutMs();
+    int getAsyncResolverWarmUpTimeoutMs();
 
     /**
      * @return the max threadpool size for the async resolver's executor

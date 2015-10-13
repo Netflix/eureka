@@ -136,7 +136,7 @@ public class EurekaHttpClientsTest {
 
         when(transportConfig.getAsyncExecutorThreadPoolSize()).thenReturn(3);
         when(transportConfig.getAsyncResolverRefreshIntervalMs()).thenReturn(300);
-        when(transportConfig.getAsyncResolverWarmupTimeoutMs()).thenReturn(200);
+        when(transportConfig.getAsyncResolverWarmUpTimeoutMs()).thenReturn(200);
 
         Applications applications = InstanceInfoGenerator.newBuilder(5, "eurekaRead", "someOther").build().toApplications();
         String vipAddress = applications.getRegisteredApplications("eurekaRead").getInstances().get(0).getVIPAddress();

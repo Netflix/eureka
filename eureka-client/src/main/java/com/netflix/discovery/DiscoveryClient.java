@@ -68,6 +68,7 @@ import com.netflix.discovery.endpoint.DnsResolver;
 import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.shared.resolver.ClosableResolver;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.aws.ApplicationsResolver;
 import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
@@ -193,16 +194,9 @@ public class DiscoveryClient implements EurekaClient {
     private final EventBus eventBus;
     private final EndpointUtils.ServiceUrlRandomizer urlRandomizer;
     private final Provider<BackupRegistry> backupRegistryProvider;
+    private final EurekaTransport eurekaTransport;
     private final ApacheHttpClient4 discoveryApacheClient;
     private EurekaJerseyClient discoveryJerseyClient;
-
-    private TransportClientFactory transportClientFactory;
-
-    private EurekaHttpClient registrationClient;
-    private EurekaHttpClientFactory registrationClientFactory;
-
-    private EurekaHttpClient queryClient;
-    private EurekaHttpClientFactory queryClientFactory;
 
     private volatile HealthCheckHandler healthCheckHandler;
     private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<String, Applications>();
@@ -226,6 +220,43 @@ public class DiscoveryClient implements EurekaClient {
 
     private enum Action {
         Register, Cancel, Renew, Refresh, Refresh_Delta
+    }
+
+    private static final class EurekaTransport {
+        private ClosableResolver bootstrapResolver;
+        private TransportClientFactory transportClientFactory;
+
+        private EurekaHttpClient registrationClient;
+        private EurekaHttpClientFactory registrationClientFactory;
+
+        private EurekaHttpClient queryClient;
+        private EurekaHttpClientFactory queryClientFactory;
+
+        void shutdown() {
+            if (registrationClientFactory != null) {
+                registrationClientFactory.shutdown();
+            }
+
+            if (queryClientFactory != null) {
+                queryClientFactory.shutdown();
+            }
+
+            if (registrationClient != null) {
+                registrationClient.shutdown();
+            }
+
+            if (queryClient != null) {
+                queryClient.shutdown();
+            }
+
+            if (transportClientFactory != null) {
+                transportClientFactory.shutdown();
+            }
+
+            if (bootstrapResolver != null) {
+                bootstrapResolver.shutdown();
+            }
+        }
     }
 
     public static class DiscoveryClientOptionalArgs {
@@ -370,11 +401,12 @@ public class DiscoveryClient implements EurekaClient {
                     1, clientConfig.getCacheRefreshExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
                     new SynchronousQueue<Runnable>());  // use direct handoff
 
-            scheduleServerEndpointTask(zone);
-
             fetchRegistryGeneration = new AtomicLong(0);
 
             clientAccept = EurekaAccept.fromString(clientConfig.getClientDataAccept());
+
+            eurekaTransport = new EurekaTransport();
+            scheduleServerEndpointTask(eurekaTransport, zone);
 
             if (discoveryJerseyClient == null) {  // if not injected, create one
 
@@ -461,7 +493,7 @@ public class DiscoveryClient implements EurekaClient {
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
     }
 
-    private void scheduleServerEndpointTask(String zone) {
+    private void scheduleServerEndpointTask(EurekaTransport eurekaTransport, String zone) {
 
         // old method (just from dns)
         eurekaServiceUrls.set(timedGetDiscoveryServiceUrls(zone));
@@ -469,42 +501,38 @@ public class DiscoveryClient implements EurekaClient {
                 clientConfig.getEurekaServiceUrlPollIntervalSeconds(),
                 clientConfig.getEurekaServiceUrlPollIntervalSeconds(), TimeUnit.SECONDS);
 
-        ClusterResolver<AwsEndpoint> bootstrapResolver = EurekaHttpClients
+        eurekaTransport.bootstrapResolver = EurekaHttpClients
                 .newBootstrapResolver(clientConfig, applicationInfoManager.getInfo());
 
-        transportClientFactory = EurekaHttpClients
+        eurekaTransport.transportClientFactory = EurekaHttpClients
                 .newTransportClientFactory(clientConfig, applicationInfoManager.getInfo());
 
         if (clientConfig.shouldRegisterWithEureka()) {
-            bootstrapResolver.getClusterEndpoints();  // do warm-up
-
             EurekaHttpClientFactory newRegistrationClientFactory = null;
             EurekaHttpClient newRegistrationClient = null;
             try {
                 newRegistrationClientFactory = EurekaHttpClients.registrationClientFactory(
-                        bootstrapResolver,
-                        transportClientFactory,
+                        eurekaTransport.bootstrapResolver,
+                        eurekaTransport.transportClientFactory,
                         transportConfig
                 );
                 newRegistrationClient = newRegistrationClientFactory.newClient();
             } catch (Exception e) {
                 logger.warn("Experimental transport initialization failure", e);
             }
-            this.registrationClientFactory = newRegistrationClientFactory;
-            this.registrationClient = newRegistrationClient;
+            eurekaTransport.registrationClientFactory = newRegistrationClientFactory;
+            eurekaTransport.registrationClient = newRegistrationClient;
         }
 
         // new method (resolve from primary servers for read)
         // Configure new transport layer (candidate for injecting in the future)
         if (clientConfig.shouldFetchRegistry()) {
-            bootstrapResolver.getClusterEndpoints();  // do warm-up
-
             EurekaHttpClientFactory newQueryClientFactory = null;
             EurekaHttpClient newQueryClient = null;
             try {
                 newQueryClientFactory = EurekaHttpClients.queryClientFactory(
-                        bootstrapResolver,
-                        transportClientFactory,
+                        eurekaTransport.bootstrapResolver,
+                        eurekaTransport.transportClientFactory,
                         clientConfig,
                         transportConfig,
                         applicationInfoManager.getInfo(),
@@ -527,8 +555,8 @@ public class DiscoveryClient implements EurekaClient {
             } catch (Exception e) {
                 logger.warn("Experimental transport initialization failure", e);
             }
-            this.queryClientFactory = newQueryClientFactory;
-            this.queryClient = newQueryClient;
+            eurekaTransport.queryClientFactory = newQueryClientFactory;
+            eurekaTransport.queryClient = newQueryClient;
         }
     }
 
@@ -767,8 +795,8 @@ public class DiscoveryClient implements EurekaClient {
         if (shouldUseExperimentalTransportForQuery()) {
             try {
                 EurekaHttpResponse<Applications> response = clientConfig.getRegistryRefreshSingleVipAddress() == null
-                        ? queryClient.getApplications()
-                        : queryClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
+                        ? eurekaTransport.queryClient.getApplications()
+                        : eurekaTransport.queryClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
                 if (response.getStatusCode() == 200) {
                     logger.debug(PREFIX + appPathIdentifier + " -  refresh status: " + response.getStatusCode());
                     return response.getEntity();
@@ -817,7 +845,7 @@ public class DiscoveryClient implements EurekaClient {
         if (shouldUseExperimentalTransportForRegistration()) {
             EurekaHttpResponse<Void> httpResponse;
             try {
-                httpResponse = registrationClient.register(instanceInfo);
+                httpResponse = eurekaTransport.registrationClient.register(instanceInfo);
             } catch (Exception e) {
                 logger.warn("{} - registration failed {}", PREFIX + appPathIdentifier, e.getMessage(), e);
                 throw e;
@@ -850,7 +878,7 @@ public class DiscoveryClient implements EurekaClient {
         if (shouldUseExperimentalTransportForRegistration()) {
             EurekaHttpResponse<InstanceInfo> httpResponse;
             try {
-                httpResponse = registrationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
+                httpResponse = eurekaTransport.registrationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
                 logger.debug("{} - Heartbeat status: {}", PREFIX + appPathIdentifier, httpResponse.getStatusCode());
                 if (httpResponse.getStatusCode() == 404) {
                     REREGISTER_COUNTER.increment();
@@ -926,25 +954,7 @@ public class DiscoveryClient implements EurekaClient {
                 discoveryJerseyClient.destroyResources();
             }
 
-            if (queryClientFactory != null) {
-                queryClientFactory.shutdown();
-            }
-
-            if (registrationClientFactory != null) {
-                registrationClientFactory.shutdown();
-            }
-
-            if (queryClient != null) {
-                queryClient.shutdown();
-            }
-
-            if (registrationClient != null) {
-                registrationClient.shutdown();
-            }
-
-            if (transportClientFactory != null) {
-                transportClientFactory.shutdown();
-            }
+            eurekaTransport.shutdown();
 
             heartbeatStalenessMonitor.shutdown();
             registryStalenessMonitor.shutdown();
@@ -957,7 +967,7 @@ public class DiscoveryClient implements EurekaClient {
     void unregister() {
         if (shouldUseExperimentalTransportForRegistration()) {
             try {
-                EurekaHttpResponse<Void> httpResponse = registrationClient.cancel(instanceInfo.getAppName(), instanceInfo.getId());
+                EurekaHttpResponse<Void> httpResponse = eurekaTransport.registrationClient.cancel(instanceInfo.getAppName(), instanceInfo.getId());
                 logger.info(PREFIX + appPathIdentifier + " - deregister  status: " + httpResponse.getStatusCode());
             } catch (Exception e) {
                 logger.error(PREFIX + appPathIdentifier + " - de-registration failed" + e.getMessage(), e);
@@ -1098,8 +1108,8 @@ public class DiscoveryClient implements EurekaClient {
         Applications apps = null;
         if (shouldUseExperimentalTransportForQuery()) {
             EurekaHttpResponse<Applications> httpResponse = clientConfig.getRegistryRefreshSingleVipAddress() == null
-                    ? queryClient.getApplications()
-                    : queryClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
+                    ? eurekaTransport.queryClient.getApplications()
+                    : eurekaTransport.queryClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
             if (httpResponse.getStatusCode() == Status.OK.getStatusCode()) {
                 apps = httpResponse.getEntity();
             }
@@ -1144,7 +1154,7 @@ public class DiscoveryClient implements EurekaClient {
 
         Applications delta = null;
         if (shouldUseExperimentalTransportForQuery()) {
-            EurekaHttpResponse<Applications> httpResponse = queryClient.getDelta();
+            EurekaHttpResponse<Applications> httpResponse = eurekaTransport.queryClient.getDelta();
             if (httpResponse.getStatusCode() == Status.OK.getStatusCode()) {
                 delta = httpResponse.getEntity();
             }
@@ -1229,8 +1239,8 @@ public class DiscoveryClient implements EurekaClient {
         Applications serverApps = null;
         if (shouldUseExperimentalTransportForQuery()) {
             EurekaHttpResponse<Applications> httpResponse = clientConfig.getRegistryRefreshSingleVipAddress() == null
-                    ? queryClient.getApplications()
-                    : queryClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
+                    ? eurekaTransport.queryClient.getApplications()
+                    : eurekaTransport.queryClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
             serverApps = httpResponse.getEntity();
         } else {
             ClientResponse response = makeRemoteCall(Action.Refresh);
@@ -1998,7 +2008,7 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     private boolean shouldUseExperimentalTransportForQuery() {
-        if (queryClient == null) {
+        if (eurekaTransport.queryClient == null) {
             return false;
         }
         String enabled = clientConfig.getExperimental("transport.query.enabled");
@@ -2006,7 +2016,7 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     private boolean shouldUseExperimentalTransportForRegistration() {
-        if (registrationClient == null) {
+        if (eurekaTransport.registrationClient == null) {
             return false;
         }
         String enabled = clientConfig.getExperimental("transport.registration.enabled");
@@ -2108,4 +2118,5 @@ public class DiscoveryClient implements EurekaClient {
         registryStalenessMonitor.update(delay);
         return delay;
     }
+
 }

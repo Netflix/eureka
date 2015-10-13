@@ -39,8 +39,8 @@ public class DefaultEurekaTransportConfig implements EurekaTransportConfig {
     }
 
     @Override
-    public int getAsyncResolverWarmupTimeoutMs() {
-        return configInstance.getIntProperty(namespace + "asyncResolverWarmupTimeoutMs", 1000).get();
+    public int getAsyncResolverWarmUpTimeoutMs() {
+        return configInstance.getIntProperty(namespace + "asyncResolverWarmupTimeoutMs", 5000).get();
     }
 
     @Override

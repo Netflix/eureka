@@ -45,8 +45,8 @@ public class EurekaArchaius2TransportConfig implements EurekaTransportConfig {
     }
 
     @Override
-    public int getAsyncResolverWarmupTimeoutMs() {
-        return config.getInteger("asyncResolverWarmupTimeoutMs", 1000);
+    public int getAsyncResolverWarmUpTimeoutMs() {
+        return config.getInteger("asyncResolverWarmupTimeoutMs", 5000);
     }
 
     @Override
