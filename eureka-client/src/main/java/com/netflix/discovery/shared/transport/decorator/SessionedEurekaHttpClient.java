@@ -24,6 +24,7 @@ import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.TransportUtils;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.annotations.Monitor;
+import com.netflix.servo.monitor.Monitors;
 
 import static com.netflix.discovery.EurekaClientNames.METRIC_TRANSPORT_PREFIX;
 
@@ -45,6 +46,7 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
     public SessionedEurekaHttpClient(EurekaHttpClientFactory clientFactory, long sessionDurationMs) {
         this.clientFactory = clientFactory;
         this.sessionDurationMs = sessionDurationMs;
+        Monitors.registerObject(this);
     }
 
     @Override
@@ -65,6 +67,7 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
 
     @Override
     public void shutdown() {
+        Monitors.unregisterObject(this);
         TransportUtils.shutdown(eurekaHttpClientRef.getAndSet(null));
     }
 

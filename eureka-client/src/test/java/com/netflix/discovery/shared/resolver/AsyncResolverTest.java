@@ -36,6 +36,7 @@ public class AsyncResolverTest {
         when(transportConfig.getAsyncResolverWarmUpTimeoutMs()).thenReturn(100);
 
         resolver = spy(new AsyncResolver(
+                "test",
                 delegateResolver,
                 transportConfig.getAsyncExecutorThreadPoolSize(),
                 transportConfig.getAsyncResolverRefreshIntervalMs(),

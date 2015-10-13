@@ -130,6 +130,7 @@ public final class EurekaHttpClients {
         List<AwsEndpoint> initialValue = delegateResolver.getClusterEndpoints();
 
         return new AsyncResolver<>(
+                "bootstrap",
                 delegateResolver,
                 initialValue,
                 1,
@@ -230,6 +231,7 @@ public final class EurekaHttpClients {
         };
 
         final AsyncResolver<AwsEndpoint> asyncResolver = new AsyncResolver<>(
+                "query",
                 new ZoneAffinityClusterResolver(compoundResolver, myZone, true),
                 transportConfig.getAsyncExecutorThreadPoolSize(),
                 transportConfig.getAsyncResolverRefreshIntervalMs(),

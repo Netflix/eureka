@@ -48,14 +48,21 @@ public class SessionedEurekaHttpClientTest {
             }
         });
 
-        SessionedEurekaHttpClient httpClient = new SessionedEurekaHttpClient(factory, 1);
-        httpClient.getApplications();
-        verify(firstClient, times(1)).getApplications();
+        SessionedEurekaHttpClient httpClient = null;
+        try {
+            httpClient = new SessionedEurekaHttpClient(factory, 1);
+            httpClient.getApplications();
+            verify(firstClient, times(1)).getApplications();
 
-        clientRef.set(secondClient);
-        Thread.sleep(2);
+            clientRef.set(secondClient);
+            Thread.sleep(2);
 
-        httpClient.getApplications();
-        verify(secondClient, times(1)).getApplications();
+            httpClient.getApplications();
+            verify(secondClient, times(1)).getApplications();
+        } finally {
+            if (httpClient != null) {
+                httpClient.shutdown();
+            }
+        }
     }
 }

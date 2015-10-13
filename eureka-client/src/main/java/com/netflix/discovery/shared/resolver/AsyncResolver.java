@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.discovery.TimedSupervisorTask;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.annotations.Monitor;
+import com.netflix.servo.monitor.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +33,9 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
     // Note that warm up is best effort. If the resolver is accessed by multiple threads pre warmup,
     // only the first thread will block for the warmup (up to the configurable timeout).
     private final AtomicBoolean warmedUp = new AtomicBoolean(false);
+    private final AtomicBoolean scheduled = new AtomicBoolean(false);
 
+    private final String name;    // a name for metric purposes
     private final ClusterResolver<T> delegate;
     private final ScheduledExecutorService executorService;
     private final ThreadPoolExecutor threadPoolExecutor;
@@ -47,13 +50,15 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
 
     /**
      * Create an async resolver with an empty initial value. When this resolver is called for the first time,
-     * an initial warm up will be executed.
+     * an initial warm up will be executed before scheduling the periodic update task.
      */
-    public AsyncResolver(ClusterResolver<T> delegate,
+    public AsyncResolver(String name,
+                         ClusterResolver<T> delegate,
                          int executorThreadPoolSize,
                          int refreshIntervalMs,
                          int warmUpTimeoutMs) {
         this(
+                name,
                 delegate,
                 Collections.<T>emptyList(),
                 executorThreadPoolSize,
@@ -64,23 +69,24 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
 
     /**
      * Create an async resolver with a preset initial value. WHen this resolver is called for the first time,
-     * there will be no warm up and the initial value will be returned (unless the background process has
-     * since updated the value).
+     * there will be no warm up and the initial value will be returned. The periodic update task will not be
+     * scheduled until after the first time getClusterEndpoints call.
      */
-    public AsyncResolver(ClusterResolver<T> delegate,
-                         List<T> initialValue,
+    public AsyncResolver(String name,
+                         ClusterResolver<T> delegate,
+                         List<T> initialValues,
                          int executorThreadPoolSize,
                          int refreshIntervalMs) {
         this(
+                name,
                 delegate,
-                initialValue,
+                initialValues,
                 executorThreadPoolSize,
                 refreshIntervalMs,
                 0
         );
 
         warmedUp.set(true);
-        scheduleTask(refreshIntervalMs);
     }
 
     /**
@@ -90,11 +96,13 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
      * @param refreshIntervalMs the async refresh interval
      * @param warmUpTimeoutMs the time to wait for the initial warm up
      */
-    AsyncResolver(ClusterResolver<T> delegate,
-                         List<T> initialValue,
-                         int executorThreadPoolSize,
-                         int refreshIntervalMs,
-                         int warmUpTimeoutMs) {
+    AsyncResolver(String name,
+                  ClusterResolver<T> delegate,
+                  List<T> initialValue,
+                  int executorThreadPoolSize,
+                  int refreshIntervalMs,
+                  int warmUpTimeoutMs) {
+        this.name = name;
         this.delegate = delegate;
         this.refreshIntervalMs = refreshIntervalMs;
         this.warmUpTimeoutMs = warmUpTimeoutMs;
@@ -120,10 +128,12 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
         );
 
         this.resultsRef = new AtomicReference<>(initialValue);
+        Monitors.registerObject(name, this);
     }
 
     @Override
     public void shutdown() {
+        Monitors.unregisterObject(name, this);
         executorService.shutdown();
         threadPoolExecutor.shutdown();
         backgroundTask.cancel();
@@ -137,12 +147,18 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
 
     @Override
     public List<T> getClusterEndpoints() {
+        long delay = refreshIntervalMs;
         if (warmedUp.compareAndSet(false, true)) {
-            long delay = doWarmUp() ? refreshIntervalMs : 0;
+            if (!doWarmUp()) {
+                delay = 0;
+            }
+        }
+        if (scheduled.compareAndSet(false, true)) {
             scheduleTask(delay);
         }
         return resultsRef.get();
     }
+
 
     /* visible for testing */ boolean doWarmUp() {
         Future future = null;
