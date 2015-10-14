@@ -2,7 +2,9 @@ package com.netflix.discovery.shared.resolver;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.discovery.TimedSupervisorTask;
-import com.netflix.discovery.shared.transport.EurekaTransportConfig;
+import com.netflix.servo.annotations.DataSourceType;
+import com.netflix.servo.annotations.Monitor;
+import com.netflix.servo.monitor.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +19,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.netflix.discovery.EurekaClientNames.METRIC_RESOLVER_PREFIX;
+
 /**
  * An async resolver that keeps a cached version of the endpoint list value for gets, and updates this cache
  * periodically in a different thread.
@@ -26,21 +30,83 @@ import java.util.concurrent.atomic.AtomicReference;
 public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver<T> {
     private static final Logger logger = LoggerFactory.getLogger(AsyncResolver.class);
 
-    // Note that warm up is best effort. If the resolver is accessed by multiple threads pre warmup, only the first
-    // thread will block for the warmup (up to the configurable timeout).
+    // Note that warm up is best effort. If the resolver is accessed by multiple threads pre warmup,
+    // only the first thread will block for the warmup (up to the configurable timeout).
     private final AtomicBoolean warmedUp = new AtomicBoolean(false);
+    private final AtomicBoolean scheduled = new AtomicBoolean(false);
 
-    private final EurekaTransportConfig transportConfig;
+    private final String name;    // a name for metric purposes
     private final ClusterResolver<T> delegate;
     private final ScheduledExecutorService executorService;
     private final ThreadPoolExecutor threadPoolExecutor;
     private final TimedSupervisorTask backgroundTask;
     private final AtomicReference<List<T>> resultsRef;
 
-    public AsyncResolver(EurekaTransportConfig transportConfig,
-                         ClusterResolver<T> delegate) {
-        this.transportConfig = transportConfig;
+    private final int refreshIntervalMs;
+    private final int warmUpTimeoutMs;
+
+    // Metric timestamp, tracking last time when data were effectively changed.
+    private volatile long lastLoadTimestamp = -1;
+
+    /**
+     * Create an async resolver with an empty initial value. When this resolver is called for the first time,
+     * an initial warm up will be executed before scheduling the periodic update task.
+     */
+    public AsyncResolver(String name,
+                         ClusterResolver<T> delegate,
+                         int executorThreadPoolSize,
+                         int refreshIntervalMs,
+                         int warmUpTimeoutMs) {
+        this(
+                name,
+                delegate,
+                Collections.<T>emptyList(),
+                executorThreadPoolSize,
+                refreshIntervalMs,
+                warmUpTimeoutMs
+        );
+    }
+
+    /**
+     * Create an async resolver with a preset initial value. WHen this resolver is called for the first time,
+     * there will be no warm up and the initial value will be returned. The periodic update task will not be
+     * scheduled until after the first time getClusterEndpoints call.
+     */
+    public AsyncResolver(String name,
+                         ClusterResolver<T> delegate,
+                         List<T> initialValues,
+                         int executorThreadPoolSize,
+                         int refreshIntervalMs) {
+        this(
+                name,
+                delegate,
+                initialValues,
+                executorThreadPoolSize,
+                refreshIntervalMs,
+                0
+        );
+
+        warmedUp.set(true);
+    }
+
+    /**
+     * @param delegate the delegate resolver to async resolve from
+     * @param initialValue the initial value to use
+     * @param executorThreadPoolSize the max number of threads for the threadpool
+     * @param refreshIntervalMs the async refresh interval
+     * @param warmUpTimeoutMs the time to wait for the initial warm up
+     */
+    AsyncResolver(String name,
+                  ClusterResolver<T> delegate,
+                  List<T> initialValue,
+                  int executorThreadPoolSize,
+                  int refreshIntervalMs,
+                  int warmUpTimeoutMs) {
+        this.name = name;
         this.delegate = delegate;
+        this.refreshIntervalMs = refreshIntervalMs;
+        this.warmUpTimeoutMs = warmUpTimeoutMs;
+
         this.executorService = Executors.newScheduledThreadPool(1,
                 new ThreadFactoryBuilder()
                         .setNameFormat("AsyncResolver-%d")
@@ -48,24 +114,26 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
                         .build());
 
         this.threadPoolExecutor = new ThreadPoolExecutor(
-                1, transportConfig.getAsyncExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
+                1, executorThreadPoolSize, 0, TimeUnit.SECONDS,
                 new SynchronousQueue<Runnable>());  // use direct handoff
 
         this.backgroundTask = new TimedSupervisorTask(
                 this.getClass().getSimpleName(),
                 executorService,
                 threadPoolExecutor,
-                transportConfig.getAsyncResolverRefreshIntervalMs(),
+                refreshIntervalMs,
                 TimeUnit.MILLISECONDS,
                 5,
                 updateTask
         );
 
-        this.resultsRef = new AtomicReference<>(Collections.<T>emptyList());
+        this.resultsRef = new AtomicReference<>(initialValue);
+        Monitors.registerObject(name, this);
     }
 
     @Override
     public void shutdown() {
+        Monitors.unregisterObject(name, this);
         executorService.shutdown();
         threadPoolExecutor.shutdown();
         backgroundTask.cancel();
@@ -79,19 +147,25 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
 
     @Override
     public List<T> getClusterEndpoints() {
+        long delay = refreshIntervalMs;
         if (warmedUp.compareAndSet(false, true)) {
-            doWarmUp();
-            executorService.schedule(
-                    backgroundTask, transportConfig.getAsyncResolverRefreshIntervalMs(), TimeUnit.MILLISECONDS);
+            if (!doWarmUp()) {
+                delay = 0;
+            }
+        }
+        if (scheduled.compareAndSet(false, true)) {
+            scheduleTask(delay);
         }
         return resultsRef.get();
     }
 
-    /* visible for testing */ void doWarmUp() {
+
+    /* visible for testing */ boolean doWarmUp() {
         Future future = null;
         try {
             future = threadPoolExecutor.submit(updateTask);
-            future.get(transportConfig.getAsyncResolverWarmupTimeoutMs(), TimeUnit.MILLISECONDS);  // block until done or timeout
+            future.get(warmUpTimeoutMs, TimeUnit.MILLISECONDS);  // block until done or timeout
+            return true;
         } catch (Exception e) {
             logger.warn("Best effort warm up failed", e);
         } finally {
@@ -99,6 +173,18 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
                 future.cancel(true);
             }
         }
+        return false;
+    }
+
+    private void scheduleTask(long delay) {
+        executorService.schedule(
+                backgroundTask, delay, TimeUnit.MILLISECONDS);
+    }
+
+    @Monitor(name = METRIC_RESOLVER_PREFIX + "lastLoadTimestamp",
+            description = "How much time has passed from last successful async load", type = DataSourceType.GAUGE)
+    public long getLastLoadTimestamp() {
+        return lastLoadTimestamp < 0 ? 0 : System.currentTimeMillis() - lastLoadTimestamp;
     }
 
     private final Runnable updateTask = new Runnable() {
@@ -108,9 +194,11 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
                 List<T> newList = delegate.getClusterEndpoints();
                 if (newList != null) {
                     resultsRef.getAndSet(newList);
+                    lastLoadTimestamp = System.currentTimeMillis();
                 } else {
                     logger.warn("Delegate returned null list of cluster endpoints");
                 }
+                logger.debug("Resolved to {}", newList);
             } catch (Exception e) {
                 logger.warn("Failed to retrieve cluster endpoints from the delegate", e);
             }

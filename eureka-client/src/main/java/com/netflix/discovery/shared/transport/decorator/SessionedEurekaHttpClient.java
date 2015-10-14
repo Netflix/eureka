@@ -22,6 +22,11 @@ import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.TransportUtils;
+import com.netflix.servo.annotations.DataSourceType;
+import com.netflix.servo.annotations.Monitor;
+import com.netflix.servo.monitor.Monitors;
+
+import static com.netflix.discovery.EurekaClientNames.METRIC_TRANSPORT_PREFIX;
 
 /**
  * {@link SessionedEurekaHttpClient} enforces full reconnect at a regular interval (a session), preventing
@@ -35,12 +40,13 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
     private final EurekaHttpClientFactory clientFactory;
     private final long sessionDurationMs;
 
-    private volatile long lastReconnectTimeStamp;
+    private volatile long lastReconnectTimeStamp = -1;
     private final AtomicReference<EurekaHttpClient> eurekaHttpClientRef = new AtomicReference<>();
 
     public SessionedEurekaHttpClient(EurekaHttpClientFactory clientFactory, long sessionDurationMs) {
         this.clientFactory = clientFactory;
         this.sessionDurationMs = sessionDurationMs;
+        Monitors.registerObject(this);
     }
 
     @Override
@@ -61,6 +67,13 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
 
     @Override
     public void shutdown() {
+        Monitors.unregisterObject(this);
         TransportUtils.shutdown(eurekaHttpClientRef.getAndSet(null));
+    }
+
+    @Monitor(name = METRIC_TRANSPORT_PREFIX + "currentSessionDuration",
+            description = "Duration of the current session", type = DataSourceType.GAUGE)
+    public long getCurrentSessionDuration() {
+        return lastReconnectTimeStamp < 0 ? 0 : System.currentTimeMillis() - lastReconnectTimeStamp;
     }
 }

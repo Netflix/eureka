@@ -79,8 +79,12 @@ public class DnsTxtRecordClusterResolver implements ClusterResolver<AwsEndpoint>
 
     private static final Logger logger = LoggerFactory.getLogger(DnsTxtRecordClusterResolver.class);
 
-    private final List<AwsEndpoint> eurekaEndpoints;
     private final String region;
+    private final String rootClusterDNS;
+    private final boolean extractZoneFromDNS;
+    private final int port;
+    private final boolean isSecure;
+    private final String relativeUri;
 
     /**
      * @param rootClusterDNS top level domain name, in the two level hierarchy (see {@link DnsTxtRecordClusterResolver} documentation).
@@ -91,10 +95,11 @@ public class DnsTxtRecordClusterResolver implements ClusterResolver<AwsEndpoint>
      */
     public DnsTxtRecordClusterResolver(String region, String rootClusterDNS, boolean extractZoneFromDNS, int port, boolean isSecure, String relativeUri) {
         this.region = region;
-        this.eurekaEndpoints = resolve(region, rootClusterDNS, extractZoneFromDNS, port, isSecure, relativeUri);
-        if (logger.isDebugEnabled()) {
-            logger.debug("Resolved {} to {}", rootClusterDNS, eurekaEndpoints);
-        }
+        this.rootClusterDNS = rootClusterDNS;
+        this.extractZoneFromDNS = extractZoneFromDNS;
+        this.port = port;
+        this.isSecure = isSecure;
+        this.relativeUri = relativeUri;
     }
 
     @Override
@@ -104,6 +109,11 @@ public class DnsTxtRecordClusterResolver implements ClusterResolver<AwsEndpoint>
 
     @Override
     public List<AwsEndpoint> getClusterEndpoints() {
+        List<AwsEndpoint> eurekaEndpoints = resolve(region, rootClusterDNS, extractZoneFromDNS, port, isSecure, relativeUri);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Resolved {} to {}", rootClusterDNS, eurekaEndpoints);
+        }
+
         return eurekaEndpoints;
     }
 

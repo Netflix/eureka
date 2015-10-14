@@ -50,7 +50,6 @@ public class EurekaHttpResolverTest {
 
     @After
     public void tearDown() {
-        resolver.shutdown();
     }
 
     @Test
@@ -85,11 +84,5 @@ public class EurekaHttpResolverTest {
         assertThat(endpoints.isEmpty(), is(true));
 
         verify(httpClient, times(1)).shutdown();
-    }
-
-    @Test
-    public void testShutdown() {
-        resolver.shutdown();
-        verify(clientFactory, times(1)).shutdown();
     }
 }
