@@ -216,6 +216,8 @@ public class DiscoveryClient implements EurekaClient {
     protected final EurekaClientConfig clientConfig;
     protected final EurekaTransportConfig transportConfig;
 
+    private final long initTimestampMs;
+
     private enum Action {
         Register, Cancel, Renew, Refresh, Refresh_Delta
     }
@@ -489,6 +491,8 @@ public class DiscoveryClient implements EurekaClient {
         // to work with DI'd DiscoveryClient
         DiscoveryManager.getInstance().setDiscoveryClient(this);
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
+
+        initTimestampMs = System.currentTimeMillis();
     }
 
     private void scheduleServerEndpointTask(EurekaTransport eurekaTransport, String zone) {
@@ -2097,18 +2101,22 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     public long getLastSuccessfulHeartbeatTimePeriod() {
-        return lastSuccessfulHeartbeatTimestamp < 0 ? 0 : System.currentTimeMillis() - lastSuccessfulHeartbeatTimestamp;
+        return lastSuccessfulHeartbeatTimestamp < 0
+                ? lastSuccessfulHeartbeatTimestamp
+                : System.currentTimeMillis() - lastSuccessfulHeartbeatTimestamp;
     }
 
     public long getLastSuccessfulRegistryFetchTimePeriod() {
-        return lastSuccessfulRegistryFetchTimestamp < 0 ? 0 : System.currentTimeMillis() - lastSuccessfulRegistryFetchTimestamp;
+        return lastSuccessfulRegistryFetchTimestamp < 0
+                ? lastSuccessfulRegistryFetchTimestamp
+                : System.currentTimeMillis() - lastSuccessfulRegistryFetchTimestamp;
     }
 
     @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRATION_PREFIX + "lastSuccessfulHeartbeatTimePeriod",
             description = "How much time has passed from last successful heartbeat", type = DataSourceType.GAUGE)
     private long getLastSuccessfulHeartbeatTimePeriodInternal() {
         long delay = getLastSuccessfulHeartbeatTimePeriod();
-        heartbeatStalenessMonitor.update(delay);
+        heartbeatStalenessMonitor.update(computeStalenessMonitorDelay(delay));
         return delay;
     }
 
@@ -2117,8 +2125,16 @@ public class DiscoveryClient implements EurekaClient {
             description = "How much time has passed from last successful local registry update", type = DataSourceType.GAUGE)
     private long getLastSuccessfulRegistryFetchTimePeriodInternal() {
         long delay = getLastSuccessfulRegistryFetchTimePeriod();
-        registryStalenessMonitor.update(delay);
+        registryStalenessMonitor.update(computeStalenessMonitorDelay(delay));
         return delay;
+    }
+
+    private long computeStalenessMonitorDelay(long delay) {
+        if (delay < 0) {
+            return System.currentTimeMillis() - initTimestampMs;
+        } else {
+            return delay;
+        }
     }
 
 }
