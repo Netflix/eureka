@@ -187,6 +187,12 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
         return lastLoadTimestamp < 0 ? 0 : System.currentTimeMillis() - lastLoadTimestamp;
     }
 
+    @Monitor(name = METRIC_RESOLVER_PREFIX + "endpointsSize",
+            description = "How many records are the in the endpoints ref", type = DataSourceType.GAUGE)
+    public long getEndpointsSize() {
+        return resultsRef.get().size();  // return directly from the ref and not the method so as to not trigger warming
+    }
+
     private final Runnable updateTask = new Runnable() {
         @Override
         public void run() {
