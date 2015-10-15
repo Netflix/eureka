@@ -283,7 +283,7 @@ public class InstanceResource {
                 "true".equals(isReplication));
 
         if (isSuccess) {
-            logger.info("Found (Cancel): " + app.getName() + " - " + id);
+            logger.debug("Found (Cancel): " + app.getName() + " - " + id);
             return Response.ok().build();
         } else {
             logger.info("Not Found (Cancel): " + app.getName() + " - " + id);
@@ -299,17 +299,16 @@ public class InstanceResource {
                 Object[] args = {id, appInfo.getLastDirtyTimestamp(), lastDirtyTimestamp, isReplication};
 
                 if (lastDirtyTimestamp > appInfo.getLastDirtyTimestamp()) {
-                    logger.warn(
+                    logger.debug(
                             "Time to sync, since the last dirty timestamp differs -"
                                     + " ReplicationInstance id : {},Registry : {} Incoming: {} Replication: {}",
                             args);
                     return Response.status(Status.NOT_FOUND).build();
                 } else if (appInfo.getLastDirtyTimestamp() > lastDirtyTimestamp) {
-                    // In the case of replication, send the current instance
-                    // info in the registry for the
+                    // In the case of replication, send the current instance info in the registry for the
                     // replicating node to sync itself with this one.
                     if (isReplication) {
-                        logger.warn(
+                        logger.debug(
                                 "Time to sync, since the last dirty timestamp differs -"
                                         + " ReplicationInstance id : {},Registry : {} Incoming: {} Replication: {}",
                                 args);

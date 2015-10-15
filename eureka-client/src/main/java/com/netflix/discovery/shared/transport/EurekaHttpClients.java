@@ -59,8 +59,11 @@ public final class EurekaHttpClients {
                                                              EurekaTransportConfig transportConfig,
                                                              InstanceInfo myInstanceInfo,
                                                              ApplicationsResolver.ApplicationsSource applicationsSource) {
-        ClosableResolver queryResolver = queryClientResolver(
-                bootstrapResolver, transportClientFactory, clientConfig, transportConfig, myInstanceInfo, applicationsSource);
+
+        ClosableResolver queryResolver = transportConfig.useBootstrapResolverForQuery()
+                ? wrapClosable(bootstrapResolver)
+                : queryClientResolver(bootstrapResolver, transportClientFactory,
+                clientConfig, transportConfig, myInstanceInfo, applicationsSource);
         return canonicalClientFactory(transportConfig, queryResolver, transportClientFactory);
     }
 

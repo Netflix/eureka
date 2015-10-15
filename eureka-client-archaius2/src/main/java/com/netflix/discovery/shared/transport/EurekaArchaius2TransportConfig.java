@@ -58,4 +58,9 @@ public class EurekaArchaius2TransportConfig implements EurekaTransportConfig {
     public String getReadClusterVip() {
         return config.getString("readClusterVip", null);
     }
+
+    @Override
+    public boolean useBootstrapResolverForQuery() {
+        return config.getBoolean("useBootstrapResolverForQuery", false);
+    }
 }

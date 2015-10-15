@@ -78,10 +78,6 @@ public class ThresholdLevelsMetric {
         }
     }
 
-    /* visible for testing */ LongGauge[] getGauges() {
-        return gauges;
-    }
-
     public void shutdown() {
         for (LongGauge gauge : gauges) {
             try {

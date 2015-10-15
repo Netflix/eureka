@@ -52,4 +52,9 @@ public class DefaultEurekaTransportConfig implements EurekaTransportConfig {
     public String getReadClusterVip() {
         return configInstance.getStringProperty(namespace + "readClusterVip", null).get();
     }
+
+    @Override
+    public boolean useBootstrapResolverForQuery() {
+        return configInstance.getBooleanProperty(namespace + "useBootstrapResolverForQuery", false).get();
+    }
 }
