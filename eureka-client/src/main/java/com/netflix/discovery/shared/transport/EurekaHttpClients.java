@@ -16,22 +16,17 @@
 
 package com.netflix.discovery.shared.transport;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
-import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.discovery.shared.resolver.AsyncResolver;
 import com.netflix.discovery.shared.resolver.ClosableResolver;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
-import com.netflix.discovery.shared.resolver.StaticClusterResolver;
 import com.netflix.discovery.shared.resolver.aws.ApplicationsResolver;
 import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
+import com.netflix.discovery.shared.resolver.aws.ConfigClusterResolver;
 import com.netflix.discovery.shared.resolver.aws.DnsTxtRecordClusterResolver;
 import com.netflix.discovery.shared.resolver.aws.EurekaHttpResolver;
 import com.netflix.discovery.shared.resolver.aws.ZoneAffinityClusterResolver;
@@ -41,14 +36,11 @@ import com.netflix.discovery.shared.transport.decorator.RedirectingEurekaHttpCli
 import com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.ServerStatusEvaluators;
 import com.netflix.discovery.shared.transport.jersey.JerseyEurekaHttpClientFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Tomasz Bak
  */
 public final class EurekaHttpClients {
-    private static final Logger logger = LoggerFactory.getLogger(EurekaHttpClients.class);
 
     private EurekaHttpClients() {
     }
@@ -143,45 +135,34 @@ public final class EurekaHttpClients {
 
     static ClusterResolver<AwsEndpoint> defaultBootstrapResolver(final EurekaClientConfig clientConfig,
                                                                  final InstanceInfo myInstanceInfo) {
-        String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
-        String myRegion = clientConfig.getRegion();
-        String myZone = InstanceInfo.getZone(availZones, myInstanceInfo);
+        final String myRegion = clientConfig.getRegion();
 
-        ClusterResolver<AwsEndpoint> newResolver;
-        if (clientConfig.shouldUseDnsForFetchingServiceUrls()) {
-            String discoveryDnsName = "txt." + myRegion + '.' + clientConfig.getEurekaServerDNSName();
-            newResolver = new DnsTxtRecordClusterResolver(
-                    myRegion,
-                    discoveryDnsName,
-                    true,
-                    Integer.parseInt(clientConfig.getEurekaServerPort()),
-                    false,
-                    clientConfig.getEurekaServerURLContext()
-            );
-        } else {
-            Map<String, List<String>> serviceUrls = EndpointUtils.getServiceUrlsMapFromConfig(clientConfig, myZone, clientConfig.shouldPreferSameZoneEureka());
-            List<AwsEndpoint> endpoints = new ArrayList<>(serviceUrls.size());
-            for (String zone : serviceUrls.keySet()) {
-               for(String url : serviceUrls.get(zone)) {
-                   try {
-                       URI serviceURI = new URI(url);
-                       endpoints.add(new AwsEndpoint(
-                               serviceURI.getHost(),
-                               serviceURI.getPort(),
-                               "https".equalsIgnoreCase(serviceURI.getSchemeSpecificPart()),
-                               serviceURI.getPath(),
-                               myRegion,
-                               zone
-                       ));
-                   } catch (URISyntaxException ignore) {
-                       logger.warn("Invalid eureka server URI: ; removing from the server pool", url);
-                   }
-               }
+        String discoveryDnsName = "txt." + myRegion + '.' + clientConfig.getEurekaServerDNSName();
+        final ClusterResolver<AwsEndpoint> dnsResolver = new DnsTxtRecordClusterResolver(
+                myRegion,
+                discoveryDnsName,
+                true,
+                Integer.parseInt(clientConfig.getEurekaServerPort()),
+                false,
+                clientConfig.getEurekaServerURLContext()
+        );
+        final ClusterResolver<AwsEndpoint> configResolver = new ConfigClusterResolver(clientConfig, myInstanceInfo);
+
+        return new ClusterResolver<AwsEndpoint>() {
+            @Override
+            public String getRegion() {
+                return myRegion;
             }
-            newResolver = new StaticClusterResolver<>(myRegion, endpoints);
-        }
 
-        return newResolver;
+            @Override
+            public List<AwsEndpoint> getClusterEndpoints() {
+                if (clientConfig.shouldUseDnsForFetchingServiceUrls()) {
+                    return dnsResolver.getClusterEndpoints();
+                } else {
+                    return configResolver.getClusterEndpoints();
+                }
+            }
+        };
     }
 
     static ClosableResolver<AwsEndpoint> queryClientResolver(final ClusterResolver bootstrapResolver,
