@@ -36,11 +36,14 @@ import com.netflix.discovery.shared.transport.decorator.RedirectingEurekaHttpCli
 import com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.ServerStatusEvaluators;
 import com.netflix.discovery.shared.transport.jersey.JerseyEurekaHttpClientFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Tomasz Bak
  */
 public final class EurekaHttpClients {
+    private static final Logger logger = LoggerFactory.getLogger(EurekaHttpClients.class);
 
     private EurekaHttpClients() {
     }
@@ -138,11 +141,17 @@ public final class EurekaHttpClients {
         final String myRegion = clientConfig.getRegion();
 
         String discoveryDnsName = "txt." + myRegion + '.' + clientConfig.getEurekaServerDNSName();
+        int port = 0;
+        try {
+            port = Integer.parseInt(clientConfig.getEurekaServerPort());
+        } catch (NumberFormatException e) {
+            logger.warn("Port not available for dns resolver. This is a non-issue if you are not using dns to bootstrap");
+        }
         final ClusterResolver<AwsEndpoint> dnsResolver = new DnsTxtRecordClusterResolver(
                 myRegion,
                 discoveryDnsName,
                 true,
-                Integer.parseInt(clientConfig.getEurekaServerPort()),
+                port,
                 false,
                 clientConfig.getEurekaServerURLContext()
         );
