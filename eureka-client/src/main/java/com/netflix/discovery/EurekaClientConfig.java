@@ -20,6 +20,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 import com.google.inject.ImplementedBy;
+import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 
 /**
  * Configuration information required by the eureka clients to register an
@@ -534,4 +535,7 @@ public interface EurekaClientConfig {
      * @return a property of experimental feature
      */
     String getExperimental(String name);
+
+
+    EurekaTransportConfig getTransportConfig();
 }

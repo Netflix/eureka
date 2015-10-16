@@ -35,6 +35,10 @@ public final class EurekaClientNames {
 
     public static final String METRIC_REGISTRY_PREFIX = METRIC_PREFIX + "registry.";
 
+    public static final String METRIC_RESOLVER_PREFIX = METRIC_PREFIX + "resolver.";
+
+    public static final String METRIC_TRANSPORT_PREFIX = METRIC_PREFIX + "transport.";
+
     private EurekaClientNames() {
     }
 }

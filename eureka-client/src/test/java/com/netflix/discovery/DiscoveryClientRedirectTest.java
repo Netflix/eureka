@@ -10,6 +10,7 @@ import java.util.concurrent.TimeoutException;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.EntityBodyConverter;
+import com.netflix.discovery.junit.resource.DiscoveryClientResource;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.EurekaEntityFunctions;
@@ -48,28 +49,28 @@ public class DiscoveryClientRedirectTest {
     public MockServerRule targetServerMockRule = new MockServerRule(targetServerMockClient);
 
     @Rule
-    public DiscoveryClientRule registryFetchClientRule = DiscoveryClientRule.newBuilder()
-            .registration(false)
-            .registryFetch(true)
-            .portResolver(new Callable<Integer>() {
+    public DiscoveryClientResource registryFetchClientRule = DiscoveryClientResource.newBuilder()
+            .withRegistration(false)
+            .withRegistryFetch(true)
+            .withPortResolver(new Callable<Integer>() {
                 @Override
                 public Integer call() throws Exception {
                     return redirectServerMockRule.getHttpPort();
                 }
             })
-            .instanceInfo(myInstanceInfo)
+            .withInstanceInfo(myInstanceInfo)
             .build();
     @Rule
-    public DiscoveryClientRule regiteringClientRule = DiscoveryClientRule.newBuilder()
-            .registration(true)
-            .registryFetch(false)
-            .portResolver(new Callable<Integer>() {
+    public DiscoveryClientResource regiteringClientRule = DiscoveryClientResource.newBuilder()
+            .withRegistration(true)
+            .withRegistryFetch(false)
+            .withPortResolver(new Callable<Integer>() {
                 @Override
                 public Integer call() throws Exception {
                     return redirectServerMockRule.getHttpPort();
                 }
             })
-            .instanceInfo(myInstanceInfo)
+            .withInstanceInfo(myInstanceInfo)
             .build();
 
     private String targetServerBaseUri;

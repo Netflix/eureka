@@ -629,11 +629,6 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     }
 
     @Override
-    public String getExperimental(String name) {
-        return configInstance.getStringProperty(namespace + "experimental." + name, null).get();
-    }
-
-    @Override
     public int getRoute53BindRebindRetries() {
         return configInstance.getIntProperty(
                 namespace + "route53BindRebindRetries", 3).get();
@@ -657,5 +652,10 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     @Override
     public AwsBindingStrategy getBindingStrategy() {
         return AwsBindingStrategy.valueOf(configInstance.getStringProperty(namespace + "awsBindingStrategy", AwsBindingStrategy.EIP.name()).get().toUpperCase());
+    }
+
+    @Override
+    public String getExperimental(String name) {
+        return configInstance.getStringProperty(namespace + "experimental." + name, null).get();
     }
 }

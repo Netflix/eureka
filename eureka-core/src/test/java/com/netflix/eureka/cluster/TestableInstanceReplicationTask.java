@@ -3,7 +3,7 @@ package com.netflix.eureka.cluster;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.discovery.shared.EurekaHttpClient.HttpResponse;
+import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 
 /**
@@ -34,12 +34,12 @@ class TestableInstanceReplicationTask extends InstanceReplicationTask {
     }
 
     @Override
-    public HttpResponse<Void> execute() throws Throwable {
+    public EurekaHttpResponse<Void> execute() throws Throwable {
         if (triggeredNetworkFailures < networkFailuresRepeatCount) {
             triggeredNetworkFailures++;
             throw new IOException("simulated network failure");
         }
-        return new HttpResponse<>(replyStatusCode);
+        return EurekaHttpResponse.status(replyStatusCode);
     }
 
     @Override

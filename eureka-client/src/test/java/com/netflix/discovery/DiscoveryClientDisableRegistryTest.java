@@ -2,8 +2,10 @@ package com.netflix.discovery;
 
 import java.util.UUID;
 
+import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.config.ConfigurationManager;
 import org.junit.Assert;
 import org.junit.Before;
@@ -38,7 +40,9 @@ public class DiscoveryClientDisableRegistryTest {
                 return Name.MyOwn;
             }
         });
-        client = new DiscoveryClient(builder.build(), new DefaultEurekaClientConfig());
+
+        ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), builder.build());
+        client = new DiscoveryClient(applicationInfoManager, new DefaultEurekaClientConfig());
     }
 
     @Test

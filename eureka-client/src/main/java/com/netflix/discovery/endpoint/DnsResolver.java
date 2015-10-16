@@ -1,12 +1,16 @@
 package com.netflix.discovery.endpoint;
 
+import javax.annotation.Nullable;
+import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -50,9 +54,9 @@ public final class DnsResolver {
     }
 
     /**
-     * Resolve host part of the given URI to the bottom A-Record or the latest available CNAME
+     * Resolve host name to the bottom A-Record or the latest available CNAME
      *
-     * @return URI identical to the one provided, with host name swapped with the resolved value
+     * @return resolved host name
      */
     public static String resolve(String originalHost) {
         String currentHost = originalHost;
@@ -77,9 +81,38 @@ public final class DnsResolver {
             } while (targetHost == null);
             return targetHost;
         } catch (NamingException e) {
-            logger.warn("Cannot resolve discovery server address " + currentHost + "; returning original value " + originalHost, e);
+            logger.warn("Cannot resolve eureka server address " + currentHost + "; returning original value " + originalHost, e);
             return originalHost;
         }
+    }
+
+    /**
+     * Look into A-record at a specific DNS address.
+     *
+     * @return resolved IP addresses or null if no A-record was present
+     */
+    @Nullable
+    public static List<String> resolveARecord(String rootDomainName) {
+        if (isLocalOrIp(rootDomainName)) {
+            return null;
+        }
+        try {
+            Attributes attrs = dirContext.getAttributes(rootDomainName, new String[]{A_RECORD_TYPE, CNAME_RECORD_TYPE});
+            Attribute aRecord = attrs.get(A_RECORD_TYPE);
+            Attribute cRecord = attrs.get(CNAME_RECORD_TYPE);
+            if (aRecord != null && cRecord == null) {
+                List<String> result = new ArrayList<>();
+                NamingEnumeration<String> entries = (NamingEnumeration<String>) aRecord.getAll();
+                while (entries.hasMore()) {
+                    result.add(entries.next());
+                }
+                return result;
+            }
+        } catch (Exception e) {
+            logger.warn("Cannot load A-record for eureka server address " + rootDomainName, e);
+            return null;
+        }
+        return null;
     }
 
     private static boolean isLocalOrIp(String currentHost) {

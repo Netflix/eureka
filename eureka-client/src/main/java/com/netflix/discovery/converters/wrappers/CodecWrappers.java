@@ -14,6 +14,7 @@ import com.netflix.discovery.converters.KeyFormatter;
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.discovery.converters.jackson.EurekaJsonJacksonCodec;
 import com.netflix.discovery.converters.jackson.EurekaXmlJacksonCodec;
+import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClientImpl;
 
 /**
  * This is just a helper class during transition when multiple codecs are supported. One day this should all go away
@@ -21,9 +22,9 @@ import com.netflix.discovery.converters.jackson.EurekaXmlJacksonCodec;
  *
  * For adding custom codecs to Discovery, prefer creating a custom EurekaJerseyClient to added to DiscoveryClient
  * either completely independently or via
- * {@link com.netflix.discovery.shared.EurekaJerseyClientImpl.EurekaJerseyClientBuilder#withDecoderWrapper(DecoderWrapper)}
+ * {@link EurekaJerseyClientImpl.EurekaJerseyClientBuilder#withDecoderWrapper(DecoderWrapper)}
  * and
- * {@link com.netflix.discovery.shared.EurekaJerseyClientImpl.EurekaJerseyClientBuilder#withEncoderWrapper(EncoderWrapper)}
+ * {@link EurekaJerseyClientImpl.EurekaJerseyClientBuilder#withEncoderWrapper(EncoderWrapper)}
  *
  * @author David Liu
  */

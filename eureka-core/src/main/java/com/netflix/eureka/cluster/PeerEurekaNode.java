@@ -21,7 +21,7 @@ import java.net.URL;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
-import com.netflix.discovery.shared.EurekaHttpClient.HttpResponse;
+import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.lease.Lease;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
@@ -136,7 +136,7 @@ public class PeerEurekaNode {
         batchingDispatcher.process(
                 taskId("register", info),
                 new InstanceReplicationTask(targetHost, Action.Register, info, null, true) {
-                    public HttpResponse<Void> execute() {
+                    public EurekaHttpResponse<Void> execute() {
                         return replicationClient.register(info);
                     }
                 },
@@ -160,7 +160,7 @@ public class PeerEurekaNode {
                 taskId("cancel", appName, id),
                 new InstanceReplicationTask(targetHost, Action.Cancel, appName, id) {
                     @Override
-                    public HttpResponse<Void> execute() {
+                    public EurekaHttpResponse<Void> execute() {
                         return replicationClient.cancel(appName, id);
                     }
 
@@ -201,7 +201,7 @@ public class PeerEurekaNode {
         }
         ReplicationTask replicationTask = new InstanceReplicationTask(targetHost, Action.Heartbeat, info, overriddenStatus, false) {
             @Override
-            public HttpResponse<InstanceInfo> execute() throws Throwable {
+            public EurekaHttpResponse<InstanceInfo> execute() throws Throwable {
                 return replicationClient.sendHeartBeat(appName, id, info, overriddenStatus);
             }
 
@@ -245,7 +245,7 @@ public class PeerEurekaNode {
         nonBatchingDispatcher.process(
                 asgName,
                 new AsgReplicationTask(targetHost, Action.StatusUpdate, asgName, newStatus) {
-                    public HttpResponse<?> execute() {
+                    public EurekaHttpResponse<?> execute() {
                         return replicationClient.statusUpdate(asgName, newStatus);
                     }
                 },
@@ -273,7 +273,7 @@ public class PeerEurekaNode {
                 taskId("statusUpdate", appName, id),
                 new InstanceReplicationTask(targetHost, Action.StatusUpdate, info, null, false) {
                     @Override
-                    public HttpResponse<Void> execute() {
+                    public EurekaHttpResponse<Void> execute() {
                         return replicationClient.statusUpdate(appName, id, newStatus, info);
                     }
                 },
@@ -297,7 +297,7 @@ public class PeerEurekaNode {
                 taskId("deleteStatusOverride", appName, id),
                 new InstanceReplicationTask(targetHost, Action.DeleteStatusOverride, info, null, false) {
                     @Override
-                    public HttpResponse<Void> execute() {
+                    public EurekaHttpResponse<Void> execute() {
                         return replicationClient.deleteStatusOverride(appName, id, info);
                     }
                 },

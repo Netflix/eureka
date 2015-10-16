@@ -36,7 +36,7 @@ import com.netflix.discovery.util.EurekaEntityTransformers.Transformer;
  * Collection of functions operating on {@link Applications} and {@link Application} data
  * structures. The functions are organized into groups with common prefix name:
  * <ul>
- *     <li>select - queries over Eureka entity objects</li>
+ *     <li>select, take - queries over Eureka entity objects</li>
  *     <li>to - Eureka entity object transformers</li>
  *     <li>copy - copy Eureka entities, with aggregated {@link InstanceInfo} objects copied by reference</li>
  *     <li>deepCopy - copy Eureka entities, with aggregated {@link InstanceInfo} objects copied by value</li>
@@ -86,6 +86,15 @@ public final class EurekaEntityFunctions {
                 if (instance.getId().equals(id)) {
                     return instance;
                 }
+            }
+        }
+        return null;
+    }
+
+    public static InstanceInfo takeFirst(Applications applications) {
+        for (Application application : applications.getRegisteredApplications()) {
+            if (!application.getInstances().isEmpty()) {
+                return application.getInstances().get(0);
             }
         }
         return null;

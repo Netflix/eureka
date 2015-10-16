@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.shared.EurekaHttpClient.HttpResponse;
+import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationInstance;
 import com.netflix.eureka.cluster.protocol.ReplicationInstance.ReplicationInstanceBuilder;
 import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
@@ -37,7 +37,7 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
     @Override
     public ProcessingResult process(ReplicationTask task) {
         try {
-            HttpResponse<?> httpResponse = task.execute();
+            EurekaHttpResponse<?> httpResponse = task.execute();
             int statusCode = httpResponse.getStatusCode();
             Object entity = httpResponse.getEntity();
             if (logger.isDebugEnabled()) {
@@ -68,7 +68,7 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
     public ProcessingResult process(List<ReplicationTask> tasks) {
         ReplicationList list = createReplicationListOf(tasks);
         try {
-            HttpResponse<ReplicationListResponse> response = replicationClient.submitBatchUpdates(list);
+            EurekaHttpResponse<ReplicationListResponse> response = replicationClient.submitBatchUpdates(list);
             int statusCode = response.getStatusCode();
             if (!isSuccess(statusCode)) {
                 if (statusCode == 503) {

@@ -1,4 +1,4 @@
-package com.netflix.discovery.shared;
+package com.netflix.discovery.shared.transport.jersey;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -16,6 +16,7 @@ import com.netflix.discovery.converters.wrappers.CodecWrappers;
 import com.netflix.discovery.converters.wrappers.DecoderWrapper;
 import com.netflix.discovery.converters.wrappers.EncoderWrapper;
 import com.netflix.discovery.provider.DiscoveryJerseyProvider;
+import com.netflix.discovery.shared.MonitoredConnectionManager;
 import com.netflix.servo.monitor.BasicCounter;
 import com.netflix.servo.monitor.BasicTimer;
 import com.netflix.servo.monitor.Counter;
@@ -98,12 +99,8 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
      */
     @Override
     public void destroyResources() {
-        if (eurekaConnCleaner != null) {
-            eurekaConnCleaner.shutdown();
-        }
-        if (apacheHttpClient != null) {
-            apacheHttpClient.destroy();
-        }
+        eurekaConnCleaner.shutdown();
+        apacheHttpClient.destroy();
     }
 
     public static class EurekaJerseyClientBuilder {

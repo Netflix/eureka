@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -204,6 +206,49 @@ public class EndpointUtils {
         return orderedUrls;
     }
 
+    /**
+     * Get the list of all eureka service urls from properties file for the eureka client to talk to.
+     *
+     * @param clientConfig the clientConfig to use
+     * @param instanceZone The zone in which the client resides
+     * @param preferSameZone true if we have to prefer the same zone as the client, false otherwise
+     * @return an (ordered) map of zone -> list of urls mappings, with the preferred zone first in iteration order
+     */
+    public static Map<String, List<String>> getServiceUrlsMapFromConfig(EurekaClientConfig clientConfig, String instanceZone, boolean preferSameZone) {
+        Map<String, List<String>> orderedUrls = new LinkedHashMap<>();
+        String region = getRegion(clientConfig);
+        String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
+        if (availZones == null || availZones.length == 0) {
+            availZones = new String[1];
+            availZones[0] = DEFAULT_ZONE;
+        }
+        logger.debug("The availability zone for the given region {} are {}", region, Arrays.toString(availZones));
+        int myZoneOffset = getZoneOffset(instanceZone, preferSameZone, availZones);
+
+        String zone = availZones[myZoneOffset];
+        List<String> serviceUrls = clientConfig.getEurekaServerServiceUrls(zone);
+        if (serviceUrls != null) {
+            orderedUrls.put(zone, serviceUrls);
+        }
+        int currentOffset = myZoneOffset == (availZones.length - 1) ? 0 : (myZoneOffset + 1);
+        while (currentOffset != myZoneOffset) {
+            zone = availZones[currentOffset];
+            serviceUrls = clientConfig.getEurekaServerServiceUrls(zone);
+            if (serviceUrls != null) {
+                orderedUrls.put(zone, serviceUrls);
+            }
+            if (currentOffset == (availZones.length - 1)) {
+                currentOffset = 0;
+            } else {
+                currentOffset++;
+            }
+        }
+
+        if (orderedUrls.size() < 1) {
+            throw new IllegalArgumentException("DiscoveryClient: invalid serviceUrl specified!");
+        }
+        return orderedUrls;
+    }
 
     /**
      * Get the list of EC2 URLs given the zone name.
@@ -321,5 +366,4 @@ public class EndpointUtils {
 
         return 0;
     }
-
 }
