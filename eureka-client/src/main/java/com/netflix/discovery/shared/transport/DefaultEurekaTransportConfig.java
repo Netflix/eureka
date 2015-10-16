@@ -55,6 +55,6 @@ public class DefaultEurekaTransportConfig implements EurekaTransportConfig {
 
     @Override
     public boolean useBootstrapResolverForQuery() {
-        return configInstance.getBooleanProperty(namespace + "useBootstrapResolverForQuery", false).get();
+        return configInstance.getBooleanProperty(namespace + "useBootstrapResolverForQuery", true).get();
     }
 }

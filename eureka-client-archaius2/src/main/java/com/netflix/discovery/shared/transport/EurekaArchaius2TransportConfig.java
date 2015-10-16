@@ -61,6 +61,6 @@ public class EurekaArchaius2TransportConfig implements EurekaTransportConfig {
 
     @Override
     public boolean useBootstrapResolverForQuery() {
-        return config.getBoolean("useBootstrapResolverForQuery", false);
+        return config.getBoolean("useBootstrapResolverForQuery", true);
     }
 }
