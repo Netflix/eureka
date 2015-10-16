@@ -38,7 +38,7 @@ public class ConfigClusterResolverTest {
 
     @Before
     public void setUp() {
-        when(clientConfig.shouldUseDnsForFetchingServiceUrls()).thenReturn(true);
+        when(clientConfig.shouldUseDnsForFetchingServiceUrls()).thenReturn(false);
         when(clientConfig.getRegion()).thenReturn("us-east-1");
         when(clientConfig.getAvailabilityZones("us-east-1")).thenReturn(new String[]{"us-east-1c", "us-east-1d", "us-east-1e"});
         when(clientConfig.getEurekaServerServiceUrls("us-east-1c")).thenReturn(endpointsC);
@@ -53,7 +53,7 @@ public class ConfigClusterResolverTest {
     }
 
     @Test
-    public void testHappyCase() {
+    public void testReadFromConfig() {
         List<AwsEndpoint> endpoints = resolver.getClusterEndpoints();
         assertThat(endpoints.size(), equalTo(6));
     }

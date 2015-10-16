@@ -1,6 +1,5 @@
 package com.netflix.discovery.shared.resolver.aws;
 
-import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.endpoint.EndpointUtils;
@@ -37,6 +36,32 @@ public class ConfigClusterResolver implements ClusterResolver<AwsEndpoint> {
 
     @Override
     public List<AwsEndpoint> getClusterEndpoints() {
+        if (clientConfig.shouldUseDnsForFetchingServiceUrls()) {
+            return getClusterEndpointsFromDns();
+        } else {
+            return getClusterEndpointsFromConfig();
+        }
+    }
+
+    private List<AwsEndpoint> getClusterEndpointsFromDns() {
+        String region = getRegion();
+        String discoveryDnsName = "txt." + region + '.' + clientConfig.getEurekaServerDNSName();
+        int port = Integer.parseInt(clientConfig.getEurekaServerPort());
+
+        // cheap enough so just re-use
+        DnsTxtRecordClusterResolver dnsResolver = new DnsTxtRecordClusterResolver(
+                region,
+                discoveryDnsName,
+                true,
+                port,
+                false,
+                clientConfig.getEurekaServerURLContext()
+        );
+
+        return dnsResolver.getClusterEndpoints();
+    }
+
+    private List<AwsEndpoint> getClusterEndpointsFromConfig() {
         String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
         String myZone = InstanceInfo.getZone(availZones, myInstanceInfo);
 
@@ -63,7 +88,7 @@ public class ConfigClusterResolver implements ClusterResolver<AwsEndpoint> {
         }
 
         if (logger.isDebugEnabled()) {
-            logger.debug("Resolved to {}", endpoints);
+            logger.debug("Config resolved to {}", endpoints);
         }
         return endpoints;
     }

@@ -27,7 +27,6 @@ import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.resolver.aws.ApplicationsResolver;
 import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
 import com.netflix.discovery.shared.resolver.aws.ConfigClusterResolver;
-import com.netflix.discovery.shared.resolver.aws.DnsTxtRecordClusterResolver;
 import com.netflix.discovery.shared.resolver.aws.EurekaHttpResolver;
 import com.netflix.discovery.shared.resolver.aws.ZoneAffinityClusterResolver;
 import com.netflix.discovery.shared.transport.decorator.MetricsCollectingEurekaHttpClient;
@@ -138,40 +137,7 @@ public final class EurekaHttpClients {
 
     static ClusterResolver<AwsEndpoint> defaultBootstrapResolver(final EurekaClientConfig clientConfig,
                                                                  final InstanceInfo myInstanceInfo) {
-        final String myRegion = clientConfig.getRegion();
-
-        String discoveryDnsName = "txt." + myRegion + '.' + clientConfig.getEurekaServerDNSName();
-        int port = 0;
-        try {
-            port = Integer.parseInt(clientConfig.getEurekaServerPort());
-        } catch (NumberFormatException e) {
-            logger.warn("Port not available for dns resolver. This is a non-issue if you are not using dns to bootstrap");
-        }
-        final ClusterResolver<AwsEndpoint> dnsResolver = new DnsTxtRecordClusterResolver(
-                myRegion,
-                discoveryDnsName,
-                true,
-                port,
-                false,
-                clientConfig.getEurekaServerURLContext()
-        );
-        final ClusterResolver<AwsEndpoint> configResolver = new ConfigClusterResolver(clientConfig, myInstanceInfo);
-
-        return new ClusterResolver<AwsEndpoint>() {
-            @Override
-            public String getRegion() {
-                return myRegion;
-            }
-
-            @Override
-            public List<AwsEndpoint> getClusterEndpoints() {
-                if (clientConfig.shouldUseDnsForFetchingServiceUrls()) {
-                    return dnsResolver.getClusterEndpoints();
-                } else {
-                    return configResolver.getClusterEndpoints();
-                }
-            }
-        };
+        return new ConfigClusterResolver(clientConfig, myInstanceInfo);
     }
 
     static ClosableResolver<AwsEndpoint> queryClientResolver(final ClusterResolver bootstrapResolver,
