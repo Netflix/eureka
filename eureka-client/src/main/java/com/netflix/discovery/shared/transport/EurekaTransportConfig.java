@@ -45,5 +45,14 @@ public interface EurekaTransportConfig {
      */
     String getReadClusterVip();
 
-
+    /**
+     * By default, the transport uses the same (bootstrap) resolver for queries.
+     *
+     * Set this property to false to use an indirect resolver to resolve query targets
+     * via {@link #getReadClusterVip()}. This indirect resolver may or may not return the same
+     * targets as the bootstrap servers depending on how servers are setup.
+     *
+     * @return true by default.
+     */
+    boolean useBootstrapResolverForQuery();
 }

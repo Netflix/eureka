@@ -69,9 +69,7 @@ import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.resolver.ClosableResolver;
-import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.aws.ApplicationsResolver;
-import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpClients;
@@ -217,6 +215,8 @@ public class DiscoveryClient implements EurekaClient {
 
     protected final EurekaClientConfig clientConfig;
     protected final EurekaTransportConfig transportConfig;
+
+    private final long initTimestampMs;
 
     private enum Action {
         Register, Cancel, Renew, Refresh, Refresh_Delta
@@ -491,6 +491,8 @@ public class DiscoveryClient implements EurekaClient {
         // to work with DI'd DiscoveryClient
         DiscoveryManager.getInstance().setDiscoveryClient(this);
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
+
+        initTimestampMs = System.currentTimeMillis();
     }
 
     private void scheduleServerEndpointTask(EurekaTransport eurekaTransport, String zone) {
@@ -2098,25 +2100,41 @@ public class DiscoveryClient implements EurekaClient {
         return EndpointUtils.getServiceUrlsFromConfig(staticClientConfig, instanceZone, preferSameZone);
     }
 
-    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRATION_PREFIX + "lastSuccessfulHeartbeatTimePeriod",
-            description = "How much time has passed from last successful heartbeat", type = DataSourceType.GAUGE)
     public long getLastSuccessfulHeartbeatTimePeriod() {
-        long delay = lastSuccessfulHeartbeatTimestamp < 0 ? 0 : System.currentTimeMillis() - lastSuccessfulHeartbeatTimestamp;
-        heartbeatStalenessMonitor.update(delay);
-        return delay;
+        return lastSuccessfulHeartbeatTimestamp < 0
+                ? lastSuccessfulHeartbeatTimestamp
+                : System.currentTimeMillis() - lastSuccessfulHeartbeatTimestamp;
     }
 
     public long getLastSuccessfulRegistryFetchTimePeriod() {
-        return lastSuccessfulRegistryFetchTimestamp < 0 ? 0 : System.currentTimeMillis() - lastSuccessfulRegistryFetchTimestamp;
+        return lastSuccessfulRegistryFetchTimestamp < 0
+                ? lastSuccessfulRegistryFetchTimestamp
+                : System.currentTimeMillis() - lastSuccessfulRegistryFetchTimestamp;
+    }
+
+    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRATION_PREFIX + "lastSuccessfulHeartbeatTimePeriod",
+            description = "How much time has passed from last successful heartbeat", type = DataSourceType.GAUGE)
+    private long getLastSuccessfulHeartbeatTimePeriodInternal() {
+        long delay = getLastSuccessfulHeartbeatTimePeriod();
+        heartbeatStalenessMonitor.update(computeStalenessMonitorDelay(delay));
+        return delay;
     }
 
     // for metrics only
     @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "lastSuccessfulRegistryFetchTimePeriod",
             description = "How much time has passed from last successful local registry update", type = DataSourceType.GAUGE)
     private long getLastSuccessfulRegistryFetchTimePeriodInternal() {
-        long delay = getLastSuccessfulHeartbeatTimePeriod();
-        registryStalenessMonitor.update(delay);
+        long delay = getLastSuccessfulRegistryFetchTimePeriod();
+        registryStalenessMonitor.update(computeStalenessMonitorDelay(delay));
         return delay;
+    }
+
+    private long computeStalenessMonitorDelay(long delay) {
+        if (delay < 0) {
+            return System.currentTimeMillis() - initTimestampMs;
+        } else {
+            return delay;
+        }
     }
 
 }
