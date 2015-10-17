@@ -35,14 +35,11 @@ import com.netflix.discovery.shared.transport.decorator.RedirectingEurekaHttpCli
 import com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.ServerStatusEvaluators;
 import com.netflix.discovery.shared.transport.jersey.JerseyEurekaHttpClientFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Tomasz Bak
  */
 public final class EurekaHttpClients {
-    private static final Logger logger = LoggerFactory.getLogger(EurekaHttpClients.class);
 
     private EurekaHttpClients() {
     }
