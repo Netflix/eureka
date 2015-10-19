@@ -104,22 +104,22 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
     }
 
     @Override
-    public EurekaHttpResponse<Applications> getApplications() {
+    public EurekaHttpResponse<Applications> getApplications(String... regions) {
         throw new IllegalStateException("method not supported");
     }
 
     @Override
-    public EurekaHttpResponse<Applications> getDelta() {
+    public EurekaHttpResponse<Applications> getDelta(String... regions) {
         throw new IllegalStateException("method not supported");
     }
 
     @Override
-    public EurekaHttpResponse<Applications> getVip(String vipAddress) {
+    public EurekaHttpResponse<Applications> getVip(String vipAddress, String... regions) {
         throw new IllegalStateException("method not supported");
     }
 
     @Override
-    public EurekaHttpResponse<Applications> getSecureVip(String secureVipAddress) {
+    public EurekaHttpResponse<Applications> getSecureVip(String secureVipAddress, String... regions) {
         throw new IllegalStateException("method not supported");
     }
 

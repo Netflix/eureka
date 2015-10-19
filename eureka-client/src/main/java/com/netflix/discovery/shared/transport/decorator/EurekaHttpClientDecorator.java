@@ -130,11 +130,11 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     }
 
     @Override
-    public EurekaHttpResponse<Applications> getApplications() {
+    public EurekaHttpResponse<Applications> getApplications(final String... regions) {
         return execute(new RequestExecutor<Applications>() {
             @Override
             public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
-                return delegate.getApplications();
+                return delegate.getApplications(regions);
             }
 
             @Override
@@ -145,11 +145,11 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     }
 
     @Override
-    public EurekaHttpResponse<Applications> getDelta() {
+    public EurekaHttpResponse<Applications> getDelta(final String... regions) {
         return execute(new RequestExecutor<Applications>() {
             @Override
             public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
-                return delegate.getDelta();
+                return delegate.getDelta(regions);
             }
 
             @Override
@@ -160,11 +160,11 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     }
 
     @Override
-    public EurekaHttpResponse<Applications> getVip(final String vipAddress) {
+    public EurekaHttpResponse<Applications> getVip(final String vipAddress, final String... regions) {
         return execute(new RequestExecutor<Applications>() {
             @Override
             public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
-                return delegate.getVip(vipAddress);
+                return delegate.getVip(vipAddress, regions);
             }
 
             @Override
@@ -175,11 +175,11 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     }
 
     @Override
-    public EurekaHttpResponse<Applications> getSecureVip(final String secureVipAddress) {
+    public EurekaHttpResponse<Applications> getSecureVip(final String secureVipAddress, final String... regions) {
         return execute(new RequestExecutor<Applications>() {
             @Override
             public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
-                return delegate.getVip(secureVipAddress);
+                return delegate.getVip(secureVipAddress, regions);
             }
 
             @Override

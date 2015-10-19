@@ -186,6 +186,7 @@ public class DiscoveryClient implements EurekaClient {
     private final InstanceInfo instanceInfo;
     private final EurekaAccept clientAccept;
     private final AtomicReference<String> remoteRegionsToFetch;
+    private final AtomicReference<String[]> remoteRegionsRef;
     private final InstanceRegionChecker instanceRegionChecker;
     private final AtomicReference<String> lastQueryRedirect = new AtomicReference<String>();
     private final AtomicReference<String> lastRegisterRedirect = new AtomicReference<String>();
@@ -439,6 +440,7 @@ public class DiscoveryClient implements EurekaClient {
             discoveryApacheClient = discoveryJerseyClient.getClient();
 
             remoteRegionsToFetch = new AtomicReference<String>(clientConfig.fetchRegistryForRemoteRegions());
+            remoteRegionsRef = new AtomicReference<>(remoteRegionsToFetch.get() == null ? null : remoteRegionsToFetch.get().split(","));
             AzToRegionMapper azToRegionMapper;
             if (clientConfig.shouldUseDnsForFetchingServiceUrls()) {
                 azToRegionMapper = new DNSBasedAzToRegionMapper(clientConfig);
@@ -1110,8 +1112,8 @@ public class DiscoveryClient implements EurekaClient {
         Applications apps = null;
         if (shouldUseExperimentalTransportForQuery()) {
             EurekaHttpResponse<Applications> httpResponse = clientConfig.getRegistryRefreshSingleVipAddress() == null
-                    ? eurekaTransport.queryClient.getApplications()
-                    : eurekaTransport.queryClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
+                    ? eurekaTransport.queryClient.getApplications(remoteRegionsRef.get())
+                    : eurekaTransport.queryClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress(), remoteRegionsRef.get());
             if (httpResponse.getStatusCode() == Status.OK.getStatusCode()) {
                 apps = httpResponse.getEntity();
             }
@@ -1156,7 +1158,7 @@ public class DiscoveryClient implements EurekaClient {
 
         Applications delta = null;
         if (shouldUseExperimentalTransportForQuery()) {
-            EurekaHttpResponse<Applications> httpResponse = eurekaTransport.queryClient.getDelta();
+            EurekaHttpResponse<Applications> httpResponse = eurekaTransport.queryClient.getDelta(remoteRegionsRef.get());
             if (httpResponse.getStatusCode() == Status.OK.getStatusCode()) {
                 delta = httpResponse.getEntity();
             }
@@ -1854,6 +1856,7 @@ public class DiscoveryClient implements EurekaClient {
                         synchronized (instanceRegionChecker.getAzToRegionMapper()) {
                             if (remoteRegionsToFetch.compareAndSet(currentRemoteRegions, latestRemoteRegions)) {
                                 String[] remoteRegions = latestRemoteRegions.split(",");
+                                remoteRegionsRef.set(remoteRegions);
                                 instanceRegionChecker.getAzToRegionMapper().setRegionsToFetch(remoteRegions);
                                 remoteRegionsModified = true;
                             } else {

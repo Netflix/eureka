@@ -22,13 +22,13 @@ public interface EurekaHttpClient {
 
     EurekaHttpResponse<Void> deleteStatusOverride(String appName, String id, InstanceInfo info);
 
-    EurekaHttpResponse<Applications> getApplications();
+    EurekaHttpResponse<Applications> getApplications(String... regions);
 
-    EurekaHttpResponse<Applications> getDelta();
+    EurekaHttpResponse<Applications> getDelta(String... regions);
 
-    EurekaHttpResponse<Applications> getVip(String vipAddress);
+    EurekaHttpResponse<Applications> getVip(String vipAddress, String... regions);
 
-    EurekaHttpResponse<Applications> getSecureVip(String secureVipAddress);
+    EurekaHttpResponse<Applications> getSecureVip(String secureVipAddress, String... regions);
 
     EurekaHttpResponse<Application> getApplication(String appName);
 

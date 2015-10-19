@@ -33,6 +33,7 @@ import com.netflix.discovery.converters.wrappers.CodecWrappers;
 import com.netflix.discovery.converters.wrappers.CodecWrappers.JacksonJson;
 import com.netflix.discovery.converters.wrappers.DecoderWrapper;
 import com.netflix.discovery.converters.wrappers.EncoderWrapper;
+import com.netflix.discovery.shared.Applications;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -122,9 +123,11 @@ public class SimpleEurekaHttpServer {
 
         Matcher matcher;
         if (path.matches("/v2/apps[/]?")) {
-            httpResponse = requestHandler.getApplications();
+            String regions = getQueryParam(httpExchange, "regions");
+            httpResponse = regions == null ? requestHandler.getApplications() : requestHandler.getApplications(regions);
         } else if (path.matches("/v2/apps/delta[/]?")) {
-            httpResponse = requestHandler.getDelta();
+            String regions = getQueryParam(httpExchange, "regions");
+            httpResponse = regions == null ? requestHandler.getDelta() : requestHandler.getDelta(regions);
         } else if ((matcher = Pattern.compile("/v2/apps/([^/]+)/([^/]+)").matcher(path)).matches()) {
             httpResponse = requestHandler.getInstance(matcher.group(1), matcher.group(2));
         } else {
@@ -192,7 +195,11 @@ public class SimpleEurekaHttpServer {
     private void handleVipsGET(HttpExchange httpExchange) throws IOException {
         Matcher matcher = Pattern.compile("/v2/vips/([^/]+)").matcher(httpExchange.getRequestURI().getPath());
         if (matcher.matches()) {
-            mapResponse(httpExchange, requestHandler.getVip(matcher.group(1)));
+            String regions = getQueryParam(httpExchange, "regions");
+            EurekaHttpResponse<Applications> httpResponse = regions == null
+                    ? requestHandler.getVip(matcher.group(1))
+                    : requestHandler.getVip(matcher.group(1), regions);
+            mapResponse(httpExchange, httpResponse);
         } else {
             httpExchange.sendResponseHeaders(HttpServletResponse.SC_NOT_FOUND, 0);
         }
@@ -201,7 +208,11 @@ public class SimpleEurekaHttpServer {
     private void handleSecureVipsGET(HttpExchange httpExchange) throws IOException {
         Matcher matcher = Pattern.compile("/v2/svips/([^/]+)").matcher(httpExchange.getRequestURI().getPath());
         if (matcher.matches()) {
-            mapResponse(httpExchange, requestHandler.getSecureVip(matcher.group(1)));
+            String regions = getQueryParam(httpExchange, "regions");
+            EurekaHttpResponse<Applications> httpResponse = regions == null
+                    ? requestHandler.getSecureVip(matcher.group(1))
+                    : requestHandler.getSecureVip(matcher.group(1), regions);
+            mapResponse(httpExchange, httpResponse);
         } else {
             httpExchange.sendResponseHeaders(HttpServletResponse.SC_NOT_FOUND, 0);
         }
@@ -252,10 +263,13 @@ public class SimpleEurekaHttpServer {
     }
 
     private static String getQueryParam(HttpExchange httpExchange, String queryParam) {
-        for (String part : httpExchange.getRequestURI().getQuery().split("&")) {
-            String[] keyValue = part.split("=");
-            if (keyValue.length > 1 && keyValue[0].equals(queryParam)) {
-                return keyValue[1];
+        String query = httpExchange.getRequestURI().getQuery();
+        if (query != null) {
+            for (String part : query.split("&")) {
+                String[] keyValue = part.split("=");
+                if (keyValue.length > 1 && keyValue[0].equals(queryParam)) {
+                    return keyValue[1];
+                }
             }
         }
         return null;

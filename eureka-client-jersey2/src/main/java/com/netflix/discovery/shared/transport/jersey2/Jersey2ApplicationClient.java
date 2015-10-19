@@ -35,6 +35,7 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse.EurekaHttpResponseBuilder;
+import com.netflix.discovery.util.StringUtil;
 import org.glassfish.jersey.client.JerseyClient;
 import org.glassfish.jersey.client.JerseyInvocation.Builder;
 import org.glassfish.jersey.client.JerseyWebTarget;
@@ -178,23 +179,23 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
     }
 
     @Override
-    public EurekaHttpResponse<Applications> getApplications() {
-        return getApplicationsInternal("apps/");
+    public EurekaHttpResponse<Applications> getApplications(String... regions) {
+        return getApplicationsInternal("apps/", regions);
     }
 
     @Override
-    public EurekaHttpResponse<Applications> getDelta() {
-        return getApplicationsInternal("apps/delta");
+    public EurekaHttpResponse<Applications> getDelta(String... regions) {
+        return getApplicationsInternal("apps/delta", regions);
     }
 
     @Override
-    public EurekaHttpResponse<Applications> getVip(String vipAddress) {
-        return getApplicationsInternal("vips/" + vipAddress);
+    public EurekaHttpResponse<Applications> getVip(String vipAddress, String... regions) {
+        return getApplicationsInternal("vips/" + vipAddress, regions);
     }
 
     @Override
-    public EurekaHttpResponse<Applications> getSecureVip(String secureVipAddress) {
-        return getApplicationsInternal("svips/" + secureVipAddress);
+    public EurekaHttpResponse<Applications> getSecureVip(String secureVipAddress, String... regions) {
+        return getApplicationsInternal("svips/" + secureVipAddress, regions);
     }
 
     @Override
@@ -221,10 +222,14 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
         }
     }
 
-    private EurekaHttpResponse<Applications> getApplicationsInternal(String urlPath) {
+    private EurekaHttpResponse<Applications> getApplicationsInternal(String urlPath, String[] regions) {
         Response response = null;
         try {
-            Builder requestBuilder = jerseyClient.target(serviceUrl).path(urlPath).request();
+            JerseyWebTarget webTarget = jerseyClient.target(serviceUrl).path(urlPath);
+            if (regions != null && regions.length > 0) {
+                webTarget = webTarget.queryParam("regions", StringUtil.join(regions));
+            }
+            Builder requestBuilder = webTarget.request();
             addExtraHeaders(requestBuilder);
             response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).get();
 

@@ -11,12 +11,15 @@ import com.netflix.discovery.converters.wrappers.EncoderWrapper;
  */
 public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactoryBuilder<F, B>> {
 
+    private final int DEFAULT_MAX_CONNECTIONS_PER_HOST = 50;
+    private final int DEFAULT_MAX_TOTAL_CONNECTIONS = 200;
+
     protected InstanceInfo myInstanceInfo;
     protected boolean allowRedirect;
     protected boolean systemSSL;
     protected String clientName;
-    protected int maxConnectionsPerHost;
-    protected int maxTotalConnections;
+    protected int maxConnectionsPerHost = DEFAULT_MAX_CONNECTIONS_PER_HOST;
+    protected int maxTotalConnections = DEFAULT_MAX_TOTAL_CONNECTIONS;
     protected String trustStoreFileName;
     protected String trustStorePassword;
     protected String userAgent;
