@@ -182,6 +182,13 @@ public class Application {
     }
 
     /**
+     * @return the number of instances in this application
+     */
+    public int size() {
+        return instances.size();
+    }
+
+    /**
      * Shuffles the list of instances in the application and stores it for
      * future retrievals.
      *

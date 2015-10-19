@@ -195,6 +195,18 @@ public class Applications {
         }
     }
 
+    /**
+     * @return a weakly consistent size of the number of instances in all the applications
+     */
+    public int size() {
+        int result = 0;
+        for (Application application : applications) {
+            result += application.size();
+        }
+
+        return result;
+    }
+
     @Deprecated
     public void setVersion(Long version) {
         this.versionDelta = version;

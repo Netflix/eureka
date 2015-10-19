@@ -206,6 +206,7 @@ public class DiscoveryClient implements EurekaClient {
 
     private InstanceInfoReplicator instanceInfoReplicator;
 
+    private volatile int registrySize = 0;
     private volatile long lastSuccessfulRegistryFetchTimestamp = -1;
     private volatile long lastSuccessfulHeartbeatTimestamp = -1;
     private final ThresholdLevelsMetric heartbeatStalenessMonitor;
@@ -1869,6 +1870,7 @@ public class DiscoveryClient implements EurekaClient {
 
                 boolean success = fetchRegistry(remoteRegionsModified);
                 if (success) {
+                    registrySize = localRegionApps.get().size();
                     lastSuccessfulRegistryFetchTimestamp = System.currentTimeMillis();
                 }
 
@@ -2128,6 +2130,13 @@ public class DiscoveryClient implements EurekaClient {
         registryStalenessMonitor.update(computeStalenessMonitorDelay(delay));
         return delay;
     }
+
+    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "localRegistrySize",
+            description = "Count of instances in the local registry", type = DataSourceType.GAUGE)
+    public int localRegistrySize() {
+        return registrySize;
+    }
+
 
     private long computeStalenessMonitorDelay(long delay) {
         if (delay < 0) {
