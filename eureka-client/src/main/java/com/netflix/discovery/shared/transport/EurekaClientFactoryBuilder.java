@@ -1,5 +1,7 @@
 package com.netflix.discovery.shared.transport;
 
+import javax.net.ssl.SSLContext;
+
 import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.wrappers.CodecWrappers;
@@ -11,12 +13,16 @@ import com.netflix.discovery.converters.wrappers.EncoderWrapper;
  */
 public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactoryBuilder<F, B>> {
 
+    private static final int DEFAULT_MAX_CONNECTIONS_PER_HOST = 50;
+    private static final int DEFAULT_MAX_TOTAL_CONNECTIONS = 200;
+
     protected InstanceInfo myInstanceInfo;
     protected boolean allowRedirect;
     protected boolean systemSSL;
     protected String clientName;
-    protected int maxConnectionsPerHost;
-    protected int maxTotalConnections;
+    protected int maxConnectionsPerHost = DEFAULT_MAX_CONNECTIONS_PER_HOST;
+    protected int maxTotalConnections = DEFAULT_MAX_TOTAL_CONNECTIONS;
+    protected SSLContext sslContext;
     protected String trustStoreFileName;
     protected String trustStorePassword;
     protected String userAgent;
@@ -84,11 +90,24 @@ public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactor
         return self();
     }
 
+    public B withSSLContext(SSLContext sslContext) {
+        this.sslContext = sslContext;
+        return self();
+    }
+
+    /**
+     * Use {@link #withSSLContext(SSLContext)}
+     */
+    @Deprecated
     public B withSystemSSLConfiguration() {
         this.systemSSL = true;
         return self();
     }
 
+    /**
+     * Use {@link #withSSLContext(SSLContext)}
+     */
+    @Deprecated
     public B withTrustStoreFile(String trustStoreFileName, String trustStorePassword) {
         this.trustStoreFileName = trustStoreFileName;
         this.trustStorePassword = trustStorePassword;

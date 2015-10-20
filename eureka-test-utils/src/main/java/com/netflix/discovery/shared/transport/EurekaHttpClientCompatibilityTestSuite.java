@@ -38,6 +38,8 @@ import static org.mockito.Mockito.when;
  */
 public abstract class EurekaHttpClientCompatibilityTestSuite {
 
+    private static final String REMOTE_REGION = "us-east-1";
+
     private final EurekaHttpClient requestHandler = mock(EurekaHttpClient.class);
     private SimpleEurekaHttpServer httpServer;
 
@@ -106,11 +108,29 @@ public abstract class EurekaHttpClientCompatibilityTestSuite {
     }
 
     @Test
+    public void testGetApplicationsWithRemoteRegionRequest() throws Exception {
+        Applications apps = InstanceInfoGenerator.newBuilder(2, 1).build().toApplications();
+        when(requestHandler.getApplications(REMOTE_REGION)).thenReturn(createResponse(apps));
+
+        EurekaHttpResponse<Applications> httpResponse = getEurekaHttpClient().getApplications(REMOTE_REGION);
+        verifyResponseOkWithEntity(apps, httpResponse);
+    }
+
+    @Test
     public void testGetDeltaRequest() throws Exception {
         Applications delta = InstanceInfoGenerator.newBuilder(2, 1).build().takeDelta(2);
         when(requestHandler.getDelta()).thenReturn(createResponse(delta));
 
         EurekaHttpResponse<Applications> httpResponse = getEurekaHttpClient().getDelta();
+        verifyResponseOkWithEntity(delta, httpResponse);
+    }
+
+    @Test
+    public void testGetDeltaWithRemoteRegionRequest() throws Exception {
+        Applications delta = InstanceInfoGenerator.newBuilder(2, 1).build().takeDelta(2);
+        when(requestHandler.getDelta(REMOTE_REGION)).thenReturn(createResponse(delta));
+
+        EurekaHttpResponse<Applications> httpResponse = getEurekaHttpClient().getDelta(REMOTE_REGION);
         verifyResponseOkWithEntity(delta, httpResponse);
     }
 
@@ -143,12 +163,32 @@ public abstract class EurekaHttpClientCompatibilityTestSuite {
     }
 
     @Test
+    public void testGetVipWithRemoteRegionRequest() throws Exception {
+        Applications vipApps = InstanceInfoGenerator.newBuilder(1, 2).build().toApplications();
+        String vipAddress = vipApps.getRegisteredApplications().get(0).getInstances().get(0).getVIPAddress();
+        when(requestHandler.getVip(vipAddress, REMOTE_REGION)).thenReturn(createResponse(vipApps));
+
+        EurekaHttpResponse<Applications> httpResponse = getEurekaHttpClient().getVip(vipAddress, REMOTE_REGION);
+        verifyResponseOkWithEntity(vipApps, httpResponse);
+    }
+
+    @Test
     public void testGetSecureVipRequest() throws Exception {
         Applications vipApps = InstanceInfoGenerator.newBuilder(1, 2).build().toApplications();
         String secureVipAddress = vipApps.getRegisteredApplications().get(0).getInstances().get(0).getSecureVipAddress();
         when(requestHandler.getSecureVip(secureVipAddress)).thenReturn(createResponse(vipApps));
 
         EurekaHttpResponse<Applications> httpResponse = getEurekaHttpClient().getSecureVip(secureVipAddress);
+        verifyResponseOkWithEntity(vipApps, httpResponse);
+    }
+
+    @Test
+    public void testGetSecureVipWithRemoteRegionRequest() throws Exception {
+        Applications vipApps = InstanceInfoGenerator.newBuilder(1, 2).build().toApplications();
+        String secureVipAddress = vipApps.getRegisteredApplications().get(0).getInstances().get(0).getSecureVipAddress();
+        when(requestHandler.getSecureVip(secureVipAddress, REMOTE_REGION)).thenReturn(createResponse(vipApps));
+
+        EurekaHttpResponse<Applications> httpResponse = getEurekaHttpClient().getSecureVip(secureVipAddress, REMOTE_REGION);
         verifyResponseOkWithEntity(vipApps, httpResponse);
     }
 

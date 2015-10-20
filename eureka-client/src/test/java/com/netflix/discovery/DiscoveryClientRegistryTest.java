@@ -87,7 +87,7 @@ public class DiscoveryClientRegistryTest {
         Applications applications = InstanceInfoGenerator.newBuilder(4, "app1", "app2").build().toApplications();
         InstanceInfo instance = applications.getRegisteredApplications("app1").getInstances().get(0);
 
-        when(requestHandler.getApplications()).thenReturn(
+        when(requestHandler.getApplications(TEST_REMOTE_REGION)).thenReturn(
                 anEurekaHttpResponse(200, applications).type(MediaType.APPLICATION_JSON_TYPE).build()
         );
 
@@ -128,14 +128,14 @@ public class DiscoveryClientRegistryTest {
         DiscoveryClientResource vipClientResource = discoveryClientResource.fork().withVipFetch(vipAddress).build();
 
         // Take first portion
-        when(requestHandler.getVip(vipAddress)).thenReturn(
+        when(requestHandler.getVip(vipAddress, TEST_REMOTE_REGION)).thenReturn(
                 anEurekaHttpResponse(200, initialApps).type(MediaType.APPLICATION_JSON_TYPE).build()
         );
         EurekaClient vipClient = vipClientResource.getClient();
         assertThat(countInstances(vipClient.getApplications()), is(equalTo(1)));
 
         // Now second one
-        when(requestHandler.getVip(vipAddress)).thenReturn(
+        when(requestHandler.getVip(vipAddress, TEST_REMOTE_REGION)).thenReturn(
                 anEurekaHttpResponse(200, instanceGen.toApplications()).type(MediaType.APPLICATION_JSON_TYPE).build()
         );
         assertThat(vipClientResource.awaitCacheUpdate(5, TimeUnit.SECONDS), is(true));
@@ -159,7 +159,7 @@ public class DiscoveryClientRegistryTest {
         Applications initialApps = instanceGen.takeDelta(1);
 
         // Full fetch
-        when(requestHandler.getApplications()).thenReturn(
+        when(requestHandler.getApplications(TEST_REMOTE_REGION)).thenReturn(
                 anEurekaHttpResponse(200, initialApps).type(MediaType.APPLICATION_JSON_TYPE).build()
         );
 
@@ -167,13 +167,13 @@ public class DiscoveryClientRegistryTest {
         assertThat(countInstances(client.getApplications()), is(equalTo(1)));
 
         // Delta 1
-        when(requestHandler.getDelta()).thenReturn(
+        when(requestHandler.getDelta(TEST_REMOTE_REGION)).thenReturn(
                 anEurekaHttpResponse(200, instanceGen.takeDelta(1)).type(MediaType.APPLICATION_JSON_TYPE).build()
         );
         assertThat(discoveryClientResource.awaitCacheUpdate(5, TimeUnit.SECONDS), is(true));
 
         // Delta 2
-        when(requestHandler.getDelta()).thenReturn(
+        when(requestHandler.getDelta(TEST_REMOTE_REGION)).thenReturn(
                 anEurekaHttpResponse(200, instanceGen.takeDelta(1)).type(MediaType.APPLICATION_JSON_TYPE).build()
         );
         assertThat(discoveryClientResource.awaitCacheUpdate(5, TimeUnit.SECONDS), is(true));
@@ -184,7 +184,7 @@ public class DiscoveryClientRegistryTest {
     @Test
     public void testGetInvalidVIP() throws Exception {
         Applications applications = InstanceInfoGenerator.newBuilder(1, "testApp").build().toApplications();
-        when(requestHandler.getApplications()).thenReturn(
+        when(requestHandler.getApplications(TEST_REMOTE_REGION)).thenReturn(
                 anEurekaHttpResponse(200, applications).type(MediaType.APPLICATION_JSON_TYPE).build()
         );
 
@@ -224,7 +224,7 @@ public class DiscoveryClientRegistryTest {
         // Full fetch with one item
         InstanceInfo first = instanceGen.first();
         Applications initial = toApplications(first);
-        when(requestHandler.getApplications()).thenReturn(
+        when(requestHandler.getApplications(TEST_REMOTE_REGION)).thenReturn(
                 anEurekaHttpResponse(200, initial).type(MediaType.APPLICATION_JSON_TYPE).build()
         );
         EurekaClient client = discoveryClientResource.getClient();
@@ -235,7 +235,7 @@ public class DiscoveryClientRegistryTest {
         Applications delta = toApplications(second);
         delta.setAppsHashCode("DOWN_1_UP_1_");
 
-        when(requestHandler.getDelta()).thenReturn(
+        when(requestHandler.getDelta(TEST_REMOTE_REGION)).thenReturn(
                 anEurekaHttpResponse(200, delta).type(MediaType.APPLICATION_JSON_TYPE).build()
         );
 
@@ -256,10 +256,10 @@ public class DiscoveryClientRegistryTest {
         Applications delta = copyApplications(remoteApplications);
         delta.setAppsHashCode(allApplications.getAppsHashCode());
 
-        when(requestHandler.getApplications()).thenReturn(
+        when(requestHandler.getApplications(TEST_REMOTE_REGION)).thenReturn(
                 anEurekaHttpResponse(200, localApplications).type(MediaType.APPLICATION_JSON_TYPE).build()
         );
-        when(requestHandler.getDelta()).thenReturn(
+        when(requestHandler.getDelta(TEST_REMOTE_REGION)).thenReturn(
                 anEurekaHttpResponse(200, delta).type(MediaType.APPLICATION_JSON_TYPE).build()
         );
 
