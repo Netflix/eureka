@@ -113,6 +113,9 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
                 EurekaHttpResponse<R> response = requestExecutor.execute(currentHttpClient);
                 if (serverStatusEvaluator.accept(response.getStatusCode(), requestExecutor.getRequestType())) {
                     delegate.set(currentHttpClient);
+                    if (retry > 0) {
+                        logger.info("Request execution succeeded on retry:{}", retry);
+                    }
                     return response;
                 }
                 logger.warn("Request execution failure with status code {}; retrying on another server if available", response.getStatusCode());
