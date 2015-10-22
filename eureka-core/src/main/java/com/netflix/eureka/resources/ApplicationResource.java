@@ -142,12 +142,14 @@ public class ApplicationResource {
                                 @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
         logger.debug("Registering instance {} (replication={})", info.getId(), isReplication);
         // validate that the instanceinfo contains all the necessary required fields
-        if (info.getId() == null) {
+        if (isBlank(info.getId())) {
             return Response.status(400).entity("Missing instanceId").build();
-        } else if (info.getHostName() == null) {
+        } else if (isBlank(info.getHostName())) {
             return Response.status(400).entity("Missing hostname").build();
-        } else if (info.getAppName() == null) {
+        } else if (isBlank(info.getAppName())) {
             return Response.status(400).entity("Missing appName").build();
+        } else if (!appName.equals(info.getAppName())) {
+            return Response.status(400).entity("Mismatched appName, expecting " + appName + " but was " + info.getAppName()).build();
         }
 
         registry.register(info, "true".equals(isReplication));
@@ -163,4 +165,7 @@ public class ApplicationResource {
         return appName;
     }
 
+    private boolean isBlank(String str) {
+        return str == null || str.isEmpty();
+    }
 }
