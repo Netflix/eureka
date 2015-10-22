@@ -138,10 +138,22 @@ public class ApplicationResource {
      */
     @POST
     @Consumes({"application/json", "application/xml"})
-    public void addInstance(InstanceInfo info,
-                            @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
+    public Response addInstance(InstanceInfo info,
+                                @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
         logger.debug("Registering instance {} (replication={})", info.getId(), isReplication);
+        // validate that the instanceinfo contains all the necessary required fields
+        if (isBlank(info.getId())) {
+            return Response.status(400).entity("Missing instanceId").build();
+        } else if (isBlank(info.getHostName())) {
+            return Response.status(400).entity("Missing hostname").build();
+        } else if (isBlank(info.getAppName())) {
+            return Response.status(400).entity("Missing appName").build();
+        } else if (!appName.equals(info.getAppName())) {
+            return Response.status(400).entity("Mismatched appName, expecting " + appName + " but was " + info.getAppName()).build();
+        }
+
         registry.register(info, "true".equals(isReplication));
+        return Response.status(204).build();  // 204 to be backwards compatible
     }
 
     /**
@@ -153,4 +165,7 @@ public class ApplicationResource {
         return appName;
     }
 
+    private boolean isBlank(String str) {
+        return str == null || str.isEmpty();
+    }
 }
