@@ -81,7 +81,7 @@ public class ApplicationResourceTest extends AbstractTester {
     public void testGoodRegistration() throws Exception {
         InstanceInfo noIdInfo = InstanceInfoGenerator.takeOne();
         Response response = applicationResource.addInstance(noIdInfo, false+"");
-        assertThat(response.getStatus(), is(200));
+        assertThat(response.getStatus(), is(204));
     }
 
     @Test
