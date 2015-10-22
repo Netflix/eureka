@@ -20,7 +20,12 @@ public class DefaultEurekaTransportConfig implements EurekaTransportConfig {
 
     @Override
     public int getSessionedClientReconnectIntervalSeconds() {
-        return configInstance.getIntProperty(namespace + "sessionedClientReconnectIntervalSeconds", 30*60).get();
+        return configInstance.getIntProperty(namespace + "sessionedClientReconnectIntervalSeconds", 20*60).get();
+    }
+
+    @Override
+    public double getRetryableClientQuarantineRefreshPercentage() {
+        return configInstance.getDoubleProperty(namespace + "retryableClientQuarantineRefreshPercentage", 0.66).get();
     }
 
     @Override

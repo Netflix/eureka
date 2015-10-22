@@ -26,7 +26,12 @@ public class EurekaArchaius2TransportConfig implements EurekaTransportConfig {
 
     @Override
     public int getSessionedClientReconnectIntervalSeconds() {
-        return config.getInteger("sessionedClientReconnectIntervalSeconds", 30*60);
+        return config.getInteger("sessionedClientReconnectIntervalSeconds", 20*60);
+    }
+
+    @Override
+    public double getRetryableClientQuarantineRefreshPercentage() {
+        return config.getDouble("retryableClientQuarantineRefreshPercentage", 0.66);
     }
 
     @Override

@@ -50,7 +50,7 @@ public class SessionedEurekaHttpClientTest {
 
         SessionedEurekaHttpClient httpClient = null;
         try {
-            httpClient = new SessionedEurekaHttpClient(factory, 1);
+            httpClient = new SessionedEurekaHttpClient("test", factory, 1);
             httpClient.getApplications();
             verify(firstClient, times(1)).getApplications();
 

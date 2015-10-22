@@ -24,8 +24,10 @@ import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.resolver.aws.SampleCluster;
 import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
+import com.netflix.discovery.shared.transport.DefaultEurekaTransportConfig;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
+import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.TransportException;
 import com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.RequestExecutor;
@@ -56,6 +58,7 @@ public class RetryableEurekaHttpClientTest {
 
     private static final List<AwsEndpoint> CLUSTER_ENDPOINTS = SampleCluster.UsEast1a.builder().withServerPool(CLUSTER_SIZE).build();
 
+    private final EurekaTransportConfig transportConfig = mock(EurekaTransportConfig.class);
     private final ClusterResolver clusterResolver = mock(ClusterResolver.class);
     private final TransportClientFactory clientFactory = mock(TransportClientFactory.class);
     private final ServerStatusEvaluator serverStatusEvaluator = ServerStatusEvaluators.legacyEvaluator();
@@ -67,7 +70,15 @@ public class RetryableEurekaHttpClientTest {
 
     @Before
     public void setUp() throws Exception {
-        retryableClient = new RetryableEurekaHttpClient(clusterResolver, clientFactory, serverStatusEvaluator, NUMBER_OF_RETRIES);
+        when(transportConfig.getRetryableClientQuarantineRefreshPercentage()).thenReturn(0.66);
+
+        retryableClient = new RetryableEurekaHttpClient(
+                "test",
+                transportConfig,
+                clusterResolver,
+                clientFactory,
+                serverStatusEvaluator,
+                NUMBER_OF_RETRIES);
 
         clusterDelegates = new ArrayList<>(CLUSTER_SIZE);
         for (int i = 0; i < CLUSTER_SIZE; i++) {

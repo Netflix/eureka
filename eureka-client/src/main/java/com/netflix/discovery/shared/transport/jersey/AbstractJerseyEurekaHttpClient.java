@@ -39,6 +39,7 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
     protected AbstractJerseyEurekaHttpClient(Client jerseyClient, String serviceUrl) {
         this.jerseyClient = jerseyClient;
         this.serviceUrl = serviceUrl;
+        logger.debug("Created client for url: {}", serviceUrl);
     }
 
     @Override
