@@ -17,6 +17,8 @@ import javax.ws.rs.core.Response;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 /**
  * @author David Liu
@@ -73,5 +75,30 @@ public class ApplicationResourceTest extends AbstractTester {
             InstanceInfo decodedInfo = decodedApp.getByInstanceId(instanceInfo.getId());
             assertThat(EurekaEntityComparators.equalMini(instanceInfo, decodedInfo), is(true));
         }
+    }
+
+    @Test
+    public void testGoodRegistration() throws Exception {
+        InstanceInfo noIdInfo = InstanceInfoGenerator.takeOne();
+        Response response = applicationResource.addInstance(noIdInfo, false+"");
+        assertThat(response.getStatus(), is(200));
+    }
+
+    @Test
+    public void testBadRegistration() throws Exception {
+        InstanceInfo instanceInfo = spy(InstanceInfoGenerator.takeOne());
+        when(instanceInfo.getId()).thenReturn(null);
+        Response response = applicationResource.addInstance(instanceInfo, false+"");
+        assertThat(response.getStatus(), is(400));
+
+        instanceInfo = spy(InstanceInfoGenerator.takeOne());
+        when(instanceInfo.getHostName()).thenReturn(null);
+        response = applicationResource.addInstance(instanceInfo, false+"");
+        assertThat(response.getStatus(), is(400));
+
+        instanceInfo = spy(InstanceInfoGenerator.takeOne());
+        when(instanceInfo.getAppName()).thenReturn(null);
+        response = applicationResource.addInstance(instanceInfo, false+"");
+        assertThat(response.getStatus(), is(400));
     }
 }

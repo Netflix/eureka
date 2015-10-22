@@ -138,10 +138,20 @@ public class ApplicationResource {
      */
     @POST
     @Consumes({"application/json", "application/xml"})
-    public void addInstance(InstanceInfo info,
-                            @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
+    public Response addInstance(InstanceInfo info,
+                                @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
         logger.debug("Registering instance {} (replication={})", info.getId(), isReplication);
+        // validate that the instanceinfo contains all the necessary required fields
+        if (info.getId() == null) {
+            return Response.status(400).entity("Missing instanceId").build();
+        } else if (info.getHostName() == null) {
+            return Response.status(400).entity("Missing hostname").build();
+        } else if (info.getAppName() == null) {
+            return Response.status(400).entity("Missing appName").build();
+        }
+
         registry.register(info, "true".equals(isReplication));
+        return Response.status(204).build();  // 204 to be backwards compatible
     }
 
     /**
