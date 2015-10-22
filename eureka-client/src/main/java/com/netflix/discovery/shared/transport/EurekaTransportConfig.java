@@ -11,9 +11,9 @@ public interface EurekaTransportConfig {
     int getSessionedClientReconnectIntervalSeconds();
 
     /**
-     * @return the numerical percentage of the full endpoints set above which the quarantine set is cleared
+     * @return the percentage of the full endpoints set above which the quarantine set is cleared in the range [0, 1.0]
      */
-    int getRetryableClientQuarantineRefreshPercentage();
+    double getRetryableClientQuarantineRefreshPercentage();
 
     /**
      * Indicates how often(in seconds) to poll for changes to the bootstrap eureka server urls

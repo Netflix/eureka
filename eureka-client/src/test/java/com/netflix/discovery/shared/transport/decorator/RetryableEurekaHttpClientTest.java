@@ -70,7 +70,7 @@ public class RetryableEurekaHttpClientTest {
 
     @Before
     public void setUp() throws Exception {
-        when(transportConfig.getRetryableClientQuarantineRefreshPercentage()).thenReturn(50);
+        when(transportConfig.getRetryableClientQuarantineRefreshPercentage()).thenReturn(0.66);
 
         retryableClient = new RetryableEurekaHttpClient(
                 "test",

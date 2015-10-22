@@ -160,7 +160,7 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
         quarantineSet.retainAll(candidateHosts);
 
         // If enough hosts are bad, we have no choice but start over again
-        int threshold = candidateHosts.size() * transportConfig.getRetryableClientQuarantineRefreshPercentage() / 100;
+        int threshold = (int) (candidateHosts.size() * transportConfig.getRetryableClientQuarantineRefreshPercentage());
         if (quarantineSet.isEmpty()) {
             // no-op
         } else if (quarantineSet.size() >= threshold) {
