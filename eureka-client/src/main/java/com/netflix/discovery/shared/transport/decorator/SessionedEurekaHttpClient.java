@@ -16,6 +16,7 @@
 
 package com.netflix.discovery.shared.transport.decorator;
 
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
@@ -40,6 +41,8 @@ import static com.netflix.discovery.EurekaClientNames.METRIC_TRANSPORT_PREFIX;
 public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
     private static final Logger logger = LoggerFactory.getLogger(SessionedEurekaHttpClient.class);
 
+    private final Random random = new Random();
+
     private final String name;
     private final EurekaHttpClientFactory clientFactory;
     private final long sessionDurationMs;
@@ -50,7 +53,7 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
     public SessionedEurekaHttpClient(String name, EurekaHttpClientFactory clientFactory, long sessionDurationMs) {
         this.name = name;
         this.clientFactory = clientFactory;
-        this.sessionDurationMs = sessionDurationMs;
+        this.sessionDurationMs = randomizeSessionDuration(sessionDurationMs);
         Monitors.registerObject(name, this);
     }
 
@@ -75,6 +78,14 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
     public void shutdown() {
         Monitors.unregisterObject(name, this);
         TransportUtils.shutdown(eurekaHttpClientRef.getAndSet(null));
+    }
+
+    /**
+     * @return a randomized sessionDuration in ms calculated as +/- an additional amount in [0, sessionDurationMs/2]
+     */
+    protected long randomizeSessionDuration(long sessionDurationMs) {
+        long delta = (long) (sessionDurationMs * (random.nextDouble() - 0.5));
+        return sessionDurationMs + delta;
     }
 
     @Monitor(name = METRIC_TRANSPORT_PREFIX + "currentSessionDuration",
