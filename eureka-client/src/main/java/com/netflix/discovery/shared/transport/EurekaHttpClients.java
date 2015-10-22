@@ -20,6 +20,7 @@ import java.util.List;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.EurekaClientNames;
 import com.netflix.discovery.shared.resolver.AsyncResolver;
 import com.netflix.discovery.shared.resolver.ClosableResolver;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
@@ -55,16 +56,17 @@ public final class EurekaHttpClients {
                 ? wrapClosable(bootstrapResolver)
                 : queryClientResolver(bootstrapResolver, transportClientFactory,
                 clientConfig, transportConfig, myInstanceInfo, applicationsSource);
-        return canonicalClientFactory(transportConfig, queryResolver, transportClientFactory);
+        return canonicalClientFactory(EurekaClientNames.QUERY, transportConfig, queryResolver, transportClientFactory);
     }
 
     public static EurekaHttpClientFactory registrationClientFactory(ClusterResolver bootstrapResolver,
                                                                     TransportClientFactory transportClientFactory,
                                                                     EurekaTransportConfig transportConfig) {
-        return canonicalClientFactory(transportConfig, bootstrapResolver, transportClientFactory);
+        return canonicalClientFactory(EurekaClientNames.REGISTRATION, transportConfig, bootstrapResolver, transportClientFactory);
     }
 
-    static EurekaHttpClientFactory canonicalClientFactory(final EurekaTransportConfig transportConfig,
+    static EurekaHttpClientFactory canonicalClientFactory(final String name,
+                                                          final EurekaTransportConfig transportConfig,
                                                           final ClusterResolver<EurekaEndpoint> clusterResolver,
                                                           final TransportClientFactory transportClientFactory) {
 
@@ -72,7 +74,10 @@ public final class EurekaHttpClients {
             @Override
             public EurekaHttpClient newClient() {
                 return new SessionedEurekaHttpClient(
+                        name,
                         RetryableEurekaHttpClient.createFactory(
+                                name,
+                                transportConfig,
                                 clusterResolver,
                                 RedirectingEurekaHttpClient.createFactory(transportClientFactory),
                                 ServerStatusEvaluators.legacyEvaluator()),
@@ -124,7 +129,7 @@ public final class EurekaHttpClients {
         List<AwsEndpoint> initialValue = delegateResolver.getClusterEndpoints();
 
         return new AsyncResolver<>(
-                "bootstrap",
+                EurekaClientNames.BOOTSTRAP,
                 delegateResolver,
                 initialValue,
                 1,
@@ -145,6 +150,7 @@ public final class EurekaHttpClients {
                                                              final ApplicationsResolver.ApplicationsSource applicationsSource) {
         final EurekaHttpResolver remoteResolver = new EurekaHttpResolver(
                 clientConfig,
+                transportConfig,
                 bootstrapResolver,
                 transportClientFactory,
                 transportConfig.getReadClusterVip()
@@ -187,7 +193,7 @@ public final class EurekaHttpClients {
         };
 
         final AsyncResolver<AwsEndpoint> asyncResolver = new AsyncResolver<>(
-                "query",
+                EurekaClientNames.QUERY,
                 new ZoneAffinityClusterResolver(compoundResolver, myZone, true),
                 transportConfig.getAsyncExecutorThreadPoolSize(),
                 transportConfig.getAsyncResolverRefreshIntervalMs(),

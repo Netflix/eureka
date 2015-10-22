@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
+import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.EurekaIdentityHeaderFilter;
 import com.netflix.discovery.TimedSupervisorTask;
 import com.netflix.discovery.shared.Application;
@@ -86,7 +87,11 @@ public class RemoteRegionRegistry implements LookupService<String> {
     private final EurekaHttpClient eurekaHttpClient;
 
     @Inject
-    public RemoteRegionRegistry(EurekaServerConfig serverConfig, ServerCodecs serverCodecs, String regionName, URL remoteRegionURL) {
+    public RemoteRegionRegistry(EurekaServerConfig serverConfig,
+                                EurekaClientConfig clientConfig,
+                                ServerCodecs serverCodecs,
+                                String regionName,
+                                URL remoteRegionURL) {
         this.serverConfig = serverConfig;
         this.remoteRegionURL = remoteRegionURL;
         this.fetchRegistryTimer = Monitors.newTimer(this.remoteRegionURL.toString() + "_FetchRegistry");
@@ -135,7 +140,8 @@ public class RemoteRegionRegistry implements LookupService<String> {
         EurekaHttpClient newEurekaHttpClient = null;
         try {
             ClusterResolver clusterResolver = StaticClusterResolver.fromURL(regionName, remoteRegionURL);
-            newEurekaHttpClient = EurekaServerHttpClients.createRemoteRegionClient(serverConfig, serverCodecs, clusterResolver);
+            newEurekaHttpClient = EurekaServerHttpClients.createRemoteRegionClient(
+                    serverConfig, clientConfig.getTransportConfig(), serverCodecs, clusterResolver);
         } catch (Exception e) {
             logger.warn("Experimental transport initialization failure", e);
         }

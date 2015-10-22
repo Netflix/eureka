@@ -25,6 +25,8 @@ import com.netflix.discovery.shared.transport.TransportUtils;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.annotations.Monitor;
 import com.netflix.servo.monitor.Monitors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.netflix.discovery.EurekaClientNames.METRIC_TRANSPORT_PREFIX;
 
@@ -36,17 +38,20 @@ import static com.netflix.discovery.EurekaClientNames.METRIC_TRANSPORT_PREFIX;
  * @author Tomasz Bak
  */
 public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
+    private static final Logger logger = LoggerFactory.getLogger(SessionedEurekaHttpClient.class);
 
+    private final String name;
     private final EurekaHttpClientFactory clientFactory;
     private final long sessionDurationMs;
 
     private volatile long lastReconnectTimeStamp = -1;
     private final AtomicReference<EurekaHttpClient> eurekaHttpClientRef = new AtomicReference<>();
 
-    public SessionedEurekaHttpClient(EurekaHttpClientFactory clientFactory, long sessionDurationMs) {
+    public SessionedEurekaHttpClient(String name, EurekaHttpClientFactory clientFactory, long sessionDurationMs) {
+        this.name = name;
         this.clientFactory = clientFactory;
         this.sessionDurationMs = sessionDurationMs;
-        Monitors.registerObject(this);
+        Monitors.registerObject(name, this);
     }
 
     @Override
@@ -54,6 +59,7 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
         long now = System.currentTimeMillis();
         long delay = now - lastReconnectTimeStamp;
         if (delay >= sessionDurationMs) {
+            logger.debug("Ending a session and starting anew");
             lastReconnectTimeStamp = now;
             TransportUtils.shutdown(eurekaHttpClientRef.getAndSet(null));
         }
@@ -67,7 +73,7 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
 
     @Override
     public void shutdown() {
-        Monitors.unregisterObject(this);
+        Monitors.unregisterObject(name, this);
         TransportUtils.shutdown(eurekaHttpClientRef.getAndSet(null));
     }
 

@@ -2,6 +2,7 @@ package com.netflix.discovery.shared.resolver.aws;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.EurekaClientNames;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
@@ -9,6 +10,7 @@ import com.netflix.discovery.shared.resolver.ResolverUtils;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
+import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.ServerStatusEvaluators;
@@ -30,12 +32,15 @@ public class EurekaHttpResolver implements ClusterResolver<AwsEndpoint> {
     private final EurekaHttpClientFactory clientFactory;
 
     public EurekaHttpResolver(EurekaClientConfig clientConfig,
+                              EurekaTransportConfig transportConfig,
                               ClusterResolver<EurekaEndpoint> bootstrapResolver,
                               TransportClientFactory transportClientFactory,
                               String vipAddress) {
         this(
                 clientConfig,
                 RetryableEurekaHttpClient.createFactory(
+                        EurekaClientNames.RESOLVER,
+                        transportConfig,
                         bootstrapResolver,
                         transportClientFactory,
                         ServerStatusEvaluators.httpSuccessEvaluator()

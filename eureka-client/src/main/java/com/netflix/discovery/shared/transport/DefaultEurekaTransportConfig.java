@@ -24,6 +24,11 @@ public class DefaultEurekaTransportConfig implements EurekaTransportConfig {
     }
 
     @Override
+    public int getRetryableClientQuarantineRefreshPercentage() {
+        return configInstance.getIntProperty(namespace + "retryableClientQuarantineRefreshPercentage", 50).get();
+    }
+
+    @Override
     public int getBootstrapResolverRefreshIntervalSeconds() {
         return configInstance.getIntProperty(namespace + "bootstrapResolverRefreshIntervalSeconds", 5*60).get();
     }

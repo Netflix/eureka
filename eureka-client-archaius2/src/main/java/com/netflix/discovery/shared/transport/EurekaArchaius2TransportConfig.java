@@ -30,6 +30,11 @@ public class EurekaArchaius2TransportConfig implements EurekaTransportConfig {
     }
 
     @Override
+    public int getRetryableClientQuarantineRefreshPercentage() {
+        return config.getInteger("retryableClientQuarantineRefreshPercentage", 50);
+    }
+
+    @Override
     public int getBootstrapResolverRefreshIntervalSeconds() {
         return config.getInteger("bootstrapResolverRefreshIntervalSeconds", 5 * 60);
     }

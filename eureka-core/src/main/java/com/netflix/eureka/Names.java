@@ -32,4 +32,6 @@ public class Names {
     public static final String METRIC_PREFIX = "eurekaServer.";
 
     public static final String METRIC_REPLICATION_PREFIX = METRIC_PREFIX + "replication.";
+
+    public static final String REMOTE = "remote";
 }

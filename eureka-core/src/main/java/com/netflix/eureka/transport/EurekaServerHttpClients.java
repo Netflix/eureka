@@ -20,6 +20,7 @@ import com.netflix.discovery.shared.dns.DnsServiceImpl;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
+import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.decorator.MetricsCollectingEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.SessionedEurekaHttpClient;
@@ -27,6 +28,7 @@ import com.netflix.discovery.shared.transport.decorator.RedirectingEurekaHttpCli
 import com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.ServerStatusEvaluators;
 import com.netflix.eureka.EurekaServerConfig;
+import com.netflix.eureka.Names;
 import com.netflix.eureka.resources.ServerCodecs;
 
 /**
@@ -43,13 +45,17 @@ public final class EurekaServerHttpClients {
      * {@link EurekaHttpClient} for remote region replication.
      */
     public static EurekaHttpClient createRemoteRegionClient(EurekaServerConfig serverConfig,
+                                                            EurekaTransportConfig transportConfig,
                                                             ServerCodecs serverCodecs,
                                                             ClusterResolver<EurekaEndpoint> clusterResolver) {
         JerseyRemoteRegionClientFactory jerseyFactory = new JerseyRemoteRegionClientFactory(serverConfig, serverCodecs, clusterResolver.getRegion());
         TransportClientFactory metricsFactory = MetricsCollectingEurekaHttpClient.createFactory(jerseyFactory);
 
         SessionedEurekaHttpClient client = new SessionedEurekaHttpClient(
+                Names.REMOTE,
                 RetryableEurekaHttpClient.createFactory(
+                        Names.REMOTE,
+                        transportConfig,
                         clusterResolver,
                         createFactory(metricsFactory),
                         ServerStatusEvaluators.legacyEvaluator()),

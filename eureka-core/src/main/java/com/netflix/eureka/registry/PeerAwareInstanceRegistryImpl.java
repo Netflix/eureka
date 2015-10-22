@@ -111,8 +111,6 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
 
     private final MeasuredRate numberOfReplicationsLastMin = new MeasuredRate(1000 * 60 * 1);
 
-    protected final EurekaClientConfig clientConfig;
-    protected final ServerCodecs serverCodecs;
     protected final EurekaClient eurekaClient;
     protected volatile PeerEurekaNodes peerEurekaNodes;
 
@@ -126,9 +124,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             ServerCodecs serverCodecs,
             EurekaClient eurekaClient
     ) {
-        super(serverConfig, serverCodecs);
-        this.clientConfig = clientConfig;
-        this.serverCodecs = serverCodecs;
+        super(serverConfig, clientConfig, serverCodecs);
         this.eurekaClient = eurekaClient;
     }
 

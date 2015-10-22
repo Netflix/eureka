@@ -90,6 +90,7 @@ public class EurekaHttpClientsTest {
         readServerURI = "http://localhost:" + readServer.getServerPort();
 
         clientFactory = EurekaHttpClients.canonicalClientFactory(
+                "test",
                 transportConfig,
                 clusterResolver,
                 EurekaHttpClients.newTransportClientFactory(

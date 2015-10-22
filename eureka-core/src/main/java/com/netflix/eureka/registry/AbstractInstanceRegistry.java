@@ -45,6 +45,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.LeaseInfo;
+import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.Pair;
@@ -103,14 +104,16 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     protected volatile int expectedNumberOfRenewsPerMin;
 
     protected final EurekaServerConfig serverConfig;
+    protected final EurekaClientConfig clientConfig;
     protected final ServerCodecs serverCodecs;
     protected volatile ResponseCache responseCache;
 
     /**
      * Create a new, empty instance registry.
      */
-    protected AbstractInstanceRegistry(EurekaServerConfig serverConfig, ServerCodecs serverCodecs) {
+    protected AbstractInstanceRegistry(EurekaServerConfig serverConfig, EurekaClientConfig clientConfig, ServerCodecs serverCodecs) {
         this.serverConfig = serverConfig;
+        this.clientConfig = clientConfig;
         this.serverCodecs = serverCodecs;
         this.recentCanceledQueue = new CircularQueue<Pair<Long, String>>(1000);
         this.recentRegisteredQueue = new CircularQueue<Pair<Long, String>>(1000);
@@ -135,6 +138,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             for (Map.Entry<String, String> remoteRegionUrlWithName : remoteRegionUrlsWithName.entrySet()) {
                 RemoteRegionRegistry remoteRegionRegistry = new RemoteRegionRegistry(
                         serverConfig,
+                        clientConfig,
                         serverCodecs,
                         remoteRegionUrlWithName.getKey(),
                         new URL(remoteRegionUrlWithName.getValue()));
