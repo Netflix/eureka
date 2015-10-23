@@ -39,7 +39,6 @@ import com.netflix.discovery.converters.JsonXStream;
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.eureka.aws.AwsBinder;
 import com.netflix.eureka.aws.AwsBinderDelegate;
-import com.netflix.eureka.aws.EIPManager;
 import com.netflix.eureka.cluster.PeerEurekaNodes;
 import com.netflix.eureka.registry.AwsInstanceRegistry;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;

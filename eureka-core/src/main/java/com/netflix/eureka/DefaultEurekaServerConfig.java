@@ -170,10 +170,20 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
      * @see com.netflix.eureka.EurekaServerConfig#getEIPBindingRetryInterval()
      */
     @Override
+    public int getEIPBindingRetryIntervalMsWhenUnbound() {
+        return configInstance.getIntProperty(
+                namespace + "eipBindRebindRetryIntervalMsWhenUnbound", (1 * 60 * 1000)).get();
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see com.netflix.eureka.EurekaServerConfig#getEIPBindingRetryInterval()
+     */
+    @Override
     public int getEIPBindingRetryIntervalMs() {
         return configInstance.getIntProperty(
-                namespace + "eipBindRebindRetryIntervalMs", (5 * 60 * 1000))
-                .get();
+                namespace + "eipBindRebindRetryIntervalMs", (5 * 60 * 1000)).get();
     }
 
     /*
