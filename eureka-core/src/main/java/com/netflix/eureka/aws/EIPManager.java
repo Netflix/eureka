@@ -141,39 +141,7 @@ public class EIPManager implements AwsBinder {
             }
         }
         // Schedule a timer which periodically checks for EIP binding.
-        scheduleEIPBindTask();
-    }
-
-    /**
-     * Schedules a EIP binding timer task which constantly polls for EIP in the
-     * same zone and binds it to itself.If the EIP is taken away for some
-     * reason, this task tries to get the EIP back. Hence it is advised to take
-     * one EIP assignment per instance in a zone.
-     *
-     */
-    private void scheduleEIPBindTask() {
-        timer.schedule(new TimerTask() {
-                           @Override
-                           public void run() {
-                               try {
-                                   // If the EIP is not bound, the registry could  be stale
-                                   // First sync up the registry from the neighboring node before
-                                   // trying to bind the EIP
-                                   if (!isEIPBound()) {
-                                       registry.clearRegistry();
-                                       int count = registry.syncUp();
-                                       registry.openForTraffic(applicationInfoManager, count);
-                                   } else {
-                                       // An EIP is already bound
-                                       return;
-                                   }
-                                   bindEIP();
-                               } catch (Throwable e) {
-                                   logger.error("Could not bind to EIP", e);
-                               }
-                           }
-                       }, serverConfig.getEIPBindingRetryIntervalMs(),
-                serverConfig.getEIPBindingRetryIntervalMs());
+        timer.schedule(new EIPBindingTask(), serverConfig.getEIPBindingRetryIntervalMsWhenUnbound());
     }
 
     /**
@@ -429,4 +397,39 @@ public class EIPManager implements AwsBinder {
         ec2Service.setEndpoint("ec2." + region + ".amazonaws.com");
         return ec2Service;
     }
+
+    /**
+     * An EIP binding timer task which constantly polls for EIP in the
+     * same zone and binds it to itself.If the EIP is taken away for some
+     * reason, this task tries to get the EIP back. Hence it is advised to take
+     * one EIP assignment per instance in a zone.
+     */
+    private class EIPBindingTask extends TimerTask {
+        @Override
+        public void run() {
+            boolean isEIPBound = false;
+            try {
+                isEIPBound = isEIPBound();
+                // If the EIP is not bound, the registry could  be stale. First sync up the registry from the
+                // neighboring node before trying to bind the EIP
+                if (!isEIPBound) {
+                    registry.clearRegistry();
+                    int count = registry.syncUp();
+                    registry.openForTraffic(applicationInfoManager, count);
+                } else {
+                    // An EIP is already bound
+                    return;
+                }
+                bindEIP();
+            } catch (Throwable e) {
+                logger.error("Could not bind to EIP", e);
+            } finally {
+                if (isEIPBound) {
+                    timer.schedule(new EIPBindingTask(), serverConfig.getEIPBindingRetryIntervalMs());
+                } else {
+                    timer.schedule(new EIPBindingTask(), serverConfig.getEIPBindingRetryIntervalMsWhenUnbound());
+                }
+            }
+        }
+    };
 }
