@@ -6,23 +6,12 @@ import javax.net.ssl.TrustManagerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.KeyStore;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.discovery.converters.wrappers.CodecWrappers;
 import com.netflix.discovery.converters.wrappers.DecoderWrapper;
 import com.netflix.discovery.converters.wrappers.EncoderWrapper;
 import com.netflix.discovery.provider.DiscoveryJerseyProvider;
 import com.netflix.discovery.shared.MonitoredConnectionManager;
-import com.netflix.servo.monitor.BasicCounter;
-import com.netflix.servo.monitor.BasicTimer;
-import com.netflix.servo.monitor.Counter;
-import com.netflix.servo.monitor.MonitorConfig;
-import com.netflix.servo.monitor.Monitors;
-import com.netflix.servo.monitor.Stopwatch;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import com.sun.jersey.client.apache4.config.ApacheHttpClient4Config;
@@ -34,8 +23,6 @@ import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.params.CoreProtocolPNames;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
 
@@ -44,34 +31,18 @@ import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
  */
 public class EurekaJerseyClientImpl implements EurekaJerseyClient {
 
-    private static final Logger s_logger = LoggerFactory.getLogger(EurekaJerseyClientImpl.class);
-
-    private static final int HTTP_CONNECTION_CLEANER_INTERVAL_MS = 30 * 1000;
-
     private static final String PROTOCOL = "https";
     private static final String PROTOCOL_SCHEME = "SSL";
     private static final int HTTPS_PORT = 443;
     private static final String KEYSTORE_TYPE = "JKS";
 
     private final ApacheHttpClient4 apacheHttpClient;
+    private final ApacheHttpClientConnectionCleaner apacheHttpClientConnectionCleaner;
 
     ClientConfig jerseyClientConfig;
 
-    private final ScheduledExecutorService eurekaConnCleaner =
-            Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
-
-                private final AtomicInteger threadNumber = new AtomicInteger(1);
-
-                @Override
-                public Thread newThread(Runnable r) {
-                    Thread thread = new Thread(r, "Eureka-JerseyClient-Conn-Cleaner" + threadNumber.incrementAndGet());
-                    thread.setDaemon(true);
-                    return thread;
-                }
-            });
-
     public EurekaJerseyClientImpl(int connectionTimeout, int readTimeout, final int connectionIdleTimeout,
-                              ClientConfig clientConfig) {
+                                  ClientConfig clientConfig) {
         try {
             jerseyClientConfig = clientConfig;
             apacheHttpClient = ApacheHttpClient4.create(jerseyClientConfig);
@@ -80,10 +51,7 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
             HttpConnectionParams.setConnectionTimeout(params, connectionTimeout);
             HttpConnectionParams.setSoTimeout(params, readTimeout);
 
-            eurekaConnCleaner.scheduleWithFixedDelay(
-                    new ConnectionCleanerTask(connectionIdleTimeout), HTTP_CONNECTION_CLEANER_INTERVAL_MS,
-                    HTTP_CONNECTION_CLEANER_INTERVAL_MS,
-                    TimeUnit.MILLISECONDS);
+            this.apacheHttpClientConnectionCleaner = new ApacheHttpClientConnectionCleaner(apacheHttpClient, connectionIdleTimeout);
         } catch (Throwable e) {
             throw new RuntimeException("Cannot create Jersey client", e);
         }
@@ -99,7 +67,7 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
      */
     @Override
     public void destroyResources() {
-        eurekaConnCleaner.shutdown();
+        apacheHttpClientConnectionCleaner.shutdown();
         apacheHttpClient.destroy();
     }
 
@@ -290,45 +258,6 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
                     }
                 }
             }
-        }
-    }
-
-    private class ConnectionCleanerTask implements Runnable {
-
-        private final int connectionIdleTimeout;
-        private final BasicTimer executionTimeStats;
-        private final Counter cleanupFailed;
-
-        private ConnectionCleanerTask(int connectionIdleTimeout) {
-            this.connectionIdleTimeout = connectionIdleTimeout;
-            MonitorConfig.Builder monitorConfigBuilder = MonitorConfig.builder("Eureka-Connection-Cleaner-Time");
-            executionTimeStats = new BasicTimer(monitorConfigBuilder.build());
-            cleanupFailed = new BasicCounter(MonitorConfig.builder("Eureka-Connection-Cleaner-Failure").build());
-            try {
-                Monitors.registerObject(this);
-            } catch (Exception e) {
-                s_logger.error("Unable to register with servo.", e);
-            }
-        }
-
-        @Override
-        public void run() {
-            Stopwatch start = executionTimeStats.start();
-            try {
-                apacheHttpClient
-                        .getClientHandler()
-                        .getHttpClient()
-                        .getConnectionManager()
-                        .closeIdleConnections(connectionIdleTimeout, TimeUnit.SECONDS);
-            } catch (Throwable e) {
-                s_logger.error("Cannot clean connections", e);
-                cleanupFailed.increment();
-            } finally {
-                if (null != start) {
-                    start.stop();
-                }
-            }
-
         }
     }
 }

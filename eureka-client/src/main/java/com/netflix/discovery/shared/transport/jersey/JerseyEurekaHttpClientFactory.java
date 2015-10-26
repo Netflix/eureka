@@ -50,21 +50,29 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
 
     private final EurekaJerseyClient jerseyClient;
     private final ApacheHttpClient4 apacheClient;
+    private final ApacheHttpClientConnectionCleaner cleaner;
     private final boolean allowRedirects;
 
     /**
      * @deprecated {@link EurekaJerseyClient} is deprecated and will be removed
      */
+    @Deprecated
     public JerseyEurekaHttpClientFactory(EurekaJerseyClient jerseyClient, boolean allowRedirects) {
-        this.jerseyClient = jerseyClient;
-        this.apacheClient = jerseyClient.getClient();
-        this.allowRedirects = allowRedirects;
+        this(jerseyClient, null, -1, allowRedirects);
     }
 
-    public JerseyEurekaHttpClientFactory(ApacheHttpClient4 apacheClient, boolean allowRedirects) {
-        this.jerseyClient = null;
-        this.apacheClient = apacheClient;
+    public JerseyEurekaHttpClientFactory(ApacheHttpClient4 apacheClient, long connectionIdleTimeout, boolean allowRedirects) {
+        this(null, apacheClient, connectionIdleTimeout, allowRedirects);
+    }
+
+    private JerseyEurekaHttpClientFactory(EurekaJerseyClient jerseyClient,
+                                          ApacheHttpClient4 apacheClient,
+                                          long connectionIdleTimeout,
+                                          boolean allowRedirects) {
+        this.jerseyClient = jerseyClient;
+        this.apacheClient = jerseyClient != null ? jerseyClient.getClient() : apacheClient;
         this.allowRedirects = allowRedirects;
+        this.cleaner = new ApacheHttpClientConnectionCleaner(this.apacheClient, connectionIdleTimeout);
     }
 
     @Override
@@ -74,6 +82,7 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
 
     @Override
     public void shutdown() {
+        cleaner.shutdown();
         if (jerseyClient != null) {
             jerseyClient.destroyResources();
         } else {
@@ -153,7 +162,7 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
                     .withReadTimeout(readTimeout)
                     .withMaxConnectionsPerHost(maxConnectionsPerHost)
                     .withMaxTotalConnections(maxTotalConnections)
-                    .withConnectionIdleTimeout(connectionIdleTimeout)
+                    .withConnectionIdleTimeout((int) connectionIdleTimeout)
                     .withEncoderWrapper(encoderWrapper)
                     .withDecoderWrapper(decoderWrapper);
 
@@ -191,7 +200,7 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
             ApacheHttpClient4 apacheClient = ApacheHttpClient4.create(clientConfig);
             addFilters(apacheClient);
 
-            return new JerseyEurekaHttpClientFactory(apacheClient, allowRedirect);
+            return new JerseyEurekaHttpClientFactory(apacheClient, connectionIdleTimeout, allowRedirect);
         }
 
         /**
