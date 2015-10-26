@@ -46,6 +46,7 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
     private final String name;
     private final EurekaHttpClientFactory clientFactory;
     private final long sessionDurationMs;
+    private volatile long currentSessionDurationMs;
 
     private volatile long lastReconnectTimeStamp = -1;
     private final AtomicReference<EurekaHttpClient> eurekaHttpClientRef = new AtomicReference<>();
@@ -53,7 +54,8 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
     public SessionedEurekaHttpClient(String name, EurekaHttpClientFactory clientFactory, long sessionDurationMs) {
         this.name = name;
         this.clientFactory = clientFactory;
-        this.sessionDurationMs = randomizeSessionDuration(sessionDurationMs);
+        this.sessionDurationMs = sessionDurationMs;
+        this.currentSessionDurationMs = randomizeSessionDuration(sessionDurationMs);
         Monitors.registerObject(name, this);
     }
 
@@ -61,9 +63,10 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
     protected <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor) {
         long now = System.currentTimeMillis();
         long delay = now - lastReconnectTimeStamp;
-        if (delay >= sessionDurationMs) {
+        if (delay >= currentSessionDurationMs) {
             logger.debug("Ending a session and starting anew");
             lastReconnectTimeStamp = now;
+            currentSessionDurationMs = randomizeSessionDuration(sessionDurationMs);
             TransportUtils.shutdown(eurekaHttpClientRef.getAndSet(null));
         }
 
