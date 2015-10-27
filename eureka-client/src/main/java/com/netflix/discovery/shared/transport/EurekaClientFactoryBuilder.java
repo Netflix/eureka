@@ -15,6 +15,7 @@ public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactor
 
     private static final int DEFAULT_MAX_CONNECTIONS_PER_HOST = 50;
     private static final int DEFAULT_MAX_TOTAL_CONNECTIONS = 200;
+    private static final long DEFAULT_CONNECTION_IDLE_TIMEOUT = 30 * 1000;
 
     protected InstanceInfo myInstanceInfo;
     protected boolean allowRedirect;
@@ -32,7 +33,7 @@ public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactor
     protected int proxyPort;
     protected int connectionTimeout;
     protected int readTimeout;
-    protected int connectionIdleTimeout;
+    protected long connectionIdleTimeout = DEFAULT_CONNECTION_IDLE_TIMEOUT;
     protected EncoderWrapper encoderWrapper;
     protected DecoderWrapper decoderWrapper;
     protected AbstractEurekaIdentity clientIdentity;
@@ -67,7 +68,7 @@ public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactor
         return self();
     }
 
-    public B withConnectionIdleTimeout(int connectionIdleTimeout) {
+    public B withConnectionIdleTimeout(long connectionIdleTimeout) {
         this.connectionIdleTimeout = connectionIdleTimeout;
         return self();
     }
