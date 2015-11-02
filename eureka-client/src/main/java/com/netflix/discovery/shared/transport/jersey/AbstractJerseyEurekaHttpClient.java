@@ -182,10 +182,12 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
 
     private EurekaHttpResponse<Applications> getApplicationsInternal(String urlPath, String[] regions) {
         ClientResponse response = null;
+        String regionsParamValue = null;
         try {
             WebResource webResource = jerseyClient.resource(serviceUrl).path(urlPath);
             if (regions != null && regions.length > 0) {
-                webResource = webResource.queryParam("regions", StringUtil.join(regions));
+                regionsParamValue = StringUtil.join(regions);
+                webResource = webResource.queryParam("regions", regionsParamValue);
             }
             Builder requestBuilder = webResource.getRequestBuilder();
             addExtraHeaders(requestBuilder);
@@ -201,7 +203,11 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
                     .build();
         } finally {
             if (logger.isDebugEnabled()) {
-                logger.debug("Jersey HTTP GET {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
+                logger.debug("Jersey HTTP GET {}/{}?{}; statusCode={}",
+                        serviceUrl, urlPath,
+                        regionsParamValue == null ? "" : "regions=" + regionsParamValue,
+                        response == null ? "N/A" : response.getStatus()
+                );
             }
             if (response != null) {
                 response.close();
