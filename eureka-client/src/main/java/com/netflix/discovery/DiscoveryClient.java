@@ -1244,8 +1244,8 @@ public class DiscoveryClient implements EurekaClient {
         Applications serverApps = null;
         if (shouldUseExperimentalTransportForQuery()) {
             EurekaHttpResponse<Applications> httpResponse = clientConfig.getRegistryRefreshSingleVipAddress() == null
-                    ? eurekaTransport.queryClient.getApplications()
-                    : eurekaTransport.queryClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
+                    ? eurekaTransport.queryClient.getApplications(remoteRegionsRef.get())
+                    : eurekaTransport.queryClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress(), remoteRegionsRef.get());
             serverApps = httpResponse.getEntity();
         } else {
             ClientResponse response = makeRemoteCall(Action.Refresh);
