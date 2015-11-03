@@ -1388,6 +1388,9 @@ public class DiscoveryClient implements EurekaClient {
         if (lastRedirectUrl != null) {
             try {
                 ClientResponse clientResponse = makeRemoteCall(action, lastRedirectUrl);
+                if(clientResponse == null) {
+                    return null;
+                }
                 int status = clientResponse.getStatus();
                 if (status >= 200 && status < 300) {
                     return clientResponse;
@@ -1442,6 +1445,9 @@ public class DiscoveryClient implements EurekaClient {
         URI targetUrl = new URI(serviceUrl);
         for (int followRedirectCount = 0; followRedirectCount < MAX_FOLLOWED_REDIRECTS; followRedirectCount++) {
             ClientResponse clientResponse = makeRemoteCall(action, targetUrl.toString());
+            if(clientResponse == null) {
+                return null;
+            }
             if (clientResponse.getStatus() != 302) {
                 if (followRedirectCount > 0) {
                     if (isQueryAction(action)) {
@@ -1496,6 +1502,7 @@ public class DiscoveryClient implements EurekaClient {
             if ((UNKNOWN.equals(instanceInfo.getAppName())
                     && (!Action.Refresh.equals(action)) && (!Action.Refresh_Delta
                     .equals(action)))) {
+                logger.warn("Application name is not defined (defaults to UNKNOWN); registration not allowed");
                 return null;
             }
             WebResource r = discoveryApacheClient.resource(serviceUrl);
