@@ -336,6 +336,7 @@ public class DiscoveryClient implements EurekaClient {
                     if (null != backupRegistryClassName) {
                         try {
                             backupRegistryInstance = (BackupRegistry) Class.forName(backupRegistryClassName).newInstance();
+                            logger.info("Enabled backup registry of type " + backupRegistryInstance.getClass());
                         } catch (InstantiationException e) {
                             logger.error("Error instantiating BackupRegistry.", e);
                         } catch (IllegalAccessException e) {
@@ -345,8 +346,10 @@ public class DiscoveryClient implements EurekaClient {
                         }
                     }
 
-                    logger.warn("Using default backup registry implementation which does not do anything.");
-                    backupRegistryInstance = new NotImplementedRegistryImpl();
+                    if(backupRegistryInstance == null) {
+                        logger.warn("Using default backup registry implementation which does not do anything.");
+                        backupRegistryInstance = new NotImplementedRegistryImpl();
+                    }
                 }
 
                 return backupRegistryInstance;
