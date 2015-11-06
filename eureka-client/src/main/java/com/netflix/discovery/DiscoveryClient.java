@@ -346,7 +346,7 @@ public class DiscoveryClient implements EurekaClient {
                         }
                     }
 
-                    if(backupRegistryInstance == null) {
+                    if (backupRegistryInstance == null) {
                         logger.warn("Using default backup registry implementation which does not do anything.");
                         backupRegistryInstance = new NotImplementedRegistryImpl();
                     }
@@ -400,11 +400,21 @@ public class DiscoveryClient implements EurekaClient {
 
             heartbeatExecutor = new ThreadPoolExecutor(
                     1, clientConfig.getHeartbeatExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
-                    new SynchronousQueue<Runnable>());  // use direct handoff
+                    new SynchronousQueue<Runnable>(),
+                    new ThreadFactoryBuilder()
+                            .setNameFormat("DiscoveryClient-HeartbeatExecutor-%d")
+                            .setDaemon(true)
+                            .build()
+            );  // use direct handoff
 
             cacheRefreshExecutor = new ThreadPoolExecutor(
                     1, clientConfig.getCacheRefreshExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
-                    new SynchronousQueue<Runnable>());  // use direct handoff
+                    new SynchronousQueue<Runnable>(),
+                    new ThreadFactoryBuilder()
+                            .setNameFormat("DiscoveryClient-CacheRefreshExecutor-%d")
+                            .setDaemon(true)
+                            .build()
+            );  // use direct handoff
 
             fetchRegistryGeneration = new AtomicLong(0);
 
@@ -1391,7 +1401,7 @@ public class DiscoveryClient implements EurekaClient {
         if (lastRedirectUrl != null) {
             try {
                 ClientResponse clientResponse = makeRemoteCall(action, lastRedirectUrl);
-                if(clientResponse == null) {
+                if (clientResponse == null) {
                     return null;
                 }
                 int status = clientResponse.getStatus();
@@ -1448,7 +1458,7 @@ public class DiscoveryClient implements EurekaClient {
         URI targetUrl = new URI(serviceUrl);
         for (int followRedirectCount = 0; followRedirectCount < MAX_FOLLOWED_REDIRECTS; followRedirectCount++) {
             ClientResponse clientResponse = makeRemoteCall(action, targetUrl.toString());
-            if(clientResponse == null) {
+            if (clientResponse == null) {
                 return null;
             }
             if (clientResponse.getStatus() != 302) {
