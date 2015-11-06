@@ -6,6 +6,7 @@ import com.netflix.eureka.AbstractTester;
 import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.Version;
+import com.netflix.eureka.registry.ResponseCacheImpl.CacheValue;
 import com.netflix.eureka.resources.DefaultServerCodecs;
 import org.junit.Assert;
 import org.junit.Before;
@@ -47,7 +48,7 @@ public class ResponseCacheTest extends AbstractTester {
         ResponseCacheImpl cache = (ResponseCacheImpl) testRegistry.getResponseCache();
         Key key = new Key(Key.EntityType.Application, REMOTE_REGION_APP_NAME,
                 Key.KeyType.JSON, Version.V1, EurekaAccept.full);
-        String response = cache.get(key, false);
+        CacheValue response = cache.get(key, false);
         Assert.assertNotNull("Cache get returned null.", response);
 
         testRegistry.cancel(REMOTE_REGION_APP_NAME, REMOTE_REGION_INSTANCE_1_HOSTNAME, true);

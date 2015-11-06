@@ -45,15 +45,17 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
 
     private final JerseyClient jersey2Client;
     private final boolean allowRedirect;
+    private final boolean useETag;
 
-    public Jersey2ApplicationClientFactory(JerseyClient jersey2Client, boolean allowRedirect) {
+    public Jersey2ApplicationClientFactory(JerseyClient jersey2Client, boolean allowRedirect, boolean useETag) {
         this.jersey2Client = jersey2Client;
         this.allowRedirect = allowRedirect;
+        this.useETag = useETag;
     }
 
     @Override
     public EurekaHttpClient newClient(EurekaEndpoint endpoint) {
-        return new Jersey2ApplicationClient(jersey2Client, endpoint.getServiceUrl(), allowRedirect);
+        return new Jersey2ApplicationClient(jersey2Client, endpoint.getServiceUrl(), allowRedirect, useETag);
     }
 
     @Override
@@ -91,7 +93,7 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
             clientBuilder.withConfig(clientConfig);
             JerseyClient jersey2Client = (JerseyClient) clientBuilder.build();
 
-            return new Jersey2ApplicationClientFactory(jersey2Client, this.allowRedirect);
+            return new Jersey2ApplicationClientFactory(jersey2Client, this.allowRedirect, this.useETag);
         }
 
         private void addSSLConfiguration(ClientBuilder clientBuilder) {

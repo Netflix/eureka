@@ -52,24 +52,27 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
     private final ApacheHttpClient4 apacheClient;
     private final ApacheHttpClientConnectionCleaner cleaner;
     private final boolean allowRedirects;
+    private final boolean useETag;
 
     /**
      * @deprecated {@link EurekaJerseyClient} is deprecated and will be removed
      */
     @Deprecated
-    public JerseyEurekaHttpClientFactory(EurekaJerseyClient jerseyClient, boolean allowRedirects) {
-        this(jerseyClient, null, -1, allowRedirects);
+    public JerseyEurekaHttpClientFactory(EurekaJerseyClient jerseyClient, boolean allowRedirects, boolean useETag) {
+        this(jerseyClient, null, -1, allowRedirects, useETag);
     }
 
-    public JerseyEurekaHttpClientFactory(ApacheHttpClient4 apacheClient, long connectionIdleTimeout, boolean allowRedirects) {
-        this(null, apacheClient, connectionIdleTimeout, allowRedirects);
+    public JerseyEurekaHttpClientFactory(ApacheHttpClient4 apacheClient, long connectionIdleTimeout, boolean allowRedirects, boolean useETag) {
+        this(null, apacheClient, connectionIdleTimeout, allowRedirects, useETag);
     }
 
     private JerseyEurekaHttpClientFactory(EurekaJerseyClient jerseyClient,
                                           ApacheHttpClient4 apacheClient,
                                           long connectionIdleTimeout,
-                                          boolean allowRedirects) {
+                                          boolean allowRedirects,
+                                          boolean useETag) {
         this.jerseyClient = jerseyClient;
+        this.useETag = useETag;
         this.apacheClient = jerseyClient != null ? jerseyClient.getClient() : apacheClient;
         this.allowRedirects = allowRedirects;
         this.cleaner = new ApacheHttpClientConnectionCleaner(this.apacheClient, connectionIdleTimeout);
@@ -77,7 +80,7 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
 
     @Override
     public EurekaHttpClient newClient(EurekaEndpoint endpoint) {
-        return new JerseyApplicationClient(apacheClient, endpoint.getServiceUrl(), allowRedirects);
+        return new JerseyApplicationClient(apacheClient, endpoint.getServiceUrl(), allowRedirects, useETag);
     }
 
     @Override
@@ -97,6 +100,7 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
                 .withMyInstanceInfo(myInstanceInfo)
                 .withUserAgent("Java-EurekaClient")
                 .withAllowRedirect(clientConfig.allowRedirects())
+                .withETag("true".equalsIgnoreCase(clientConfig.getExperimental("useETag")))
                 .withConnectionTimeout(clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000)
                 .withReadTimeout(clientConfig.getEurekaServerReadTimeoutSeconds() * 1000)
                 .withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost())
@@ -170,7 +174,7 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
             ApacheHttpClient4 discoveryApacheClient = jerseyClient.getClient();
             addFilters(discoveryApacheClient);
 
-            return new JerseyEurekaHttpClientFactory(jerseyClient, allowRedirect);
+            return new JerseyEurekaHttpClientFactory(jerseyClient, allowRedirect, useETag);
         }
 
         private JerseyEurekaHttpClientFactory buildExperimental() {
@@ -200,7 +204,7 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
             ApacheHttpClient4 apacheClient = ApacheHttpClient4.create(clientConfig);
             addFilters(apacheClient);
 
-            return new JerseyEurekaHttpClientFactory(apacheClient, connectionIdleTimeout, allowRedirect);
+            return new JerseyEurekaHttpClientFactory(apacheClient, connectionIdleTimeout, allowRedirect, useETag);
         }
 
         /**

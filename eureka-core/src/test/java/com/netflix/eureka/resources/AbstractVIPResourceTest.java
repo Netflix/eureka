@@ -1,5 +1,9 @@
 package com.netflix.eureka.resources;
 
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.io.ByteArrayInputStream;
+
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.wrappers.CodecWrappers;
@@ -13,9 +17,6 @@ import com.netflix.eureka.Version;
 import com.netflix.eureka.registry.Key;
 import org.junit.Before;
 import org.junit.Test;
-
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -37,8 +38,8 @@ public class AbstractVIPResourceTest extends AbstractTester {
 
         resource = new AbstractVIPResource(serverContext) {
             @Override
-            protected Response getVipResponse(String version, String entityName, String acceptHeader, EurekaAccept eurekaAccept, Key.EntityType entityType) {
-                return super.getVipResponse(version, entityName, acceptHeader, eurekaAccept, entityType);
+            protected Response getVipResponse(String version, String entityName, String acceptHeader, String ifNonMatched, EurekaAccept eurekaAccept, Key.EntityType entityType) {
+                return super.getVipResponse(version, entityName, acceptHeader, ifNonMatched, eurekaAccept, entityType);
             }
         };
 
@@ -59,14 +60,15 @@ public class AbstractVIPResourceTest extends AbstractTester {
                 Version.V2.name(),
                 vipName,
                 MediaType.APPLICATION_JSON,
+                null,
                 EurekaAccept.full,
                 Key.EntityType.VIP
         );
 
-        String json = String.valueOf(response.getEntity());
+        byte[] json = (byte[]) response.getEntity();
         DecoderWrapper decoder = CodecWrappers.getDecoder(CodecWrappers.LegacyJacksonJson.class);
 
-        Applications decodedApps = decoder.decode(json, Applications.class);
+        Applications decodedApps = decoder.decode(new ByteArrayInputStream(json), Applications.class);
         Application decodedApp = decodedApps.getRegisteredApplications(testApplication.getName());
         assertThat(EurekaEntityComparators.equal(testApplication, decodedApp), is(true));
     }
@@ -77,14 +79,15 @@ public class AbstractVIPResourceTest extends AbstractTester {
                 Version.V2.name(),
                 vipName,
                 MediaType.APPLICATION_JSON,
+                null,
                 EurekaAccept.compact,
                 Key.EntityType.VIP
         );
 
-        String json = String.valueOf(response.getEntity());
+        byte[] json = (byte[]) response.getEntity();
         DecoderWrapper decoder = CodecWrappers.getDecoder(CodecWrappers.LegacyJacksonJson.class);
 
-        Applications decodedApps = decoder.decode(json, Applications.class);
+        Applications decodedApps = decoder.decode(new ByteArrayInputStream(json), Applications.class);
         Application decodedApp = decodedApps.getRegisteredApplications(testApplication.getName());
         // assert false as one is mini, so should NOT equal
         assertThat(EurekaEntityComparators.equal(testApplication, decodedApp), is(false));

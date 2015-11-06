@@ -17,6 +17,8 @@
 package com.netflix.discovery.shared.transport;
 
 import javax.ws.rs.core.HttpHeaders;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
@@ -24,6 +26,8 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEurekaHttpResponse;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -117,12 +121,38 @@ public abstract class EurekaHttpClientCompatibilityTestSuite {
     }
 
     @Test
+    public void testGetApplicationsReturns304IfETagMatches() {
+        final Applications apps = InstanceInfoGenerator.newBuilder(2, 1).build().toApplications();
+        final AtomicBoolean etagHit = new AtomicBoolean();
+        when(requestHandler.getApplications(REMOTE_REGION)).thenAnswer(createEtagAwareAnswer(apps, etagHit));
+        EurekaHttpResponse<Applications> httpResponse1 = getEurekaHttpClient().getApplications(REMOTE_REGION);
+        EurekaHttpResponse<Applications> httpResponse2 = getEurekaHttpClient().getApplications(REMOTE_REGION);
+
+        assertThat(etagHit.get(), is(true));
+        verifyResponseOkWithEntity(apps, httpResponse1);
+        verifyResponseOkWithEntity(apps, httpResponse2);
+    }
+
+    @Test
     public void testGetDeltaRequest() throws Exception {
         Applications delta = InstanceInfoGenerator.newBuilder(2, 1).build().takeDelta(2);
         when(requestHandler.getDelta()).thenReturn(createResponse(delta));
 
         EurekaHttpResponse<Applications> httpResponse = getEurekaHttpClient().getDelta();
         verifyResponseOkWithEntity(delta, httpResponse);
+    }
+
+    @Test
+    public void testGetDeltaReturns304IfETagMatches() {
+        final Applications delta = InstanceInfoGenerator.newBuilder(2, 1).build().toApplications();
+        final AtomicBoolean etagHit = new AtomicBoolean();
+        when(requestHandler.getDelta(REMOTE_REGION)).thenAnswer(createEtagAwareAnswer(delta, etagHit));
+        EurekaHttpResponse<Applications> httpResponse1 = getEurekaHttpClient().getDelta(REMOTE_REGION);
+        EurekaHttpResponse<Applications> httpResponse2 = getEurekaHttpClient().getDelta(REMOTE_REGION);
+
+        assertThat(etagHit.get(), is(true));
+        verifyResponseOkWithEntity(delta, httpResponse1);
+        verifyResponseOkWithEntity(delta, httpResponse2);
     }
 
     @Test
@@ -173,6 +203,22 @@ public abstract class EurekaHttpClientCompatibilityTestSuite {
     }
 
     @Test
+    public void testGetVipReturns304IfETagMatches() {
+        Applications vipApps = InstanceInfoGenerator.newBuilder(1, 2).build().toApplications();
+        final AtomicBoolean etagHit = new AtomicBoolean();
+
+        String vipAddress = vipApps.getRegisteredApplications().get(0).getInstances().get(0).getVIPAddress();
+        when(requestHandler.getVip(vipAddress, REMOTE_REGION)).thenAnswer(createEtagAwareAnswer(vipApps, etagHit));
+
+        EurekaHttpResponse<Applications> httpResponse1 = getEurekaHttpClient().getVip(vipAddress, REMOTE_REGION);
+        EurekaHttpResponse<Applications> httpResponse2 = getEurekaHttpClient().getVip(vipAddress, REMOTE_REGION);
+
+        assertThat(etagHit.get(), is(true));
+        verifyResponseOkWithEntity(vipApps, httpResponse1);
+        verifyResponseOkWithEntity(vipApps, httpResponse2);
+    }
+
+    @Test
     public void testGetSecureVipRequest() throws Exception {
         Applications vipApps = InstanceInfoGenerator.newBuilder(1, 2).build().toApplications();
         String secureVipAddress = vipApps.getRegisteredApplications().get(0).getInstances().get(0).getSecureVipAddress();
@@ -190,6 +236,22 @@ public abstract class EurekaHttpClientCompatibilityTestSuite {
 
         EurekaHttpResponse<Applications> httpResponse = getEurekaHttpClient().getSecureVip(secureVipAddress, REMOTE_REGION);
         verifyResponseOkWithEntity(vipApps, httpResponse);
+    }
+
+    @Test
+    public void testSecureGetVipReturns304IfETagMatches() {
+        Applications vipApps = InstanceInfoGenerator.newBuilder(1, 2).build().toApplications();
+        final AtomicBoolean etagHit = new AtomicBoolean();
+
+        String vipAddress = vipApps.getRegisteredApplications().get(0).getInstances().get(0).getSecureVipAddress();
+        when(requestHandler.getSecureVip(vipAddress, REMOTE_REGION)).thenAnswer(createEtagAwareAnswer(vipApps, etagHit));
+
+        EurekaHttpResponse<Applications> httpResponse1 = getEurekaHttpClient().getSecureVip(vipAddress, REMOTE_REGION);
+        EurekaHttpResponse<Applications> httpResponse2 = getEurekaHttpClient().getSecureVip(vipAddress, REMOTE_REGION);
+
+        assertThat(etagHit.get(), is(true));
+        verifyResponseOkWithEntity(vipApps, httpResponse1);
+        verifyResponseOkWithEntity(vipApps, httpResponse2);
     }
 
     @Test
@@ -215,6 +277,23 @@ public abstract class EurekaHttpClientCompatibilityTestSuite {
     }
 
     private static <T> EurekaHttpResponse<T> createResponse(T entity) {
-        return anEurekaHttpResponse(200, entity).headers(HttpHeaders.CONTENT_TYPE, "application/json").build();
+        return anEurekaHttpResponse(200, entity)
+                .headers(HttpHeaders.CONTENT_TYPE, "application/json")
+                .headers(HttpHeaders.ETAG, entity.hashCode())
+                .build();
+    }
+
+    private Answer<EurekaHttpResponse<Applications>> createEtagAwareAnswer(final Applications applications, final AtomicBoolean etagHit) {
+        return new Answer<EurekaHttpResponse<Applications>>() {
+            @Override
+            public EurekaHttpResponse<Applications> answer(InvocationOnMock invocation) throws Throwable {
+                List<String> etag = httpServer.getRequestHeaders().get(HttpHeaders.IF_NONE_MATCH);
+                if (etag != null && !etag.isEmpty()) {
+                    etagHit.set(true);
+                    return anEurekaHttpResponse(304, Applications.class).build();
+                }
+                return createResponse(applications);
+            }
+        };
     }
 }

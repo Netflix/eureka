@@ -19,6 +19,7 @@ public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactor
 
     protected InstanceInfo myInstanceInfo;
     protected boolean allowRedirect;
+    protected boolean useETag;
     protected boolean systemSSL;
     protected String clientName;
     protected int maxConnectionsPerHost = DEFAULT_MAX_CONNECTIONS_PER_HOST;
@@ -55,6 +56,11 @@ public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactor
 
     public B withAllowRedirect(boolean allowRedirect) {
         this.allowRedirect = allowRedirect;
+        return self();
+    }
+
+    public B withETag(boolean useETag) {
+        this.useETag = useETag;
         return self();
     }
 

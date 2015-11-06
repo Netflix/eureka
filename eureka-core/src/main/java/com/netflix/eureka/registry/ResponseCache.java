@@ -3,6 +3,8 @@ package com.netflix.eureka.registry;
 import javax.annotation.Nullable;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.netflix.eureka.registry.ResponseCacheImpl.CacheValue;
+
 /**
  * @author David Liu
  */
@@ -26,7 +28,7 @@ public interface ResponseCache {
      * @param key the key for which the cached information needs to be obtained.
      * @return payload which contains information about the applications.
      */
-     String get(Key key);
+    CacheValue get(Key key);
 
     /**
      * Get the compressed information about the applications.
@@ -34,5 +36,5 @@ public interface ResponseCache {
      * @param key the key for which the compressed cached information needs to be obtained.
      * @return compressed payload which contains information about the applications.
      */
-    byte[] getGZIP(Key key);
+    CacheValue getGZIP(Key key);
 }

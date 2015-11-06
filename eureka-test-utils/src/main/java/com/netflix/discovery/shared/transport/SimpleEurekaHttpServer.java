@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -57,6 +58,8 @@ public class SimpleEurekaHttpServer {
     private final EncoderWrapper encoder = CodecWrappers.getEncoder(JacksonJson.class);
     private final DecoderWrapper decoder = CodecWrappers.getDecoder(JacksonJson.class);
 
+    private final ThreadLocal<HttpExchange> httpExchangeThreadLocal = new ThreadLocal<>();
+
     public SimpleEurekaHttpServer(EurekaHttpClient requestHandler) throws IOException {
         this.requestHandler = requestHandler;
 
@@ -82,10 +85,23 @@ public class SimpleEurekaHttpServer {
         return httpServer.getAddress().getPort();
     }
 
+    /**
+     * Return request for a current thread. {@link EurekaHttpClient} handler can use this method to access more
+     * detailed information about the original request, like its header values.
+     */
+    public Map<String, List<String>> getRequestHeaders() {
+        HttpExchange httpExchange = httpExchangeThreadLocal.get();
+        if (httpExchange == null) {
+            throw new IllegalStateException("Method must be called from within a thread handling the request");
+        }
+        return httpExchange.getRequestHeaders();
+    }
+
     private HttpHandler createEurekaV2Handle() {
         return new HttpHandler() {
             @Override
             public void handle(HttpExchange httpExchange) throws IOException {
+                httpExchangeThreadLocal.set(httpExchange);
                 try {
                     String method = httpExchange.getRequestMethod();
                     String path = httpExchange.getRequestURI().getPath();

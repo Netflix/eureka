@@ -16,18 +16,19 @@
 
 package com.netflix.eureka.resources;
 
-import com.netflix.appinfo.EurekaAccept;
-import com.netflix.eureka.EurekaServerContext;
-import com.netflix.eureka.EurekaServerContextHolder;
-import com.netflix.eureka.registry.Key;
-
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+
+import com.netflix.appinfo.EurekaAccept;
+import com.netflix.eureka.EurekaServerContext;
+import com.netflix.eureka.EurekaServerContextHolder;
+import com.netflix.eureka.registry.Key;
 
 /**
  * A <em>jersey</em> resource for retrieving all instances with a given secure VIP address.
@@ -53,9 +54,9 @@ public class SecureVIPResource extends AbstractVIPResource {
     public Response statusUpdate(@PathParam("version") String version,
                                  @PathParam("svipAddress") String svipAddress,
                                  @HeaderParam("Accept") final String acceptHeader,
+                                 @HeaderParam(HttpHeaders.IF_NONE_MATCH) String ifNonMatchHeader,
                                  @HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept) {
-        return getVipResponse(version, svipAddress, acceptHeader,
+        return getVipResponse(version, svipAddress, acceptHeader, ifNonMatchHeader,
                 EurekaAccept.fromString(eurekaAccept), Key.EntityType.SVIP);
     }
-
 }

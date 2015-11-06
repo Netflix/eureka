@@ -45,6 +45,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.wrappers.EncoderWrapper;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.util.SystemUtil;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.Version;
 import com.netflix.eureka.resources.CurrentRequestVersion;
@@ -80,11 +81,13 @@ public class ResponseCacheImpl implements ResponseCache {
     public static final String ALL_APPS = "ALL_APPS";
     public static final String ALL_APPS_DELTA = "ALL_APPS_DELTA";
 
+    private static final String LOCAL_IP = SystemUtil.getServerIPv4();
+
     // FIXME deprecated, here for backwards compatibility.
     private static final AtomicLong versionDeltaLegacy = new AtomicLong(0);
     private static final AtomicLong versionDeltaWithRegionsLegacy = new AtomicLong(0);
 
-    private static final String EMPTY_PAYLOAD = "";
+    private static final byte[] EMPTY_PAYLOAD = new byte[0];
     private final java.util.Timer timer = new java.util.Timer("Eureka-CacheFillTimer", true);
     private final AtomicLong versionDelta = new AtomicLong(0);
     private final AtomicLong versionDeltaWithRegions = new AtomicLong(0);
@@ -112,9 +115,9 @@ public class ResponseCacheImpl implements ResponseCache {
                 }
             });
 
-    private final ConcurrentMap<Key, Value> readOnlyCacheMap = new ConcurrentHashMap<Key, Value>();
+    private final ConcurrentMap<Key, CacheValue> readOnlyCacheMap = new ConcurrentHashMap<Key, CacheValue>();
 
-    private final LoadingCache<Key, Value> readWriteCacheMap;
+    private final LoadingCache<Key, CacheValue> readWriteCacheMap;
     private final boolean shouldUseReadOnlyResponseCache;
     private final AbstractInstanceRegistry registry;
     private final EurekaServerConfig serverConfig;
@@ -130,9 +133,9 @@ public class ResponseCacheImpl implements ResponseCache {
         this.readWriteCacheMap =
                 CacheBuilder.newBuilder().initialCapacity(1000)
                         .expireAfterWrite(serverConfig.getResponseCacheAutoExpirationInSeconds(), TimeUnit.SECONDS)
-                        .removalListener(new RemovalListener<Key, Value>() {
+                        .removalListener(new RemovalListener<Key, CacheValue>() {
                             @Override
-                            public void onRemoval(RemovalNotification<Key, Value> notification) {
+                            public void onRemoval(RemovalNotification<Key, CacheValue> notification) {
                                 Key removedKey = notification.getKey();
                                 if (removedKey.hasRegions()) {
                                     Key cloneWithNoRegions = removedKey.cloneWithoutRegions();
@@ -140,14 +143,14 @@ public class ResponseCacheImpl implements ResponseCache {
                                 }
                             }
                         })
-                        .build(new CacheLoader<Key, Value>() {
+                        .build(new CacheLoader<Key, CacheValue>() {
                             @Override
-                            public Value load(Key key) throws Exception {
+                            public CacheValue load(Key key) throws Exception {
                                 if (key.hasRegions()) {
                                     Key cloneWithNoRegions = key.cloneWithoutRegions();
                                     regionSpecificKeys.put(cloneWithNoRegions, key);
                                 }
-                                Value value = generatePayload(key);
+                                CacheValue value = generatePayload(key);
                                 return value;
                             }
                         });
@@ -178,8 +181,8 @@ public class ResponseCacheImpl implements ResponseCache {
                     }
                     try {
                         CurrentRequestVersion.set(key.getVersion());
-                        Value cacheValue = readWriteCacheMap.get(key);
-                        Value currentCacheValue = readOnlyCacheMap.get(key);
+                        CacheValue cacheValue = readWriteCacheMap.get(key);
+                        CacheValue currentCacheValue = readOnlyCacheMap.get(key);
                         if (cacheValue != currentCacheValue) {
                             readOnlyCacheMap.put(key, cacheValue);
                         }
@@ -203,17 +206,17 @@ public class ResponseCacheImpl implements ResponseCache {
      * @param key the key for which the cached information needs to be obtained.
      * @return payload which contains information about the applications.
      */
-    public String get(final Key key) {
+    public CacheValue get(final Key key) {
         return get(key, shouldUseReadOnlyResponseCache);
     }
 
     @VisibleForTesting
-    String get(final Key key, boolean useReadOnlyCache) {
-        Value payload = getValue(key, useReadOnlyCache);
+    CacheValue get(final Key key, boolean useReadOnlyCache) {
+        CacheValue payload = getValue(key, useReadOnlyCache);
         if (payload == null || payload.getPayload().equals(EMPTY_PAYLOAD)) {
             return null;
         } else {
-            return payload.getPayload();
+            return payload;
         }
     }
 
@@ -226,12 +229,12 @@ public class ResponseCacheImpl implements ResponseCache {
      * @return compressed payload which contains information about the
      *         applications.
      */
-    public byte[] getGZIP(Key key) {
-        Value payload = getValue(key, shouldUseReadOnlyResponseCache);
+    public CacheValue getGZIP(Key key) {
+        CacheValue payload = getValue(key, shouldUseReadOnlyResponseCache);
         if (payload == null) {
             return null;
         }
-        return payload.getGzipped();
+        return payload;
     }
 
     /**
@@ -341,11 +344,11 @@ public class ResponseCacheImpl implements ResponseCache {
      * Get the payload in both compressed and uncompressed form.
      */
     @VisibleForTesting
-    Value getValue(final Key key, boolean useReadOnlyCache) {
-        Value payload = null;
+    CacheValue getValue(final Key key, boolean useReadOnlyCache) {
+        CacheValue payload = null;
         try {
             if (useReadOnlyCache) {
-                final Value currentPayload = readOnlyCacheMap.get(key);
+                final CacheValue currentPayload = readOnlyCacheMap.get(key);
                 if (currentPayload != null) {
                     payload = currentPayload;
                 } else {
@@ -364,45 +367,45 @@ public class ResponseCacheImpl implements ResponseCache {
     /**
      * Generate pay load with both JSON and XML formats for all applications.
      */
-    private String getPayLoad(Key key, Applications apps) {
+    private byte[] getPayLoad(Key key, Applications apps) {
         EncoderWrapper encoderWrapper = serverCodecs.getEncoder(key.getType(), key.getEurekaAccept());
         String result;
         try {
             result = encoderWrapper.encode(apps);
         } catch (Exception e) {
             logger.error("Failed to encode the payload for all apps", e);
-            return "";
+            return EMPTY_PAYLOAD;
         }
-        if(logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled()) {
             logger.debug("New application cache entry {} with apps hashcode {}", key.toStringCompact(), apps.getAppsHashCode());
         }
-        return result;
+        return result.getBytes();
     }
 
     /**
      * Generate pay load with both JSON and XML formats for a given application.
      */
-    private String getPayLoad(Key key, Application app) {
+    private byte[] getPayLoad(Key key, Application app) {
         if (app == null) {
             return EMPTY_PAYLOAD;
         }
 
         EncoderWrapper encoderWrapper = serverCodecs.getEncoder(key.getType(), key.getEurekaAccept());
         try {
-            return encoderWrapper.encode(app);
+            return encoderWrapper.encode(app).getBytes();
         } catch (Exception e) {
             logger.error("Failed to encode the payload for application {}", app.getName(), e);
-            return "";
+            return EMPTY_PAYLOAD;
         }
     }
 
     /*
      * Generate pay load for the given key.
      */
-    private Value generatePayload(Key key) {
+    private CacheValue generatePayload(Key key) {
         Stopwatch tracer = null;
         try {
-            String payload;
+            byte[] payload;
             switch (key.getEntityType()) {
                 case Application:
                     boolean isRemoteRegionRequested = key.hasRegions();
@@ -440,10 +443,10 @@ public class ResponseCacheImpl implements ResponseCache {
                     break;
                 default:
                     logger.error("Unidentified entity type: " + key.getEntityType() + " found in the cache key.");
-                    payload = "";
+                    payload = EMPTY_PAYLOAD;
                     break;
             }
-            return new Value(payload);
+            return new CacheValue(key.nextId(), System.currentTimeMillis(), payload);
         } finally {
             if (tracer != null) {
                 tracer.stop();
@@ -497,37 +500,34 @@ public class ResponseCacheImpl implements ResponseCache {
      * The class that stores payload in both compressed and uncompressed form.
      *
      */
-    public class Value {
-        private final String payload;
-        private byte[] gzipped;
+    public class CacheValue {
+        /**
+         * Monotonically increasing ids for entity identification purposes (ETag)
+         */
+        private final long id;
+        private final long timestamp;
 
-        public Value(String payload) {
+        private final byte[] payload;
+        private final byte[] gzipped;
+        private final String etag;
+
+        public CacheValue(long id, long timestamp, byte[] payload) {
+            this.id = id;
+            this.timestamp = timestamp;
             this.payload = payload;
-            if (!EMPTY_PAYLOAD.equals(payload)) {
-                Stopwatch tracer = compressPayloadTimer.start();
-                try {
-                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                    GZIPOutputStream out = new GZIPOutputStream(bos);
-                    byte[] rawBytes = payload.getBytes();
-                    out.write(rawBytes);
-                    // Finish creation of gzip file
-                    out.finish();
-                    out.close();
-                    bos.close();
-                    gzipped = bos.toByteArray();
-                } catch (IOException e) {
-                    gzipped = null;
-                } finally {
-                    if (tracer != null) {
-                        tracer.stop();
-                    }
-                }
-            } else {
-                gzipped = null;
-            }
+            this.gzipped = compress(payload);
+            this.etag = "source=" + LOCAL_IP + ",id=" + id + ",timestamp=" + timestamp;
         }
 
-        public String getPayload() {
+        public long getId() {
+            return id;
+        }
+
+        public long getTimestamp() {
+            return timestamp;
+        }
+
+        public byte[] getPayload() {
             return payload;
         }
 
@@ -535,6 +535,31 @@ public class ResponseCacheImpl implements ResponseCache {
             return gzipped;
         }
 
-    }
+        public String getETag() {
+            return etag;
+        }
 
+        private byte[] compress(byte[] payload) {
+            if (!EMPTY_PAYLOAD.equals(payload)) {
+                Stopwatch tracer = compressPayloadTimer.start();
+                try {
+                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    GZIPOutputStream out = new GZIPOutputStream(bos);
+                    out.write(payload);
+                    // Finish creation of gzip file
+                    out.finish();
+                    out.close();
+                    bos.close();
+                    return bos.toByteArray();
+                } catch (IOException e) {
+                    return null;
+                } finally {
+                    if (tracer != null) {
+                        tracer.stop();
+                    }
+                }
+            }
+            return null;
+        }
+    }
 }

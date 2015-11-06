@@ -12,6 +12,8 @@ dependencies {
     compile 'javax.ws.rs:jsr311-api:1.1.1'
     compile "com.netflix.blitz4j:blitz4j:${blitzVersion}"
 
+    compile "com.sun.jersey:jersey-server:$jerseyVersion"
+
     // These dependencies are marked 'provided' in the client, but we need them always on the server
     compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${jacksonVersion}"
     compile "org.codehaus.woodstox:woodstox-core-asl:${woodstoxVersion}"

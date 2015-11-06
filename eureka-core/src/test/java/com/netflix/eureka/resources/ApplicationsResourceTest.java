@@ -1,20 +1,21 @@
 package com.netflix.eureka.resources;
 
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.io.ByteArrayInputStream;
+
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.converters.wrappers.CodecWrappers;
 import com.netflix.discovery.converters.wrappers.DecoderWrapper;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.netflix.eureka.AbstractTester;
 import com.netflix.eureka.Version;
 import org.junit.Before;
 import org.junit.Test;
-
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,15 +49,16 @@ public class ApplicationsResourceTest extends AbstractTester {
                 Version.V2.name(),
                 MediaType.APPLICATION_JSON,
                 null, // encoding
+                null, // ifNonMatched
                 EurekaAccept.full.name(),
                 null,  // uriInfo
                 null  // remote regions
         );
 
-        String json = String.valueOf(response.getEntity());
+        byte[] json = (byte[]) response.getEntity();
         DecoderWrapper decoder = CodecWrappers.getDecoder(CodecWrappers.LegacyJacksonJson.class);
 
-        Applications decoded = decoder.decode(json, Applications.class);
+        Applications decoded = decoder.decode(new ByteArrayInputStream(json), Applications.class);
         // test per app as the full apps list include the mock server that is not part of the test apps
         for (Application application : testApplications.getRegisteredApplications()) {
             Application decodedApp = decoded.getRegisteredApplications(application.getName());
@@ -70,6 +72,7 @@ public class ApplicationsResourceTest extends AbstractTester {
                 Version.V2.name(),
                 MediaType.APPLICATION_JSON,
                 "gzip", // encoding
+                null, // ifNonMatched
                 EurekaAccept.full.name(),
                 null,  // uriInfo
                 null  // remote regions
@@ -85,6 +88,7 @@ public class ApplicationsResourceTest extends AbstractTester {
                 Version.V2.name(),
                 MediaType.APPLICATION_XML,
                 "gzip", // encoding
+                null, // ifNonMatched
                 EurekaAccept.full.name(),
                 null,  // uriInfo
                 null  // remote regions
@@ -100,15 +104,16 @@ public class ApplicationsResourceTest extends AbstractTester {
                 Version.V2.name(),
                 MediaType.APPLICATION_JSON,
                 null, // encoding
+                null, // ifNonMatched
                 EurekaAccept.compact.name(),
                 null,  // uriInfo
                 null  // remote regions
         );
 
-        String json = String.valueOf(response.getEntity());
+        byte[] json = (byte[]) response.getEntity();
         DecoderWrapper decoder = CodecWrappers.getDecoder(CodecWrappers.LegacyJacksonJson.class);
 
-        Applications decoded = decoder.decode(json, Applications.class);
+        Applications decoded = decoder.decode(new ByteArrayInputStream(json), Applications.class);
         // test per app as the full apps list include the mock server that is not part of the test apps
         for (Application application : testApplications.getRegisteredApplications()) {
             Application decodedApp = decoded.getRegisteredApplications(application.getName());

@@ -17,6 +17,7 @@
 package com.netflix.discovery.shared.transport.jersey2;
 
 import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -35,6 +36,8 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse.EurekaHttpResponseBuilder;
+import com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.RequestType;
+import com.netflix.discovery.shared.transport.jersey.ETagCache;
 import com.netflix.discovery.util.StringUtil;
 import org.glassfish.jersey.client.JerseyClient;
 import org.glassfish.jersey.client.JerseyInvocation.Builder;
@@ -54,11 +57,13 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
     private final JerseyClient jerseyClient;
     private final String serviceUrl;
     private final boolean allowRedirect;
+    private final ETagCache eTagCache;
 
-    public Jersey2ApplicationClient(JerseyClient jerseyClient, String serviceUrl, boolean allowRedirect) {
+    public Jersey2ApplicationClient(JerseyClient jerseyClient, String serviceUrl, boolean allowRedirect, boolean useETag) {
         this.jerseyClient = jerseyClient;
         this.serviceUrl = serviceUrl;
         this.allowRedirect = allowRedirect;
+        this.eTagCache = useETag ? new ETagCache() : null;
     }
 
     @Override
@@ -180,22 +185,22 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
 
     @Override
     public EurekaHttpResponse<Applications> getApplications(String... regions) {
-        return getApplicationsInternal("apps/", regions);
+        return getApplicationsInternal(RequestType.GetApplications, "apps/", regions);
     }
 
     @Override
     public EurekaHttpResponse<Applications> getDelta(String... regions) {
-        return getApplicationsInternal("apps/delta", regions);
+        return getApplicationsInternal(RequestType.GetDelta, "apps/delta", regions);
     }
 
     @Override
     public EurekaHttpResponse<Applications> getVip(String vipAddress, String... regions) {
-        return getApplicationsInternal("vips/" + vipAddress, regions);
+        return getApplicationsInternal(RequestType.GetVip, "vips/" + vipAddress, regions);
     }
 
     @Override
     public EurekaHttpResponse<Applications> getSecureVip(String secureVipAddress, String... regions) {
-        return getApplicationsInternal("svips/" + secureVipAddress, regions);
+        return getApplicationsInternal(RequestType.GetSecureVip, "svips/" + secureVipAddress, regions);
     }
 
     @Override
@@ -222,8 +227,9 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
         }
     }
 
-    private EurekaHttpResponse<Applications> getApplicationsInternal(String urlPath, String[] regions) {
+    private EurekaHttpResponse<Applications> getApplicationsInternal(RequestType requestType, String urlPath, String[] regions) {
         Response response = null;
+        String etag = eTagCache == null ? null : eTagCache.getApplicationsETag(requestType, regions);
         try {
             JerseyWebTarget webTarget = jerseyClient.target(serviceUrl).path(urlPath);
             if (regions != null && regions.length > 0) {
@@ -231,13 +237,30 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
             }
             Builder requestBuilder = webTarget.request();
             addExtraHeaders(requestBuilder);
+            if (etag != null) {
+                requestBuilder.header(HttpHeaders.IF_NONE_MATCH, etag);
+            }
             response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).get();
 
             Applications applications = null;
-            if (response.getStatus() == Status.OK.getStatusCode() && response.hasEntity()) {
+            int status = response.getStatus();
+            Map<String, String> responseHeaders = headersOf(response);
+            if (status == Status.OK.getStatusCode() && response.hasEntity()) {
                 applications = response.readEntity(Applications.class);
+                if (eTagCache != null) {
+                    String newETag = responseHeaders.get(HttpHeaders.ETAG);
+                    if(newETag == null) {
+                        newETag = responseHeaders.get("Etag"); // This value is returned by Jersey2, not expected ETag
+                    }
+                    if (newETag != null) {
+                        eTagCache.cacheReply(newETag, requestType, regions, applications);
+                    }
+                }
+            } else if (etag != null && status == Status.NOT_MODIFIED.getStatusCode()) {
+                status = Status.OK.getStatusCode(); // Overwrite 304 with 200, as we return cached entity
+                applications = eTagCache.getCachedApplications(requestType, regions);
             }
-            return anEurekaHttpResponse(response.getStatus(), applications).headers(headersOf(response)).build();
+            return anEurekaHttpResponse(status, applications).headers(responseHeaders).build();
         } finally {
             if (logger.isDebugEnabled()) {
                 logger.debug("Jersey HTTP GET {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());

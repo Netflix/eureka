@@ -33,6 +33,7 @@ public class JerseyApplicationClientTest extends EurekaHttpClientCompatibilityTe
         super.setUp();
         TransportClientFactory clientFactory = JerseyEurekaHttpClientFactory.newBuilder()
                 .withClientName("compatibilityTestClient")
+                .withETag(true)
                 .build();
         jerseyHttpClient = (JerseyApplicationClient) clientFactory.newClient(new DefaultEndpoint(getHttpServer().getServiceURI().toString()));
     }

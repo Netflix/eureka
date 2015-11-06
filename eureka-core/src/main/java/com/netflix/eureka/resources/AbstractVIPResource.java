@@ -16,15 +16,18 @@
 
 package com.netflix.eureka.resources;
 
+import javax.ws.rs.core.EntityTag;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.eureka.EurekaServerContext;
 import com.netflix.eureka.EurekaServerContextHolder;
 import com.netflix.eureka.Version;
+import com.netflix.eureka.registry.Key;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.registry.ResponseCache;
-import com.netflix.eureka.registry.Key;
+import com.netflix.eureka.registry.ResponseCacheImpl.CacheValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,8 +52,12 @@ abstract class AbstractVIPResource {
         this(EurekaServerContextHolder.getInstance().getServerContext());
     }
 
-    protected Response getVipResponse(String version, String entityName, String acceptHeader,
-                                      EurekaAccept eurekaAccept, Key.EntityType entityType) {
+    protected Response getVipResponse(String version,
+                                      String entityName,
+                                      String acceptHeader,
+                                      String ifNonMatchHeader,
+                                      EurekaAccept eurekaAccept,
+                                      Key.EntityType entityType) {
         if (!registry.shouldAllowAccess(false)) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
@@ -68,11 +75,18 @@ abstract class AbstractVIPResource {
                 eurekaAccept
         );
 
-        String payLoad = responseCache.get(cacheKey);
+        CacheValue payLoad = responseCache.get(cacheKey);
 
         if (payLoad != null) {
             logger.debug("Found: {}", entityName);
-            return Response.ok(payLoad).build();
+
+            if (ifNonMatchHeader != null && ifNonMatchHeader.contains(payLoad.getETag())) {
+                return Response.status(304).build();
+            }
+
+            return Response.ok(payLoad.getPayload())
+                    .header(HttpHeaders.ETAG, new EntityTag(payLoad.getETag()))
+                    .build();
         } else {
             logger.debug("Not Found: {}", entityName);
             return Response.status(Response.Status.NOT_FOUND).build();
