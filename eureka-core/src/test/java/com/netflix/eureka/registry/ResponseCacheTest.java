@@ -6,7 +6,7 @@ import com.netflix.eureka.AbstractTester;
 import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.Version;
-import com.netflix.eureka.registry.ResponseCacheImpl.CacheValue;
+import com.netflix.eureka.registry.ResponseCache.CacheValue;
 import com.netflix.eureka.resources.DefaultServerCodecs;
 import org.junit.Assert;
 import org.junit.Before;

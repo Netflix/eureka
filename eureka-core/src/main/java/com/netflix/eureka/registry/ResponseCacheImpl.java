@@ -446,7 +446,7 @@ public class ResponseCacheImpl implements ResponseCache {
                     payload = EMPTY_PAYLOAD;
                     break;
             }
-            return new CacheValue(key.nextId(), System.currentTimeMillis(), payload);
+            return new CacheValue(LOCAL_IP, key.nextId(), System.currentTimeMillis(), payload, compress(payload));
         } finally {
             if (tracer != null) {
                 tracer.stop();
@@ -496,70 +496,26 @@ public class ResponseCacheImpl implements ResponseCache {
         return toReturn;
     }
 
-    /**
-     * The class that stores payload in both compressed and uncompressed form.
-     *
-     */
-    public class CacheValue {
-        /**
-         * Monotonically increasing ids for entity identification purposes (ETag)
-         */
-        private final long id;
-        private final long timestamp;
-
-        private final byte[] payload;
-        private final byte[] gzipped;
-        private final String etag;
-
-        public CacheValue(long id, long timestamp, byte[] payload) {
-            this.id = id;
-            this.timestamp = timestamp;
-            this.payload = payload;
-            this.gzipped = compress(payload);
-            this.etag = "source=" + LOCAL_IP + ",id=" + id + ",timestamp=" + timestamp;
-        }
-
-        public long getId() {
-            return id;
-        }
-
-        public long getTimestamp() {
-            return timestamp;
-        }
-
-        public byte[] getPayload() {
-            return payload;
-        }
-
-        public byte[] getGzipped() {
-            return gzipped;
-        }
-
-        public String getETag() {
-            return etag;
-        }
-
-        private byte[] compress(byte[] payload) {
-            if (!EMPTY_PAYLOAD.equals(payload)) {
-                Stopwatch tracer = compressPayloadTimer.start();
-                try {
-                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                    GZIPOutputStream out = new GZIPOutputStream(bos);
-                    out.write(payload);
-                    // Finish creation of gzip file
-                    out.finish();
-                    out.close();
-                    bos.close();
-                    return bos.toByteArray();
-                } catch (IOException e) {
-                    return null;
-                } finally {
-                    if (tracer != null) {
-                        tracer.stop();
-                    }
+    private byte[] compress(byte[] payload) {
+        if (!EMPTY_PAYLOAD.equals(payload)) {
+            Stopwatch tracer = compressPayloadTimer.start();
+            try {
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                GZIPOutputStream out = new GZIPOutputStream(bos);
+                out.write(payload);
+                // Finish creation of gzip file
+                out.finish();
+                out.close();
+                bos.close();
+                return bos.toByteArray();
+            } catch (IOException e) {
+                return null;
+            } finally {
+                if (tracer != null) {
+                    tracer.stop();
                 }
             }
-            return null;
         }
+        return null;
     }
 }

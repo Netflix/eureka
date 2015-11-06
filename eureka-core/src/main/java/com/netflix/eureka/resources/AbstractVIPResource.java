@@ -27,7 +27,7 @@ import com.netflix.eureka.Version;
 import com.netflix.eureka.registry.Key;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.registry.ResponseCache;
-import com.netflix.eureka.registry.ResponseCacheImpl.CacheValue;
+import com.netflix.eureka.registry.ResponseCache.CacheValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
