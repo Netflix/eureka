@@ -13,10 +13,6 @@ import static org.junit.Assert.assertTrue;
 @RunWith(MockitoJUnitRunner.class)
 public class RegistryCacheTest extends RegistryTestBase {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
     @Test(timeout = 60000)
     public void checkRegistryCount() {
         RegistryCache registryCache = new RegistryCache(interestClient);
