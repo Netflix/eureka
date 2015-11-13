@@ -20,12 +20,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.netflix.eureka2.model.InstanceModel;
-import com.netflix.eureka2.model.StdInstanceModel;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
 import com.netflix.eureka2.utils.ExtCollections;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
@@ -39,13 +38,12 @@ import static org.hamcrest.Matchers.not;
  */
 public class DeltaTest {
 
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     InstanceInfo original;
     InstanceInfoBuilder instanceInfoBuilder;
-
-    @BeforeClass
-    public static void setUp() throws Exception {
-        InstanceModel.setDefaultModel(StdInstanceModel.getStdModel());
-    }
 
     @Rule
     public final ExternalResource testResource = new ExternalResource() {

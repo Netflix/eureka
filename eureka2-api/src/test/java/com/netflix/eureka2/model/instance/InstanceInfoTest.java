@@ -18,12 +18,10 @@ package com.netflix.eureka2.model.instance;
 
 import java.util.Set;
 
-import com.netflix.eureka2.model.InstanceModel;
-import com.netflix.eureka2.model.StdInstanceModel;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -35,9 +33,8 @@ import static org.hamcrest.Matchers.nullValue;
  */
 public class InstanceInfoTest {
 
-    @BeforeClass
-    public static void setUp() throws Exception {
-        InstanceModel.setDefaultModel(StdInstanceModel.getStdModel());
+    static {
+        StdModelsInjector.injectStdModels();
     }
 
     @Test(timeout = 60000)

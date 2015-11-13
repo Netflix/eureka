@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.netflix.eureka2.health.EurekaHealthStatusAggregator;
 import com.netflix.eureka2.health.HealthStatusUpdate;
 import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
 import com.netflix.eureka2.model.interest.Interest;
@@ -55,6 +56,10 @@ import static org.mockito.Mockito.when;
  * @author Tomasz Bak
  */
 public class TcpInterestHandlerTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private final TestScheduler testScheduler = Schedulers.test();
 

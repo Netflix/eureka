@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -26,6 +27,10 @@ import static org.hamcrest.Matchers.is;
  * @author David Liu
  */
 public class IndexRegistryTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final Iterator<ChangeNotification<InstanceInfo>> EMPTY_CHANGE_NOTIFICATION_IT = Collections.emptyIterator();
 

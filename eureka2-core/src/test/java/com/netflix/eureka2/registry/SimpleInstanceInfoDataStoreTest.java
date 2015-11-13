@@ -1,5 +1,6 @@
 package com.netflix.eureka2.registry;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.metric.EurekaRegistryMetrics;
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -17,6 +18,10 @@ import static org.mockito.Mockito.mock;
  * @author David Liu
  */
 public class SimpleInstanceInfoDataStoreTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private final EurekaRegistryMetrics metrics = mock(EurekaRegistryMetrics.class);
     private final SimpleInstanceInfoDataStore dataStore = new SimpleInstanceInfoDataStore(metrics);

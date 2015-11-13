@@ -2,6 +2,7 @@ package com.netflix.eureka2.registry;
 
 import java.util.Collection;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -23,6 +24,10 @@ import static org.hamcrest.Matchers.nullValue;
  * @author David Liu
  */
 public class MultiSourcedInstanceInfoHolderHolderStoreTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private final HolderStore dataStore = new HolderStore();
 

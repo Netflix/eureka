@@ -21,12 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.metric.noop.NoOpMessageConnectionMetrics;
-import com.netflix.eureka2.model.InstanceModel;
-import com.netflix.eureka2.model.InterestModel;
-import com.netflix.eureka2.model.StdInstanceModel;
-import com.netflix.eureka2.model.StdInterestModel;
-import com.netflix.eureka2.protocol.StdProtocolModel;
-import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.testkit.compatibility.transport.TransportCompatibilityTestSuite.DiscoveryProtocolTest;
 import com.netflix.eureka2.testkit.compatibility.transport.TransportCompatibilityTestSuite.RegistrationProtocolTest;
@@ -55,10 +50,7 @@ import static com.netflix.eureka2.transport.EurekaTransports.replicationPipeline
 public class StdEurekaTransportsTest {
 
     static {
-        InstanceModel.setDefaultModel(StdInstanceModel.getStdModel());
-        InterestModel.setDefaultModel(StdInterestModel.getStdModel());
-        ProtocolModel.setDefaultModel(StdProtocolModel.getStdModel());
-        EurekaTransports.setTransportFactory(new StdEurekaTransportFactory());
+        StdModelsInjector.injectStdModels();
     }
 
     private RxServer<Object, Object> server;

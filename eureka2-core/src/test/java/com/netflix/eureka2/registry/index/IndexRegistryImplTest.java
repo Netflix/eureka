@@ -2,6 +2,7 @@ package com.netflix.eureka2.registry.index;
 
 import java.util.Collections;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
@@ -19,6 +20,10 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 public class IndexRegistryImplTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private final IndexRegistryImpl<InstanceInfo> indexRegistry = new IndexRegistryImpl<>();
 

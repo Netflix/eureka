@@ -6,6 +6,7 @@ import java.util.List;
 import com.netflix.eureka2.channel.InterestChannel.STATE;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics.AtomicInterest;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interest.Operator;
@@ -42,6 +43,10 @@ import static org.mockito.Mockito.when;
  * @author Tomasz Bak
  */
 public class InterestChannelImplTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     public static final Interest<InstanceInfo> CLIENT_INTEREST = Interests.forFullRegistry();
 

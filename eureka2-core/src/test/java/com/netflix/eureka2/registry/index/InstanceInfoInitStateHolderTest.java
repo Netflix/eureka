@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.StdSource;
@@ -32,6 +33,11 @@ import static org.hamcrest.Matchers.is;
  * @author David Liu
  */
 public class InstanceInfoInitStateHolderTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     private StdSource localSource = new StdSource(StdSource.Origin.LOCAL, "local");
     private StdSource remoteSource1 = new StdSource(StdSource.Origin.REPLICATED, "remote1", 1);
     private StdSource remoteSource1ng = new StdSource(StdSource.Origin.REPLICATED, "remote1", 2);

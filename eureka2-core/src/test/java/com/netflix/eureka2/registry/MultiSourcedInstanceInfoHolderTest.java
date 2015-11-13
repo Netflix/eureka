@@ -1,5 +1,6 @@
 package com.netflix.eureka2.registry;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
@@ -21,6 +22,10 @@ import static org.hamcrest.Matchers.not;
  * @author David Liu
  */
 public class MultiSourcedInstanceInfoHolderTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private final StdSource localSource = new StdSource(StdSource.Origin.LOCAL);
     private final InstanceInfoBuilder builder = SampleInstanceInfo.DiscoveryServer.builder();

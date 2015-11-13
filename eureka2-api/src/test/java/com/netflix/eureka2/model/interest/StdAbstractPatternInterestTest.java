@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.model.interest;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Assert;
@@ -25,6 +26,10 @@ import org.junit.Test;
  * @author David Liu
  */
 public class StdAbstractPatternInterestTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     @Test
     public void testCompiledPatternNotPartOfEqualsOrHashCode() {

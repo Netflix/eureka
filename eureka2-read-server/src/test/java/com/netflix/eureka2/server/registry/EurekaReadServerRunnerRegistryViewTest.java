@@ -1,6 +1,7 @@
 package com.netflix.eureka2.server.registry;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -29,6 +30,10 @@ import static org.mockito.Mockito.when;
  */
 @Ignore
 public class EurekaReadServerRunnerRegistryViewTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final Interest<InstanceInfo> INTEREST = Interests.forVips("testVip");
     private static final ChangeNotification<InstanceInfo> BUFFER_START = StreamStateNotification.bufferStartNotification(INTEREST);

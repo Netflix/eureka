@@ -12,13 +12,10 @@ import java.util.concurrent.TimeUnit;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.EurekaRegistryMetrics;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
-import com.netflix.eureka2.model.InstanceModel;
-import com.netflix.eureka2.model.InterestModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Source.Origin;
 import com.netflix.eureka2.model.Sourced;
-import com.netflix.eureka2.model.StdInstanceModel;
-import com.netflix.eureka2.model.StdInterestModel;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
@@ -74,8 +71,7 @@ import static org.mockito.Mockito.when;
 public class EurekaRegistryImplTest {
 
     static {
-        InstanceModel.setDefaultModel(StdInstanceModel.getStdModel());
-        InterestModel.setDefaultModel(StdInterestModel.getStdModel());
+        StdModelsInjector.injectStdModels();
     }
 
     private final EurekaRegistryMetricFactory registryMetricFactory = mock(EurekaRegistryMetricFactory.class);

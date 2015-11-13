@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
@@ -41,6 +42,10 @@ import static org.hamcrest.Matchers.hasSize;
  * @author Nitesh Kant
  */
 public class RegistryIndexTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private InstanceInfoBuilder discoveryServerBuilder;
     private InstanceInfoBuilder zuulServerBuilder;

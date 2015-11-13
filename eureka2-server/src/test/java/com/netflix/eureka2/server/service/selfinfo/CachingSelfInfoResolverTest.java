@@ -1,5 +1,6 @@
 package com.netflix.eureka2.server.service.selfinfo;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Test;
@@ -18,6 +19,10 @@ import static org.mockito.Mockito.*;
  * @author David Liu
  */
 public class CachingSelfInfoResolverTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private final InstanceInfo info = SampleInstanceInfo.DiscoveryServer.build();
     private final AtomicInteger subscriberCount = new AtomicInteger();

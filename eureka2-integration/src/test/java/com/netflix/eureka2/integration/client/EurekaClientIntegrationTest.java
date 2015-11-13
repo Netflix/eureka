@@ -8,6 +8,7 @@ import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -36,6 +37,10 @@ import static org.junit.Assert.assertThat;
  */
 @Category(IntegrationTest.class)
 public class EurekaClientIntegrationTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource = anEurekaDeploymentResource(1, 1).build();

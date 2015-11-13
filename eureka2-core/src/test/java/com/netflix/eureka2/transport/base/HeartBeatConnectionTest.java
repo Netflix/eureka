@@ -19,6 +19,7 @@ package com.netflix.eureka2.transport.base;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.spi.protocol.ProtocolModel;
 import com.netflix.eureka2.spi.transport.EurekaConnection;
 import org.junit.Before;
@@ -44,6 +45,10 @@ import static org.mockito.Mockito.when;
  */
 @RunWith(MockitoJUnitRunner.class)
 public class HeartBeatConnectionTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final String MESSAGE = "My MESSAGE";
 

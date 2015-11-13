@@ -23,9 +23,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.netflix.eureka2.model.InstanceModel;
-import com.netflix.eureka2.model.StdInstanceModel;
-import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.netty.RxNetty;
@@ -49,7 +49,7 @@ import static org.junit.Assert.assertSame;
 public class AwsDataCenterInfoProviderTest {
 
     static {
-        InstanceModel.setDefaultModel(StdInstanceModel.getStdModel());
+        StdModelsInjector.injectStdModels();
     }
 
     private static final Pattern URI_RE = Pattern.compile("^http[s]?://[^:]+(:[\\d]*)([^?]*).*");
