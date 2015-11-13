@@ -1,24 +1,30 @@
 package com.netflix.eureka2.utils.functions;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
+import com.netflix.eureka2.model.Sourced;
+import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfo.Status;
+import com.netflix.eureka2.model.instance.StdInstanceInfo;
+import com.netflix.eureka2.model.instance.StdInstanceInfo.Builder;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.registry.index.IndexRegistryImpl;
-import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.model.notification.SourcedStreamStateNotification;
 import com.netflix.eureka2.model.notification.StreamStateNotification.BufferState;
-import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
-import com.netflix.eureka2.protocol.common.AddInstance;
-import com.netflix.eureka2.protocol.common.DeleteInstance;
-import com.netflix.eureka2.protocol.interest.UpdateInstanceInfo;
 import com.netflix.eureka2.registry.ChangeNotificationObservable;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.EurekaRegistryImpl;
-import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.model.Sourced;
 import com.netflix.eureka2.registry.MultiSourcedDataHolder;
 import com.netflix.eureka2.registry.MultiSourcedDataStore;
 import com.netflix.eureka2.registry.SimpleInstanceInfoDataStore;
-import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.registry.index.IndexRegistryImpl;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Assert;
 import org.junit.Before;
@@ -28,11 +34,6 @@ import org.slf4j.helpers.NOPLogger;
 import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
-
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -52,6 +53,7 @@ public class ChannelFunctionsTest {
 
     private ChannelFunctions channelFunctions;
     private Iterator<InstanceInfo> infoIterator;
+
     @Before
     public void setUp() {
         channelFunctions = new ChannelFunctions(logger);
@@ -63,29 +65,29 @@ public class ChannelFunctionsTest {
         ChangeNotification<InstanceInfo> notification;
         Map<String, InstanceInfo> cache = new HashMap<>();
 
-        Source localSource = new Source(Source.Origin.LOCAL, "local");
-        Source remoteSource = new Source(Source.Origin.REPLICATED, "remote");
+        StdSource localSource = new StdSource(StdSource.Origin.LOCAL, "local");
+        StdSource remoteSource = new StdSource(StdSource.Origin.REPLICATED, "remote");
 
         InstanceInfo a = infoIterator.next();
-        notification = channelFunctions.channelMessageToNotification(new AddInstance(a), localSource, cache);
+        notification = channelFunctions.channelMessageToNotification(ProtocolModel.getDefaultModel().newAddInstance(a), localSource, cache);
         assertThat(notification.getKind(), is(Kind.Add));
         assertThat(notification.getData(), is(a));
-        assertThat(((Sourced)notification).getSource(), is(localSource));
+        assertThat(((Sourced) notification).getSource(), is(localSource));
         assertThat(cache.size(), is(1));
         assertThat(cache.get(a.getId()), is(a));
 
-        InstanceInfo aNew = new InstanceInfo.Builder().withInstanceInfo(a).withStatus(InstanceInfo.Status.OUT_OF_SERVICE).build();
-        notification = channelFunctions.channelMessageToNotification(new UpdateInstanceInfo(aNew.diffOlder(a).iterator().next()), remoteSource, cache);
+        InstanceInfo aNew = new Builder().withInstanceInfo(a).withStatus(Status.OUT_OF_SERVICE).build();
+        notification = channelFunctions.channelMessageToNotification(ProtocolModel.getDefaultModel().newUpdateInstanceInfo(aNew.diffOlder(a).iterator().next()), remoteSource, cache);
         assertThat(notification.getKind(), is(Kind.Modify));
         assertThat(notification.getData(), is(aNew));
-        assertThat(((Sourced)notification).getSource(), is(remoteSource));
+        assertThat(((Sourced) notification).getSource(), is(remoteSource));
         assertThat(cache.size(), is(1));
         assertThat(cache.get(a.getId()), is(aNew));
 
-        notification = channelFunctions.channelMessageToNotification(new DeleteInstance(a.getId()), localSource, cache);
+        notification = channelFunctions.channelMessageToNotification(ProtocolModel.getDefaultModel().newDeleteInstance(a.getId()), localSource, cache);
         assertThat(notification.getKind(), is(Kind.Delete));
         assertThat(notification.getData(), is(aNew));
-        assertThat(((Sourced)notification).getSource(), is(localSource));
+        assertThat(((Sourced) notification).getSource(), is(localSource));
         assertThat(cache.size(), is(0));
     }
 
@@ -97,13 +99,13 @@ public class ChannelFunctionsTest {
                 dataStore, new IndexRegistryImpl<InstanceInfo>(), EurekaRegistryMetricFactory.registryMetrics(), testScheduler));
 
         // first add some data to the registry from an older source
-        Source prevSource = new Source(Source.Origin.REPLICATED, "abc", 1);
+        StdSource prevSource = new StdSource(StdSource.Origin.REPLICATED, "abc", 1);
         ChangeNotificationObservable dataStream = ChangeNotificationObservable.create();
         registry.connect(prevSource, dataStream).subscribe();
 
         InstanceInfo a = infoIterator.next();
         InstanceInfo b = infoIterator.next();
-        InstanceInfo aNew = new InstanceInfo.Builder().withInstanceInfo(a).withVipAddress("newA").build();
+        InstanceInfo aNew = new StdInstanceInfo.Builder().withInstanceInfo(a).withVipAddress("newA").build();
 
         dataStream.register(a);
         dataStream.register(b);
@@ -116,14 +118,14 @@ public class ChannelFunctionsTest {
         }
 
         // now setup the eviction
-        Source currSource = new Source(Source.Origin.REPLICATED, "abc", 2);
+        StdSource currSource = new StdSource(StdSource.Origin.REPLICATED, "abc", 2);
         TestSubscriber<Void> evictionSubscriber = new TestSubscriber<>();
         channelFunctions.setUpPrevChannelEviction(currSource, registry).subscribe(evictionSubscriber);
 
         // verify that eviction is not called (as we have not seen a streamStateNotification yet)
         evictionSubscriber.awaitTerminalEvent(200, TimeUnit.MILLISECONDS);
         assertThat(evictionSubscriber.getOnCompletedEvents(), is(empty()));
-        verify(registry, never()).evictAll(any(Source.SourceMatcher.class));
+        verify(registry, never()).evictAll(any(StdSource.SourceMatcher.class));
 
         // now resend the same data from the new source with buffer markers
         ChangeNotificationObservable dataStream2 = ChangeNotificationObservable.create();
@@ -148,7 +150,7 @@ public class ChannelFunctionsTest {
         // verify that eviction is not called (as we have not seen a bufferEnd yet)
         evictionSubscriber.awaitTerminalEvent(200, TimeUnit.MILLISECONDS);
         assertThat(evictionSubscriber.getOnCompletedEvents(), is(empty()));
-        verify(registry, never()).evictAll(any(Source.SourceMatcher.class));
+        verify(registry, never()).evictAll(any(StdSource.SourceMatcher.class));
 
         // send the bufferEnd, should trigger eviction of b
         dataStream2.onNext(new SourcedStreamStateNotification<>(BufferState.BufferEnd, Interests.forFullRegistry(), currSource));
@@ -164,7 +166,7 @@ public class ChannelFunctionsTest {
 
         evictionSubscriber.awaitTerminalEvent(200, TimeUnit.MILLISECONDS);
         assertThat(evictionSubscriber.getOnCompletedEvents().size(), is(1));
-        verify(registry, times(1)).evictAll(any(Source.SourceMatcher.class));
+        verify(registry, times(1)).evictAll(any(StdSource.SourceMatcher.class));
     }
 
 }

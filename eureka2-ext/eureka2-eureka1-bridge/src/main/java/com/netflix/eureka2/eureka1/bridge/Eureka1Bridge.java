@@ -14,18 +14,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.shared.Application;
 import com.netflix.eureka2.eureka1.bridge.config.Eureka1BridgeConfiguration;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.model.notification.SourcedChangeNotification;
-import com.netflix.eureka2.model.notification.SourcedStreamStateNotification;
-import com.netflix.eureka2.model.notification.StreamStateNotification.BufferState;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.metric.server.BridgeChannelMetrics;
 import com.netflix.eureka2.metric.server.BridgeServerMetricFactory;
-import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Source.Origin;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
+import com.netflix.eureka2.model.notification.SourcedChangeNotification;
+import com.netflix.eureka2.model.notification.SourcedStreamStateNotification;
+import com.netflix.eureka2.model.notification.StreamStateNotification.BufferState;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.utils.rx.LoggingSubscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,7 +71,7 @@ public class Eureka1Bridge {
         this.discoveryClient = discoveryClient;
         this.config = config;
         this.metrics = metricsFactory.getBridgeChannelMetrics();
-        this.selfSource = new Source(Origin.REPLICATED, SOURCE_NAME);
+        this.selfSource = InstanceModel.getDefaultModel().createSource(Origin.REPLICATED, SOURCE_NAME);
         this.worker = scheduler.createWorker();
 
         this.bridgeSubscriber = new LoggingSubscriber<>(logger);
@@ -138,12 +139,12 @@ public class Eureka1Bridge {
             if (currentEureka1Snapshot.containsKey(instanceInfo.getId())) {
                 InstanceInfo older = currentEureka1Snapshot.get(instanceInfo.getId());
                 if (!older.equals(instanceInfo)) {
-                    logger.info("Updating InstanceInfo {} data from Eureka1 registry", instanceInfo.getId());
+                    logger.info("Updating IInstanceInfo {} data from Eureka1 registry", instanceInfo.getId());
                     bridgeSubject.onNext(new SourcedChangeNotification<>(Kind.Modify, instanceInfo, selfSource));
                     updateCount.incrementAndGet();
                 }
             } else {
-                logger.info("Registering new InstanceInfo {} data from Eureka1 registry", instanceInfo.getId());
+                logger.info("Registering new IInstanceInfo {} data from Eureka1 registry", instanceInfo.getId());
                 bridgeSubject.onNext(new SourcedChangeNotification<>(Kind.Add, instanceInfo, selfSource));
                 registerCount.incrementAndGet();
             }
@@ -151,7 +152,7 @@ public class Eureka1Bridge {
 
         currentEureka1Snapshot.keySet().removeAll(newSnapshot.keySet());
         for (InstanceInfo instanceInfo : currentEureka1Snapshot.values()) {
-            logger.info("Unregistering InstanceInfo {} data from Eureka1 registry", instanceInfo.getId());
+            logger.info("Unregistering IInstanceInfo {} data from Eureka1 registry", instanceInfo.getId());
             bridgeSubject.onNext(new SourcedChangeNotification<>(Kind.Delete, instanceInfo, selfSource));
             unregisterCount.incrementAndGet();
         }

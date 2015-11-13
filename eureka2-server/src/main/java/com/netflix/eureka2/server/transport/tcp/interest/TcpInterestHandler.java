@@ -24,12 +24,12 @@ import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.health.EurekaHealthStatusAggregator;
 import com.netflix.eureka2.health.HealthStatusUpdate;
 import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
-import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
+import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.server.channel.InterestChannelImpl;
 import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
 import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
@@ -133,7 +133,7 @@ public class TcpInterestHandler implements ConnectionHandler<Object, Object> {
             return Observable.error(new IllegalStateException("Server bootstrap not finished; discarding client connection"));
         }
 
-        MessageConnection broker = new HeartBeatConnection(
+        EurekaConnection broker = new HeartBeatConnection(
                 new BaseMessageConnection(Names.INTEREST_SERVER, connection, metricFactory.getDiscoveryConnectionMetrics()),
                 config.getHeartbeatIntervalMs(), 3,
                 Schedulers.computation()

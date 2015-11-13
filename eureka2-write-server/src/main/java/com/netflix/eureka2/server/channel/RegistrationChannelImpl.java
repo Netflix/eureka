@@ -2,15 +2,16 @@ package com.netflix.eureka2.server.channel;
 
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.channel.RegistrationChannel.STATE;
-import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
-import com.netflix.eureka2.protocol.registration.Register;
-import com.netflix.eureka2.protocol.registration.RegistrationMessage;
-import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Sourced;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.spi.protocol.registration.Register;
+import com.netflix.eureka2.spi.protocol.registration.RegistrationMessage;
+import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.utils.rx.LoggingSubscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +39,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
     private volatile InstanceInfo cachedInstanceInfo;
 
     public RegistrationChannelImpl(final EurekaRegistrationProcessor<InstanceInfo> registrationProcessor,
-                                   MessageConnection transport,
+                                   EurekaConnection transport,
                                    RegistrationChannelMetrics metrics) {
         super(STATE.Idle, transport, metrics);
         this.channelSubscriber = new LoggingSubscriber<>(logger, "channel");
@@ -136,7 +137,7 @@ public class RegistrationChannelImpl extends AbstractHandlerChannel<STATE> imple
                     public void call(RegistrationMessage message) {
                         if (message instanceof Register) {
                             String instanceId = ((Register) message).getInstanceInfo().getId();
-                            selfSource = new Source(Source.Origin.LOCAL, instanceId);
+                            selfSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, instanceId);
                             registrationProcessor.connect(instanceId, selfSource, data).subscribe(channelSubscriber);
                         } else {
                             String errorMsg = "Illegal initial registration message, should start with Register but was " + message;

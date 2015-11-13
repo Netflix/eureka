@@ -11,22 +11,24 @@ import com.netflix.eureka2.channel.ReplicationChannel;
 import com.netflix.eureka2.channel.TestChannelFactory;
 import com.netflix.eureka2.channel.TestSenderReplicationChannel;
 import com.netflix.eureka2.channel.TestSenderReplicationChannel.ReplicationItem;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.registry.index.IndexRegistryImpl;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
-import com.netflix.eureka2.protocol.common.AddInstance;
-import com.netflix.eureka2.protocol.common.DeleteInstance;
-import com.netflix.eureka2.protocol.replication.ReplicationHello;
-import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.EurekaRegistryImpl;
-import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.registry.index.IndexRegistryImpl;
 import com.netflix.eureka2.server.channel.SenderReplicationChannel;
 import com.netflix.eureka2.server.channel.SenderReplicationChannelFactory;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.protocol.common.AddInstance;
+import com.netflix.eureka2.spi.protocol.common.DeleteInstance;
+import com.netflix.eureka2.spi.protocol.replication.ReplicationHello;
+import com.netflix.eureka2.spi.protocol.replication.ReplicationHelloReply;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.utils.rx.NoOpSubscriber;
 import org.junit.After;
@@ -57,12 +59,16 @@ import static org.mockito.Mockito.when;
  */
 public class ReplicationSenderTest {
 
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     private static final int RETRY_WAIT_MILLIS = 10;
 
     private static final InstanceInfo SELF_INFO = SampleInstanceInfo.DiscoveryServer.build();
     private static final InstanceInfo REMOTE_INFO = SampleInstanceInfo.DiscoveryServer.build();
-    private static final Source REPLICATION_SOURCE = new Source(Source.Origin.REPLICATED, REMOTE_INFO.getId(), 0);
-    private static final ReplicationHelloReply HELLO_REPLY = new ReplicationHelloReply(REPLICATION_SOURCE, true);
+    private static final StdSource REPLICATION_SOURCE = new StdSource(StdSource.Origin.REPLICATED, REMOTE_INFO.getId(), 0);
+    private static final ReplicationHelloReply HELLO_REPLY = ProtocolModel.getDefaultModel().newReplicationHelloReply(REPLICATION_SOURCE, true);
     private ReplicationHello hello;
 
     private final AtomicInteger channelId = new AtomicInteger(0);
@@ -71,7 +77,7 @@ public class ReplicationSenderTest {
 
     private final EurekaRegistry<InstanceInfo> registry =
             new EurekaRegistryImpl(new IndexRegistryImpl<InstanceInfo>(), EurekaRegistryMetricFactory.registryMetrics(), testScheduler);
-    private final Source localSource = new Source(Source.Origin.LOCAL);
+    private final StdSource localSource = new StdSource(StdSource.Origin.LOCAL);
 
     private ReplaySubject<ChangeNotification<InstanceInfo>> localContentSubject;
     private Subscriber<Void> localContentSubscriber;
@@ -110,8 +116,8 @@ public class ReplicationSenderTest {
         registry.connect(localSource, localContentSubject).subscribe(localContentSubscriber);
         testScheduler.triggerActions();
 
-        Source senderSource = new Source(Source.Origin.REPLICATED, SELF_INFO.getId(), 0);
-        hello = new ReplicationHello(senderSource, registry.size());
+        StdSource senderSource = new StdSource(StdSource.Origin.REPLICATED, SELF_INFO.getId(), 0);
+        hello = ProtocolModel.getDefaultModel().newReplicationHello(senderSource, registry.size());
     }
 
     @After
@@ -126,9 +132,9 @@ public class ReplicationSenderTest {
         when(mockFactory.newChannel()).then(new Answer<TestSenderReplicationChannel>() {
             @Override
             public TestSenderReplicationChannel answer(InvocationOnMock invocation) throws Throwable {
-                MessageConnection messageConnection = mock(MessageConnection.class);
+                EurekaConnection messageConnection = mock(EurekaConnection.class);
                 when(messageConnection.submit(hello)).thenReturn(Observable.<Void>empty());
-                when(messageConnection.incoming()).thenReturn(Observable.<Object>just(new ReplicationHelloReply(REPLICATION_SOURCE, true)));
+                when(messageConnection.incoming()).thenReturn(Observable.<Object>just(ProtocolModel.getDefaultModel().newReplicationHelloReply(REPLICATION_SOURCE, true)));
 
                 TransportClient transportClient = mock(TransportClient.class);
                 when(transportClient.connect()).thenReturn(Observable.just(messageConnection));
@@ -357,7 +363,7 @@ public class ReplicationSenderTest {
 
 
     private static TestSenderReplicationChannel newAlwaysSuccessChannel(Integer id) {
-        MessageConnection messageConnection = newMockMessageConnection();
+        EurekaConnection messageConnection = newMockMessageConnection();
         when(messageConnection.submit(anyObject())).thenReturn(Observable.<Void>empty());
         when(messageConnection.incoming()).thenReturn(Observable.<Object>just(HELLO_REPLY));
 
@@ -370,7 +376,7 @@ public class ReplicationSenderTest {
     }
 
     private static TestSenderReplicationChannel newFailAtHelloChannel(Integer id) {
-        MessageConnection messageConnection = newMockMessageConnection();
+        EurekaConnection messageConnection = newMockMessageConnection();
         when(messageConnection.submit(anyObject())).thenReturn(Observable.<Void>empty());
         when(messageConnection.incoming()).thenReturn(Observable.error(new Exception("test: hello reply error")));
 
@@ -383,7 +389,7 @@ public class ReplicationSenderTest {
     }
 
     private static TestSenderReplicationChannel newFailAtReplicateChannel(Integer id) {
-        MessageConnection messageConnection = newMockMessageConnection();
+        EurekaConnection messageConnection = newMockMessageConnection();
         when(messageConnection.submit(any(ReplicationHello.class))).thenReturn(Observable.<Void>empty());
         when(messageConnection.submit(any(AddInstance.class))).thenReturn(Observable.<Void>error(new Exception("test: register error")));
         when(messageConnection.submit(any(DeleteInstance.class))).thenReturn(Observable.<Void>error(new Exception("test: unregister error")));
@@ -398,7 +404,7 @@ public class ReplicationSenderTest {
     }
 
     private TestSenderReplicationChannel newTimedFailChannel(Integer id, int failAfterMillis) {
-        MessageConnection messageConnection = newMockMessageConnection();
+        EurekaConnection messageConnection = newMockMessageConnection();
         when(messageConnection.submit(anyObject())).thenReturn(Observable.<Void>empty());
         when(messageConnection.incoming()).thenReturn(Observable.<Object>just(HELLO_REPLY));
 
@@ -425,9 +431,9 @@ public class ReplicationSenderTest {
         return new TestSenderReplicationChannel(channel, id);
     }
 
-    private static MessageConnection newMockMessageConnection() {
+    private static EurekaConnection newMockMessageConnection() {
         final ReplaySubject<Void> lifecycleSubject = ReplaySubject.create();
-        MessageConnection messageConnection = mock(MessageConnection.class);
+        EurekaConnection messageConnection = mock(EurekaConnection.class);
         when(messageConnection.lifecycleObservable()).thenReturn(lifecycleSubject);
         return messageConnection;
     }

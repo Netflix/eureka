@@ -26,11 +26,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
-import com.netflix.eureka2.utils.functions.RxFunctions;
 import rx.Notification;
 import rx.Observable;
 import rx.Observable.Transformer;
@@ -39,7 +38,7 @@ import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 /**
- * Collection of transformation functions operating on {@link com.netflix.eureka2.model.notification.ChangeNotification} data.
+ * Collection of transformation functions operating on {@link ChangeNotification} data.
  *
  * @author Tomasz Bak
  */

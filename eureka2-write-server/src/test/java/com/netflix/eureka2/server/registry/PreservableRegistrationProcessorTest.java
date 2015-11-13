@@ -3,13 +3,14 @@ package com.netflix.eureka2.server.registry;
 import java.util.concurrent.Semaphore;
 
 import com.netflix.eureka2.config.BasicEurekaRegistryConfig;
-import com.netflix.eureka2.registry.ChangeNotificationObservable;
-import com.netflix.eureka2.registry.EurekaRegistryRegistrationStub;
-import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.model.Source.Origin;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.InstanceInfo.Builder;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
+import com.netflix.eureka2.model.instance.StdInstanceInfo.Builder;
+import com.netflix.eureka2.registry.ChangeNotificationObservable;
+import com.netflix.eureka2.registry.EurekaRegistryRegistrationStub;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,6 +32,10 @@ import static org.mockito.Mockito.spy;
  * @author Tomasz Bak
  */
 public class PreservableRegistrationProcessorTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final InstanceInfo FIRST_INSTANCE_INFO = SampleInstanceInfo.WebServer.build();
 
@@ -55,7 +60,7 @@ public class PreservableRegistrationProcessorTest {
     @Test
     public void testRegistrationLifecycle() throws Exception {
         String id = FIRST_INSTANCE_INFO.getId();
-        Source source = new Source(Origin.LOCAL, id);
+        StdSource source = new StdSource(Origin.LOCAL, id);
         registrationProcessor.connect(FIRST_INSTANCE_INFO.getId(), source, dataStream).subscribe();
 
         // First registration
@@ -74,7 +79,7 @@ public class PreservableRegistrationProcessorTest {
     @Test
     public void testRegisterWithOnCompleteTerminatesRegistration() throws Exception {
         String id = FIRST_INSTANCE_INFO.getId();
-        Source source = new Source(Origin.LOCAL, id);
+        StdSource source = new StdSource(Origin.LOCAL, id);
         registrationProcessor.connect(FIRST_INSTANCE_INFO.getId(), source, dataStream).subscribe();
 
         // First registration
@@ -94,7 +99,7 @@ public class PreservableRegistrationProcessorTest {
     @Test
     public void testRegisterWithOnErrorPutsRegistrationOnTheEvictionQueue() throws Exception {
         String id = FIRST_INSTANCE_INFO.getId();
-        Source source = new Source(Origin.LOCAL, id);
+        StdSource source = new StdSource(Origin.LOCAL, id);
         registrationProcessor.connect(FIRST_INSTANCE_INFO.getId(), source, dataStream).subscribe();
 
         // First registration

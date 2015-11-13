@@ -1,8 +1,9 @@
 package com.netflix.eureka2.utils.functions;
 
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import rx.Notification;
 import rx.Notification.Kind;
 import rx.Observable;
@@ -32,7 +33,7 @@ public final class RegistrationFunctions {
                         if (notification.getKind() == Kind.OnNext) {
                             return new ChangeNotification<>(ChangeNotification.Kind.Add, new InstanceInfoWithSource(notification.getValue(), source));
                         }
-                        InstanceInfo toDelete = new InstanceInfo.Builder().withId(id).build();
+                        InstanceInfo toDelete = InstanceModel.getDefaultModel().newInstanceInfo().withId(id).build();
                         return new ChangeNotification<>(ChangeNotification.Kind.Delete, new InstanceInfoWithSource(toDelete, source));
                     }
                 });

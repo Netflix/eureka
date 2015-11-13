@@ -13,24 +13,27 @@ import com.netflix.eureka2.channel.TestInterestChannel;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.channel.ClientInterestChannel;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.FullRegistryInterest;
-import com.netflix.eureka2.registry.index.IndexRegistryImpl;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
+import com.netflix.eureka2.model.InterestModel;
+import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.StdInstanceInfo;
+import com.netflix.eureka2.model.interest.StdFullRegistryInterest;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.model.interest.MultipleInterests;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.registry.MultiSourcedDataHolder;
-import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.registry.index.IndexRegistryImpl;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInterest;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.transport.TransportClient;
 import org.junit.After;
 import org.junit.Before;
@@ -44,8 +47,8 @@ import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotificationOf;
+import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -62,6 +65,10 @@ import static org.mockito.Mockito.when;
  * @author David Liu
  */
 public class EurekaInterestClientImplTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final int RETRY_WAIT_MILLIS = 10;
     public static final int FAILING_CHANNEL_FAILURE_DELAY_MS = 10;
@@ -94,7 +101,7 @@ public class EurekaInterestClientImplTest {
 
     @Before
     public void setUp() {
-        MessageConnection messageConnection = mock(MessageConnection.class);
+        EurekaConnection messageConnection = mock(EurekaConnection.class);
         final ReplaySubject<Void> lifecycleSubject = ReplaySubject.create();
         when(messageConnection.lifecycleObservable()).thenReturn(lifecycleSubject);
         when(messageConnection.submitWithAck(anyObject())).thenReturn(Observable.<Void>empty());
@@ -105,7 +112,7 @@ public class EurekaInterestClientImplTest {
 
         discoveryInterest = SampleInterest.DiscoveryApp.build();
         zuulInterest = SampleInterest.ZuulApp.build();
-        allInterest = new MultipleInterests<>(discoveryInterest, zuulInterest);
+        allInterest = InterestModel.getDefaultModel().newMultipleInterests(discoveryInterest, zuulInterest);
 
         discoveryInfos = Arrays.asList(
                 SampleInstanceInfo.DiscoveryServer.build(),
@@ -191,7 +198,7 @@ public class EurekaInterestClientImplTest {
         assertThat(channel0.operations.size(), is(2));
         Interest<InstanceInfo>[] operations = channel0.operations.toArray(new Interest[]{});
         assertThat(matchInterests(operations[0], discoveryInterest), is(true));
-        assertThat(matchInterests(operations[1], new MultipleInterests<>(discoveryInterest, zuulInterest)), is(true));
+        assertThat(matchInterests(operations[1], InterestModel.getDefaultModel().newMultipleInterests(discoveryInterest, zuulInterest)), is(true));
     }
 
     @Test
@@ -259,7 +266,7 @@ public class EurekaInterestClientImplTest {
 
         newSubscriber.assertContainsInAnyOrder(expected);
 
-        InstanceInfo update = new InstanceInfo.Builder().withInstanceInfo(discoveryInfos.get(0))
+        InstanceInfo update = new StdInstanceInfo.Builder().withInstanceInfo(discoveryInfos.get(0))
                 .withStatus(InstanceInfo.Status.OUT_OF_SERVICE)
                 .build();
 
@@ -302,7 +309,7 @@ public class EurekaInterestClientImplTest {
         assertThat(channel0.operations.size(), is(2));
         Interest<InstanceInfo>[] operations = channel0.operations.toArray(new Interest[]{});
         assertThat(matchInterests(operations[0], discoveryInterest), is(true));
-        assertThat(matchInterests(operations[1], new MultipleInterests<>(discoveryInterest, zuulInterest)), is(true));
+        assertThat(matchInterests(operations[1], InterestModel.getDefaultModel().newMultipleInterests(discoveryInterest, zuulInterest)), is(true));
 
         client.shutdown();
 
@@ -389,7 +396,7 @@ public class EurekaInterestClientImplTest {
         client.forInterest(discoveryInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber1);
 
         // don't use all registry interest as it is a special singleton
-        Interest<InstanceInfo> compositeInterest = new MultipleInterests<>(discoveryInterest, zuulInterest);
+        Interest<InstanceInfo> compositeInterest = InterestModel.getDefaultModel().newMultipleInterests(discoveryInterest, zuulInterest);
 
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> extTestSubscriber2 = new ExtTestSubscriber<>();
         client.forInterest(compositeInterest).filter(dataOnlyFilter()).subscribe(extTestSubscriber2);
@@ -544,7 +551,7 @@ public class EurekaInterestClientImplTest {
 
     // easiest way is to cast both interests to multipleInterests and apply equals
     private static <T> boolean matchInterests(Interest<T> one, Interest<T> two) {
-        return new MultipleInterests<>(one).equals(new MultipleInterests<>(two));
+        return InterestModel.getDefaultModel().newMultipleInterests(one).equals(InterestModel.getDefaultModel().newMultipleInterests(two));
     }
 
     static class InterestMatcher extends ArgumentMatcher<Interest<InstanceInfo>> {
@@ -561,7 +568,7 @@ public class EurekaInterestClientImplTest {
                 return matchInterests(interest, (Interest) argument);
             } else if (argument instanceof MultipleInterests) {
                 return matchInterests(interest, (MultipleInterests) argument);
-            } else if (argument instanceof FullRegistryInterest) {
+            } else if (argument instanceof StdFullRegistryInterest) {
                 return true;
             }
             return false;

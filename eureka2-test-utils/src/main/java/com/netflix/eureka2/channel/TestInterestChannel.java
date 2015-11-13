@@ -1,9 +1,9 @@
 package com.netflix.eureka2.channel;
 
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import rx.Observable;
 
 /**

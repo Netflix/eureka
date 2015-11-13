@@ -1,17 +1,18 @@
 package com.netflix.eureka2.ext.aws;
 
+import java.util.concurrent.TimeUnit;
+
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
 import com.netflix.eureka2.aws.MockS3Service;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
-
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
@@ -24,6 +25,10 @@ import static org.mockito.Mockito.when;
  * @author David Liu
  */
 public class S3StatusOverridesRegistryTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final long REFRESH_INTERVAL_SEC = 30;
 

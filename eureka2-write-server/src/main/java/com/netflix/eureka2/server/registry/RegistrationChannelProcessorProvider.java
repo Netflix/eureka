@@ -21,7 +21,8 @@ public class RegistrationChannelProcessorProvider implements Provider<EurekaRegi
 
     // Since
     public static class OptionalOverridesService {
-        @Inject(optional = true) OverridesService arg;
+        @Inject(optional = true)
+        OverridesService arg;
 
         public void setArg(OverridesService arg) {  // useful for testing
             this.arg = arg;

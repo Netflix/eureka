@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.junit.categories.ExternalConnectionTest;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 

@@ -4,15 +4,15 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.model.notification.SourcedChangeNotification;
-import com.netflix.eureka2.model.notification.StreamStateNotification;
-import com.netflix.eureka2.model.notification.StreamStateNotification.BufferState;
+import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Sourced;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
+import com.netflix.eureka2.model.notification.SourcedChangeNotification;
+import com.netflix.eureka2.model.notification.StreamStateNotification;
+import com.netflix.eureka2.model.notification.StreamStateNotification.BufferState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +40,6 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
     protected final ChangeNotification<InstanceInfo> bufferUnknownNotification;
 
     public InstanceInfoInitStateHolder(Iterator<ChangeNotification<InstanceInfo>> initialRegistry, Interest<InstanceInfo> interest) {
-        super();
         this.bufferStartNotification = new StreamStateNotification<>(BufferState.BufferStart, interest);
         this.bufferEndNotification = new StreamStateNotification<>(BufferState.BufferEnd, interest);
         this.bufferUnknownNotification = new StreamStateNotification<>(BufferState.Unknown, interest);
@@ -113,8 +112,8 @@ public class InstanceInfoInitStateHolder extends Index.InitStateHolder<InstanceI
                 // Re-write as add
                 if (current == null) {
                     logger.info("Invalid change notification sequence - " +
-                                    "'Modify' ChangeNotification without proceeding 'Add' notification;" +
-                                    "for client view consistency converted to 'Add': {}", update
+                            "'Modify' ChangeNotification without proceeding 'Add' notification;" +
+                            "for client view consistency converted to 'Add': {}", update
                     );
                 }
 

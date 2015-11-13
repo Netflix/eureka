@@ -6,16 +6,17 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.channel.InterestChannel;
-import com.netflix.eureka2.model.toplogy.ServiceTopologyGenerator;
-import com.netflix.eureka2.model.toplogy.TopologyDataProviders;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.model.notification.SourcedChangeNotification;
-import com.netflix.eureka2.registry.EurekaRegistryImpl;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Source.Origin;
-import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.SourcedChangeNotification;
+import com.netflix.eureka2.model.toplogy.ServiceTopologyGenerator;
+import com.netflix.eureka2.model.toplogy.TopologyDataProviders;
+import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.server.channel.InterestChannelImpl;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
@@ -75,7 +76,7 @@ public class ServerInterestPerf {
         }
 
         final Queue<InstanceInfo> activeRegistrationsQueue = new ConcurrentLinkedQueue<>();
-        final Source source = new Source(Origin.LOCAL, "perf");
+        final Source source = InstanceModel.getDefaultModel().createSource(Origin.LOCAL, "perf");
         final long finalReqPerInterval = reqPerInterval;
         registryUpdateSubscription = Observable.interval(interval, TimeUnit.MILLISECONDS).flatMap(new Func1<Long, Observable<Void>>() {
             @Override

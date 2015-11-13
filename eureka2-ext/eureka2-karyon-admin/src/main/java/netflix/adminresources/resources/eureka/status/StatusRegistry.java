@@ -10,12 +10,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.eureka2.server.AbstractEurekaServer;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ObservableConnection;
 import io.reactivex.netty.protocol.http.websocket.WebSocketClient;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;

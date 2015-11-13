@@ -3,6 +3,7 @@ package netflix.admin.eureka;
 import java.util.Map;
 
 import com.google.gson.JsonArray;
+import com.netflix.eureka2.model.StdModelsInjector;
 import netflix.adminresources.resources.eureka.registry.InstanceInfoSummary;
 import netflix.adminresources.resources.eureka.registry.InstanceRegistryCache;
 import netflix.adminresources.resources.eureka.registry.RegistryTableView;
@@ -19,6 +20,10 @@ import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RegistryTableViewTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     @Mock
     private InstanceRegistryCache registryCache;

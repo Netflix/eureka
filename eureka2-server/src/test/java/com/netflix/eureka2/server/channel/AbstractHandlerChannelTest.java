@@ -3,7 +3,7 @@ package com.netflix.eureka2.server.channel;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.metric.noop.NoOpStateMachineMetrics;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
  */
 public class AbstractHandlerChannelTest {
 
-    private final MessageConnection transport = mock(MessageConnection.class);
+    private final EurekaConnection transport = mock(EurekaConnection.class);
     private final Exception transportOnErrorReturn = new Exception();
     private final TestSubscriber<Void> subscriber = new TestSubscriber<>();
 
@@ -66,7 +66,7 @@ public class AbstractHandlerChannelTest {
     enum TestState {}
 
     public class TestHandlerChannel extends AbstractHandlerChannel<TestState> {
-        protected TestHandlerChannel(MessageConnection transport) {
+        protected TestHandlerChannel(EurekaConnection transport) {
             super(null, transport, new NoOpStateMachineMetrics<TestState>());
         }
     }

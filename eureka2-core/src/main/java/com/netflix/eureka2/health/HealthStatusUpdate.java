@@ -1,5 +1,6 @@
 package com.netflix.eureka2.health;
 
+
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
 
 /**

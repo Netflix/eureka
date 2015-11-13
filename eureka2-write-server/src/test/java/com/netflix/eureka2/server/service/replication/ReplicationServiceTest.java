@@ -21,10 +21,12 @@ import java.util.List;
 import java.util.Map;
 
 import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
@@ -50,6 +52,10 @@ import static org.mockito.Mockito.when;
  */
 public class ReplicationServiceTest {
 
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     private static final InstanceInfo SELF_INFO = SampleInstanceInfo.DiscoveryServer.build();
 
     private static final Server ADDRESS1 = new Server("host1", 123);
@@ -57,7 +63,7 @@ public class ReplicationServiceTest {
     private static final Server ADDRESS3 = new Server("host3", 789);
 
     private final WriteServerConfig config = aWriteServerConfig().build();
-    private final EurekaRegistry<InstanceInfo> eurekaRegistry = mock(EurekaRegistry.class);
+    private final EurekaRegistry<StdInstanceInfo> eurekaRegistry = mock(EurekaRegistry.class);
     private final SelfInfoResolver selfIdentityService = mock(SelfInfoResolver.class);
     private final ReplicationPeerAddressesProvider peerAddressProvider = mock(ReplicationPeerAddressesProvider.class);
 

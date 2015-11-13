@@ -16,7 +16,15 @@
 
 package com.netflix.eureka2.model.datacenter;
 
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.StdInstanceModel;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -32,12 +40,6 @@ import rx.Notification;
 import rx.Notification.Kind;
 import rx.Observable;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 
@@ -45,6 +47,10 @@ import static org.junit.Assert.assertSame;
  * @author Tomasz Bak
  */
 public class AwsDataCenterInfoProviderTest {
+
+    static {
+        InstanceModel.setDefaultModel(StdInstanceModel.getStdModel());
+    }
 
     private static final Pattern URI_RE = Pattern.compile("^http[s]?://[^:]+(:[\\d]*)([^?]*).*");
 
@@ -70,7 +76,7 @@ public class AwsDataCenterInfoProviderTest {
                         "  \"accountId\" : \"" + DATA_CENTER_INFO.getAccountId() + "\"" +
                         "  \"instanceId\" : \"" + DATA_CENTER_INFO.getInstanceId() + "\"" +
                         "  \"imageId\" : \"" + DATA_CENTER_INFO.getAmiId() + "\"" +
-                        "  \"instanceType\" : \""+ DATA_CENTER_INFO.getInstanceType() + "\"" +
+                        "  \"instanceType\" : \"" + DATA_CENTER_INFO.getInstanceType() + "\"" +
                         "  \"kernelId\" : \"someKernalId\",\n" +
                         "  \"ramdiskId\" : null,\n" +
                         "  \"pendingTime\" : \"2015-01-01T00:00:00Z\",\n" +
@@ -136,7 +142,7 @@ public class AwsDataCenterInfoProviderTest {
         provider.dataCenterInfo().single().subscribe(testSubscriber);
 
         AwsDataCenterInfo resolvedDataCenterInfo = testSubscriber.takeNext(10, TimeUnit.SECONDS);
-        DataCenterInfo expected = new AwsDataCenterInfo.Builder().withAwsDataCenter(DATA_CENTER_INFO)
+        DataCenterInfo expected = InstanceModel.getDefaultModel().newAwsDataCenterInfo().withAwsDataCenter(DATA_CENTER_INFO)
                 .withVpcId(null).build();
         assertEquals("Resolved data center info not identical to the reference one", expected, resolvedDataCenterInfo);
     }

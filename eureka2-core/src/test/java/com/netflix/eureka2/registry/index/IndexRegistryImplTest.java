@@ -2,11 +2,11 @@ package com.netflix.eureka2.registry.index;
 
 import java.util.Collections;
 
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.index.Index.InitStateHolder;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.registry.index.Index.InitStateHolder;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
 import org.junit.Test;
 import rx.subjects.PublishSubject;

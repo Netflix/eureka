@@ -8,14 +8,15 @@ import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.ReplicationChannel;
 import com.netflix.eureka2.connection.RetryableConnection;
 import com.netflix.eureka2.connection.RetryableConnectionFactory;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
-import com.netflix.eureka2.protocol.replication.ReplicationHello;
-import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
-import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.protocol.replication.ReplicationHelloReply;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.server.channel.SenderReplicationChannelFactory;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.utils.rx.RetryStrategyFunc;
@@ -78,8 +79,8 @@ public class ReplicationSenderImpl implements ReplicationSender {
         connection = connectionFactory.zeroOpConnection(new Func1<ReplicationChannel, Observable<Void>>() {
             @Override
             public Observable<Void> call(final ReplicationChannel replicationChannel) {
-                Source senderSource = new Source(Source.Origin.REPLICATED, ownInstanceId, senderGenerationId.getAndIncrement());
-                return replicationChannel.hello(new ReplicationHello(senderSource, registry.size()))
+                Source senderSource = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, ownInstanceId, senderGenerationId.getAndIncrement());
+                return replicationChannel.hello(ProtocolModel.getDefaultModel().newReplicationHello(senderSource, registry.size()))
                         .take(1)
                         .map(new Func1<ReplicationHelloReply, ReplicationChannel>() {
                             @Override

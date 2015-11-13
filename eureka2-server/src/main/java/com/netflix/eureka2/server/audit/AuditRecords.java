@@ -16,14 +16,14 @@
 
 package com.netflix.eureka2.server.audit;
 
+import java.util.Set;
+
+import com.netflix.eureka2.model.instance.Delta;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.model.notification.ModifyNotification;
-import com.netflix.eureka2.model.instance.Delta;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.server.audit.AuditRecord.AuditRecordBuilder;
-
-import java.util.Set;
 
 /**
  * @author Tomasz Bak

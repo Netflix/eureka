@@ -8,9 +8,9 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.server.AbstractEurekaServer;
 import com.netflix.eureka2.utils.rx.NoOpSubscriber;
 import com.netflix.eureka2.utils.rx.RetryStrategyFunc;

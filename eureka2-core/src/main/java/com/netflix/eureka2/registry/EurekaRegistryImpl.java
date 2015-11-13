@@ -1,22 +1,29 @@
 package com.netflix.eureka2.registry;
 
+import javax.inject.Inject;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicLong;
+
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.MultipleInterests;
+import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
+import com.netflix.eureka2.metric.EurekaRegistryMetrics;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Sourced;
-import com.netflix.eureka2.utils.functions.BufferMarkerMergeFunctions;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.SourcedStreamStateNotification;
+import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.registry.index.IndexRegistry;
 import com.netflix.eureka2.registry.index.IndexRegistryImpl;
 import com.netflix.eureka2.registry.index.InstanceInfoInitStateHolder;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.MultipleInterests;
-import com.netflix.eureka2.model.notification.SourcedStreamStateNotification;
-import com.netflix.eureka2.model.notification.StreamStateNotification;
-import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
-import com.netflix.eureka2.metric.EurekaRegistryMetrics;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.utils.ExtCollections;
-import com.netflix.eureka2.utils.rx.PauseableSubject;
+import com.netflix.eureka2.utils.functions.BufferMarkerMergeFunctions;
 import com.netflix.eureka2.utils.functions.RxFunctions;
+import com.netflix.eureka2.utils.rx.PauseableSubject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -26,12 +33,6 @@ import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.subjects.AsyncSubject;
-
-import javax.inject.Inject;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author David Liu
@@ -43,7 +44,7 @@ public class EurekaRegistryImpl implements EurekaRegistry<InstanceInfo> {
     protected final IndexRegistry<InstanceInfo> indexRegistry;
     protected final PauseableSubject<ChangeNotification<InstanceInfo>> registryChangeSubject;  // subject for all changes in the registry
     protected final Scheduler.Worker worker;  // worker to schedule on for all work to the internal datastores
-    protected final Source localSource = new Source(Source.Origin.LOCAL);
+    protected final Source localSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL);
     protected final EurekaRegistryMetrics metrics;
 
     private final BufferMarkerMergeFunctions bufferMergeFunc = new BufferMarkerMergeFunctions(logger);

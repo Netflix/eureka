@@ -1,7 +1,6 @@
 package com.netflix.eureka2.utils.functions;
 
-import com.netflix.eureka2.rx.ExtTestSubscriber;
-import com.netflix.eureka2.utils.functions.RxFunctions;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.junit.Test;
 import rx.Observable;
 import rx.functions.Func2;

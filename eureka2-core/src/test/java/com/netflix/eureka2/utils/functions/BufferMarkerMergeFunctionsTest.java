@@ -1,16 +1,17 @@
 package com.netflix.eureka2.utils.functions;
 
+import java.util.List;
+
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Sourced;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.SourcedStreamStateNotification;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
-import com.netflix.eureka2.utils.functions.BufferMarkerMergeFunctions;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
-import com.netflix.eureka2.utils.functions.RxFunctions;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.helpers.NOPLogger;
@@ -19,11 +20,11 @@ import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
 
-import java.util.List;
-
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 
 /**
  * @author David Liu
@@ -41,10 +42,10 @@ public class BufferMarkerMergeFunctionsTest {
     public void testMergeDiffSources() throws Exception {
         Interest<InstanceInfo> finalInterest = Interests.forFullRegistry();
 
-        Source sourceA = new Source(Source.Origin.LOCAL, "local");
-        Source sourceB = new Source(Source.Origin.REPLICATED, "rep1", 1);
-        Source sourceC = new Source(Source.Origin.REPLICATED, "rep1", 2);
-        Source sourceD = new Source(Source.Origin.REPLICATED, "rep2", 3);
+        StdSource sourceA = new StdSource(StdSource.Origin.LOCAL, "local");
+        StdSource sourceB = new StdSource(StdSource.Origin.REPLICATED, "rep1", 1);
+        StdSource sourceC = new StdSource(StdSource.Origin.REPLICATED, "rep1", 2);
+        StdSource sourceD = new StdSource(StdSource.Origin.REPLICATED, "rep2", 3);
 
         ChangeNotification<InstanceInfo> bufferStartA = SourcedStreamStateNotification.bufferStartNotification(finalInterest, sourceA);
         ChangeNotification<InstanceInfo> bufferEndA = SourcedStreamStateNotification.bufferEndNotification(finalInterest, sourceA);

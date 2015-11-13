@@ -5,16 +5,17 @@ import java.util.Iterator;
 import java.util.Set;
 
 import com.netflix.eureka2.Names;
+import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaInterestClientBuilder;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.NetworkAddress.ProtocolType;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.selector.ServiceSelector;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import com.netflix.eureka2.Server;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -34,6 +35,10 @@ import static org.mockito.Mockito.when;
  * @author Tomasz Bak
  */
 public class EurekaServerResolverTest extends AbstractResolverTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final Interest<InstanceInfo> READ_SERVERS_INTEREST = Interests.forFullRegistry();
     private static final ServiceSelector EUREKA_SELECTOR =
@@ -80,7 +85,7 @@ public class EurekaServerResolverTest extends AbstractResolverTest {
                 .thenAnswer(new Answer<Observable<ChangeNotification<InstanceInfo>>>() {
                     @Override
                     public Observable<ChangeNotification<InstanceInfo>> answer(InvocationOnMock invocation) throws Throwable {
-                        return  Observable.just(
+                        return Observable.just(
                                 new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, INSTANCE_1),
                                 ChangeNotification.<InstanceInfo>bufferSentinel()
                         );

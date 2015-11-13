@@ -5,10 +5,10 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.netflix.eureka2.model.instance.NetworkAddress;
-import com.netflix.eureka2.model.instance.NetworkAddress.NetworkAddressBuilder;
+import com.netflix.eureka2.model.instance.NetworkAddressBuilder;
 import com.netflix.eureka2.model.instance.NetworkAddress.ProtocolType;
 
-import static com.netflix.eureka2.model.instance.NetworkAddress.NetworkAddressBuilder.aNetworkAddress;
+import static com.netflix.eureka2.model.instance.StdNetworkAddress.NetworkAddressBuilderImpl.aNetworkAddress;
 
 /**
  * @author Tomasz Bak

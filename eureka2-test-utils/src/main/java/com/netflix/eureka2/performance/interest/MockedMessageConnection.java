@@ -1,16 +1,17 @@
 package com.netflix.eureka2.performance.interest;
 
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.protocol.interest.InterestRegistration;
+import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.protocol.interest.InterestRegistration;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
 /**
  * @author Tomasz Bak
  */
-public class MockedMessageConnection implements MessageConnection {
+public class MockedMessageConnection implements EurekaConnection {
 
     private final PublishSubject<Object> incomingSubject = PublishSubject.create();
     private final PerformanceScoreBoard scoreBoard;
@@ -20,7 +21,7 @@ public class MockedMessageConnection implements MessageConnection {
     }
 
     public void subscribeTo(Interest<InstanceInfo> interest) {
-        incomingSubject.onNext(new InterestRegistration(interest));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newInterestRegistration(interest));
     }
 
     @Override

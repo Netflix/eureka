@@ -1,20 +1,24 @@
 package com.netflix.eureka2.ext.aws;
 
+import java.util.concurrent.TimeUnit;
+
 import com.amazonaws.services.autoscaling.AmazonAutoScaling;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.netflix.eureka2.registry.ChangeNotificationObservable;
-import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
-import com.netflix.eureka2.registry.EurekaRegistrationProcessorStub;
-import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.aws.MockAutoScalingService;
+import com.netflix.eureka2.aws.MockS3Service;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.StdInstanceInfo;
+import com.netflix.eureka2.registry.ChangeNotificationObservable;
+import com.netflix.eureka2.registry.EurekaRegistrationProcessorStub;
+import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.server.registry.EvictionQuotaKeeper;
 import com.netflix.eureka2.server.registry.RegistrationChannelProcessorProvider;
 import com.netflix.eureka2.server.registry.RegistrationChannelProcessorProvider.OptionalOverridesService;
-import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.service.overrides.CompositeOverridesService;
 import com.netflix.eureka2.server.service.overrides.OverridesService;
-import com.netflix.eureka2.aws.MockAutoScalingService;
-import com.netflix.eureka2.aws.MockS3Service;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.utils.ExtCollections;
 import org.junit.After;
@@ -24,8 +28,6 @@ import rx.Observable;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import java.util.concurrent.TimeUnit;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -34,17 +36,21 @@ import static org.mockito.Mockito.when;
  */
 public class CombinedStatusOverridesTest {
 
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     private static final long REFRESH_INTERVAL_SEC = 30;
 
     private static final InstanceInfo SEED = SampleInstanceInfo.WebServer.builder()
             .withStatus(InstanceInfo.Status.UP).build();
 
-    private static final InstanceInfo IS_OOS = new InstanceInfo.Builder()
+    private static final InstanceInfo IS_OOS = new StdInstanceInfo.Builder()
             .withInstanceInfo(SEED).withStatus(InstanceInfo.Status.OUT_OF_SERVICE).build();
-    private static final InstanceInfo NOT_OOS = new InstanceInfo.Builder()
+    private static final InstanceInfo NOT_OOS = new StdInstanceInfo.Builder()
             .withInstanceInfo(SEED).withStatus(InstanceInfo.Status.UP).build();
 
-    private static final Source SOURCE = new Source(Source.Origin.LOCAL, "connection#1");
+    private static final StdSource SOURCE = new StdSource(StdSource.Origin.LOCAL, "connection#1");
 
     private final SelfInfoResolver selfInfoResolver = new SelfInfoResolver() {
         @Override

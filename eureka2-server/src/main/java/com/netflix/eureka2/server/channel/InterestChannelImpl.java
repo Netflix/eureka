@@ -2,25 +2,23 @@ package com.netflix.eureka2.server.channel;
 
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.channel.InterestChannel.STATE;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.model.notification.ModifyNotification;
-import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics.ChannelSubscriptionMonitor;
-import com.netflix.eureka2.protocol.EurekaProtocolError;
-import com.netflix.eureka2.protocol.common.AddInstance;
-import com.netflix.eureka2.protocol.common.DeleteInstance;
-import com.netflix.eureka2.protocol.common.StreamStateUpdate;
-import com.netflix.eureka2.protocol.interest.InterestRegistration;
-import com.netflix.eureka2.protocol.interest.UnregisterInterestSet;
-import com.netflix.eureka2.protocol.interest.UpdateInstanceInfo;
-import com.netflix.eureka2.registry.EurekaRegistryView;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.Delta;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.ModifyNotification;
+import com.netflix.eureka2.model.notification.StreamStateNotification;
+import com.netflix.eureka2.registry.EurekaRegistryView;
+import com.netflix.eureka2.spi.protocol.EurekaProtocolError;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.protocol.interest.InterestRegistration;
+import com.netflix.eureka2.spi.protocol.interest.UnregisterInterestSet;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.utils.rx.LoggingSubscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,13 +47,13 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
     private final InterestNotificationMultiplexer notificationMultiplexer;
     private final ChannelSubscriptionMonitor channelSubscriptionMonitor;
 
-    public InterestChannelImpl(final EurekaRegistryView<InstanceInfo> registry, final MessageConnection transport, final ServerInterestChannelMetrics metrics) {
+    public InterestChannelImpl(final EurekaRegistryView<InstanceInfo> registry, final EurekaConnection transport, final ServerInterestChannelMetrics metrics) {
         super(STATE.Idle, transport, metrics);
         this.metrics = metrics;
         this.registryView = registry;
         this.notificationMultiplexer = new InterestNotificationMultiplexer(registry);
         this.channelSubscriptionMonitor = new ChannelSubscriptionMonitor(metrics);
-        this.selfSource = new Source(Source.Origin.INTERESTED, "serverInterestChannel");
+        this.selfSource = InstanceModel.getDefaultModel().createSource(Source.Origin.INTERESTED, "serverInterestChannel");
         this.channelSubscriber = new LoggingSubscriber<>(logger, "channel");
 
         connectInputToLifecycle(transport.incoming())
@@ -183,9 +181,9 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
     private Observable<Void> sendNotification(ChangeNotification<InstanceInfo> notification) {
         switch (notification.getKind()) {
             case Add:
-                return transport.submitWithAck(new AddInstance(notification.getData()));
+                return transport.submitWithAck(ProtocolModel.getDefaultModel().newAddInstance(notification.getData()));
             case Delete:
-                return transport.submitWithAck(new DeleteInstance(notification.getData().getId()));
+                return transport.submitWithAck(ProtocolModel.getDefaultModel().newDeleteInstance(notification.getData().getId()));
             case Modify:
                 final ModifyNotification<InstanceInfo> modifyNotification = (ModifyNotification<InstanceInfo>) notification;
 
@@ -198,14 +196,14 @@ public class InterestChannelImpl extends AbstractHandlerChannel<STATE> implement
                 Observable<Void> toReturn = null;
                 for (final Delta<?> delta : modifyNotification.getDelta()) {
                     if (null == toReturn) {
-                        toReturn = transport.submitWithAck(new UpdateInstanceInfo(delta));
+                        toReturn = transport.submitWithAck(ProtocolModel.getDefaultModel().newUpdateInstanceInfo(delta));
                     } else {
-                        toReturn.concatWith(transport.submitWithAck(new UpdateInstanceInfo(delta)));
+                        toReturn.concatWith(transport.submitWithAck(ProtocolModel.getDefaultModel().newUpdateInstanceInfo(delta)));
                     }
                 }
                 return toReturn;
             case BufferSentinel:
-                return transport.submitWithAck(new StreamStateUpdate((StreamStateNotification<InstanceInfo>) notification));
+                return transport.submitWithAck(ProtocolModel.getDefaultModel().newStreamStateUpdate((StreamStateNotification<InstanceInfo>) notification));
         }
         return Observable.error(new IllegalArgumentException("Unknown change notification type: " +
                 notification.getKind()));

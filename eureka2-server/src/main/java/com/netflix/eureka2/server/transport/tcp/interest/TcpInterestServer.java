@@ -37,6 +37,6 @@ public class TcpInterestServer extends AbstractTcpServer {
                              @Named(Names.INTEREST) MetricEventsListenerFactory servoEventsListenerFactory,
                              TcpInterestHandler tcpDiscoveryHandler) {
         super(servoEventsListenerFactory, config, config.getInterestPort(),
-                EurekaTransports.interestPipeline(config.getCodec()), tcpDiscoveryHandler);
+                EurekaTransports.interestPipeline(), tcpDiscoveryHandler);
     }
 }

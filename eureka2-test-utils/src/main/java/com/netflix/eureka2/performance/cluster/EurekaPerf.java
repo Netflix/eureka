@@ -9,12 +9,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.toplogy.ServiceTopologyGenerator;
 import com.netflix.eureka2.model.toplogy.TopologyDataProviders;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment.EurekaDeploymentBuilder;

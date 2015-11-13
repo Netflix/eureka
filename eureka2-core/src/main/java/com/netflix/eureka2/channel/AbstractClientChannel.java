@@ -1,13 +1,12 @@
 package com.netflix.eureka2.channel;
 
 import com.netflix.eureka2.metric.StateMachineMetrics;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 
@@ -22,9 +21,9 @@ public abstract class AbstractClientChannel<STATE extends Enum<STATE>> extends A
 
     protected final TransportClient client;
 
-    private volatile MessageConnection connectionIfConnected;
+    private volatile EurekaConnection connectionIfConnected;
 
-    private final Observable<MessageConnection> singleConnection;
+    private final Observable<EurekaConnection> singleConnection;
 
     protected AbstractClientChannel(final STATE initState, final TransportClient client, StateMachineMetrics<STATE> metrics) {
         super(initState, metrics);
@@ -32,9 +31,9 @@ public abstract class AbstractClientChannel<STATE extends Enum<STATE>> extends A
 
         singleConnection = client.connect()
                 .take(1)
-                .map(new Func1<MessageConnection, MessageConnection>() {
+                .map(new Func1<EurekaConnection, EurekaConnection>() {
                     @Override
-                    public MessageConnection call(MessageConnection serverConnection) {
+                    public EurekaConnection call(EurekaConnection serverConnection) {
                         if (connectionIfConnected == null) {
                             connectionIfConnected = serverConnection;
                         }
@@ -69,7 +68,7 @@ public abstract class AbstractClientChannel<STATE extends Enum<STATE>> extends A
         return sb.toString();
     }
 
-    private void subscribeToConnectionLifecycle(MessageConnection connection) {
+    private void subscribeToConnectionLifecycle(EurekaConnection connection) {
         connection.lifecycleObservable().subscribe(new Subscriber<Void>() {
             @Override
             public void onCompleted() {
@@ -93,32 +92,32 @@ public abstract class AbstractClientChannel<STATE extends Enum<STATE>> extends A
      *
      * @return The one and only connection associated with this channel.
      */
-    protected Observable<MessageConnection> connect() {
+    protected Observable<EurekaConnection> connect() {
         return singleConnection;
     }
 
-    protected <T> Observable<Void> sendExpectAckOnConnection(MessageConnection connection, T message) {
+    protected <T> Observable<Void> sendExpectAckOnConnection(EurekaConnection connection, T message) {
         if (logger.isDebugEnabled()) {
             logger.debug("Sending message to the server: {}", message);
         }
         return subscribeToTransportSend(connection.submitWithAck(message), message.getClass().getSimpleName());
     }
 
-    protected <T> Observable<Void> sendOnConnection(MessageConnection connection, T message) {
+    protected <T> Observable<Void> sendOnConnection(EurekaConnection connection, T message) {
         if (logger.isDebugEnabled()) {
             logger.debug("Sending message to the server: {}", message);
         }
         return subscribeToTransportSend(connection.submit(message), message.getClass().getSimpleName());
     }
 
-    protected Observable<Void> sendErrorOnConnection(MessageConnection connection, Throwable throwable) {
+    protected Observable<Void> sendErrorOnConnection(EurekaConnection connection, Throwable throwable) {
         if (logger.isDebugEnabled()) {
             logger.debug("Sending error to the server: {}", throwable);
         }
         return subscribeToTransportSend(connection.onError(throwable), "error");
     }
 
-    protected Observable<Void> sendAckOnConnection(MessageConnection connection) {
+    protected Observable<Void> sendAckOnConnection(EurekaConnection connection) {
         if (logger.isDebugEnabled()) {
             logger.debug("Sending acknowledgment to the server");
         }

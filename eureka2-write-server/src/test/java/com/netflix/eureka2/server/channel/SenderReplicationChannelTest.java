@@ -3,13 +3,14 @@ package com.netflix.eureka2.server.channel;
 import java.util.Collections;
 
 import com.netflix.eureka2.channel.ReplicationChannel.STATE;
+import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
-import com.netflix.eureka2.protocol.common.AddInstance;
-import com.netflix.eureka2.protocol.common.DeleteInstance;
-import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.protocol.common.AddInstance;
+import com.netflix.eureka2.spi.protocol.common.DeleteInstance;
+import com.netflix.eureka2.spi.protocol.replication.ReplicationHelloReply;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,12 +25,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
-* @author Tomasz Bak
-*/
+ * @author Tomasz Bak
+ */
 public class SenderReplicationChannelTest extends AbstractReplicationChannelTest {
 
     private final TransportClient transportClient = mock(TransportClient.class);
-    private final MessageConnection connection = mock(MessageConnection.class);
+    private final EurekaConnection connection = mock(EurekaConnection.class);
     private final ReplaySubject<Void> connectionLifeCycle = ReplaySubject.create();
 
     private SenderReplicationChannel replicationChannel;
@@ -63,7 +64,7 @@ public class SenderReplicationChannelTest extends AbstractReplicationChannelTest
         // Test registration
         TestSubscriber<Void> replySubscriber = new TestSubscriber<>();
 
-        AddInstance message = new AddInstance(APP_INFO);
+        AddInstance message = ProtocolModel.getDefaultModel().newAddInstance(APP_INFO);
         when(connection.submit(message)).thenReturn(Observable.<Void>empty());
         replicationChannel.replicate(new ChangeNotification<>(Kind.Add, APP_INFO)).subscribe(replySubscriber);
 
@@ -80,7 +81,7 @@ public class SenderReplicationChannelTest extends AbstractReplicationChannelTest
         // Test unregistration
         TestSubscriber<Void> replySubscriber = new TestSubscriber<>();
 
-        DeleteInstance message = new DeleteInstance(APP_INFO.getId());
+        DeleteInstance message = ProtocolModel.getDefaultModel().newDeleteInstance(APP_INFO.getId());
         when(connection.submit(message)).thenReturn(Observable.<Void>empty());
         replicationChannel.replicate(new ChangeNotification<>(Kind.Delete, APP_INFO)).subscribe(replySubscriber);
 

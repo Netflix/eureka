@@ -2,7 +2,7 @@ package com.netflix.eureka2.channel;
 
 import com.netflix.eureka2.client.channel.RegistrationChannelImpl;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,8 +25,8 @@ public class AbstractClientChannelTest {
 
     private TestSubscriber<Void> testSubscriber;
 
-    private MessageConnection messageConnection1;
-    private MessageConnection messageConnection2;
+    private EurekaConnection messageConnection1;
+    private EurekaConnection messageConnection2;
 
     private AbstractClientChannel channel;
 
@@ -37,8 +37,8 @@ public class AbstractClientChannelTest {
 
         testSubscriber = new TestSubscriber<>();
 
-        messageConnection1 = mock(MessageConnection.class);
-        messageConnection2 = mock(MessageConnection.class);
+        messageConnection1 = mock(EurekaConnection.class);
+        messageConnection2 = mock(EurekaConnection.class);
         when(messageConnection1.lifecycleObservable()).thenReturn(connection1Lifecycle);
         when(messageConnection2.lifecycleObservable()).thenReturn(connection2Lifecycle);
         doAnswer(new Answer<Void>() {
@@ -56,7 +56,7 @@ public class AbstractClientChannelTest {
             }
         }).when(messageConnection1).shutdown(any(Throwable.class));
 
-        List<MessageConnection> messageConnections = Arrays.asList(messageConnection1, messageConnection2);
+        List<EurekaConnection> messageConnections = Arrays.asList(messageConnection1, messageConnection2);
 
         TransportClient transportClient = mock(TransportClient.class);
         when(transportClient.connect()).thenReturn(Observable.from(messageConnections));
@@ -66,9 +66,9 @@ public class AbstractClientChannelTest {
 
     @Test(timeout = 60000)
     public void testMultipleConnectReturnSameConnection() {
-        MessageConnection firstConnection = (MessageConnection) channel.connect().toBlocking().firstOrDefault(null);
+        EurekaConnection firstConnection = (EurekaConnection) channel.connect().toBlocking().firstOrDefault(null);
         // call again
-        MessageConnection secondConnection = (MessageConnection) channel.connect().toBlocking().firstOrDefault(null);
+        EurekaConnection secondConnection = (EurekaConnection) channel.connect().toBlocking().firstOrDefault(null);
 
         assertEquals(messageConnection1, firstConnection);
         assertEquals(messageConnection1, secondConnection);
@@ -78,7 +78,7 @@ public class AbstractClientChannelTest {
 
     @Test
     public void testOnCompleteOfUnderlyingConnectionOnCompleteChannel() {
-        MessageConnection connection = (MessageConnection) channel.connect().toBlocking().firstOrDefault(null);
+        EurekaConnection connection = (EurekaConnection) channel.connect().toBlocking().firstOrDefault(null);
         channel.asLifecycleObservable().subscribe(testSubscriber);
         connection.shutdown();
         testSubscriber.assertTerminalEvent();
@@ -87,7 +87,7 @@ public class AbstractClientChannelTest {
 
     @Test
     public void testOnErrorOfUnderlyingConnectionOnErrorChannel() {
-        MessageConnection connection = (MessageConnection) channel.connect().toBlocking().firstOrDefault(null);
+        EurekaConnection connection = (EurekaConnection) channel.connect().toBlocking().firstOrDefault(null);
         channel.asLifecycleObservable().subscribe(testSubscriber);
         connection.shutdown(new Exception("test: exception"));
         testSubscriber.assertTerminalEvent();

@@ -16,36 +16,8 @@
 
 package com.netflix.eureka2.transport;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import com.netflix.eureka2.codec.CodecType;
-import com.netflix.eureka2.codec.avro.EurekaAvroCodec;
-import com.netflix.eureka2.codec.avro.SchemaReflectData;
-import com.netflix.eureka2.codec.json.EurekaJsonCodec;
-import com.netflix.eureka2.protocol.common.Heartbeat;
-import com.netflix.eureka2.protocol.common.AddInstance;
-import com.netflix.eureka2.protocol.common.DeleteInstance;
-import com.netflix.eureka2.protocol.interest.DeltaDTO;
-import com.netflix.eureka2.protocol.interest.InterestRegistration;
-import com.netflix.eureka2.protocol.common.StreamStateUpdate;
-import com.netflix.eureka2.protocol.interest.UnregisterInterestSet;
-import com.netflix.eureka2.protocol.interest.UpdateInstanceInfo;
-import com.netflix.eureka2.protocol.registration.Register;
-import com.netflix.eureka2.protocol.registration.Unregister;
-import com.netflix.eureka2.protocol.replication.ReplicationHello;
-import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
-import com.netflix.eureka2.transport.codec.AbstractNettyCodec;
-import com.netflix.eureka2.transport.codec.DynamicNettyCodec;
-import com.netflix.eureka2.transport.codec.EurekaCodecWrapper;
-import com.netflix.eureka2.transport.utils.AvroUtils;
+import com.netflix.eureka2.spi.transport.EurekaTransportFactory;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
-import org.apache.avro.Schema;
-import rx.functions.Func1;
 
 /**
  * Communication endpoint factory methods.
@@ -54,96 +26,30 @@ import rx.functions.Func1;
  */
 public final class EurekaTransports {
 
-    public static final int DEFAULT_REGISTRATION_PORT = 12102;
-    public static final int DEFAULT_DISCOVERY_PORT = 12103;
-    public static final int DEFAULT_REPLICATION_PORT = 12104;
-
-    /*
-     * Registration protocol constants.
-     */
-    static final String REGISTRATION_SCHEMA_FILE = "registration-schema.avpr";
-    static final String REGISTRATION_ENVELOPE_TYPE = "com.netflix.eureka2.protocol.registration.RegistrationMessages";
-
-    static final Class<?>[] REGISTRATION_PROTOCOL_MODEL = {
-            Register.class, Unregister.class, Heartbeat.class
-    };
-    static final Set<Class<?>> REGISTRATION_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(REGISTRATION_PROTOCOL_MODEL));
-    static final Schema REGISTRATION_AVRO_SCHEMA = AvroUtils.loadSchema(REGISTRATION_SCHEMA_FILE, REGISTRATION_ENVELOPE_TYPE);
-
-    /*
-     * Replication protocol constants.
-     */
-    static final String REPLICATION_SCHEMA_FILE = "replication-schema.avpr";
-    static final String REPLICATION_ENVELOPE_TYPE = "com.netflix.eureka2.protocol.replication.ReplicationMessages";
-
-    static final Class<?>[] REPLICATION_PROTOCOL_MODEL = {
-            ReplicationHello.class, Heartbeat.class, ReplicationHelloReply.class,
-            AddInstance.class, DeleteInstance.class, StreamStateUpdate.class
-    };
-    static final Set<Class<?>> REPLICATION_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(REPLICATION_PROTOCOL_MODEL));
-    static final Schema REPLICATION_AVRO_SCHEMA = AvroUtils.loadSchema(REPLICATION_SCHEMA_FILE, REPLICATION_ENVELOPE_TYPE);
-
-    /*
-     * Discovery protocol constants.
-     */
-    static final String INTEREST_SCHEMA_FILE = "interest-schema.avpr";
-    static final String INTEREST_ENVELOPE_TYPE = "com.netflix.eureka2.protocol.interest.InterestMessage";
-
-    static final Class<?>[] INTEREST_PROTOCOL_MODEL = {
-            InterestRegistration.class, UnregisterInterestSet.class, Heartbeat.class,
-            AddInstance.class, DeleteInstance.class, UpdateInstanceInfo.class, StreamStateUpdate.class
-    };
-    static final Set<Class<?>> INTEREST_PROTOCOL_MODEL_SET = new HashSet<>(Arrays.asList(INTEREST_PROTOCOL_MODEL));
-    static final Schema INTEREST_AVRO_SCHEMA = AvroUtils.loadSchema(INTEREST_SCHEMA_FILE, INTEREST_ENVELOPE_TYPE);
-
-
-    /*
-     * func methods for creating protocol specific codecs
-     */
-
-    static final Func1<CodecType, AbstractNettyCodec> REGISTRATION_CODEC_FUNC = new Func1<CodecType, AbstractNettyCodec>() {
-        @Override
-        public AbstractNettyCodec call(CodecType codec) {
-            Map<Byte, AbstractNettyCodec> map = new HashMap<>();
-            map.put(CodecType.Avro.getVersion(), new EurekaCodecWrapper(new EurekaAvroCodec(REGISTRATION_PROTOCOL_MODEL_SET, REGISTRATION_AVRO_SCHEMA, new SchemaReflectData(REGISTRATION_AVRO_SCHEMA))));
-            map.put(CodecType.Json.getVersion(), new EurekaCodecWrapper(new EurekaJsonCodec(REGISTRATION_PROTOCOL_MODEL_SET)));
-            return new DynamicNettyCodec(REGISTRATION_PROTOCOL_MODEL_SET, Collections.unmodifiableMap(map), codec.getVersion());
-        }
-    };
-
-    static final Func1<CodecType, AbstractNettyCodec> REPLICATION_CODEC_FUNC = new Func1<CodecType, AbstractNettyCodec>() {
-        @Override
-        public AbstractNettyCodec call(CodecType codec) {
-            Map<Byte, AbstractNettyCodec> map = new HashMap<>();
-            map.put(CodecType.Avro.getVersion(), new EurekaCodecWrapper(new EurekaAvroCodec(REGISTRATION_PROTOCOL_MODEL_SET, REPLICATION_AVRO_SCHEMA, new SchemaReflectData(REPLICATION_AVRO_SCHEMA))));
-            map.put(CodecType.Json.getVersion(), new EurekaCodecWrapper(new EurekaJsonCodec(REGISTRATION_PROTOCOL_MODEL_SET)));
-            return new DynamicNettyCodec(REPLICATION_PROTOCOL_MODEL_SET, Collections.unmodifiableMap(map), codec.getVersion());
-        }
-    };
-
-    static final Func1<CodecType, AbstractNettyCodec> INTEREST_CODEC_FUNC = new Func1<CodecType, AbstractNettyCodec>() {
-        @Override
-        public AbstractNettyCodec call(CodecType codec) {
-            Map<Byte, AbstractNettyCodec> map = new HashMap<>();
-            map.put(CodecType.Avro.getVersion(), new EurekaCodecWrapper(new EurekaAvroCodec(REGISTRATION_PROTOCOL_MODEL_SET, INTEREST_AVRO_SCHEMA, new SchemaReflectData(INTEREST_AVRO_SCHEMA))));
-            map.put(CodecType.Json.getVersion(), new EurekaCodecWrapper(new EurekaJsonCodec(REGISTRATION_PROTOCOL_MODEL_SET)));
-            return new DynamicNettyCodec(INTEREST_PROTOCOL_MODEL_SET, Collections.unmodifiableMap(map), codec.getVersion());
-        }
-    };
-
+    private static volatile EurekaTransportFactory defaultTransportFactory;
 
     private EurekaTransports() {
     }
 
-    public static PipelineConfigurator<Object, Object> registrationPipeline(CodecType codec) {
-        return new EurekaPipelineConfigurator(REGISTRATION_CODEC_FUNC, codec);
+    public static PipelineConfigurator<Object, Object> registrationPipeline() {
+        return defaultTransportFactory.registrationPipeline();
     }
 
-    public static PipelineConfigurator<Object, Object> replicationPipeline(CodecType codec) {
-        return new EurekaPipelineConfigurator(REPLICATION_CODEC_FUNC, codec);
+    public static PipelineConfigurator<Object, Object> replicationPipeline() {
+        return defaultTransportFactory.replicationPipeline();
     }
 
-    public static PipelineConfigurator<Object, Object> interestPipeline(CodecType codec) {
-        return new EurekaPipelineConfigurator(INTEREST_CODEC_FUNC, codec);
+    public static PipelineConfigurator<Object, Object> interestPipeline() {
+        return defaultTransportFactory.interestPipeline();
+    }
+
+    public static EurekaTransportFactory getTransportFactory() {
+        return defaultTransportFactory;
+    }
+
+    public static EurekaTransportFactory setTransportFactory(EurekaTransportFactory newTransportFactory) {
+        EurekaTransportFactory previous = defaultTransportFactory;
+        defaultTransportFactory = newTransportFactory;
+        return previous;
     }
 }

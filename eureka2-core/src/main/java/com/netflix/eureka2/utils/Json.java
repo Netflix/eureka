@@ -19,15 +19,15 @@ package com.netflix.eureka2.utils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import org.codehaus.jackson.annotate.JsonAutoDetect.Visibility;
-import org.codehaus.jackson.annotate.JsonMethod;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig.Feature;
-import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;
 
 /**
  * A set of helper methods to convert to/from JSON format.
@@ -39,20 +39,20 @@ public final class Json {
     private static final ObjectMapper FORMATTED_MAPPER = new ObjectMapper();
 
     static {
-        MAPPER.setVisibility(JsonMethod.FIELD, Visibility.ANY);
-        MAPPER.setVisibility(JsonMethod.GETTER, Visibility.NONE);
-        MAPPER.setVisibility(JsonMethod.IS_GETTER, Visibility.NONE);
-        MAPPER.setVisibility(JsonMethod.SETTER, Visibility.NONE);
-        MAPPER.configure(Feature.FAIL_ON_EMPTY_BEANS, false);
-        MAPPER.setSerializationInclusion(Inclusion.NON_NULL);
+        MAPPER.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
+        MAPPER.setVisibility(PropertyAccessor.GETTER, Visibility.NONE);
+        MAPPER.setVisibility(PropertyAccessor.IS_GETTER, Visibility.NONE);
+        MAPPER.setVisibility(PropertyAccessor.SETTER, Visibility.NONE);
+        MAPPER.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        MAPPER.setSerializationInclusion(Include.NON_NULL);
 
-        FORMATTED_MAPPER.setVisibility(JsonMethod.FIELD, Visibility.ANY);
-        FORMATTED_MAPPER.setVisibility(JsonMethod.GETTER, Visibility.NONE);
-        FORMATTED_MAPPER.setVisibility(JsonMethod.IS_GETTER, Visibility.NONE);
-        FORMATTED_MAPPER.setVisibility(JsonMethod.SETTER, Visibility.NONE);
-        FORMATTED_MAPPER.configure(Feature.FAIL_ON_EMPTY_BEANS, false);
-        FORMATTED_MAPPER.setSerializationInclusion(Inclusion.NON_NULL);
-        FORMATTED_MAPPER.configure(Feature.INDENT_OUTPUT, true);
+        FORMATTED_MAPPER.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
+        FORMATTED_MAPPER.setVisibility(PropertyAccessor.GETTER, Visibility.NONE);
+        FORMATTED_MAPPER.setVisibility(PropertyAccessor.IS_GETTER, Visibility.NONE);
+        FORMATTED_MAPPER.setVisibility(PropertyAccessor.SETTER, Visibility.NONE);
+        FORMATTED_MAPPER.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        FORMATTED_MAPPER.setSerializationInclusion(Include.NON_NULL);
+        FORMATTED_MAPPER.configure(SerializationFeature.INDENT_OUTPUT, true);
     }
 
     private Json() {

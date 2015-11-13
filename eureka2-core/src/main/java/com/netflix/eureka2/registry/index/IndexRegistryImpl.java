@@ -1,8 +1,8 @@
 package com.netflix.eureka2.registry.index;
 
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.MultipleInterests;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.MultipleInterests;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import rx.Observable;
 

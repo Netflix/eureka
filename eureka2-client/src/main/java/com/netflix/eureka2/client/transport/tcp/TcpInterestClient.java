@@ -30,6 +30,6 @@ import com.netflix.eureka2.transport.TransportClient;
  */
 public class TcpInterestClient extends ResolverBasedTransportClient {
     public TcpInterestClient(String clientId, EurekaTransportConfig config, ServerResolver resolver, MessageConnectionMetrics metrics) {
-        super(clientId, config, resolver, EurekaTransports.interestPipeline(config.getCodec()), metrics);
+        super(clientId, config, resolver, EurekaTransports.interestPipeline(), metrics);
     }
 }

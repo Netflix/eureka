@@ -1,5 +1,10 @@
 package com.netflix.eureka2;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import com.google.gson.Gson;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -12,11 +17,6 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action1;
 import rx.subjects.BehaviorSubject;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 @Singleton
 public class EurekaServerStatusHandler {
@@ -59,7 +59,8 @@ public class EurekaServerStatusHandler {
     public Observable<Void> buildWebSocketResponse(final ObservableConnection<WebSocketFrame, WebSocketFrame> webSocketConn) {
         registryBehaviorSubject.subscribe(new Subscriber<List<InstanceInfo>>() {
             @Override
-            public void onCompleted() {}
+            public void onCompleted() {
+            }
 
             @Override
             public void onError(Throwable e) {

@@ -1,11 +1,14 @@
 package com.netflix.eureka2.ext.aws;
 
+import java.util.concurrent.TimeUnit;
+
 import com.amazonaws.services.autoscaling.AmazonAutoScaling;
 import com.amazonaws.services.autoscaling.model.DescribeAutoScalingGroupsRequest;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
-import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.aws.MockAutoScalingService;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.After;
 import org.junit.Before;
@@ -13,8 +16,6 @@ import org.junit.Test;
 import rx.Observable;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
-
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -29,6 +30,10 @@ import static org.mockito.Mockito.when;
  * @author Tomasz Bak
  */
 public class AsgStatusOverridesViewTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final long REFRESH_INTERVAL_SEC = 30;
 

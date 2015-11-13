@@ -12,10 +12,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.model.toplogy.TopologyFunctions;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.toplogy.TopologyFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;

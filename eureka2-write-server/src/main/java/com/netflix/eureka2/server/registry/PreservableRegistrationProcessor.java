@@ -1,5 +1,7 @@
 package com.netflix.eureka2.server.registry;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -7,14 +9,15 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka2.config.EurekaRegistryConfig;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.Sourced;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.SourcedChangeNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.model.Sourced;
-import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.utils.rx.LoggingSubscriber;
 import com.netflix.eureka2.utils.functions.RxFunctions;
+import com.netflix.eureka2.utils.rx.LoggingSubscriber;
 import com.netflix.eureka2.utils.rx.SettableSubscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +28,6 @@ import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.subjects.BehaviorSubject;
 import rx.subjects.PublishSubject;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
 
 /**
  * @author Tomasz Bak
@@ -224,7 +224,7 @@ public class PreservableRegistrationProcessor implements EurekaRegistrationProce
     }
 
     private static void unregisterAndComplete(Registrant registrant) {
-        InstanceInfo infoForDelete = new InstanceInfo.Builder()
+        InstanceInfo infoForDelete = InstanceModel.getDefaultModel().newInstanceInfo()
                 .withId(registrant.source.getName())
                 .build();
         registrant.settableSubscriber.onNext(new SourcedChangeNotification<>(

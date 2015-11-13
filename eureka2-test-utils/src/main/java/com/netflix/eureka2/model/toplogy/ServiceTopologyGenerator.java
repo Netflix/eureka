@@ -8,8 +8,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
 
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 
 /**

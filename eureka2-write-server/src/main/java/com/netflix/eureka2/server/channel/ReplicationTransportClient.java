@@ -19,7 +19,7 @@ package com.netflix.eureka2.server.channel;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.transport.EurekaTransports;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
@@ -56,18 +56,18 @@ public class ReplicationTransportClient implements TransportClient {
         this.address = address;
         this.metrics = metrics;
         this.rxClient = RxNetty.newTcpClientBuilder(address.getHost(), address.getPort())
-                .pipelineConfigurator(EurekaTransports.replicationPipeline(config.getCodec()))
+                .pipelineConfigurator(EurekaTransports.replicationPipeline())
                 .withNoConnectionPooling()  // never pool as the address may be bound to different servers in the cloud
                 .build();
     }
 
     @Override
-    public Observable<MessageConnection> connect() {
+    public Observable<EurekaConnection> connect() {
         return rxClient.connect()
                 .take(1)
-                .map(new Func1<ObservableConnection<Object, Object>, MessageConnection>() {
+                .map(new Func1<ObservableConnection<Object, Object>, EurekaConnection>() {
                     @Override
-                    public MessageConnection call(ObservableConnection<Object, Object> connection) {
+                    public EurekaConnection call(ObservableConnection<Object, Object> connection) {
                         return new SelfClosingConnection(
                                 new HeartBeatConnection(
                                         new BaseMessageConnection("replicationClient", connection, metrics),

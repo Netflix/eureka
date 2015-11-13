@@ -4,18 +4,24 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 /**
  * @author Tomasz Bak
  */
 public class ServiceTopologyGeneratorTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final ApplicationProfile BIG_APP_PROFILE = new ApplicationProfile("bigApp", 10, 1);
     private static final ApplicationProfile SMALL_APP_PROFILE = new ApplicationProfile("smallApp", 2, 10);

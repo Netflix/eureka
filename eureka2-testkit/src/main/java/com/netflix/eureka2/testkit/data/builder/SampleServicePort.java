@@ -20,7 +20,8 @@ import java.util.HashSet;
 
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.model.instance.ServicePort;
-import com.netflix.eureka2.transport.EurekaTransports;
+import com.netflix.eureka2.model.instance.StdServicePort;
+import com.netflix.eureka2.spi.transport.EurekaTransportFactory;
 import com.netflix.eureka2.utils.ExtCollections;
 
 /**
@@ -30,32 +31,32 @@ public enum SampleServicePort {
 
     HttpPort() {
         @Override
-        public ServicePort build() {
-            return new ServicePort("WebServer", 80, false);
+        public StdServicePort build() {
+            return new StdServicePort("WebServer", 80, false);
         }
     },
     HttpsPort() {
         @Override
-        public ServicePort build() {
-            return new ServicePort("WebServer", 443, true);
+        public StdServicePort build() {
+            return new StdServicePort("WebServer", 443, true);
         }
     },
     EurekaRegistrationPort() {
         @Override
-        public ServicePort build() {
-            return new ServicePort(Names.REGISTRATION, EurekaTransports.DEFAULT_REGISTRATION_PORT, false);
+        public StdServicePort build() {
+            return new StdServicePort(Names.REGISTRATION, EurekaTransportFactory.DEFAULT_REGISTRATION_PORT, false);
         }
     },
     EurekaDiscoveryPort() {
         @Override
-        public ServicePort build() {
-            return new ServicePort(Names.INTEREST, EurekaTransports.DEFAULT_DISCOVERY_PORT, false);
+        public StdServicePort build() {
+            return new StdServicePort(Names.INTEREST, EurekaTransportFactory.DEFAULT_DISCOVERY_PORT, false);
         }
     },
     EurekaReplicationPort() {
         @Override
-        public ServicePort build() {
-            return new ServicePort(Names.REPLICATION, EurekaTransports.DEFAULT_REPLICATION_PORT, false);
+        public StdServicePort build() {
+            return new StdServicePort(Names.REPLICATION, EurekaTransportFactory.DEFAULT_REPLICATION_PORT, false);
         }
     };
 

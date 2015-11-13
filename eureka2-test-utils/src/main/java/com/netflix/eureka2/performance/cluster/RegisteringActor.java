@@ -7,10 +7,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
-import com.netflix.eureka2.model.toplogy.TopologyFunctions;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.toplogy.TopologyFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -63,7 +64,7 @@ public class RegisteringActor extends ClientActor {
     public void start() {
         final long startTime = scheduler.now();
 
-        final InstanceInfo taggedInstanceInfo = new InstanceInfo.Builder()
+        final InstanceInfo taggedInstanceInfo = new StdInstanceInfo.Builder()
                 .withInstanceInfo(selfInfo)
                 .withMetaData(TopologyFunctions.TIME_STAMP_KEY, Long.toString(startTime))
                 .build();

@@ -2,7 +2,7 @@ package com.netflix.eureka2.transport.base;
 
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
@@ -22,7 +22,7 @@ public class SelfClosingConnectionTest {
     private static final long LIFECYCLE_DURATION_SEC = 30;
 
     private final TestScheduler testScheduler = Schedulers.test();
-    private final MessageConnection connectionDelegate = mock(MessageConnection.class);
+    private final EurekaConnection connectionDelegate = mock(EurekaConnection.class);
 
     private SelfClosingConnection selfClosingConnection;
     private final PublishSubject<Void> lifecycleSubject = PublishSubject.create();

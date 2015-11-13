@@ -30,6 +30,6 @@ import com.netflix.eureka2.transport.TransportClient;
  */
 public class TcpRegistrationClient extends ResolverBasedTransportClient {
     public TcpRegistrationClient(String clientId, EurekaTransportConfig config, ServerResolver resolver, MessageConnectionMetrics metrics) {
-        super(clientId, config, resolver, EurekaTransports.registrationPipeline(config.getCodec()), metrics);
+        super(clientId, config, resolver, EurekaTransports.registrationPipeline(), metrics);
     }
 }

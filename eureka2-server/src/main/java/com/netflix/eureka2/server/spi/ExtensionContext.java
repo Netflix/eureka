@@ -20,8 +20,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ServiceLoader;
 
-import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 
 /**

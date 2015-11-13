@@ -1,8 +1,8 @@
 package com.netflix.eureka2.server.registry;
 
 import com.netflix.eureka2.EurekaCloseable;
-import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import rx.Observable;
 
 /**
@@ -15,5 +15,4 @@ public interface EurekaRegistrationProcessor<T> extends EurekaCloseable {
     Observable<Integer> sizeObservable();
 
     int size();
-
 }

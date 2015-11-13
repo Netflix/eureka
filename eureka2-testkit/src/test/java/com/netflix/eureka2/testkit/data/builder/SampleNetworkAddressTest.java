@@ -2,11 +2,12 @@ package com.netflix.eureka2.testkit.data.builder;
 
 import java.util.Iterator;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.NetworkAddress;
 import com.netflix.eureka2.model.instance.NetworkAddress.ProtocolType;
 import org.junit.Test;
 
-import static com.netflix.eureka2.model.instance.NetworkAddress.NetworkAddressBuilder.aNetworkAddress;
+import static com.netflix.eureka2.model.instance.StdNetworkAddress.NetworkAddressBuilderImpl.aNetworkAddress;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -15,6 +16,10 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 public class SampleNetworkAddressTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     @Test(timeout = 60000)
     public void testGeneratesSubsequentIpAddresses() throws Exception {

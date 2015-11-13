@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.selector.ServiceSelector;
 import com.netflix.eureka2.server.audit.kafka.config.KafkaAuditServiceConfig;

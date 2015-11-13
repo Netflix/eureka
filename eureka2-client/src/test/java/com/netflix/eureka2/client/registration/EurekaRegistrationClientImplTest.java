@@ -13,9 +13,11 @@ import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.channel.RegistrationChannelFactory;
 import com.netflix.eureka2.client.channel.RegistrationChannelImpl;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import org.junit.After;
 import org.junit.Before;
@@ -42,6 +44,10 @@ import static org.mockito.Mockito.when;
  */
 public class EurekaRegistrationClientImplTest {
 
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     private static final int RETRY_WAIT_MILLIS = 10;
 
     private final TestScheduler testScheduler = Schedulers.test();
@@ -60,7 +66,7 @@ public class EurekaRegistrationClientImplTest {
 
     @Before
     public void setUp() {
-        InstanceInfo.Builder seed1 = SampleInstanceInfo.DiscoveryServer.builder()
+        InstanceInfoBuilder seed1 = SampleInstanceInfo.DiscoveryServer.builder()
                 .withId("id1")
                 .withApp("app1");
 
@@ -390,7 +396,7 @@ public class EurekaRegistrationClientImplTest {
 
 
     private static RegistrationChannel newAlwaysSuccessChannel(Integer id) {
-        MessageConnection messageConnection = newMockMessageConnection();
+        EurekaConnection messageConnection = newMockMessageConnection();
         when(messageConnection.submitWithAck(anyObject())).thenReturn(Observable.<Void>empty());
 
         TransportClient transportClient = mock(TransportClient.class);
@@ -402,7 +408,7 @@ public class EurekaRegistrationClientImplTest {
     }
 
     private static RegistrationChannel newAlwaysFailChannel(Integer id) {
-        MessageConnection messageConnection = newMockMessageConnection();
+        EurekaConnection messageConnection = newMockMessageConnection();
         when(messageConnection.submitWithAck(anyObject())).thenReturn(Observable.<Void>error(new Exception("test: registration error")));
 
         TransportClient transportClient = mock(TransportClient.class);
@@ -414,7 +420,7 @@ public class EurekaRegistrationClientImplTest {
     }
 
     private RegistrationChannel newTimedFailChannel(Integer id, int failAfterMillis) {
-        MessageConnection messageConnection = newMockMessageConnection();
+        EurekaConnection messageConnection = newMockMessageConnection();
         when(messageConnection.submitWithAck(anyObject())).thenReturn(Observable.<Void>empty());
 
         TransportClient transportClient = mock(TransportClient.class);
@@ -440,9 +446,9 @@ public class EurekaRegistrationClientImplTest {
         return new TestRegistrationChannel(channel, id);
     }
 
-    private static MessageConnection newMockMessageConnection() {
+    private static EurekaConnection newMockMessageConnection() {
         final ReplaySubject<Void> lifecycleSubject = ReplaySubject.create();
-        MessageConnection messageConnection = mock(MessageConnection.class);
+        EurekaConnection messageConnection = mock(EurekaConnection.class);
         when(messageConnection.lifecycleObservable()).thenReturn(lifecycleSubject);
         return messageConnection;
     }

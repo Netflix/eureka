@@ -2,7 +2,7 @@ package com.netflix.eureka2.client.resolver;
 
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.Server;
 import rx.functions.Action0;
 

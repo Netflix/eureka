@@ -16,15 +16,19 @@
 
 package com.netflix.eureka2.server.channel;
 
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.model.notification.ModifyNotification;
-import com.netflix.eureka2.interests.MultipleInterests;
-import com.netflix.eureka2.registry.EurekaRegistry;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
+
+import com.netflix.eureka2.model.InterestModel;
 import com.netflix.eureka2.model.instance.Delta;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
+import com.netflix.eureka2.model.notification.ModifyNotification;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.testkit.data.builder.SampleDelta;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.After;
@@ -35,10 +39,6 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import rx.observers.TestSubscriber;
 import rx.subjects.ReplaySubject;
-
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
 
 import static com.netflix.eureka2.utils.ExtCollections.asSet;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -145,7 +145,7 @@ public class InterestNotificationMultiplexerTest {
             for (int i = 0; i < controllers.length; i++) {
                 interests[i] = controllers[i].interest;
             }
-            multiplexer.update(new MultipleInterests<>(interests));
+            multiplexer.update(InterestModel.getDefaultModel().newMultipleInterests(interests));
         }
     }
 

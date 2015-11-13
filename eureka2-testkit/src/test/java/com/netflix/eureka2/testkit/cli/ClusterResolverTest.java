@@ -2,7 +2,8 @@ package com.netflix.eureka2.testkit.cli;
 
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.cli.bootstrap.ClusterResolver;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
@@ -22,6 +23,10 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 public class ClusterResolverTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     @Rule
     public final EurekaDeploymentResource deploymentResource = anEurekaDeploymentResource(1, 1).build();

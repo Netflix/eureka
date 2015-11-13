@@ -24,11 +24,13 @@ import com.netflix.appinfo.InstanceInfo.PortType;
 import com.netflix.appinfo.LeaseInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.datacenter.AwsDataCenterInfo;
-import com.netflix.eureka2.model.datacenter.BasicDataCenterInfo;
 import com.netflix.eureka2.model.datacenter.DataCenterInfo;
+import com.netflix.eureka2.model.datacenter.DataCenterInfoBuilder;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
+import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.model.instance.NetworkAddress;
 import com.netflix.eureka2.model.instance.NetworkAddress.ProtocolType;
 import com.netflix.eureka2.model.instance.ServicePort;
@@ -101,18 +103,18 @@ public final class Eureka1ModelConverters {
         builder.addMetadata(MetaDataKey.instanceType, v2DataCenterInfo.getInstanceType());
 
         builder.addMetadata(MetaDataKey.localIpv4, v2DataCenterInfo.getPrivateAddress() == null
-                        ? ""
-                        : v2DataCenterInfo.getPrivateAddress().getIpAddress()
+                ? ""
+                : v2DataCenterInfo.getPrivateAddress().getIpAddress()
         );
 
         builder.addMetadata(MetaDataKey.publicHostname, v2DataCenterInfo.getPublicAddress() == null
-                        ? ""
-                        : v2DataCenterInfo.getPublicAddress().getHostName()
+                ? ""
+                : v2DataCenterInfo.getPublicAddress().getHostName()
         );
 
         builder.addMetadata(MetaDataKey.publicIpv4, v2DataCenterInfo.getPublicAddress() == null
-                        ? ""
-                        : v2DataCenterInfo.getPublicAddress().getIpAddress()
+                ? ""
+                : v2DataCenterInfo.getPublicAddress().getIpAddress()
         );
 
         return builder.build();
@@ -285,12 +287,12 @@ public final class Eureka1ModelConverters {
     }
 
     public static DataCenterInfo toEureka2xDataCenterInfo(com.netflix.appinfo.DataCenterInfo v1DataCenterInfo) {
-        DataCenterInfo.DataCenterInfoBuilder<?> builder;
+        DataCenterInfoBuilder<?> builder;
 
         if (v1DataCenterInfo instanceof AmazonInfo) {
             AmazonInfo v1Info = (AmazonInfo) v1DataCenterInfo;
 
-            builder = new AwsDataCenterInfo.Builder()
+            builder = InstanceModel.getDefaultModel().newAwsDataCenterInfo()
                     .withZone(v1Info.get(AmazonInfo.MetaDataKey.availabilityZone))
                     .withAmiId(v1Info.get(AmazonInfo.MetaDataKey.amiId))
                     .withInstanceId(v1Info.get(AmazonInfo.MetaDataKey.instanceId))
@@ -299,14 +301,14 @@ public final class Eureka1ModelConverters {
                     .withPublicIPv4(v1Info.get(AmazonInfo.MetaDataKey.publicIpv4))
                     .withPublicHostName(v1Info.get(AmazonInfo.MetaDataKey.publicHostname));
         } else {
-            builder = new BasicDataCenterInfo.Builder<>()
+            builder = InstanceModel.getDefaultModel().newBasicDataCenterInfo()
                     .withName(v1DataCenterInfo.getName().name());
         }
         return builder.build();
     }
 
     public static InstanceInfo toEureka2xInstanceInfo(com.netflix.appinfo.InstanceInfo v1InstanceInfo) {
-        InstanceInfo.Builder builder = new InstanceInfo.Builder()
+        InstanceInfoBuilder builder = InstanceModel.getDefaultModel().newInstanceInfo()
                 .withId(v1InstanceInfo.getAppName() + '_' + v1InstanceInfo.getId())  // instanceId is not unique for v1Data
                 .withAppGroup(v1InstanceInfo.getAppGroupName())
                 .withApp(v1InstanceInfo.getAppName())
@@ -322,7 +324,10 @@ public final class Eureka1ModelConverters {
 
         HashSet<ServicePort> servicePorts = toServicePortSet(v1InstanceInfo.getMetadata());
         if (servicePorts == null) {
-            servicePorts = asSet(new ServicePort(v1InstanceInfo.getPort(), false), new ServicePort(v1InstanceInfo.getSecurePort(), true));
+            servicePorts = asSet(
+                    InstanceModel.getDefaultModel().newServicePort(v1InstanceInfo.getPort(), false),
+                    InstanceModel.getDefaultModel().newServicePort(v1InstanceInfo.getSecurePort(), true)
+            );
         }
         builder.withPorts(servicePorts);
         return builder.build();
@@ -400,7 +405,7 @@ public final class Eureka1ModelConverters {
             if (servicePorts == null) {
                 servicePorts = new HashSet<>();
             }
-            servicePorts.add(new ServicePort(name, port, secure, labels));
+            servicePorts.add(InstanceModel.getDefaultModel().newServicePort(name, port, secure, labels));
         }
         return servicePorts;
     }

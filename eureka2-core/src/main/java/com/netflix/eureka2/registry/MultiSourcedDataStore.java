@@ -1,10 +1,10 @@
 package com.netflix.eureka2.registry;
 
-import com.netflix.eureka2.EurekaCloseable;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.model.Source;
-
 import java.util.Collection;
+
+import com.netflix.eureka2.EurekaCloseable;
+import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 
 /**
  * @author David Liu

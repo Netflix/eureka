@@ -19,8 +19,9 @@ package com.netflix.eureka2.transport.base;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.netflix.eureka2.protocol.common.Heartbeat;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.protocol.common.Heartbeat;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -33,7 +34,7 @@ import rx.subjects.PublishSubject;
 import static com.netflix.eureka2.utils.ExceptionUtils.trimStackTraceof;
 
 /**
- * A decorator for {@link MessageConnection} which sends heartbeat messages, to monitor
+ * A decorator for {@link EurekaConnection} which sends heartbeat messages, to monitor
  * connection health.
  *
  * For every heartbeat received, this counter is decremented by 1 and for every heartbeat check tick it is
@@ -52,13 +53,13 @@ import static com.netflix.eureka2.utils.ExceptionUtils.trimStackTraceof;
  *
  * @author Tomasz Bak
  */
-public class HeartBeatConnection implements MessageConnection {
+public class HeartBeatConnection implements EurekaConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(HeartBeatConnection.class);
 
     protected static final IllegalStateException MISSING_HEARTBEAT_EXCEPTION = trimStackTraceof(new IllegalStateException("too many heartbeats missed"));
 
-    private final MessageConnection delegate;
+    private final EurekaConnection delegate;
     private final long heartbeatIntervalMs;
     private final long tolerance;
     private final Scheduler scheduler;
@@ -68,7 +69,7 @@ public class HeartBeatConnection implements MessageConnection {
 
     private final Subscription ackInputSubscription;
 
-    public HeartBeatConnection(MessageConnection delegate, long heartbeatIntervalMs, long tolerance, Scheduler scheduler) {
+    public HeartBeatConnection(EurekaConnection delegate, long heartbeatIntervalMs, long tolerance, Scheduler scheduler) {
         this.delegate = delegate;
         this.heartbeatIntervalMs = heartbeatIntervalMs;
         this.tolerance = tolerance;
@@ -202,7 +203,7 @@ public class HeartBeatConnection implements MessageConnection {
                 shutdown(MISSING_HEARTBEAT_EXCEPTION);
             } else {
                 logger.debug("Sending heartbeat message in the connection {}", delegate.name());
-                submit(Heartbeat.INSTANCE).subscribe(new Subscriber<Void>() {
+                submit(ProtocolModel.getDefaultModel().newHeartbeat()).subscribe(new Subscriber<Void>() {
                     @Override
                     public void onCompleted() {
                     }

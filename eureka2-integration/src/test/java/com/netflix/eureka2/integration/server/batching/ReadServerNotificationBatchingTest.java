@@ -6,12 +6,13 @@ import java.util.concurrent.TimeUnit;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.functions.InterestFunctions;
 import com.netflix.eureka2.integration.EurekaDeploymentClients;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
@@ -32,6 +33,10 @@ import static org.junit.Assert.assertThat;
  */
 @Category({IntegrationTest.class, LongRunningTest.class})
 public class ReadServerNotificationBatchingTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final int REGISTRY_INITIAL_SIZE = 100;
 

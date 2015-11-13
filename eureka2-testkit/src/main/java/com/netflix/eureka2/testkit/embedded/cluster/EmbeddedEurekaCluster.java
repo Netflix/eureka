@@ -3,10 +3,10 @@ package com.netflix.eureka2.testkit.embedded.cluster;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.registry.EurekaRegistryView;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.server.AbstractEurekaServer;
 import rx.Observable;
 import rx.subjects.PublishSubject;

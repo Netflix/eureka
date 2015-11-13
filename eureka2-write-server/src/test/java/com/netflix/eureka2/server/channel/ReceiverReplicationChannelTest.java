@@ -19,20 +19,21 @@ package com.netflix.eureka2.server.channel;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.channel.ReplicationChannel.STATE;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
-import com.netflix.eureka2.protocol.common.AddInstance;
-import com.netflix.eureka2.protocol.common.DeleteInstance;
-import com.netflix.eureka2.protocol.replication.ReplicationHello;
-import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
-import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Sourced;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.model.instance.StdInstanceInfo;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.protocol.replication.ReplicationHello;
+import com.netflix.eureka2.spi.protocol.replication.ReplicationHelloReply;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -59,7 +60,7 @@ import static org.mockito.Mockito.when;
  */
 public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTest {
 
-    private final MessageConnection transport = mock(MessageConnection.class);
+    private final EurekaConnection transport = mock(EurekaConnection.class);
     private final PublishSubject<Void> transportLifeCycle = PublishSubject.create();
 
     private final SelfInfoResolver SelfIdentityService = mock(SelfInfoResolver.class);
@@ -73,7 +74,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
 
     // Argument captors
     private final ArgumentCaptor<InstanceInfo> infoCaptor = ArgumentCaptor.forClass(InstanceInfo.class);
-    private final ArgumentCaptor<Source> sourceCaptor = ArgumentCaptor.forClass(Source.class);
+    private final ArgumentCaptor<StdSource> sourceCaptor = ArgumentCaptor.forClass(StdSource.class);
 
     @Before
     public void setUp() throws Exception {
@@ -85,7 +86,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         when(SelfIdentityService.resolve()).thenReturn(Observable.just(RECEIVER_INFO));
 
         final ReplaySubject<ChangeNotification<InstanceInfo>> dataSubject = ReplaySubject.create();
-        when(registry.connect(any(Source.class), any(Observable.class))).thenAnswer(new Answer<Observable<Void>>() {
+        when(registry.connect(any(StdSource.class), any(Observable.class))).thenAnswer(new Answer<Observable<Void>>() {
             @Override
             public Observable<Void> answer(InvocationOnMock invocation) throws Throwable {
                 Observable<ChangeNotification<InstanceInfo>> dataStream = (Observable<ChangeNotification<InstanceInfo>>) invocation.getArguments()[1];
@@ -94,7 +95,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
                 return Observable.never();
             }
         });
-        when(registry.forInterest(any(Interest.class), any(Source.SourceMatcher.class))).thenAnswer(new Answer<Observable<ChangeNotification<InstanceInfo>>>() {
+        when(registry.forInterest(any(Interest.class), any(StdSource.SourceMatcher.class))).thenAnswer(new Answer<Observable<ChangeNotification<InstanceInfo>>>() {
             @Override
             public Observable<ChangeNotification<InstanceInfo>> answer(InvocationOnMock invocation) throws Throwable {
                 return dataSubject;
@@ -127,7 +128,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         ChangeNotification<InstanceInfo> notification = dataSubscriber.takeNext(2, TimeUnit.SECONDS);
         assertThat(notification.getKind(), is(ChangeNotification.Kind.Add));
         assertThat(notification.getData(), is(APP_INFO));
-        assertThat(((Sourced)notification).getSource(), is(replicationChannel.getSource()));
+        assertThat(((Sourced) notification).getSource(), is(replicationChannel.getSource()));
     }
 
     @Test(timeout = 60000)
@@ -139,8 +140,8 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         assertThat(notification.getData(), is(APP_INFO));
 
         // Now update the record
-        InstanceInfo infoUpdate = new InstanceInfo.Builder().withInstanceInfo(APP_INFO).withApp("myNewName").build();
-        incomingSubject.onNext(new AddInstance(infoUpdate));
+        InstanceInfo infoUpdate = new StdInstanceInfo.Builder().withInstanceInfo(APP_INFO).withApp("myNewName").build();
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newAddInstance(infoUpdate));
 
         notification = dataSubscriber.takeNext(2, TimeUnit.SECONDS);
         assertThat(notification.getKind(), is(ChangeNotification.Kind.Add));
@@ -157,7 +158,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         assertThat(notification.getData(), is(APP_INFO));
 
         // Now remove the record
-        incomingSubject.onNext(new DeleteInstance(APP_INFO.getId()));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newDeleteInstance(APP_INFO.getId()));
 
         notification = dataSubscriber.takeNext(2, TimeUnit.SECONDS);
         assertThat(notification.getKind(), is(ChangeNotification.Kind.Delete));
@@ -167,7 +168,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
 
     @Test(timeout = 60000)
     public void testDetectsReplicationLoop() throws Exception {
-        ReplicationHello hello = new ReplicationHello(RECEIVER_SOURCE, 0);
+        ReplicationHello hello = ProtocolModel.getDefaultModel().newReplicationHello(RECEIVER_SOURCE, 0);
         incomingSubject.onNext(hello);
 
         replicationChannel.asLifecycleObservable().subscribe(lifecycleSubscriber);
@@ -190,6 +191,6 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
 
     protected void handshakeAndRegister(InstanceInfo info) {
         incomingSubject.onNext(HELLO);
-        incomingSubject.onNext(new AddInstance(info));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newAddInstance(info));
     }
 }

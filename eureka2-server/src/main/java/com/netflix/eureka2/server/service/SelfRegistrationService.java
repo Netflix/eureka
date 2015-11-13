@@ -1,5 +1,6 @@
 package com.netflix.eureka2.server.service;
 
+import javax.annotation.PreDestroy;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -10,8 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
-
-import javax.annotation.PreDestroy;
 
 /**
  * A self identify service that periodically reports data

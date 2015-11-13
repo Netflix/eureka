@@ -5,10 +5,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 import com.netflix.eureka2.Server;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.utils.functions.ChangeNotifications;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.selector.ServiceSelector;
+import com.netflix.eureka2.utils.functions.ChangeNotifications;
 import rx.Observable.Transformer;
 import rx.functions.Func1;
 
@@ -18,8 +18,8 @@ import rx.functions.Func1;
  * see {@link com.netflix.eureka2.utils.functions.ChangeNotifications}.
  *
  * Typical usages will be:
- *   Observable<ChangeNotification<InstanceInfo>>.buffers().collapse() to return collapsed lists of InstanceInfo updates
- *   Observable<ChangeNotification<InstanceInfo>>.buffers().snapshots() to return snapshot lists of InstanceInfos
+ *   Observable<ChangeNotification<IInstanceInfo>>.buffers().collapse() to return collapsed lists of InstanceInfo updates
+ *   Observable<ChangeNotification<IInstanceInfo>>.buffers().snapshots() to return snapshot lists of InstanceInfos
  *
  * @author Tomasz Bak
  */
@@ -29,7 +29,7 @@ public final class InterestFunctions {
     }
 
     /**
-     * Convert a stream of ChangeNotification<InstanceInfo> to a stream of ChangeNotification<Server> where the service
+     * Convert a stream of ChangeNotification<IInstanceInfo> to a stream of ChangeNotification<Server> where the service
      * conversion is defined by the given serviceSelector on the InstanceInfo stream.
      *
      * @param serviceSelector a service selector that defines the mapping from a complex instanceInfo to a simple

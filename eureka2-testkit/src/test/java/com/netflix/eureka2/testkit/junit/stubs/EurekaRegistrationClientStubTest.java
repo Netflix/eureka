@@ -1,8 +1,9 @@
 package com.netflix.eureka2.testkit.junit.stubs;
 
 import com.netflix.eureka2.client.registration.RegistrationObservable;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Test;
 import rx.subjects.PublishSubject;
@@ -15,6 +16,10 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 public class EurekaRegistrationClientStubTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     @Test
     public void testStateRecording() throws Exception {

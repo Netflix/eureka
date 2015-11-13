@@ -8,11 +8,12 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.health.AbstractHealthStatusProvider;
 import com.netflix.eureka2.health.SubsystemDescriptor;
-import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Source.Origin;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.server.config.BootstrapConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +58,7 @@ public class RegistryBootstrapCoordinator extends AbstractHealthStatusProvider<R
             return;
         }
 
-        final Source source = new Source(Origin.BOOTSTRAP, "loaded@" + System.currentTimeMillis());
+        final Source source = InstanceModel.getDefaultModel().createSource(Origin.BOOTSTRAP, "loaded@" + System.currentTimeMillis());
 
         logger.info("Starting registry bootstrapping using {}...", registryBootstrapService.getClass().getName());
         bootstrapSubscription = registryBootstrapService.loadIntoRegistry(registry, source)

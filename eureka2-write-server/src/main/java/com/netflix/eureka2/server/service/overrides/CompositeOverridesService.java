@@ -1,14 +1,14 @@
 package com.netflix.eureka2.server.service.overrides;
 
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
-import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import rx.Observable;
-
 import javax.inject.Inject;
 import java.util.Iterator;
 import java.util.Set;
+
+import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
+import rx.Observable;
 
 /**
  * @author David Liu

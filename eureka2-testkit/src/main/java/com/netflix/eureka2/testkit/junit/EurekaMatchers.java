@@ -2,10 +2,10 @@ package com.netflix.eureka2.testkit.junit;
 
 import java.util.List;
 
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.junit.matchers.ChangeNotificationBatchMatcher;
 import com.netflix.eureka2.testkit.junit.matchers.ChangeNotificationKindMatcher;
 import com.netflix.eureka2.testkit.junit.matchers.ChangeNotificationMatcher;

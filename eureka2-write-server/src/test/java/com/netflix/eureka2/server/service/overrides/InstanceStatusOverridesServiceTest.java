@@ -1,25 +1,30 @@
 package com.netflix.eureka2.server.service.overrides;
 
-import com.netflix.eureka2.registry.ChangeNotificationObservable;
-import com.netflix.eureka2.registry.EurekaRegistrationProcessorStub;
-import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.model.Source.Origin;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.InstanceInfo.Builder;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
+import com.netflix.eureka2.model.instance.StdInstanceInfo.Builder;
+import com.netflix.eureka2.registry.ChangeNotificationObservable;
+import com.netflix.eureka2.registry.EurekaRegistrationProcessorStub;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
 
 /**
-* @author Tomasz Bak
-*/
+ * @author Tomasz Bak
+ */
 public class InstanceStatusOverridesServiceTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final InstanceInfo FIRST_INSTANCE_INFO = SampleInstanceInfo.WebServer.builder()
             .withStatus(Status.UP).build();
 
-    private static final Source SOURCE = new Source(Origin.LOCAL, "connection#1");
+    private static final StdSource SOURCE = new StdSource(Origin.LOCAL, "connection#1");
 
     private final EurekaRegistrationProcessorStub registrationDelegate = new EurekaRegistrationProcessorStub();
     private final InMemoryStatusOverridesRegistry overridesSource = new InMemoryStatusOverridesRegistry();

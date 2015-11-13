@@ -24,8 +24,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
-import com.netflix.eureka2.transport.Acknowledgement;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.spi.protocol.Acknowledgement;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import io.reactivex.netty.channel.ObservableConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +45,7 @@ import rx.subjects.Subject;
 /**
  * @author Tomasz Bak
  */
-public class BaseMessageConnection implements MessageConnection {
+public class BaseMessageConnection implements EurekaConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseMessageConnection.class);
 
@@ -171,7 +172,7 @@ public class BaseMessageConnection implements MessageConnection {
         if (closed.get()) {
             return Observable.error(new IllegalStateException("{connection=" + name + "}: connection closed"));
         }
-        return writeWhenSubscribed(Acknowledgement.INSTANCE);
+        return writeWhenSubscribed(ProtocolModel.getDefaultModel().newAcknowledgement());
     }
 
     // TODO: Return always the same observable

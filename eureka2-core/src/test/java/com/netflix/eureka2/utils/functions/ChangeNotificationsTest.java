@@ -9,10 +9,10 @@ import java.util.concurrent.TimeUnit;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.utils.functions.ChangeNotifications.Identity;
-import com.netflix.eureka2.interests.FullRegistryInterest;
-import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.model.interest.StdFullRegistryInterest;
+import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.junit.Test;
 import rx.Observable;
 import rx.schedulers.Schedulers;
@@ -35,7 +35,7 @@ public class ChangeNotificationsTest {
 
     private static final TestScheduler testScheduler = Schedulers.test();
 
-    private static final Interest<String> INTEREST = new FullRegistryInterest<>();
+    private static final Interest<String> INTEREST = new StdFullRegistryInterest<>();
 
     private static final Identity<String, String> CUSTOM_TEST_IDENTITY = new Identity<String, String>() {
         @Override

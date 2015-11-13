@@ -36,6 +36,6 @@ public class TcpReplicationServer extends AbstractTcpServer {
     public TcpReplicationServer(EurekaServerTransportConfig config,
                                 TcpReplicationHandler tcpReplicationHandler,
                                 @Named(Names.REPLICATION) MetricEventsListenerFactory servoEventsListenerFactory) {
-        super(servoEventsListenerFactory, config, config.getReplicationPort(), EurekaTransports.replicationPipeline(config.getCodec()), tcpReplicationHandler);
+        super(servoEventsListenerFactory, config, config.getReplicationPort(), EurekaTransports.replicationPipeline(), tcpReplicationHandler);
     }
 }

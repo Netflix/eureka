@@ -3,6 +3,7 @@ package com.netflix.eureka2.integration.examples;
 import com.netflix.eureka2.example.client.SimpleApp;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
@@ -18,6 +19,10 @@ import static com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResour
  */
 @Category({IntegrationTest.class, LongRunningTest.class})
 public class SimpleAppIntegrationTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource = anEurekaDeploymentResource(1, 1).build();

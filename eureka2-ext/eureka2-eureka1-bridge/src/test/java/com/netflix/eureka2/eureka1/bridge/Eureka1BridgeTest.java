@@ -5,8 +5,10 @@ import java.util.concurrent.TimeUnit;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.eureka1.bridge.config.Eureka1BridgeConfiguration;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.metric.server.BridgeServerMetricFactory;
 import com.netflix.eureka2.registry.EurekaRegistryRegistrationStub;
 import com.netflix.eureka2.model.Source.SourceMatcher;
@@ -36,6 +38,10 @@ import static org.mockito.Mockito.when;
  */
 public class Eureka1BridgeTest {
 
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     private static final long REFRESH_INTERVAL = 30;
 
     private final TestScheduler testScheduler = Schedulers.test();
@@ -63,7 +69,7 @@ public class Eureka1BridgeTest {
     @Test
     public void testNewInstancesAreAddedToRegistry() throws Exception {
         InstanceInfo firstInstance = SampleInstanceInfo.WebServer.builder().build();
-        InstanceInfo update = new InstanceInfo.Builder().withInstanceInfo(firstInstance).withStatus(InstanceInfo.Status.OUT_OF_SERVICE).build();
+        InstanceInfo update = new StdInstanceInfo.Builder().withInstanceInfo(firstInstance).withStatus(InstanceInfo.Status.OUT_OF_SERVICE).build();
         when(discoveryClient.getApplications())
                 .thenReturn(toEureka1xApplicationsFromV2Collection(firstInstance))
                 .thenReturn(toEureka1xApplicationsFromV2Collection(update));

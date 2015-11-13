@@ -3,7 +3,7 @@ package com.netflix.eureka2.registry.index;
 import java.util.Iterator;
 
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.utils.rx.PauseableSubject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +18,7 @@ import rx.subjects.Subject;
 
 
 /**
- * An index implementation associated with an {@link com.netflix.eureka2.interests.Interest}. <br/>
+ * An index implementation associated with an {@link Interest}. <br/>
  * An index contains two primary sources of data:
  * <ul>
  <li>Initial data</li>
@@ -34,7 +34,7 @@ import rx.subjects.Subject;
  *
  * <h2>Why do we need two sources?</h2>
  *
- * Typically an index is used to create streams of data for a matching {@link com.netflix.eureka2.interests.Interest}. Since, an index here is only
+ * Typically an index is used to create streams of data for a matching {@link Interest}. Since, an index here is only
  * publishing a {@link com.netflix.eureka2.model.notification.ChangeNotification} it is imperative that all the notifications from the start of time are sent
  * to the {@link Subscriber} so that it can create a full view of the data that it is interested in.
  *
@@ -58,7 +58,7 @@ import rx.subjects.Subject;
  * <h2>Is there any message loss between two sources?</h2>
  *
  * All {@link com.netflix.eureka2.model.notification.ChangeNotification}s received by this index which are essentially the notifications from the original
- * data source applicable to this index (i.e. {@link com.netflix.eureka2.interests.Interest#matches(Object)} returns {@code true}) are sent to both
+ * data source applicable to this index (i.e. {@link Interest#matches(Object)} returns {@code true}) are sent to both
  * these data sources (initial and real time).
  * At the start of a subscription the {@link Index.InitStateHolder} makes sure that the returned {@link Iterator} has
  * all data that is received till now and no more data is added to the real time source till this iterator is created.

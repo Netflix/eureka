@@ -16,8 +16,8 @@
 
 package com.netflix.eureka2.testkit.data.builder;
 
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 
 /**

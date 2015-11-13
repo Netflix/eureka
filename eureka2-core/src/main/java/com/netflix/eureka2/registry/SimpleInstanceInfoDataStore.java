@@ -1,10 +1,10 @@
 package com.netflix.eureka2.registry;
 
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.utils.functions.ChangeNotifications;
 import com.netflix.eureka2.metric.EurekaRegistryMetrics;
 import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 import rx.Observable;
 
 import java.util.Collection;

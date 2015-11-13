@@ -4,8 +4,8 @@ import javax.inject.Inject;
 
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
-import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
 

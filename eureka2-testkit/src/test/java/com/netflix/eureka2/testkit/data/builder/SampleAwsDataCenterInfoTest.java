@@ -2,6 +2,7 @@ package com.netflix.eureka2.testkit.data.builder;
 
 import java.util.Iterator;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.datacenter.AwsDataCenterInfo;
 import org.junit.Test;
 
@@ -14,6 +15,10 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 public class SampleAwsDataCenterInfoTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     @Test(timeout = 60000)
     public void testGeneratesSubsequentDataCenterInfos() throws Exception {

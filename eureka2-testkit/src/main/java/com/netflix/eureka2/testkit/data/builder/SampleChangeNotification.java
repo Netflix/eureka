@@ -1,13 +1,13 @@
 package com.netflix.eureka2.testkit.data.builder;
 
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.model.notification.SourcedChangeNotification;
-import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import rx.Observable;
-
 import java.util.ArrayList;
 import java.util.Collection;
+
+import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.SourcedChangeNotification;
+import rx.Observable;
 
 /**
  * @author David Liu
@@ -82,13 +82,14 @@ public enum SampleChangeNotification {
     };
 
     public abstract ChangeNotification<InstanceInfo> newNotification();
+
     public abstract ChangeNotification<InstanceInfo> newNotification(InstanceInfo seed);
 
-    public ChangeNotification<InstanceInfo> newNotification(Source source) {
+    public ChangeNotification<InstanceInfo> newNotification(StdSource source) {
         return new SourcedChangeNotification<>(newNotification(), source);
     }
 
-    public ChangeNotification<InstanceInfo> newNotification(InstanceInfo seed, Source source) {
+    public ChangeNotification<InstanceInfo> newNotification(InstanceInfo seed, StdSource source) {
         return new SourcedChangeNotification<>(newNotification(seed), source);
     }
 

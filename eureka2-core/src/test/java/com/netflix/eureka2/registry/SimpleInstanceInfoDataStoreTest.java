@@ -1,10 +1,11 @@
 package com.netflix.eureka2.registry;
 
+import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.metric.EurekaRegistryMetrics;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.metric.EurekaRegistryMetrics;
-import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Test;
 
@@ -20,12 +21,12 @@ public class SimpleInstanceInfoDataStoreTest {
     private final EurekaRegistryMetrics metrics = mock(EurekaRegistryMetrics.class);
     private final SimpleInstanceInfoDataStore dataStore = new SimpleInstanceInfoDataStore(metrics);
 
-    private final Source localSource = new Source(Source.Origin.LOCAL, "local");
-    private final Source remoteSource1 = new Source(Source.Origin.REPLICATED, "A");
-    private final Source remoteSource2 = new Source(Source.Origin.REPLICATED, "B");
+    private final StdSource localSource = new StdSource(StdSource.Origin.LOCAL, "local");
+    private final StdSource remoteSource1 = new StdSource(StdSource.Origin.REPLICATED, "A");
+    private final StdSource remoteSource2 = new StdSource(StdSource.Origin.REPLICATED, "B");
 
-    private final InstanceInfo.Builder templateA = SampleInstanceInfo.ZuulServer.builder().withId("A");
-    private final InstanceInfo.Builder templateB = SampleInstanceInfo.WebServer.builder().withId("B");
+    private final InstanceInfoBuilder templateA = SampleInstanceInfo.ZuulServer.builder().withId("A");
+    private final InstanceInfoBuilder templateB = SampleInstanceInfo.WebServer.builder().withId("B");
 
     private final InstanceInfo infoA_1 = templateA.withAsg("1").build();
     private final InstanceInfo infoA_2 = templateA.withAsg("2").build();
@@ -36,6 +37,7 @@ public class SimpleInstanceInfoDataStoreTest {
     private final InstanceInfo infoB_3 = templateA.withAsg("3").build();
 
     private ChangeNotification<InstanceInfo>[] notifications;
+
     @Test
     public void testUpdate() {
         // add data A from local source

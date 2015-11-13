@@ -1,16 +1,21 @@
 package com.netflix.eureka2;
 
+import java.util.Map;
+
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.Map;
-
 import static org.junit.Assert.assertTrue;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RegistryCacheTest extends RegistryTestBase {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     @Test(timeout = 60000)
     public void checkRegistryCount() {

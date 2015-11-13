@@ -6,14 +6,15 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.utils.functions.ChangeNotifications;
-import com.netflix.eureka2.model.notification.SourcedChangeNotification;
-import com.netflix.eureka2.model.notification.SourcedModifyNotification;
+import com.netflix.eureka2.internal.util.InstanceUtil;
 import com.netflix.eureka2.metric.EurekaRegistryMetrics;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.Delta;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.SourcedChangeNotification;
+import com.netflix.eureka2.model.notification.SourcedModifyNotification;
+import com.netflix.eureka2.utils.functions.ChangeNotifications;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,20 +117,20 @@ public class MultiSourcedInstanceInfoHolder implements MultiSourcedDataHolder<In
 
         if (currSnapshot == null) {  // real add to the head
             snapshot = newSnapshot;
-            return new SourcedChangeNotification[] {newSnapshot.getNotification()};
+            return new SourcedChangeNotification[]{newSnapshot.getNotification()};
         } else if ((currSnapshot.getSource().getOrigin() != Source.Origin.LOCAL) &&
                 (source.getOrigin() == Source.Origin.LOCAL)) {  // promote new update from local to snapshot
             snapshot = newSnapshot;
-            return new SourcedChangeNotification[] {newSnapshot.getNotification()};
+            return new SourcedChangeNotification[]{newSnapshot.getNotification()};
         } else {
             if (matches(currSnapshot.getSource(), newSnapshot.getSource())) {  // modify to current snapshot
                 snapshot = newSnapshot;
 
-                Set<Delta<?>> delta = newSnapshot.getData().diffOlder(currSnapshot.getData());
+                Set<Delta<?>> delta = (newSnapshot.getData()).diffOlder(currSnapshot.getData());
                 if (!delta.isEmpty()) {
                     SourcedModifyNotification<InstanceInfo> modifyNotification
                             = new SourcedModifyNotification<>(newSnapshot.getData(), delta, newSnapshot.getSource());
-                    return new SourcedModifyNotification[] {modifyNotification};
+                    return new SourcedModifyNotification[]{modifyNotification};
                 } else {
                     logger.debug("No-change update for {}#{}", currSnapshot.getSource(), currSnapshot.getData().getId());
                 }
@@ -170,7 +171,7 @@ public class MultiSourcedInstanceInfoHolder implements MultiSourcedDataHolder<In
                     ChangeNotification<InstanceInfo> deleteNotification
                             = new SourcedChangeNotification<>(ChangeNotification.Kind.Delete, removed, source);
 
-                    return new ChangeNotification[] {deleteNotification};
+                    return new ChangeNotification[]{deleteNotification};
                 } else {  // promote the newHead as the snapshot and publish a modify notification
                     Snapshot<InstanceInfo> newSnapshot = new Snapshot<>(newHead.getKey(), newHead.getValue());
                     snapshot = newSnapshot;
@@ -182,13 +183,13 @@ public class MultiSourcedInstanceInfoHolder implements MultiSourcedDataHolder<In
                         ChangeNotification<InstanceInfo> addNotification
                                 = new SourcedChangeNotification<>(ChangeNotification.Kind.Add, snapshot.getData(), snapshot.getSource());
 
-                        return new ChangeNotification[] {deleteNotification, addNotification};
+                        return new ChangeNotification[]{deleteNotification, addNotification};
                     } else {
-                        Set<Delta<?>> delta = newSnapshot.getData().diffOlder(currSnapshot.getData());
+                        Set<Delta<?>> delta = (newSnapshot.getData()).diffOlder(currSnapshot.getData());
                         if (!delta.isEmpty()) {
                             ChangeNotification<InstanceInfo> modifyNotification
                                     = new SourcedModifyNotification<>(newSnapshot.getData(), delta, newSnapshot.getSource());
-                            return new ChangeNotification[] {modifyNotification};
+                            return new ChangeNotification[]{modifyNotification};
                         } else {
                             logger.debug("No-change update for {}#{}", currSnapshot.getSource(), currSnapshot.getData().getId());
                         }
@@ -220,7 +221,7 @@ public class MultiSourcedInstanceInfoHolder implements MultiSourcedDataHolder<In
         if (snapshot == null) {
             sb.append("null");
         } else {
-            sb.append("{data=").append(snapshot.getData().toStringSummary())
+            sb.append("{data=").append(InstanceUtil.toStringSummary(snapshot.getData()))
                     .append(", source=").append(snapshot.getSource()).append('}');
         }
 
