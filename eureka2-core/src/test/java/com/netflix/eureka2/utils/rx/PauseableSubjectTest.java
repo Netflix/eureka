@@ -3,6 +3,7 @@ package com.netflix.eureka2.utils.rx;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
@@ -21,6 +22,10 @@ import static org.hamcrest.Matchers.is;
  * @author Nitesh Kant
  */
 public class PauseableSubjectTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private PauseableSubject<ChangeNotification<InstanceInfo>> notificationsSubject;
     private List<ChangeNotification<InstanceInfo>> receivedNotifications;

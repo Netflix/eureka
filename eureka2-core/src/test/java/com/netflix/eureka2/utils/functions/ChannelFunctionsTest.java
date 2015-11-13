@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.model.Sourced;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
@@ -48,6 +49,11 @@ import static org.mockito.Mockito.verify;
  * @author David Liu
  */
 public class ChannelFunctionsTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     private final Logger logger = NOPLogger.NOP_LOGGER;
     private final TestScheduler testScheduler = Schedulers.test();
 

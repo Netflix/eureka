@@ -2,6 +2,7 @@ package com.netflix.eureka2.utils.functions;
 
 import java.util.List;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.StdSource;
@@ -30,6 +31,10 @@ import static org.hamcrest.Matchers.nullValue;
  * @author David Liu
  */
 public class BufferMarkerMergeFunctionsTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private final TestScheduler testScheduler = Schedulers.test();
 
