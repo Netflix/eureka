@@ -1,8 +1,8 @@
 package com.netflix.eureka2.testkit.junit.matchers;
 
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.junit.EurekaMatchers;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;

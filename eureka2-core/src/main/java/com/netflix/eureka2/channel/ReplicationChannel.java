@@ -1,15 +1,15 @@
 package com.netflix.eureka2.channel;
 
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.protocol.replication.ReplicationHello;
-import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Sourced;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.spi.protocol.replication.ReplicationHello;
+import com.netflix.eureka2.spi.protocol.replication.ReplicationHelloReply;
 import rx.Observable;
 
 /**
- * A {@link com.netflix.eureka2.channel.ServiceChannel} implementation representing a replication stream
+ * A {@link ServiceChannel} implementation representing a replication stream
  * between two Eureka write servers.
  *
  * The client side of the channel is a source of data, that comes from its own registry, and is limited
@@ -18,7 +18,7 @@ import rx.Observable;
  * On the server side the data are put into the registry with origin set to {@link Source.Origin#REPLICATED}.
  * A replicated entry is removed from the registry under following circumstances:
  * <ul>
- *     <li>Explicit {@link #replicate(com.netflix.eureka2.model.notification.ChangeNotification)} call with a Kind.Delete</li>
+ *     <li>Explicit {@link #replicate(ChangeNotification)} call with a Kind.Delete</li>
  *     <li>Replication connection termination - invalidates all entries replicated over this connection</li>
  *     <li>No heartbeat within configured period of time - equivalent to connection termination</li>
  * </ul>

@@ -5,7 +5,7 @@ import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.server.channel.ReceiverReplicationChannel;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 
 /**
  * For integ testing to expose the doHandle method
@@ -24,7 +24,7 @@ public class TestTcpReplicationHandler extends TcpReplicationHandler {
     }
 
     @Override
-    public ReceiverReplicationChannel doHandle(MessageConnection connection) {
+    public ReceiverReplicationChannel doHandle(EurekaConnection connection) {
         return super.doHandle(connection);
     }
 }

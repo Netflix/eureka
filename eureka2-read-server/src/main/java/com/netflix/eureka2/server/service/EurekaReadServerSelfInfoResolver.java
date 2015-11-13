@@ -5,7 +5,9 @@ import javax.inject.Singleton;
 import java.util.HashSet;
 
 import com.netflix.eureka2.Names;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.model.instance.ServicePort;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.health.EurekaHealthStatusAggregatorImpl;
@@ -41,17 +43,17 @@ public class EurekaReadServerSelfInfoResolver implements SelfInfoResolver {
                 new StatusInfoResolver(healthStatusAggregator),
                 // read server specific resolver
                 new ChainableSelfInfoResolver(Observable.just(new HashSet<ServicePort>())
-                        .map(new Func1<HashSet<ServicePort>, InstanceInfo.Builder>() {
+                        .map(new Func1<HashSet<ServicePort>, InstanceInfoBuilder>() {
                             @Override
-                            public InstanceInfo.Builder call(HashSet<ServicePort> ports) {
-                                ports.add(new ServicePort(Names.EUREKA_HTTP, httpServer.serverPort(), false));
-                                ports.add(new ServicePort(Names.INTEREST, discoveryServer.serverPort(), false));
-                                return new InstanceInfo.Builder().withPorts(ports);
+                            public InstanceInfoBuilder call(HashSet<ServicePort> ports) {
+                                ports.add(InstanceModel.getDefaultModel().newServicePort(Names.EUREKA_HTTP, httpServer.serverPort(), false));
+                                ports.add(InstanceModel.getDefaultModel().newServicePort(Names.INTEREST, discoveryServer.serverPort(), false));
+                                return InstanceModel.getDefaultModel().newInstanceInfo().withPorts(ports);
                             }
                         })
                 ),
-                new ChainableSelfInfoResolver(Observable.just(InstanceInfo.anInstanceInfo()
-                                .withMetaData(META_EUREKA_SERVER_TYPE, ServerType.Read.name())
+                new ChainableSelfInfoResolver(Observable.just(InstanceModel.getDefaultModel().newInstanceInfo()
+                        .withMetaData(META_EUREKA_SERVER_TYPE, ServerType.Read.name())
                 )),
                 new PeriodicDataCenterInfoResolver(config.getEurekaInstance(), config.getEurekaTransport())
         );

@@ -4,23 +4,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.netflix.eureka2.channel.InterestChannel.STATE;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interest.Operator;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics.AtomicInterest;
-import com.netflix.eureka2.protocol.common.AddInstance;
-import com.netflix.eureka2.protocol.common.DeleteInstance;
-import com.netflix.eureka2.protocol.interest.InterestRegistration;
-import com.netflix.eureka2.protocol.common.StreamStateUpdate;
-import com.netflix.eureka2.registry.EurekaRegistryView;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interest.Operator;
+import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
+import com.netflix.eureka2.model.notification.StreamStateNotification;
+import com.netflix.eureka2.registry.EurekaRegistryView;
+import com.netflix.eureka2.spi.protocol.Acknowledgement;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.protocol.common.AddInstance;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import com.netflix.eureka2.transport.Acknowledgement;
-import com.netflix.eureka2.transport.MessageConnection;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -45,12 +44,16 @@ import static org.mockito.Mockito.when;
  */
 public class InterestChannelImplTest {
 
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     public static final Interest<InstanceInfo> CLIENT_INTEREST = Interests.forFullRegistry();
 
     private final EurekaRegistryView<InstanceInfo> registry = mock(EurekaRegistryView.class);
     private final ServerInterestChannelMetrics interestChannelMetrics = mock(ServerInterestChannelMetrics.class);
 
-    private final MessageConnection connection = mock(MessageConnection.class);
+    private final EurekaConnection connection = mock(EurekaConnection.class);
     private final PublishSubject<Object> incomingSubject = PublishSubject.create();
 
     private InterestChannelImpl channel;
@@ -80,10 +83,10 @@ public class InterestChannelImplTest {
         notificationSubject.onNext(endNotification);
 
         // Send interest subscription first
-        incomingSubject.onNext(new InterestRegistration(CLIENT_INTEREST));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newInterestRegistration(CLIENT_INTEREST));
 
-        verify(connection, times(1)).submitWithAck(new StreamStateUpdate(startNotification));
-        verify(connection, times(1)).submitWithAck(new StreamStateUpdate(endNotification));
+        verify(connection, times(1)).submitWithAck(ProtocolModel.getDefaultModel().newStreamStateUpdate(startNotification));
+        verify(connection, times(1)).submitWithAck(ProtocolModel.getDefaultModel().newStreamStateUpdate(endNotification));
     }
 
     @Test
@@ -101,12 +104,12 @@ public class InterestChannelImplTest {
         notificationSubject.onNext(endNotification);
 
         // Send interest subscription first
-        incomingSubject.onNext(new InterestRegistration(CLIENT_INTEREST));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newInterestRegistration(CLIENT_INTEREST));
 
-        verify(connection, times(1)).submitWithAck(new StreamStateUpdate(startNotification));
-        verify(connection, times(1)).submitWithAck(new AddInstance(dataNotification1.getData()));
-        verify(connection, times(1)).submitWithAck(new DeleteInstance(dataNotification2.getData().getId()));
-        verify(connection, times(1)).submitWithAck(new StreamStateUpdate(endNotification));
+        verify(connection, times(1)).submitWithAck(ProtocolModel.getDefaultModel().newStreamStateUpdate(startNotification));
+        verify(connection, times(1)).submitWithAck(ProtocolModel.getDefaultModel().newAddInstance(dataNotification1.getData()));
+        verify(connection, times(1)).submitWithAck(ProtocolModel.getDefaultModel().newDeleteInstance(dataNotification2.getData().getId()));
+        verify(connection, times(1)).submitWithAck(ProtocolModel.getDefaultModel().newStreamStateUpdate(endNotification));
     }
 
     @Test
@@ -132,7 +135,7 @@ public class InterestChannelImplTest {
         notificationSubject.onNext(new ChangeNotification<InstanceInfo>(Kind.Add, info));
 
         // Send interest subscription first
-        incomingSubject.onNext(new InterestRegistration(CLIENT_INTEREST));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newInterestRegistration(CLIENT_INTEREST));
 
         assertThat(outputs.size(), is(equalTo(2)));
         assertThat(outputs.get(0) == Acknowledgement.class, is(true));
@@ -141,7 +144,7 @@ public class InterestChannelImplTest {
 
     @Test(timeout = 60000)
     public void testMetricsStateMonitoring() throws Exception {
-        verifyMetricStateMonitoring(new InterestRegistration(Interests.forFullRegistry()));
+        verifyMetricStateMonitoring(ProtocolModel.getDefaultModel().newInterestRegistration(Interests.forFullRegistry()));
     }
 
     private <S> void verifyMetricStateMonitoring(S subscriptionRequest) {
@@ -158,7 +161,7 @@ public class InterestChannelImplTest {
     @Test(timeout = 60000)
     public void testNotificationMetrics() throws Exception {
         // Simulate interest subscription
-        incomingSubject.onNext(new InterestRegistration(Interests.forFullRegistry()));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newInterestRegistration(Interests.forFullRegistry()));
 
         // Send change notifications
         InstanceInfo info = SampleInstanceInfo.DiscoveryServer.build();
@@ -170,41 +173,41 @@ public class InterestChannelImplTest {
     @Test(timeout = 60000)
     public void testSubscriptionMetrics() throws Exception {
         // Full interest subscription
-        incomingSubject.onNext(new InterestRegistration(Interests.forFullRegistry()));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newInterestRegistration(Interests.forFullRegistry()));
         verify(interestChannelMetrics, times(1)).incrementSubscriptionCounter(AtomicInterest.InterestAll, null);
 
         // Swap with application interest
         Interest<InstanceInfo> appInterest = Interests.forApplications("someApp");
-        incomingSubject.onNext(new InterestRegistration(appInterest));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newInterestRegistration(appInterest));
         verify(interestChannelMetrics, times(1)).incrementSubscriptionCounter(AtomicInterest.Application, "someApp");
         verify(interestChannelMetrics, times(1)).decrementSubscriptionCounter(AtomicInterest.InterestAll, null);
 
         // Swap with vip interest
         Interest<InstanceInfo> vipInterest = Interests.forVips("someVip");
-        incomingSubject.onNext(new InterestRegistration(vipInterest));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newInterestRegistration(vipInterest));
         verify(interestChannelMetrics, times(1)).incrementSubscriptionCounter(AtomicInterest.Vip, "someVip");
         verify(interestChannelMetrics, times(1)).decrementSubscriptionCounter(AtomicInterest.Application, "someApp");
 
         // Swap with instance interest
         Interest<InstanceInfo> instanceInterest = Interests.forInstance(Operator.Equals, "someInstance");
-        incomingSubject.onNext(new InterestRegistration(instanceInterest));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newInterestRegistration(instanceInterest));
         verify(interestChannelMetrics, times(1)).incrementSubscriptionCounter(AtomicInterest.Instance, "someInstance");
         verify(interestChannelMetrics, times(1)).decrementSubscriptionCounter(AtomicInterest.Vip, "someVip");
 
-        incomingSubject.onNext(new InterestRegistration(Interests.forNone()));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newInterestRegistration(Interests.forNone()));
         verify(interestChannelMetrics, times(1)).decrementSubscriptionCounter(AtomicInterest.Instance, "someInstance");
 
         // Swap with a composite of everything
         reset(interestChannelMetrics);
 
         Interest<InstanceInfo> compositeInterest = Interests.forSome(appInterest, vipInterest, instanceInterest);
-        incomingSubject.onNext(new InterestRegistration(compositeInterest));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newInterestRegistration(compositeInterest));
 
         verify(interestChannelMetrics, times(1)).incrementSubscriptionCounter(AtomicInterest.Application, "someApp");
         verify(interestChannelMetrics, times(1)).incrementSubscriptionCounter(AtomicInterest.Vip, "someVip");
         verify(interestChannelMetrics, times(1)).incrementSubscriptionCounter(AtomicInterest.Instance, "someInstance");
 
-        incomingSubject.onNext(new InterestRegistration(Interests.forNone()));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newInterestRegistration(Interests.forNone()));
 
         verify(interestChannelMetrics, times(1)).decrementSubscriptionCounter(AtomicInterest.Application, "someApp");
         verify(interestChannelMetrics, times(1)).decrementSubscriptionCounter(AtomicInterest.Vip, "someVip");

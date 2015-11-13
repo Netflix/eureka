@@ -37,6 +37,6 @@ public class TcpRegistrationServer extends AbstractTcpServer {
                                  @Named(Names.REGISTRATION) MetricEventsListenerFactory servoEventsListenerFactory,
                                  TcpRegistrationHandler tcpRegistrationHandler) {
         super(servoEventsListenerFactory, config, config.getRegistrationPort(),
-                EurekaTransports.registrationPipeline(config.getCodec()), tcpRegistrationHandler);
+                EurekaTransports.registrationPipeline(), tcpRegistrationHandler);
     }
 }

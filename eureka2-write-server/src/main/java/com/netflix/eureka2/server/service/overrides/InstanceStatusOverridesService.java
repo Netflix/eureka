@@ -3,10 +3,11 @@ package com.netflix.eureka2.server.service.overrides;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.utils.functions.RxFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +67,7 @@ public class InstanceStatusOverridesService implements OverridesService {
                         if (notification.isDataNotification()) {
                             if (shouldApply && notification.getData().getStatus() != InstanceInfo.Status.DOWN) {
                                 logger.debug("Adding override for instanceId {}", notification.getData().getId());
-                                InstanceInfo newInfo = new InstanceInfo.Builder()
+                                InstanceInfo newInfo = InstanceModel.getDefaultModel().newInstanceInfo()
                                         .withInstanceInfo(notification.getData())
                                         .withStatus(InstanceInfo.Status.OUT_OF_SERVICE)
                                         .build();

@@ -16,6 +16,13 @@
 
 package com.netflix.eureka2.model.datacenter;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.netflix.eureka2.model.InstanceModel;
 import io.netty.buffer.ByteBuf;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.protocol.http.client.HttpClientResponse;
@@ -23,12 +30,6 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
 import rx.subjects.AsyncSubject;
-
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Loads instance information from AWS metadata host. The data is loaded only once
@@ -47,55 +48,56 @@ public class AwsDataCenterInfoProvider implements DataCenterInfoProvider {
     enum MetaDataKey {
         AmiId("ami-id") {
             @Override
-            protected AwsDataCenterInfo.Builder doApply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
+            protected AwsDataCenterInfoBuilder doApply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
                 return builder.withAmiId(metaInfoValue);
             }
         },
         InstanceId("instance-id") {
             @Override
-            protected AwsDataCenterInfo.Builder doApply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
+            protected AwsDataCenterInfoBuilder doApply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
                 return builder.withInstanceId(metaInfoValue);
             }
         },
         InstanceType("instance-type") {
             @Override
-            protected AwsDataCenterInfo.Builder doApply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
+            protected AwsDataCenterInfoBuilder doApply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
                 return builder.withInstanceType(metaInfoValue);
             }
         },
         PublicHostname("public-hostname") {
             @Override
-            protected AwsDataCenterInfo.Builder doApply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
+            protected AwsDataCenterInfoBuilder doApply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
                 return builder.withPublicHostName(metaInfoValue);
             }
         },
         PublicIpv4("public-ipv4") {
             @Override
-            protected AwsDataCenterInfo.Builder doApply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
+            protected AwsDataCenterInfoBuilder doApply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
                 return builder.withPublicIPv4(metaInfoValue);
             }
         },
         LocalHostName("local-hostname") {
             @Override
-            protected AwsDataCenterInfo.Builder doApply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
+            protected AwsDataCenterInfoBuilder doApply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
                 return builder.withPrivateHostName(metaInfoValue);
             }
         },
         LocalIpv4("local-ipv4") {
             @Override
-            protected AwsDataCenterInfo.Builder doApply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
+            protected AwsDataCenterInfoBuilder doApply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
                 return builder.withPrivateIPv4(metaInfoValue);
             }
         },
         AvailabilityZone("availability-zone", "placement/") {
             @Override
-            protected AwsDataCenterInfo.Builder doApply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
+            protected AwsDataCenterInfoBuilder doApply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
                 return builder.withZone(metaInfoValue);
             }
         },
         Mac("mac") {  // mac (for eth0) is needed for vpcId
+
             @Override
-            protected AwsDataCenterInfo.Builder doApply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
+            protected AwsDataCenterInfoBuilder doApply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
                 return builder.withEth0mac(metaInfoValue);
             }
         },
@@ -105,15 +107,17 @@ public class AwsDataCenterInfoProvider implements DataCenterInfoProvider {
                 String eth0mac = args.length == 0 ? "" : args[0];
                 return metaDataUri + metaDataType + getPath() + eth0mac + "/" + getName();
             }
+
             @Override
-            protected AwsDataCenterInfo.Builder doApply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
+            protected AwsDataCenterInfoBuilder doApply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
                 return builder.withVpcId(metaInfoValue);
             }
         },
         AccountId("document", "instance-identity/") {
             private Pattern pattern = Pattern.compile("\"accountId\"\\s?:\\s?\\\"([A-Za-z0-9]*)\\\"");
+
             @Override
-            protected AwsDataCenterInfo.Builder doApply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
+            protected AwsDataCenterInfoBuilder doApply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
                 // no need to use a json deserializer, do a custom regex parse
                 Matcher matcher = pattern.matcher(metaInfoValue);
                 if (matcher.find()) {
@@ -154,12 +158,12 @@ public class AwsDataCenterInfoProvider implements DataCenterInfoProvider {
             return metaDataUri + metaDataType + path + name;
         }
 
-        public AwsDataCenterInfo.Builder apply(AwsDataCenterInfo.Builder builder, String metaInfoValue) {
+        public AwsDataCenterInfoBuilder apply(AwsDataCenterInfoBuilder builder, String metaInfoValue) {
             this.value = metaInfoValue;
             return doApply(builder, metaInfoValue);
         }
 
-        protected abstract AwsDataCenterInfo.Builder doApply(AwsDataCenterInfo.Builder builder, String metaInfoValue);
+        protected abstract AwsDataCenterInfoBuilder doApply(AwsDataCenterInfoBuilder builder, String metaInfoValue);
     }
 
     private final AtomicReference<Observable<AwsDataCenterInfo>> dataCenterInfoRef = new AtomicReference<>();
@@ -185,7 +189,7 @@ public class AwsDataCenterInfoProvider implements DataCenterInfoProvider {
     private Observable<AwsDataCenterInfo> readMetaInfo() {
         final AsyncSubject<AwsDataCenterInfo> subject = AsyncSubject.create();
 
-        final AwsDataCenterInfo.Builder builder = new AwsDataCenterInfo.Builder();
+        final AwsDataCenterInfoBuilder builder = InstanceModel.getDefaultModel().newAwsDataCenterInfo();
         Observable.from(MetaDataKey.values())
                 .flatMap(new Func1<MetaDataKey, Observable<MetaDataKey>>() {
                     @Override

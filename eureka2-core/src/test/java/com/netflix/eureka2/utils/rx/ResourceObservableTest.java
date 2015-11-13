@@ -22,7 +22,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceLoader;
 import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceLoaderException;
 import com.netflix.eureka2.utils.rx.ResourceObservable.ResourceUpdate;

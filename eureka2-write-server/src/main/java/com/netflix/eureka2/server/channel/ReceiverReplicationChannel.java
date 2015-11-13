@@ -1,27 +1,29 @@
 package com.netflix.eureka2.server.channel;
 
-import com.netflix.eureka2.utils.functions.ChannelFunctions;
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.netflix.eureka2.channel.ReplicationChannel;
-import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
-import com.netflix.eureka2.protocol.common.InterestSetNotification;
-import com.netflix.eureka2.protocol.replication.ReplicationHello;
-import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
-import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.protocol.common.InterestSetNotification;
+import com.netflix.eureka2.spi.protocol.replication.ReplicationHello;
+import com.netflix.eureka2.spi.protocol.replication.ReplicationHelloReply;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
-import com.netflix.eureka2.transport.MessageConnection;
-import com.netflix.eureka2.utils.rx.LoggingSubscriber;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
+import com.netflix.eureka2.utils.functions.ChannelFunctions;
 import com.netflix.eureka2.utils.functions.RxFunctions;
+import com.netflix.eureka2.utils.rx.LoggingSubscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action1;
 import rx.functions.Func1;
-
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author David Liu
@@ -45,10 +47,10 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<Replicati
 
     private volatile Source replicationSource;
 
-    public ReceiverReplicationChannel(MessageConnection transport,
-                                    SelfInfoResolver selfIdentityService,
-                                    final EurekaRegistry<InstanceInfo> registry,
-                                    ReplicationChannelMetrics metrics) {
+    public ReceiverReplicationChannel(EurekaConnection transport,
+                                      SelfInfoResolver selfIdentityService,
+                                      final EurekaRegistry<InstanceInfo> registry,
+                                      ReplicationChannelMetrics metrics) {
         super(STATE.Idle, transport, metrics);
         this.selfIdentityService = selfIdentityService;
         this.channelSubscriber = new LoggingSubscriber<>(logger, "channel");
@@ -147,7 +149,7 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<Replicati
             public Observable<Source> call(InstanceInfo instanceInfo) {
                 logger.debug("Replication hello message: {}", hello);
 
-                if(!moveToState(STATE.Idle, STATE.Handshake)) {
+                if (!moveToState(STATE.Idle, STATE.Handshake)) {
                     return Observable.error(state.get() == STATE.Closed ? CHANNEL_CLOSED_EXCEPTION : HANDSHAKE_FINISHED_EXCEPTION);
                 }
 
@@ -155,8 +157,8 @@ public class ReceiverReplicationChannel extends AbstractHandlerChannel<Replicati
 
                 boolean replicationLoop = instanceInfo.getId().equals(hello.getSource().getName());
 
-                Source replySource = new Source(Source.Origin.REPLICATED, instanceInfo.getId(), hello.getSource().getId());
-                ReplicationHelloReply reply = new ReplicationHelloReply(replySource, false);
+                Source replySource = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, instanceInfo.getId(), hello.getSource().getId());
+                ReplicationHelloReply reply = ProtocolModel.getDefaultModel().newReplicationHelloReply(replySource, false);
                 sendOnTransport(reply);
                 moveToState(STATE.Handshake, STATE.Connected);
 

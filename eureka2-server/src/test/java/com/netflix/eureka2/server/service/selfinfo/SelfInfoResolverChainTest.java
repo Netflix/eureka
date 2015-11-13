@@ -1,31 +1,37 @@
 package com.netflix.eureka2.server.service.selfinfo;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import org.junit.Assert;
 import org.junit.Test;
 import rx.Observable;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author David Liu
  */
 public class SelfInfoResolverChainTest {
 
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     @Test(timeout = 30000)
     public void testChaining() throws Exception {
         ChainableSelfInfoResolver one = new ChainableSelfInfoResolver(
-                Observable.just(new InstanceInfo.Builder().withId("id").withApp("appName"))
+                Observable.just(InstanceModel.getDefaultModel().newInstanceInfo().withId("id").withApp("appName"))
         );
 
         ChainableSelfInfoResolver two = new ChainableSelfInfoResolver(
-                Observable.just(new InstanceInfo.Builder().withStatus(InstanceInfo.Status.STARTING))
+                Observable.just(InstanceModel.getDefaultModel().newInstanceInfo().withStatus(InstanceInfo.Status.STARTING))
         );
 
         ChainableSelfInfoResolver three = new ChainableSelfInfoResolver(
-                Observable.just(new InstanceInfo.Builder().withStatus(InstanceInfo.Status.UP))
+                Observable.just(InstanceModel.getDefaultModel().newInstanceInfo().withStatus(InstanceInfo.Status.UP))
         );
 
         SelfInfoResolverChain chain = new SelfInfoResolverChain(one, two, three);
@@ -41,21 +47,21 @@ public class SelfInfoResolverChainTest {
     @Test(timeout = 30000)
     public void testLastObservableCompletesBeforeMiddle() {
         ChainableSelfInfoResolver one = new ChainableSelfInfoResolver(
-                Observable.just(new InstanceInfo.Builder().withId("id").withApp("appName"))
+                Observable.just(InstanceModel.getDefaultModel().newInstanceInfo().withId("id").withApp("appName"))
         );
 
         ChainableSelfInfoResolver two = new ChainableSelfInfoResolver(
                 Observable.from(
                         Arrays.asList(
-                                new InstanceInfo.Builder().withStatus(InstanceInfo.Status.STARTING),
-                                new InstanceInfo.Builder().withStatus(InstanceInfo.Status.UP),
-                                new InstanceInfo.Builder().withStatus(InstanceInfo.Status.DOWN)
+                                InstanceModel.getDefaultModel().newInstanceInfo().withStatus(InstanceInfo.Status.STARTING),
+                                InstanceModel.getDefaultModel().newInstanceInfo().withStatus(InstanceInfo.Status.UP),
+                                InstanceModel.getDefaultModel().newInstanceInfo().withStatus(InstanceInfo.Status.DOWN)
                         )
                 ).delay(500, TimeUnit.MILLISECONDS)  // delay this stream a bit so that we definitely get 3 distinct emits
-            );
+        );
 
         ChainableSelfInfoResolver three = new ChainableSelfInfoResolver(
-                Observable.just(new InstanceInfo.Builder().withVipAddress("vip"))
+                Observable.just(InstanceModel.getDefaultModel().newInstanceInfo().withVipAddress("vip"))
         );
 
         SelfInfoResolverChain chain = new SelfInfoResolverChain(one, two, three);
@@ -87,18 +93,18 @@ public class SelfInfoResolverChainTest {
     @Test(timeout = 30000)
     public void testMiddleObservableCompletesBeforeLast() throws Exception {
         ChainableSelfInfoResolver one = new ChainableSelfInfoResolver(
-                Observable.just(new InstanceInfo.Builder().withId("id").withApp("appName"))
+                Observable.just(InstanceModel.getDefaultModel().newInstanceInfo().withId("id").withApp("appName"))
         );
 
         ChainableSelfInfoResolver two = new ChainableSelfInfoResolver(
-                Observable.just(new InstanceInfo.Builder().withStatus(InstanceInfo.Status.STARTING))
+                Observable.just(InstanceModel.getDefaultModel().newInstanceInfo().withStatus(InstanceInfo.Status.STARTING))
         );
 
         ChainableSelfInfoResolver three = new ChainableSelfInfoResolver(
                 Observable.from(
                         Arrays.asList(
-                                new InstanceInfo.Builder().withStatus(InstanceInfo.Status.UP),
-                                new InstanceInfo.Builder().withStatus(InstanceInfo.Status.DOWN)
+                                InstanceModel.getDefaultModel().newInstanceInfo().withStatus(InstanceInfo.Status.UP),
+                                InstanceModel.getDefaultModel().newInstanceInfo().withStatus(InstanceInfo.Status.DOWN)
                         )
                 ).delay(500, TimeUnit.MILLISECONDS)  // delay this stream a bit so that we definitely get 3 distinct emits
         );

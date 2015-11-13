@@ -4,11 +4,12 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
@@ -21,10 +22,10 @@ import org.junit.experimental.categories.Category;
 import rx.Observable;
 import rx.Subscription;
 
-import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource.anEurekaDeploymentResource;
+import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -33,6 +34,10 @@ import static org.hamcrest.Matchers.is;
  */
 @Category(IntegrationTest.class)
 public class ReadWriteClusterIntegrationTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource =

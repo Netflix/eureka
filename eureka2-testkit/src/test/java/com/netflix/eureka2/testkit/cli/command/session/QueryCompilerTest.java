@@ -1,7 +1,8 @@
 package com.netflix.eureka2.testkit.cli.command.session;
 
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.interests.VipInterest;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.model.interest.StdVipInterest;
 import org.junit.Test;
 
 import static com.netflix.eureka2.testkit.cli.command.session.QueryCompiler.FIELD_VIP_ADDRESS;
@@ -14,6 +15,10 @@ import static org.junit.Assert.fail;
  * @author Tomasz Bak
  */
 public class QueryCompilerTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     @Test
     public void testSelectWithWildcardAndNoWhereClause() throws Exception {
@@ -33,21 +38,21 @@ public class QueryCompilerTest {
     public void testSelectWithWildcardAndSimpleWhereClause() throws Exception {
         QueryCompiler queryCompiler = new QueryCompiler(new String[]{"select", "*", "where", FIELD_VIP_ADDRESS, "=", "123"});
         verifyNoError(queryCompiler);
-        assertThat(queryCompiler.getInterest() instanceof VipInterest, is(true));
+        assertThat(queryCompiler.getInterest() instanceof StdVipInterest, is(true));
     }
 
     @Test
     public void testSelectWithWildcardAndComplexWhereClause() throws Exception {
         QueryCompiler queryCompiler = new QueryCompiler(new String[]{"select", "*", "where", FIELD_VIP_ADDRESS, "=", "123", "and", "app", "like", "eureka.*"});
         verifyNoError(queryCompiler);
-        assertThat(queryCompiler.getInterest() instanceof VipInterest, is(true));
+        assertThat(queryCompiler.getInterest() instanceof StdVipInterest, is(true));
     }
 
     @Test
     public void testSelectWithFieldNamesAndComplexWhereClause() throws Exception {
         QueryCompiler queryCompiler = new QueryCompiler(new String[]{"select", "id", ",", "app", "where", FIELD_VIP_ADDRESS, "=", "123", "and", "app", "like", "eureka.*"});
         verifyNoError(queryCompiler);
-        assertThat(queryCompiler.getInterest() instanceof VipInterest, is(true));
+        assertThat(queryCompiler.getInterest() instanceof StdVipInterest, is(true));
     }
 
     private static void verifyNoError(QueryCompiler queryCompiler) {

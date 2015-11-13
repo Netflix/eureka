@@ -3,13 +3,15 @@ package com.netflix.eureka2.integration.server.startup;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.server.EurekaServerRunner;
 import com.netflix.eureka2.server.resolver.ClusterAddress;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
@@ -20,7 +22,6 @@ import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ObservableConnection;
-import org.codehaus.jackson.JsonNode;
 import org.junit.Before;
 import org.junit.Rule;
 import org.slf4j.Logger;
@@ -30,8 +31,8 @@ import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Func1;
 
-import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
 import static com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource.anEurekaDeploymentResource;
+import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -40,6 +41,10 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 public abstract class AbstractStartupAndShutdownIntegrationTest<RUNNER extends EurekaServerRunner<?>> {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractStartupAndShutdownIntegrationTest.class);
 

@@ -3,21 +3,21 @@ package com.netflix.eureka2.server.service.bootstrap;
 import com.netflix.eureka2.Server;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
+import com.netflix.eureka2.metric.noop.NoOpMessageConnectionMetrics;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.model.notification.StreamStateNotification.BufferState;
-import com.netflix.eureka2.metric.noop.NoOpMessageConnectionMetrics;
-import com.netflix.eureka2.protocol.common.AddInstance;
-import com.netflix.eureka2.protocol.common.DeleteInstance;
-import com.netflix.eureka2.protocol.interest.InterestRegistration;
-import com.netflix.eureka2.protocol.common.InterestSetNotification;
-import com.netflix.eureka2.protocol.common.StreamStateUpdate;
-import com.netflix.eureka2.protocol.interest.UpdateInstanceInfo;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.InstanceInfo.Builder;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.protocol.common.AddInstance;
+import com.netflix.eureka2.spi.protocol.common.DeleteInstance;
+import com.netflix.eureka2.spi.protocol.common.InterestSetNotification;
+import com.netflix.eureka2.spi.protocol.common.StreamStateUpdate;
+import com.netflix.eureka2.spi.protocol.interest.UpdateInstanceInfo;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.transport.EurekaTransports;
-import com.netflix.eureka2.transport.MessageConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
 import io.reactivex.netty.RxNetty;
@@ -55,25 +55,25 @@ public class LightEurekaInterestClient {
         this.server = server;
         this.scheduler = scheduler;
         this.config = new BasicEurekaTransportConfig.Builder().build();
-        this.pipelineConfigurator = EurekaTransports.interestPipeline(config.getCodec());
+        this.pipelineConfigurator = EurekaTransports.interestPipeline();
     }
 
     public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
         RxClient<Object, Object> client = RxNetty.createTcpClient(server.getHost(), server.getPort(), pipelineConfigurator);
 
         return client.connect()
-                .map(new Func1<ObservableConnection<Object, Object>, MessageConnection>() {
+                .map(new Func1<ObservableConnection<Object, Object>, EurekaConnection>() {
                     @Override
-                    public MessageConnection call(ObservableConnection<Object, Object> connection) {
+                    public EurekaConnection call(ObservableConnection<Object, Object> connection) {
                         return new HeartBeatConnection(
                                 new BaseMessageConnection("bootstrap", connection, NoOpMessageConnectionMetrics.INSTANCE),
                                 config.getHeartbeatIntervalMs(), 1, scheduler
                         );
                     }
-                }).flatMap(new Func1<MessageConnection, Observable<ChangeNotification<InstanceInfo>>>() {
+                }).flatMap(new Func1<EurekaConnection, Observable<ChangeNotification<InstanceInfo>>>() {
                     @Override
-                    public Observable<ChangeNotification<InstanceInfo>> call(final MessageConnection connection) {
-                        Observable<Void> submitObservable = connection.submitWithAck(new InterestRegistration(interest));
+                    public Observable<ChangeNotification<InstanceInfo>> call(final EurekaConnection connection) {
+                        Observable<Void> submitObservable = connection.submitWithAck(ProtocolModel.getDefaultModel().newInterestRegistration(interest));
 
                         Observable<ChangeNotification<InstanceInfo>> notificationObservable = connection.
                                 incoming().
@@ -136,11 +136,11 @@ public class LightEurekaInterestClient {
             return new ChangeNotification<>(Kind.Add, ((AddInstance) message).getInstanceInfo());
         }
         if (message instanceof UpdateInstanceInfo) {
-            InstanceInfo instanceInfo = new Builder().withId(((UpdateInstanceInfo) message).getDelta().getId()).build();
+            InstanceInfo instanceInfo = InstanceModel.getDefaultModel().newInstanceInfo().withId(((UpdateInstanceInfo) message).getDelta().getId()).build();
             return new ChangeNotification<>(Kind.Modify, instanceInfo);
         }
         if (message instanceof DeleteInstance) {
-            InstanceInfo instanceInfo = new Builder().withId(((DeleteInstance) message).getInstanceId()).build();
+            InstanceInfo instanceInfo = InstanceModel.getDefaultModel().newInstanceInfo().withId(((DeleteInstance) message).getInstanceId()).build();
             return new ChangeNotification<>(Kind.Delete, instanceInfo);
         }
         return null;

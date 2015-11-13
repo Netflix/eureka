@@ -8,7 +8,7 @@ import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.health.EurekaHealthStatusAggregator;
 import com.netflix.eureka2.health.HealthStatusUpdate;
-import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.server.EurekaWriteServer;
 import rx.functions.Action1;
 
@@ -55,7 +55,7 @@ public class EmbeddedWriteServer extends EurekaWriteServer {
                 .doOnNext(new Action1<HealthStatusUpdate<EurekaHealthStatusAggregator>>() {
                     @Override
                     public void call(HealthStatusUpdate<EurekaHealthStatusAggregator> healthStatusUpdate) {
-                        if (healthStatusUpdate.getStatus() == InstanceInfo.Status.UP) {
+                        if (healthStatusUpdate.getStatus() == StdInstanceInfo.Status.UP) {
                             countDownLatch.countDown();
                         }
                     }

@@ -16,8 +16,9 @@
 
 package com.netflix.eureka2.testkit.data.builder;
 
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.instance.Delta;
-import com.netflix.eureka2.model.instance.Delta.Builder;
+import com.netflix.eureka2.model.instance.DeltaBuilder;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
 import com.netflix.eureka2.model.instance.InstanceInfoField;
@@ -27,21 +28,15 @@ import com.netflix.eureka2.model.instance.InstanceInfoField;
  */
 public enum SampleDelta {
 
-    Delta() {
-        @Override
-        public Builder builder() {
-            return newBuilder();
-        }
-    },
     StatusUp() {
         @Override
-        public Builder builder() {
+        public DeltaBuilder builder() {
             return newBuilder().withDelta(InstanceInfoField.STATUS, Status.UP);
         }
     },
     StatusDown() {
         @Override
-        public Builder builder() {
+        public DeltaBuilder builder() {
             return newBuilder().withDelta(InstanceInfoField.STATUS, Status.DOWN);
         }
     };
@@ -56,14 +51,13 @@ public enum SampleDelta {
         this.baseInstanceInfo = baseInstanceInfo;
     }
 
-    public abstract Builder builder();
+    public abstract DeltaBuilder builder();
 
-    public <T> com.netflix.eureka2.model.instance.Delta<T> build() {
+    public <T> Delta<T> build() {
         return (Delta<T>) builder().build();
     }
 
-    Builder newBuilder() {
-        return new Builder()
-                .withId(this.baseInstanceInfo.getId());
+    DeltaBuilder newBuilder() {
+        return InstanceModel.getDefaultModel().newDelta().withId(this.baseInstanceInfo.getId());
     }
 }

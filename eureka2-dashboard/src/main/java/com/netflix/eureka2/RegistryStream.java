@@ -1,5 +1,11 @@
 package com.netflix.eureka2;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -9,12 +15,6 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action1;
 import rx.subjects.BehaviorSubject;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Singleton
 public class RegistryStream {

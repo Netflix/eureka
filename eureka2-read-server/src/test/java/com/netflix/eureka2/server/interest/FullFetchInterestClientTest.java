@@ -3,20 +3,21 @@ package com.netflix.eureka2.server.interest;
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.client.channel.ClientInterestChannel;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.model.Source.Origin;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.registry.index.IndexRegistryImpl;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.model.notification.SourcedChangeNotification;
 import com.netflix.eureka2.model.notification.SourcedStreamStateNotification;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.EurekaRegistryImpl;
-import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.model.Source.Origin;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.registry.index.IndexRegistryImpl;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,7 +26,8 @@ import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
 
 import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.*;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.bufferEndNotification;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.bufferStartNotification;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -39,12 +41,16 @@ import static org.mockito.Mockito.when;
  */
 public class FullFetchInterestClientTest {
 
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     private static final ChangeNotification<InstanceInfo> ADD_INSTANCE_1 = new ChangeNotification<>(Kind.Add, SampleInstanceInfo.EurekaWriteServer.build());
     private static final ChangeNotification<InstanceInfo> ADD_INSTANCE_2 = new ChangeNotification<>(Kind.Add, SampleInstanceInfo.EurekaWriteServer.build());
     private static final ChangeNotification<InstanceInfo> ADD_ANOTHER_VIP = new ChangeNotification<>(Kind.Add, SampleInstanceInfo.EurekaReadServer.build());
 
     private static final Interest<InstanceInfo> INTEREST = Interests.forVips(ADD_INSTANCE_1.getData().getVipAddress());
-    private static final Source SOURCE = new Source(Origin.INTERESTED, "test");
+    private static final StdSource SOURCE = new StdSource(Origin.INTERESTED, "test");
 
     private static final StreamStateNotification<InstanceInfo> BUFFER_BEGIN = SourcedStreamStateNotification.bufferStartNotification(Interests.forFullRegistry(), SOURCE);
     private static final StreamStateNotification<InstanceInfo> BUFFER_END = SourcedStreamStateNotification.bufferEndNotification(Interests.forFullRegistry(), SOURCE);

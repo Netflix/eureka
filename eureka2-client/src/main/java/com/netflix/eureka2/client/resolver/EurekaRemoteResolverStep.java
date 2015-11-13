@@ -1,6 +1,6 @@
 package com.netflix.eureka2.client.resolver;
 
-import com.netflix.eureka2.interests.Interest;
+import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 
 /**

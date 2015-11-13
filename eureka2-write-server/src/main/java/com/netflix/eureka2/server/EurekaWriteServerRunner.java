@@ -17,6 +17,7 @@
 package com.netflix.eureka2.server;
 
 import com.google.inject.Module;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
@@ -36,6 +37,10 @@ import java.util.List;
  * @author Tomasz Bak
  */
 public class EurekaWriteServerRunner extends EurekaServerRunner<EurekaWriteServer> {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaWriteServerRunner.class);
 

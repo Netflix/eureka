@@ -16,21 +16,24 @@
 
 package com.netflix.eureka2.example.client;
 
-import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.resolver.ServerResolver;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.model.datacenter.BasicDataCenterInfo;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.datacenter.LocalDataCenterInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.InstanceInfo.Builder;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.subjects.BehaviorSubject;
 
-import static com.netflix.eureka2.client.resolver.ServerResolvers.*;
-import static com.netflix.eureka2.interests.Interests.*;
+import static com.netflix.eureka2.client.resolver.ServerResolvers.fromDnsName;
+import static com.netflix.eureka2.client.resolver.ServerResolvers.fromEureka;
+import static com.netflix.eureka2.model.interest.Interests.forApplications;
+import static com.netflix.eureka2.model.interest.Interests.forVips;
 
 /**
  * This example demonstrates how to register an application using {@link EurekaRegistrationClient}
@@ -40,12 +43,16 @@ import static com.netflix.eureka2.interests.Interests.*;
  */
 public final class SimpleApp {
 
-    public static final InstanceInfo SERVICE_A = new Builder()
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
+    public static final InstanceInfo SERVICE_A = InstanceModel.getDefaultModel().newInstanceInfo()
             .withId("id_serviceA")
             .withApp("ServiceA")
             .withAppGroup("ServiceA_1")
             .withStatus(Status.UP)
-            .withDataCenterInfo(BasicDataCenterInfo.fromSystemData())
+            .withDataCenterInfo(LocalDataCenterInfo.fromSystemData())
             .build();
 
     private final String writeServerDns;
@@ -103,7 +110,7 @@ public final class SimpleApp {
 
         // Modify client 1 status
         System.out.println("Updating service status to DOWN...");
-        InstanceInfo updatedInfo = new Builder().withInstanceInfo(SERVICE_A).withStatus(Status.DOWN).build();
+        InstanceInfo updatedInfo = InstanceModel.getDefaultModel().newInstanceInfo().withInstanceInfo(SERVICE_A).withStatus(Status.DOWN).build();
         infoSubject.onNext(updatedInfo);
         Thread.sleep(1000);
 

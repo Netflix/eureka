@@ -21,21 +21,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.health.EurekaHealthStatusAggregator;
 import com.netflix.eureka2.health.HealthStatusUpdate;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.metric.server.EurekaServerMetricFactory;
-import com.netflix.eureka2.protocol.common.AddInstance;
-import com.netflix.eureka2.protocol.interest.InterestRegistration;
-import com.netflix.eureka2.protocol.interest.UnregisterInterestSet;
-import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
-import com.netflix.eureka2.rx.TestableObservableConnection;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
-import com.netflix.eureka2.transport.Acknowledgement;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
+import com.netflix.eureka2.testkit.internal.rx.TestableObservableConnection;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
@@ -58,6 +56,10 @@ import static org.mockito.Mockito.when;
  * @author Tomasz Bak
  */
 public class TcpInterestHandlerTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private final TestScheduler testScheduler = Schedulers.test();
 
@@ -113,7 +115,7 @@ public class TcpInterestHandlerTest {
         emitHealthStatusUpCreateHandlerAndConnect();
 
         Interest<InstanceInfo> interest = Interests.forFullRegistry();
-        observableConnection.testableChannelRead().onNext(new InterestRegistration(interest));
+        observableConnection.testableChannelRead().onNext(ProtocolModel.getDefaultModel().newInterestRegistration(interest));
 
         verify(registry, times(1)).forInterest(interest);
     }
@@ -122,7 +124,7 @@ public class TcpInterestHandlerTest {
     public void testSuccessfulUnregisterInterestCloseInternalChannel() throws Exception {
         emitHealthStatusUpCreateHandlerAndConnect();
 
-        observableConnection.testableChannelRead().onNext(new UnregisterInterestSet());
+        observableConnection.testableChannelRead().onNext(ProtocolModel.getDefaultModel().newUnregisterInterestSet());
         testSubscriber.assertOnCompleted(1, TimeUnit.SECONDS);
 
         verify(registry, times(1)).forInterest(Interests.forNone());
@@ -137,12 +139,12 @@ public class TcpInterestHandlerTest {
         Interest<InstanceInfo> interest = Interests.forFullRegistry();
         when(registry.forInterest(interest)).thenReturn(Observable.just(notification));
 
-        observableConnection.testableChannelRead().onNext(new InterestRegistration(interest));
+        observableConnection.testableChannelRead().onNext(ProtocolModel.getDefaultModel().newInterestRegistration(interest));
         ExtTestSubscriber<Object> outputSubscriber = new ExtTestSubscriber<>();
         observableConnection.testableChannelWrite().subscribe(outputSubscriber);
 
-        Object expected = new AddInstance(notification.getData());
-        assertThat(outputSubscriber.takeNextOrFail(), is(equalTo((Object) Acknowledgement.INSTANCE)));
+        Object expected = ProtocolModel.getDefaultModel().newAddInstance(notification.getData());
+        assertThat(outputSubscriber.takeNextOrFail(), is(equalTo((Object) ProtocolModel.getDefaultModel().newAcknowledgement())));
         assertThat(outputSubscriber.takeNextOrFail(), is(equalTo(expected)));
     }
 

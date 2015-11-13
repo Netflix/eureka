@@ -16,6 +16,11 @@
 
 package com.netflix.eureka2.model.datacenter;
 
+import com.netflix.eureka2.internal.util.SystemUtil;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.instance.NetworkAddress;
+import com.netflix.eureka2.model.instance.NetworkAddress.ProtocolType;
+import com.netflix.eureka2.model.instance.NetworkAddressBuilder;
 import rx.Observable;
 
 /**
@@ -37,10 +42,29 @@ public final class LocalDataCenterInfo {
     public static Observable<? extends DataCenterInfo> forDataCenterType(DataCenterType type) {
         switch (type) {
             case Basic:
-                return Observable.just(BasicDataCenterInfo.fromSystemData());
+                return Observable.just(fromSystemData());
             case AWS:
                 return new AwsDataCenterInfoProvider().dataCenterInfo();
         }
         throw new IllegalStateException("Unhandled type " + type);
+    }
+
+    public static BasicDataCenterInfo fromSystemData() {
+        BasicDataCenterInfoBuilder builder = InstanceModel.getDefaultModel().newBasicDataCenterInfo();
+        builder.withName(SystemUtil.getHostName());
+        for (String ip : SystemUtil.getLocalIPs()) {
+            if (!SystemUtil.isLoopbackIP(ip)) {
+                boolean isPublic = SystemUtil.isPublic(ip);
+                ProtocolType protocol = SystemUtil.isIPv6(ip) ? ProtocolType.IPv6 : ProtocolType.IPv4;
+                builder.withAddresses(
+                        NetworkAddressBuilder.aNetworkAddress()
+                                .withLabel(isPublic ? NetworkAddress.PUBLIC_ADDRESS : NetworkAddress.PRIVATE_ADDRESS)
+                                .withProtocolType(protocol)
+                                .withIpAddress(ip)
+                                .build()
+                );
+            }
+        }
+        return builder.build();
     }
 }

@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interest.Operator;
-import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interest.Operator;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.testkit.cli.command.session.QueryCompiler.TokenStream.TokenType;
 import rx.Observable;
 import rx.Observable.Transformer;

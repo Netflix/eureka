@@ -1,11 +1,12 @@
 package com.netflix.eureka2.server.service.selfinfo;
 
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import rx.Observable;
-import rx.functions.FuncN;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
+import rx.Observable;
+import rx.functions.FuncN;
 
 /**
  * @author David Liu
@@ -13,13 +14,13 @@ import java.util.List;
 public class SelfInfoResolverChain extends ChainableSelfInfoResolver {
 
     public SelfInfoResolverChain(ChainableSelfInfoResolver... resolvers) {
-        super(Observable.combineLatest(getObservableList(resolvers), new FuncN<InstanceInfo.Builder>() {
+        super(Observable.combineLatest(getObservableList(resolvers), new FuncN<InstanceInfoBuilder>() {
                     @Override
-                    public InstanceInfo.Builder call(Object... args) {
-                        InstanceInfo.Builder seed = new InstanceInfo.Builder();
+                    public InstanceInfoBuilder call(Object... args) {
+                        InstanceInfoBuilder seed = InstanceModel.getDefaultModel().newInstanceInfo();
                         for (Object obj : args) {
-                            InstanceInfo.Builder builder = (InstanceInfo.Builder) obj;
-                            seed.withBuilder(new InstanceInfo.Builder().withBuilder(builder));  // clone at each step
+                            InstanceInfoBuilder builder = (InstanceInfoBuilder) obj;
+                            seed.withBuilder(InstanceModel.getDefaultModel().newInstanceInfo().withBuilder(builder));  // clone at each step
                         }
                         return seed;
                     }
@@ -27,8 +28,8 @@ public class SelfInfoResolverChain extends ChainableSelfInfoResolver {
         );
     }
 
-    protected static List<Observable<InstanceInfo.Builder>> getObservableList(ChainableSelfInfoResolver... resolvers) {
-        List<Observable<InstanceInfo.Builder>> observableList = new ArrayList<>();
+    protected static List<Observable<InstanceInfoBuilder>> getObservableList(ChainableSelfInfoResolver... resolvers) {
+        List<Observable<InstanceInfoBuilder>> observableList = new ArrayList<>();
         for (ChainableSelfInfoResolver resolver : resolvers) {
             observableList.add(resolver.resolveMutable());
         }

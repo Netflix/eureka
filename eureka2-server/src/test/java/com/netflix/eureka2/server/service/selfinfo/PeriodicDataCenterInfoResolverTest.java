@@ -3,9 +3,10 @@ package com.netflix.eureka2.server.service.selfinfo;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.datacenter.DataCenterInfo;
 import com.netflix.eureka2.model.datacenter.LocalDataCenterInfo;
-import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.server.config.EurekaInstanceInfoConfig;
 import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
@@ -27,11 +28,15 @@ import static org.mockito.Mockito.when;
  */
 public class PeriodicDataCenterInfoResolverTest {
 
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     private static final long RESOLVE_INTERVAL = 30L;
     private static final int WEB_ADMIN_PORT = 8088;
 
     private final TestScheduler scheduler = Schedulers.test();
-    private final TestSubscriber<InstanceInfo.Builder> testSubscriber = new TestSubscriber<>();
+    private final TestSubscriber<InstanceInfoBuilder> testSubscriber = new TestSubscriber<>();
     private final DataCenterInfo dataCenterInfo1 = SampleAwsDataCenterInfo.UsEast1a.build();
     private final DataCenterInfo dataCenterInfo2 = SampleAwsDataCenterInfo.UsEast1c.build();
 
@@ -64,7 +69,7 @@ public class PeriodicDataCenterInfoResolverTest {
 
         scheduler.triggerActions();
 
-        List<InstanceInfo.Builder> infos = testSubscriber.getOnNextEvents();
+        List<InstanceInfoBuilder> infos = testSubscriber.getOnNextEvents();
         assertThat(infos.size(), is(1));
         assertThat(infos.get(0).withId("something").build().getDataCenterInfo(), is(dataCenterInfo1));
 
@@ -90,7 +95,7 @@ public class PeriodicDataCenterInfoResolverTest {
 
         scheduler.triggerActions();
 
-        List<InstanceInfo.Builder> infos = testSubscriber.getOnNextEvents();
+        List<InstanceInfoBuilder> infos = testSubscriber.getOnNextEvents();
         assertThat(infos.size(), is(0));
 
         scheduler.advanceTimeBy(RESOLVE_INTERVAL, TimeUnit.SECONDS);

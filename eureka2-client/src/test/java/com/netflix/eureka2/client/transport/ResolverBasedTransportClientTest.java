@@ -24,12 +24,12 @@ import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.transport.tcp.TcpRegistrationClient;
 import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
-import com.netflix.eureka2.protocol.registration.Register;
-import com.netflix.eureka2.rx.RxBlocking;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import com.netflix.eureka2.transport.Acknowledgement;
+import com.netflix.eureka2.testkit.internal.rx.RxBlocking;
 import com.netflix.eureka2.transport.EurekaTransports;
-import com.netflix.eureka2.transport.MessageConnection;
 import io.netty.handler.logging.LogLevel;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ConnectionHandler;
@@ -51,6 +51,10 @@ import static org.junit.Assert.fail;
  */
 public class ResolverBasedTransportClientTest {
 
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     RxServer<Object, Object> server;
 
     @Before
@@ -61,11 +65,11 @@ public class ResolverBasedTransportClientTest {
                 return connection.getInput().flatMap(new Func1<Object, Observable<Void>>() {
                     @Override
                     public Observable<Void> call(Object o) {
-                        return connection.writeAndFlush(Acknowledgement.INSTANCE);
+                        return connection.writeAndFlush(ProtocolModel.getDefaultModel().newAcknowledgement());
                     }
                 });
             }
-        }).pipelineConfigurator(EurekaTransports.registrationPipeline(CodecType.Json))
+        }).pipelineConfigurator(EurekaTransports.registrationPipeline())
                 .enableWireLogging(LogLevel.ERROR)
                 .build()
                 .start();
@@ -110,9 +114,9 @@ public class ResolverBasedTransportClientTest {
         // Now add our test server
         expectedServer.set(new Server("localhost", server.getServerPort()));
 
-        MessageConnection connection = transportClient.connect().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
+        EurekaConnection connection = transportClient.connect().toBlocking().toFuture().get(30, TimeUnit.SECONDS);
         assertNotNull("Connection not established", connection);
-        Observable<Void> ackObservable = connection.submitWithAck(new Register(SampleInstanceInfo.DiscoveryServer.build()));
+        Observable<Void> ackObservable = connection.submitWithAck(ProtocolModel.getDefaultModel().newRegister(SampleInstanceInfo.DiscoveryServer.build()));
 
         assertTrue("Acknowledgment not received in time", RxBlocking.isCompleted(30, TimeUnit.SECONDS, ackObservable));
     }

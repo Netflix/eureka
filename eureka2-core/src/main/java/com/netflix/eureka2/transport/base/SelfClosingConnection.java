@@ -3,7 +3,7 @@ package com.netflix.eureka2.transport.base;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -18,7 +18,7 @@ import static rx.Scheduler.Worker;
  * A decorator for MessageConnection that self closes after a specified period of time
  * @author David Liu
  */
-public class SelfClosingConnection implements MessageConnection {
+public class SelfClosingConnection implements EurekaConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(SelfClosingConnection.class);
 
@@ -34,15 +34,15 @@ public class SelfClosingConnection implements MessageConnection {
 
     private final Random random = new Random();
 
-    private final MessageConnection delegate;
+    private final EurekaConnection delegate;
     private final Worker terminationWorker;
     private final long lifecycleDurationMs;
 
-    public SelfClosingConnection(MessageConnection delegate, long lifecycleDurationMs) {
+    public SelfClosingConnection(EurekaConnection delegate, long lifecycleDurationMs) {
         this(delegate, lifecycleDurationMs, Schedulers.computation());
     }
 
-    public SelfClosingConnection(MessageConnection delegate, long lifecycleDurationMs, Scheduler terminationScheduler) {
+    public SelfClosingConnection(EurekaConnection delegate, long lifecycleDurationMs, Scheduler terminationScheduler) {
         this.delegate = delegate;
         this.lifecycleDurationMs = lifecycleDurationMs;
 

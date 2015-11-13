@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 
 /**
  * @author David Liu
@@ -26,15 +27,15 @@ public enum SampleApp {
 
     public abstract Collection<InstanceInfo> collectionOf(int n);
 
-    static Collection<InstanceInfo> collectionOf(String appName, int n, InstanceInfo.Builder builder) {
+    static Collection<InstanceInfo> collectionOf(String appName, int n, InstanceInfoBuilder builder) {
         List<InstanceInfo> list = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
-            list.add(randomize(appName+"_"+i, builder));
+            list.add(randomize(appName + "_" + i, builder));
         }
         return list;
     }
 
-    private static InstanceInfo randomize(String id, InstanceInfo.Builder builder) {
+    private static InstanceInfo randomize(String id, InstanceInfoBuilder builder) {
         return builder.withId(id).build();
     }
 

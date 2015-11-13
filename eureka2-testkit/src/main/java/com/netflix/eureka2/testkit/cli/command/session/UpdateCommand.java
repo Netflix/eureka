@@ -16,15 +16,15 @@
 
 package com.netflix.eureka2.testkit.cli.command.session;
 
+import com.netflix.eureka2.model.instance.Delta;
+import com.netflix.eureka2.model.instance.StdDelta.Builder;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfoField;
+import com.netflix.eureka2.model.instance.InstanceInfoField.Name;
 import com.netflix.eureka2.testkit.cli.Command;
 import com.netflix.eureka2.testkit.cli.Context;
 import com.netflix.eureka2.testkit.cli.Session;
 import com.netflix.eureka2.testkit.cli.Session.Status;
-import com.netflix.eureka2.model.instance.Delta;
-import com.netflix.eureka2.model.instance.Delta.Builder;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.InstanceInfoField;
-import com.netflix.eureka2.model.instance.InstanceInfoField.Name;
 
 /**
  * @author Tomasz Bak

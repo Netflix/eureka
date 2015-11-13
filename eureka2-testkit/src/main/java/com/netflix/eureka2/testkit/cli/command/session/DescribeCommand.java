@@ -3,10 +3,10 @@ package com.netflix.eureka2.testkit.cli.command.session;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interest.Operator;
-import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.model.interest.Interest.Operator;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.testkit.cli.Command;
 import com.netflix.eureka2.testkit.cli.Context;
 import com.netflix.eureka2.utils.Json;

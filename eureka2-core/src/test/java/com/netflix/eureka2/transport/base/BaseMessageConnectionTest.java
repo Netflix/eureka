@@ -1,27 +1,25 @@
 package com.netflix.eureka2.transport.base;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.codec.SampleObject;
-import com.netflix.eureka2.codec.avro.EurekaAvroCodec;
-import com.netflix.eureka2.codec.avro.SchemaReflectData;
+import com.netflix.eureka2.codec.jackson.JacksonEurekaCodecFactory;
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
-import com.netflix.eureka2.rx.RxBlocking;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.protocol.StdAcknowledgement;
+import com.netflix.eureka2.protocol.StdProtocolModel;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
+import com.netflix.eureka2.testkit.internal.rx.RxBlocking;
+import com.netflix.eureka2.spi.protocol.Acknowledgement;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.transport.EurekaPipelineConfigurator;
-import com.netflix.eureka2.transport.MessageConnection;
-import com.netflix.eureka2.transport.codec.AbstractNettyCodec;
-import com.netflix.eureka2.transport.codec.DynamicNettyCodec;
-import com.netflix.eureka2.transport.codec.EurekaCodecWrapper;
+import com.netflix.eureka2.transport.codec.EurekaCodecWrapperFactory;
 import io.netty.handler.logging.LogLevel;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ConnectionHandler;
@@ -37,7 +35,6 @@ import rx.functions.Func1;
 import rx.observers.TestSubscriber;
 
 import static com.netflix.eureka2.codec.SampleObject.CONTENT;
-import static com.netflix.eureka2.codec.SampleObject.SAMPLE_OBJECT_MODEL_SET;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -54,49 +51,45 @@ import static org.mockito.Mockito.verify;
  */
 public class BaseMessageConnectionTest {
 
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     private EurekaPipelineConfigurator codecPipeline;
 
     private RxServer<Object, Object> server;
 
-    volatile MessageConnection serverBroker;
-    volatile MessageConnection clientBroker;
+    volatile EurekaConnection serverBroker;
+    volatile EurekaConnection clientBroker;
 
     private final MessageConnectionMetrics clientMetrics = mock(MessageConnectionMetrics.class);
     private final MessageConnectionMetrics serverMetrics = mock(MessageConnectionMetrics.class);
 
     @Before
     public void setUp() throws Exception {
-        Func1<CodecType, AbstractNettyCodec> sampleObjectFunc = new Func1<CodecType, AbstractNettyCodec>() {
-            @Override
-            public AbstractNettyCodec call(CodecType codec) {
-                Map<Byte, AbstractNettyCodec> map = new HashMap<>();
-                map.put(CodecType.Avro.getVersion(), new EurekaCodecWrapper(new EurekaAvroCodec(SAMPLE_OBJECT_MODEL_SET, SampleObject.rootSchema(), new SchemaReflectData(SampleObject.rootSchema()))));
-                return new DynamicNettyCodec(SAMPLE_OBJECT_MODEL_SET, Collections.unmodifiableMap(map), codec.getVersion());
-            }
-        };
-        codecPipeline = new EurekaPipelineConfigurator(sampleObjectFunc, CodecType.Avro);
+        codecPipeline = new EurekaPipelineConfigurator(new EurekaCodecWrapperFactory(new JacksonEurekaCodecFactory(SampleObject.class, StdAcknowledgement.class)));
         setupServerAndClient();
     }
 
     private void setupServerAndClient() throws Exception {
-        final LinkedBlockingQueue<MessageConnection> queue = new LinkedBlockingQueue<>();
+        final LinkedBlockingQueue<EurekaConnection> queue = new LinkedBlockingQueue<>();
         server = RxNetty.newTcpServerBuilder(0, new ConnectionHandler<Object, Object>() {
             @Override
             public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
-                MessageConnection messageBroker = new BaseMessageConnection("testServer", connection, serverMetrics);
+                EurekaConnection messageBroker = new BaseMessageConnection("testServer", connection, serverMetrics);
                 queue.add(messageBroker);
                 return messageBroker.lifecycleObservable().materialize().ignoreElements().cast(Void.class);
             }
         }).pipelineConfigurator(codecPipeline).enableWireLogging(LogLevel.ERROR).build().start();
 
         int port = server.getServerPort();
-        Observable<MessageConnection> clientObservable = RxNetty.newTcpClientBuilder("localhost", port)
+        Observable<EurekaConnection> clientObservable = RxNetty.newTcpClientBuilder("localhost", port)
                 .pipelineConfigurator(codecPipeline)
                 .enableWireLogging(LogLevel.ERROR)
                 .build().connect()
-                .map(new Func1<ObservableConnection<Object, Object>, MessageConnection>() {
+                .map(new Func1<ObservableConnection<Object, Object>, EurekaConnection>() {
                     @Override
-                    public MessageConnection call(ObservableConnection<Object, Object> connection) {
+                    public EurekaConnection call(ObservableConnection<Object, Object> connection) {
                         return new BaseMessageConnection("testClient", connection, clientMetrics);
                     }
                 });
@@ -129,7 +122,7 @@ public class BaseMessageConnectionTest {
         assertNotNull("expected message on server side", incomingMessages.next());
     }
 
-    @Test(timeout = 1000)
+    @Test(timeout = 10000)
     public void testSubmitUserContentWithAck() throws Exception {
         Iterator serverIncoming = serverBroker.incoming().toBlocking().getIterator();
 

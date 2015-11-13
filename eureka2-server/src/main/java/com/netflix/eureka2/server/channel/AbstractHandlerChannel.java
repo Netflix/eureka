@@ -1,10 +1,10 @@
 package com.netflix.eureka2.server.channel;
 
 import com.netflix.eureka2.channel.AbstractServiceChannel;
-import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.metric.StateMachineMetrics;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -20,10 +20,10 @@ public abstract class AbstractHandlerChannel<STATE extends Enum<STATE>> extends 
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractHandlerChannel.class);
 
-    protected final MessageConnection transport;
+    protected final EurekaConnection transport;
 
     protected AbstractHandlerChannel(STATE initState,
-                                     MessageConnection transport,
+                                     EurekaConnection transport,
                                      StateMachineMetrics<STATE> metrics) {
         super(initState, metrics);
         this.transport = transport;

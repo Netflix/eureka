@@ -1,8 +1,10 @@
 package com.netflix.eureka2.registry;
 
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,8 +23,12 @@ import static org.hamcrest.Matchers.not;
  */
 public class MultiSourcedInstanceInfoHolderTest {
 
-    private final Source localSource = new Source(Source.Origin.LOCAL);
-    private final InstanceInfo.Builder builder = SampleInstanceInfo.DiscoveryServer.builder();
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
+    private final StdSource localSource = new StdSource(StdSource.Origin.LOCAL);
+    private final InstanceInfoBuilder builder = SampleInstanceInfo.DiscoveryServer.builder();
 
     InstanceInfo firstInfo = builder.withStatus(InstanceInfo.Status.STARTING).build();
     InstanceInfo secondInfo = builder.withStatus(InstanceInfo.Status.UP).build();
@@ -68,7 +74,7 @@ public class MultiSourcedInstanceInfoHolderTest {
         injectFirst();
 
         InstanceInfo secondInfo = builder.withStatus(InstanceInfo.Status.UP).build();
-        Source newLocalSource = new Source(localSource.getOrigin(), localSource.getName());
+        StdSource newLocalSource = new StdSource(localSource.getOrigin(), localSource.getName());
         notifications = holder.update(newLocalSource, secondInfo);
 
         assertThat(holder.size(), equalTo(1));
@@ -85,7 +91,7 @@ public class MultiSourcedInstanceInfoHolderTest {
 
         InstanceInfo secondInfo = builder.withStatus(InstanceInfo.Status.UP).build();
 
-        Source fooSource = new Source(Source.Origin.REPLICATED, "foo");
+        StdSource fooSource = new StdSource(StdSource.Origin.REPLICATED, "foo");
         notifications = holder.update(fooSource, secondInfo);
 
         assertThat(holder.size(), equalTo(2));
@@ -105,7 +111,7 @@ public class MultiSourcedInstanceInfoHolderTest {
 
     @Test
     public void testUpdateDifferentSourcesPromoteLocal() throws Exception {
-        Source fooSource = new Source(Source.Origin.REPLICATED, "foo");
+        StdSource fooSource = new StdSource(StdSource.Origin.REPLICATED, "foo");
 
         notifications = holder.update(fooSource, firstInfo);
         assertThat(notifications.length, is(1));
@@ -161,7 +167,7 @@ public class MultiSourcedInstanceInfoHolderTest {
     public void testRemoveExistingSourceWithDifferentId() throws Exception {
         injectFirst();
 
-        Source newLocalSource = new Source(localSource.getOrigin(), localSource.getName());
+        StdSource newLocalSource = new StdSource(localSource.getOrigin(), localSource.getName());
         notifications = holder.remove(newLocalSource);
 
         assertThat(holder.size(), equalTo(1));
@@ -176,7 +182,7 @@ public class MultiSourcedInstanceInfoHolderTest {
         injectFirst();
 
         // Add non-snapshot copy
-        Source fooSource = new Source(Source.Origin.REPLICATED, "foo");
+        StdSource fooSource = new StdSource(StdSource.Origin.REPLICATED, "foo");
         notifications = holder.update(fooSource, secondInfo);
 
         assertThat(holder.size(), equalTo(2));
@@ -198,7 +204,7 @@ public class MultiSourcedInstanceInfoHolderTest {
         injectFirst();
 
         // Add second
-        Source fooSource = new Source(Source.Origin.REPLICATED, "foo");
+        StdSource fooSource = new StdSource(StdSource.Origin.REPLICATED, "foo");
         notifications = holder.update(fooSource, secondInfo);
 
         assertThat(holder.size(), equalTo(2));

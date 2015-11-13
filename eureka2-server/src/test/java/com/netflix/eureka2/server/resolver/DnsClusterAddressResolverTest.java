@@ -2,7 +2,7 @@ package com.netflix.eureka2.server.resolver;
 
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.server.resolver.DnsEurekaClusterResolver.DnsReadServerClusterResolver;
 import com.netflix.eureka2.server.resolver.DnsEurekaClusterResolver.DnsWriteServerClusterResolver;
 import org.junit.Before;
@@ -12,9 +12,9 @@ import rx.Scheduler;
 import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.transport.EurekaTransports.DEFAULT_DISCOVERY_PORT;
-import static com.netflix.eureka2.transport.EurekaTransports.DEFAULT_REGISTRATION_PORT;
-import static com.netflix.eureka2.transport.EurekaTransports.DEFAULT_REPLICATION_PORT;
+import static com.netflix.eureka2.spi.transport.EurekaTransportFactory.DEFAULT_DISCOVERY_PORT;
+import static com.netflix.eureka2.spi.transport.EurekaTransportFactory.DEFAULT_REGISTRATION_PORT;
+import static com.netflix.eureka2.spi.transport.EurekaTransportFactory.DEFAULT_REPLICATION_PORT;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;

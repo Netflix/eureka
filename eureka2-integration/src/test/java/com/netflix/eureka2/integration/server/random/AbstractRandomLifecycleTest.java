@@ -1,5 +1,6 @@
 package com.netflix.eureka2.integration.server.random;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import org.slf4j.Logger;
@@ -15,6 +16,10 @@ import static org.hamcrest.number.OrderingComparison.lessThanOrEqualTo;
  * @author David Liu
  */
 public abstract class AbstractRandomLifecycleTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractRandomLifecycleTest.class);
 

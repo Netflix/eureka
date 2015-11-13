@@ -5,7 +5,7 @@ import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.testkit.cli.ClusterTopology;
 import com.netflix.eureka2.testkit.cli.Context;
 import com.netflix.eureka2.testkit.cli.Session;

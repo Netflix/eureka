@@ -6,14 +6,14 @@ import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.connection.RetryableConnection;
 import com.netflix.eureka2.connection.RetryableConnectionFactory;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interest.QueryType;
+import com.netflix.eureka2.model.interest.MultipleInterests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.EmptyRegistryInterest;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.MultipleInterests;
 import com.netflix.eureka2.model.notification.SourcedChangeNotification;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.utils.functions.RxFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +82,7 @@ public class EurekaInterestClientImpl extends AbstractInterestClient {
             return Observable.error(new IllegalStateException("InterestHandler has shutdown"));
         }
 
-        if (interest instanceof EmptyRegistryInterest) {
+        if (interest.getQueryType() == QueryType.None) {
             return Observable.empty();
         }
         if (interest instanceof MultipleInterests) {

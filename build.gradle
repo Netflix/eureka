@@ -57,7 +57,6 @@ allprojects {
     repositories {
         maven { url 'http://oss.jfrog.org/oss-snapshot-local' }
     }
-
 }
 
 subprojects {
@@ -92,6 +91,10 @@ subprojects {
             }
         }
     }
+
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
 
     dependencies {
         compile "org.slf4j:slf4j-api:${slf4j_version}"

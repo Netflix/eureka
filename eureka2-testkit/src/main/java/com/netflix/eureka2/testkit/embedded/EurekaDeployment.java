@@ -26,7 +26,7 @@ import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
 import com.netflix.eureka2.testkit.netrouter.NetworkRouters;
 
 import static com.netflix.eureka2.config.bean.EurekaDashboardConfigBean.aDashboardConfig;
-import static com.netflix.eureka2.interests.Interests.forVips;
+import static com.netflix.eureka2.model.interest.Interests.forVips;
 import static com.netflix.eureka2.server.config.bean.EurekaClusterDiscoveryConfigBean.anEurekaClusterDiscoveryConfig;
 import static com.netflix.eureka2.server.config.bean.EurekaInstanceInfoConfigBean.anEurekaInstanceInfoConfig;
 import static com.netflix.eureka2.server.config.bean.EurekaServerRegistryConfigBean.anEurekaServerRegistryConfig;

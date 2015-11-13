@@ -19,8 +19,8 @@ package com.netflix.eureka2.testkit.cli.command.session;
 import com.netflix.eureka2.testkit.cli.Command;
 import com.netflix.eureka2.testkit.cli.Context;
 import com.netflix.eureka2.testkit.cli.Session;
-import com.netflix.eureka2.interests.Interest.Operator;
-import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.model.interest.Interest.Operator;
+import com.netflix.eureka2.model.interest.Interests;
 
 /**
  * @author Tomasz Bak

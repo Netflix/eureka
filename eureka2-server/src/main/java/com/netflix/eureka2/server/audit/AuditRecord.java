@@ -16,12 +16,12 @@
 
 package com.netflix.eureka2.server.audit;
 
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
+import java.util.Set;
+
 import com.netflix.eureka2.model.instance.Delta;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-
-import java.util.Set;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 
 /**
  * Audit record for Eureka registry changes.
@@ -90,18 +90,25 @@ public class AuditRecord {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AuditRecord)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof AuditRecord))
+            return false;
 
         AuditRecord that = (AuditRecord) o;
 
-        if (time != that.time) return false;
-        if (userTriggered != that.userTriggered) return false;
+        if (time != that.time)
+            return false;
+        if (userTriggered != that.userTriggered)
+            return false;
         if (auditServerId != null ? !auditServerId.equals(that.auditServerId) : that.auditServerId != null)
             return false;
-        if (deltas != null ? !deltas.equals(that.deltas) : that.deltas != null) return false;
-        if (instanceInfo != null ? !instanceInfo.equals(that.instanceInfo) : that.instanceInfo != null) return false;
-        if (modificationType != that.modificationType) return false;
+        if (deltas != null ? !deltas.equals(that.deltas) : that.deltas != null)
+            return false;
+        if (instanceInfo != null ? !instanceInfo.equals(that.instanceInfo) : that.instanceInfo != null)
+            return false;
+        if (modificationType != that.modificationType)
+            return false;
 
         return true;
     }

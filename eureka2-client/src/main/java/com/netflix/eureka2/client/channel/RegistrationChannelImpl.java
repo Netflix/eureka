@@ -4,10 +4,10 @@ import com.netflix.eureka2.channel.AbstractClientChannel;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.channel.RegistrationChannel.STATE;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
-import com.netflix.eureka2.protocol.registration.Register;
-import com.netflix.eureka2.protocol.registration.Unregister;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.protocol.registration.Unregister;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import rx.Observable;
 import rx.functions.Func1;
@@ -42,10 +42,10 @@ public class RegistrationChannelImpl extends AbstractClientChannel<STATE> implem
             }
         }
 
-        return connect().switchMap(new Func1<MessageConnection, Observable<? extends Void>>() {
+        return connect().switchMap(new Func1<EurekaConnection, Observable<? extends Void>>() {
             @Override
-            public Observable<? extends Void> call(MessageConnection connection) {
-                return sendExpectAckOnConnection(connection, new Register(instanceInfo));
+            public Observable<? extends Void> call(EurekaConnection connection) {
+                return sendExpectAckOnConnection(connection, ProtocolModel.getDefaultModel().newRegister(instanceInfo));
             }
         });
     }
@@ -64,10 +64,10 @@ public class RegistrationChannelImpl extends AbstractClientChannel<STATE> implem
             }
         }
 
-        return connect().switchMap(new Func1<MessageConnection, Observable<? extends Void>>() {
+        return connect().switchMap(new Func1<EurekaConnection, Observable<? extends Void>>() {
             @Override
-            public Observable<? extends Void> call(final MessageConnection connection) {
-                return sendExpectAckOnConnection(connection, Unregister.INSTANCE);
+            public Observable<? extends Void> call(final EurekaConnection connection) {
+                return sendExpectAckOnConnection(connection, ProtocolModel.getDefaultModel().newUnregister());
                 // we can optimize here by closing the connection when this onComplete, but the registrationHandler
                 // also does this for us so let's not over optimize.
             }

@@ -1,5 +1,6 @@
 package com.netflix.eureka2.server.service.overrides;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Test;
@@ -14,6 +15,10 @@ import static org.hamcrest.Matchers.*;
  * @author David Liu
  */
 public class InMemoryStatusOverridesRegistryTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private final InMemoryStatusOverridesRegistry overridesSource = new InMemoryStatusOverridesRegistry();
     private final TestSubscriber<Boolean> testSubscriber1 = new TestSubscriber<>();

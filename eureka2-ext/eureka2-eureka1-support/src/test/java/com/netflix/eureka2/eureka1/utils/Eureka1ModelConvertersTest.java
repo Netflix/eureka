@@ -12,13 +12,15 @@ import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.datacenter.AwsDataCenterInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.ServicePort;
+import com.netflix.eureka2.model.instance.StdServicePort;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.selector.ServiceSelector;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
@@ -42,6 +44,10 @@ import static org.mockito.Mockito.when;
  */
 @SuppressWarnings("unchecked")
 public class Eureka1ModelConvertersTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private final EurekaRegistry<InstanceInfo> registry = mock(EurekaRegistry.class);
     private final ReplaySubject<ChangeNotification<InstanceInfo>> notificationSubject = ReplaySubject.create();
@@ -149,7 +155,7 @@ public class Eureka1ModelConvertersTest {
         // Now v1 -> v2, and check that resulting v2 record
         InstanceInfo mappedV2InstanceInfo = toEureka2xInstanceInfo(v1InstanceInfo);
 
-        HashSet<ServicePort> ports = mappedV2InstanceInfo.getPorts();
+        HashSet<ServicePort> ports = (HashSet<ServicePort>) mappedV2InstanceInfo.getPorts();
         assertThat(ports.size(), is(equalTo(1)));
 
         ServicePort port = ports.iterator().next();
@@ -171,8 +177,8 @@ public class Eureka1ModelConvertersTest {
     public void testServicePortMappingToMetaData() throws Exception {
         InstanceInfo instanceInfo = SampleInstanceInfo.WebServer.builder()
                 .withPorts(
-                        new ServicePort("http", 80, false, asSet("private")),
-                        new ServicePort("https", 443, true, asSet("public", "private"))
+                        new StdServicePort("http", 80, false, asSet("private")),
+                        new StdServicePort("https", 443, true, asSet("public", "private"))
                 )
                 .build();
 

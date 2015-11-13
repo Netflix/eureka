@@ -11,9 +11,9 @@ import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.EurekaRegistryImpl;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.interest.FullFetchInterestClient;
 

@@ -4,14 +4,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.netflix.eureka2.interests.ApplicationInterest;
-import com.netflix.eureka2.interests.FullRegistryInterest;
-import com.netflix.eureka2.interests.InstanceInterest;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.MultipleInterests;
-import com.netflix.eureka2.interests.VipInterest;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.MultipleInterests;
 
 /**
  * @author Tomasz Bak
@@ -56,14 +52,20 @@ public interface ServerInterestChannelMetrics extends InterestChannelMetrics {
             Set<String> newInstances = new HashSet<>();
             boolean newFullRegistry = false;
             for (Interest<InstanceInfo> basicInterest : getBasicInterests(newInterests)) {
-                if (basicInterest instanceof InstanceInterest) {
-                    newInstances.add(((InstanceInterest) basicInterest).getPattern());
-                } else if (basicInterest instanceof ApplicationInterest) {
-                    newApplications.add(((ApplicationInterest) basicInterest).getPattern());
-                } else if (basicInterest instanceof VipInterest) {
-                    newVips.add(((VipInterest) basicInterest).getPattern());
-                } else if (basicInterest instanceof FullRegistryInterest) {
-                    newFullRegistry = true;
+                switch (basicInterest.getQueryType()) {
+                    case Instance:
+                        newInstances.add(basicInterest.getPattern());
+                        break;
+                    case Application:
+                        newApplications.add(basicInterest.getPattern());
+                        break;
+                    case Vip:
+                    case SecureVip:
+                        newVips.add(basicInterest.getPattern());
+                        break;
+                    case Any:
+                        newFullRegistry = true;
+                        break;
                 }
             }
 

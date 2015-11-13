@@ -1,7 +1,7 @@
 package com.netflix.eureka2.server.service.overrides;
 
-import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.server.registry.RegistrationChannelProcessorProvider;
 
 /**

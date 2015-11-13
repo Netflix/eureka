@@ -5,25 +5,26 @@ import java.util.Collection;
 import java.util.List;
 
 import com.netflix.eureka2.channel.InterestChannel.STATE;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.registry.index.IndexRegistry;
-import com.netflix.eureka2.registry.index.IndexRegistryImpl;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
-import com.netflix.eureka2.protocol.common.AddInstance;
-import com.netflix.eureka2.protocol.common.DeleteInstance;
-import com.netflix.eureka2.protocol.common.InterestSetNotification;
-import com.netflix.eureka2.protocol.interest.SampleAddInstance;
-import com.netflix.eureka2.protocol.common.StreamStateUpdate;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.EurekaRegistryImpl;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.registry.index.IndexRegistry;
+import com.netflix.eureka2.registry.index.IndexRegistryImpl;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.protocol.common.AddInstance;
+import com.netflix.eureka2.spi.protocol.common.DeleteInstance;
+import com.netflix.eureka2.spi.protocol.common.InterestSetNotification;
+import com.netflix.eureka2.spi.protocol.interest.SampleAddInstance;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInterest;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.transport.TransportClient;
 import org.junit.After;
 import org.junit.Before;
@@ -38,9 +39,12 @@ import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
 import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.*;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.bufferEndNotification;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.bufferStartNotification;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
+import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -54,9 +58,13 @@ import static org.mockito.Mockito.when;
  */
 public class ClientInterestChannelTest {
 
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     private final TestScheduler testScheduler = Schedulers.test();
 
-    protected MessageConnection serverConnection = mock(MessageConnection.class);
+    protected EurekaConnection serverConnection = mock(EurekaConnection.class);
     private final PublishSubject<Object> incomingSubject = PublishSubject.create();
     private final ReplaySubject<Void> serverConnectionLifecycle = ReplaySubject.create();
 
@@ -162,10 +170,10 @@ public class ClientInterestChannelTest {
         // preload the channel cache and registry with data
         InstanceInfo original1 = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo original2 = SampleInstanceInfo.ZuulServer.build();
-        AddInstance message1 = new AddInstance(original1);
-        AddInstance message2 = new AddInstance(original2);
+        AddInstance message1 = ProtocolModel.getDefaultModel().newAddInstance(original1);
+        AddInstance message2 = ProtocolModel.getDefaultModel().newAddInstance(original2);
 
-        DeleteInstance message3 = new DeleteInstance(original1.getId());
+        DeleteInstance message3 = ProtocolModel.getDefaultModel().newDeleteInstance(original1.getId());
 
         // Subscribe
         ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
@@ -196,8 +204,8 @@ public class ClientInterestChannelTest {
     public void testBufferingHintsPropagation() throws Exception {
         InstanceInfo original1 = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo original2 = SampleInstanceInfo.DiscoveryServer.build();
-        AddInstance message1 = new AddInstance(original1);
-        AddInstance message2 = new AddInstance(original2);
+        AddInstance message1 = ProtocolModel.getDefaultModel().newAddInstance(original1);
+        AddInstance message2 = ProtocolModel.getDefaultModel().newAddInstance(original2);
         Interest<InstanceInfo> interest = Interests.forVips(original1.getVipAddress());
 
         // Subscribe first
@@ -212,10 +220,10 @@ public class ClientInterestChannelTest {
         registry.forInterest(interest).subscribe(registrySubscriber);
 
         // Issue batch of data
-        incomingSubject.onNext(new StreamStateUpdate(StreamStateNotification.bufferStartNotification(interest)));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newStreamStateUpdate(StreamStateNotification.bufferStartNotification(interest)));
         incomingSubject.onNext(message1);
         incomingSubject.onNext(message2);
-        incomingSubject.onNext(new StreamStateUpdate(StreamStateNotification.bufferEndNotification(interest)));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newStreamStateUpdate(StreamStateNotification.bufferEndNotification(interest)));
         testScheduler.triggerActions();
 
         // check the conversion from network to channel level datastructures

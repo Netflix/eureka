@@ -1,15 +1,15 @@
 package com.netflix.eureka2.utils.functions;
 
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.model.notification.StreamStateNotification;
-import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.model.Sourced;
-import org.slf4j.Logger;
-import rx.functions.Func1;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.Sourced;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.StreamStateNotification;
+import org.slf4j.Logger;
+import rx.functions.Func1;
 
 /**
  * A class that provide functions to handle merging of stream state notifications for two cases:

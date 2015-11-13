@@ -1,16 +1,24 @@
 package com.netflix.eureka2.registry.index;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.StdInstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.model.notification.ModifyNotification;
 import com.netflix.eureka2.model.notification.SourcedChangeNotification;
 import com.netflix.eureka2.model.notification.SourcedModifyNotification;
-import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
-import com.netflix.eureka2.registry.EurekaRegistryImpl;
-import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -21,15 +29,10 @@ import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.subjects.ReplaySubject;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
+import static com.netflix.eureka2.model.interest.Interests.forFullRegistry;
+import static com.netflix.eureka2.model.interest.Interests.forInstances;
+import static com.netflix.eureka2.model.interest.Interests.forSome;
 import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
-import static com.netflix.eureka2.interests.Interests.forFullRegistry;
-import static com.netflix.eureka2.interests.Interests.forInstances;
-import static com.netflix.eureka2.interests.Interests.forSome;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
@@ -40,16 +43,20 @@ import static org.hamcrest.Matchers.hasSize;
  */
 public class RegistryIndexTest {
 
-    private InstanceInfo.Builder discoveryServerBuilder;
-    private InstanceInfo.Builder zuulServerBuilder;
-    private InstanceInfo.Builder cliServerBuilder;
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
+    private InstanceInfoBuilder discoveryServerBuilder;
+    private InstanceInfoBuilder zuulServerBuilder;
+    private InstanceInfoBuilder cliServerBuilder;
 
     private InstanceInfo discoveryServer;
     private InstanceInfo zuulServer;
     private InstanceInfo cliServer;
 
     private EurekaRegistry<InstanceInfo> registry;
-    private Source localSource;
+    private StdSource localSource;
 
     @Rule
     public final ExternalResource registryResource = new ExternalResource() {
@@ -65,7 +72,7 @@ public class RegistryIndexTest {
             cliServer = cliServerBuilder.build();
 
             registry = new EurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics());
-            localSource = new Source(Source.Origin.LOCAL);
+            localSource = new StdSource(StdSource.Origin.LOCAL);
         }
 
         @Override
@@ -87,7 +94,7 @@ public class RegistryIndexTest {
                         new ChangeNotification<>(Kind.Add, zuulServer),
                         new ChangeNotification<>(Kind.Delete, discoveryServer),
                         new ChangeNotification<>(Kind.Add, cliServer),
-                        new ModifyNotification<>(newCliServer, newCliServer.diffOlder(cliServer))));
+                        new ModifyNotification<>(newCliServer, ((StdInstanceInfo) newCliServer).diffOlder((StdInstanceInfo) cliServer))));
     }
 
     @Test(timeout = 10000)

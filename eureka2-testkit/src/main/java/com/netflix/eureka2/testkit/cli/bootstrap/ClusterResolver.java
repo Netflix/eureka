@@ -18,21 +18,21 @@ import com.netflix.eureka2.client.functions.InterestFunctions;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.config.EurekaTransportConfig;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.interests.Interest.Operator;
-import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.model.interest.Interest.Operator;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.interests.host.DnsResolver;
+import com.netflix.eureka2.internal.util.SystemUtil;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.InstanceInfo.ServiceEndpoint;
 import com.netflix.eureka2.model.instance.NetworkAddress;
 import com.netflix.eureka2.model.instance.NetworkAddress.ProtocolType;
+import com.netflix.eureka2.model.instance.ServiceEndpoint;
 import com.netflix.eureka2.model.instance.ServicePort;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.model.selector.ServiceSelector;
 import com.netflix.eureka2.server.resolver.ClusterAddress;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.testkit.cli.ClusterTopology;
-import com.netflix.eureka2.utils.SystemUtil;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Scheduler;
@@ -341,7 +341,7 @@ public class ClusterResolver {
         }
 
         Set<String> myAddresses = new HashSet<>();
-        // localhost is never added to InstanceInfo, but as CLI and server run on the same host we can
+        // localhost is never added to IInstanceInfo, but as CLI and server run on the same host we can
         // take IPs from local NICs directly and do the matching.
         if ("localhost".equals(bootstrapAddress) || "127.0.0.1".equals(bootstrapAddress)) {
             myAddresses.add(SystemUtil.getHostName());

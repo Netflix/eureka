@@ -3,16 +3,18 @@ package com.netflix.eureka2.server.channel;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
-import com.netflix.eureka2.protocol.registration.Register;
-import com.netflix.eureka2.protocol.registration.Unregister;
-import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
+import com.netflix.eureka2.model.instance.StdInstanceInfo.Builder;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.junit.EurekaMatchers;
-import com.netflix.eureka2.transport.MessageConnection;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,6 +41,10 @@ import static org.mockito.Mockito.when;
  */
 public class RegistrationChannelImplTest {
 
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     private final PublishSubject<Void> transportLifeCycle = PublishSubject.create();
     private final PublishSubject<Object> incomingSubject = PublishSubject.create();
     private final ExtTestSubscriber<ChangeNotification<InstanceInfo>> dataSubscriber = new ExtTestSubscriber<>();
@@ -47,17 +53,17 @@ public class RegistrationChannelImplTest {
     private InstanceInfo registerInfo;
     private InstanceInfo update1Info;
 
-    private MessageConnection transport;
+    private EurekaConnection transport;
     private RegistrationChannelImpl channel;
 
     @Before
     public void setUp() {
-        InstanceInfo.Builder seed = new InstanceInfo.Builder().withId("id").withApp("app");
+        InstanceInfoBuilder seed = new Builder().withId("id").withApp("app");
 
         registerInfo = seed.withStatus(InstanceInfo.Status.STARTING).build();
         update1Info = seed.withStatus(InstanceInfo.Status.UP).build();
 
-        transport = mock(MessageConnection.class);
+        transport = mock(EurekaConnection.class);
 
         when(transport.lifecycleObservable()).thenReturn(transportLifeCycle);
         when(transport.incoming()).thenReturn(incomingSubject);
@@ -66,7 +72,7 @@ public class RegistrationChannelImplTest {
         when(transport.onError(any(Throwable.class))).thenReturn(Observable.<Void>empty());
 
         EurekaRegistrationProcessor<InstanceInfo> registrationProcessor = mock(EurekaRegistrationProcessor.class);
-        when(registrationProcessor.connect(anyString(), any(Source.class), any(Observable.class))).thenAnswer(new Answer<Observable<Void>>() {
+        when(registrationProcessor.connect(anyString(), any(StdSource.class), any(Observable.class))).thenAnswer(new Answer<Observable<Void>>() {
             @Override
             public Observable<Void> answer(InvocationOnMock invocation) throws Throwable {
                 Observable<ChangeNotification<InstanceInfo>> dataStream = (Observable<ChangeNotification<InstanceInfo>>) invocation.getArguments()[2];
@@ -85,15 +91,15 @@ public class RegistrationChannelImplTest {
     @Test
     public void testRegistrationLifecycle() throws Exception {
         // First registration
-        incomingSubject.onNext(new Register(registerInfo));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newRegister(registerInfo));
         assertThat(dataSubscriber.takeNext(1, TimeUnit.SECONDS), EurekaMatchers.addChangeNotificationOf(registerInfo));
 
         // Status update
-        incomingSubject.onNext(new Register(update1Info));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newRegister(update1Info));
         assertThat(dataSubscriber.takeNext(1, TimeUnit.SECONDS), EurekaMatchers.addChangeNotificationOf(update1Info));
 
         // Now unregister
-        incomingSubject.onNext(new Unregister());
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newUnregister());
         assertThat(dataSubscriber.takeNext(1, TimeUnit.SECONDS), EurekaMatchers.deleteChangeNotificationOf(update1Info));
         channel.asLifecycleObservable().subscribe(lifecycleSubscriber);
         lifecycleSubscriber.assertCompleted();
@@ -102,7 +108,7 @@ public class RegistrationChannelImplTest {
     @Test
     public void testChannelDisconnectWithoutUnregister() throws Exception {
         // First registration
-        incomingSubject.onNext(new Register(registerInfo));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newRegister(registerInfo));
         assertThat(dataSubscriber.takeNext(1, TimeUnit.SECONDS), EurekaMatchers.addChangeNotificationOf(registerInfo));
 
         // Simulated transport error
@@ -114,7 +120,7 @@ public class RegistrationChannelImplTest {
     @Test(timeout = 60000)
     public void testUnregisterOnIdleChannel() throws Exception {
         // First registration
-        incomingSubject.onNext(new Unregister());
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newUnregister());
         assertThat(dataSubscriber.takeNext(200, TimeUnit.MILLISECONDS), is(nullValue()));
 
         channel.asLifecycleObservable().subscribe(lifecycleSubscriber);
@@ -125,10 +131,10 @@ public class RegistrationChannelImplTest {
     public void testReturnErrorOnceClosed() throws Exception {
         channel.close();
 
-        incomingSubject.onNext(new Register(registerInfo));
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newRegister(registerInfo));
         assertThat(dataSubscriber.takeNext(200, TimeUnit.MILLISECONDS), is(nullValue()));
 
-        incomingSubject.onNext(Unregister.INSTANCE);
+        incomingSubject.onNext(ProtocolModel.getDefaultModel().newUnregister());
         assertThat(dataSubscriber.takeNext(200, TimeUnit.MILLISECONDS), is(nullValue()));
     }
 }

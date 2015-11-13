@@ -1,17 +1,18 @@
 package com.netflix.eureka2.registry;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Action0;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -26,7 +27,7 @@ public class EurekaRegistryRegistrationStub implements EurekaRegistry<InstanceIn
 
     private final AtomicReference<Observable<InstanceInfo>> currSnapshot = new AtomicReference<>(Observable.<InstanceInfo>empty());
 
-    private final Source localSource = new Source(Source.Origin.LOCAL, "test");
+    private final Source localSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, "test");
     private final ExtTestSubscriber<ChangeNotification<InstanceInfo>> registrationUpdateSubscriber = new ExtTestSubscriber<>();
 
     @Override

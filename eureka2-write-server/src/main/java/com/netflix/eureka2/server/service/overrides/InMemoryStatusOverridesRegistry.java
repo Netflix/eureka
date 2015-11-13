@@ -1,16 +1,16 @@
 package com.netflix.eureka2.server.service.overrides;
 
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import rx.Observable;
-import rx.Subscriber;
-import rx.functions.Func1;
-import rx.subjects.BehaviorSubject;
-
 import javax.annotation.PreDestroy;
 import javax.inject.Singleton;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import rx.Observable;
+import rx.Subscriber;
+import rx.functions.Func1;
+import rx.subjects.BehaviorSubject;
 
 /**
  * An overrides source implementation that stores overrides in memory. This is designed for test and embedded use

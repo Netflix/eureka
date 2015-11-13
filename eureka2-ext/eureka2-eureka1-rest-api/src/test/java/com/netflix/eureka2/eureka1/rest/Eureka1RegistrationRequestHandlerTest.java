@@ -9,6 +9,7 @@ import com.netflix.eureka2.eureka1.rest.codec.Eureka1DataCodec.EncodingFormat;
 import com.netflix.eureka2.eureka1.rest.codec.XStreamEureka1DataCodec;
 import com.netflix.eureka2.eureka1.rest.registry.Eureka1RegistryProxy;
 import com.netflix.eureka2.eureka1.rest.registry.Eureka1RegistryProxy.Result;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -39,6 +40,10 @@ import static org.mockito.Mockito.when;
  * @author Tomasz Bak
  */
 public class Eureka1RegistrationRequestHandlerTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final InstanceInfo V2_SAMPLE_INSTANCE = SampleInstanceInfo.WebServer.build();
     private static final com.netflix.appinfo.InstanceInfo V1_SAMPLE_INSTANCE =

@@ -7,15 +7,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import com.netflix.eureka2.utils.functions.ChangeNotifications;
-import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.InstanceInfo.ServiceEndpoint;
 import com.netflix.eureka2.model.instance.NetworkAddress.ProtocolType;
+import com.netflix.eureka2.model.instance.ServiceEndpoint;
 import com.netflix.eureka2.model.selector.ServiceSelector;
 import com.netflix.eureka2.server.config.EurekaClusterDiscoveryConfig;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.server.spi.ExtensionContext;
+import com.netflix.eureka2.utils.functions.ChangeNotifications;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpHeaders.Names;
 import io.netty.handler.codec.http.HttpResponseStatus;

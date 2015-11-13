@@ -1,19 +1,21 @@
 package com.netflix.eureka2.integration.batching;
 
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.model.notification.StreamStateNotification;
-import com.netflix.eureka2.protocol.common.AddInstance;
-import com.netflix.eureka2.protocol.common.InterestSetNotification;
-import com.netflix.eureka2.protocol.common.StreamStateUpdate;
-import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.registry.MultiSourcedDataHolder;
-import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.StreamStateNotification;
+import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.MultiSourcedDataHolder;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.protocol.common.AddInstance;
+import com.netflix.eureka2.spi.protocol.common.InterestSetNotification;
+import com.netflix.eureka2.spi.protocol.common.StreamStateUpdate;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -22,6 +24,10 @@ import static org.hamcrest.Matchers.is;
  * @author David Liu
  */
 public abstract class AbstractBatchHintsIntegrationTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     //
     // ----- helpers -----
@@ -64,10 +70,10 @@ public abstract class AbstractBatchHintsIntegrationTest {
     }
 
     protected StreamStateUpdate newBufferStart(Interest<InstanceInfo> interest) {
-        return new StreamStateUpdate(StreamStateNotification.bufferStartNotification(interest));
+        return ProtocolModel.getDefaultModel().newStreamStateUpdate(StreamStateNotification.bufferStartNotification(interest));
     }
 
     protected StreamStateUpdate newBufferEnd(Interest<InstanceInfo> interest) {
-        return new StreamStateUpdate(StreamStateNotification.bufferEndNotification(interest));
+        return ProtocolModel.getDefaultModel().newStreamStateUpdate(StreamStateNotification.bufferEndNotification(interest));
     }
 }

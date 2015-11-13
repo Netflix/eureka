@@ -26,7 +26,7 @@ import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.server.channel.RegistrationChannelImpl;
 import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
 import io.reactivex.netty.channel.ConnectionHandler;
@@ -54,7 +54,7 @@ public class TcpRegistrationHandler implements ConnectionHandler<Object, Object>
 
     @Override
     public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
-        MessageConnection broker = new HeartBeatConnection(
+        EurekaConnection broker = new HeartBeatConnection(
                 new BaseMessageConnection(Names.REGISTRATION_SERVER, connection, metricFactory.getRegistrationConnectionMetrics()),
                 config.getEurekaTransport().getHeartbeatIntervalMs(), 3,
                 Schedulers.computation()

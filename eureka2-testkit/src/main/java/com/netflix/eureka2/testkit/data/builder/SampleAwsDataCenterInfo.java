@@ -18,7 +18,9 @@ package com.netflix.eureka2.testkit.data.builder;
 
 import java.util.Iterator;
 
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.datacenter.AwsDataCenterInfo;
+import com.netflix.eureka2.model.datacenter.AwsDataCenterInfoBuilder;
 import com.netflix.eureka2.model.instance.NetworkAddress;
 
 /**
@@ -28,8 +30,8 @@ public enum SampleAwsDataCenterInfo {
 
     UsEast1a() {
         @Override
-        public AwsDataCenterInfo.Builder builder() {
-            return new AwsDataCenterInfo.Builder()
+        public AwsDataCenterInfoBuilder builder() {
+            return InstanceModel.getDefaultModel().newAwsDataCenterInfo()
                     .withRegion("US-East-1")
                     .withZone("US-East-1a")
                     .withPlacementGroup("pg-1")
@@ -46,8 +48,8 @@ public enum SampleAwsDataCenterInfo {
     },
     UsEast1aVpc() {
         @Override
-        public AwsDataCenterInfo.Builder builder() {
-            return new AwsDataCenterInfo.Builder()
+        public AwsDataCenterInfoBuilder builder() {
+            return InstanceModel.getDefaultModel().newAwsDataCenterInfo()
                     .withRegion("US-East-1")
                     .withZone("US-East-1a")
                     .withPlacementGroup("pg-1")
@@ -65,8 +67,8 @@ public enum SampleAwsDataCenterInfo {
     },
     UsEast1c() {
         @Override
-        public AwsDataCenterInfo.Builder builder() {
-            return new AwsDataCenterInfo.Builder()
+        public AwsDataCenterInfoBuilder builder() {
+            return InstanceModel.getDefaultModel().newAwsDataCenterInfo()
                     .withRegion("US-East-1")
                     .withZone("US-East-1c")
                     .withPlacementGroup("pg-1")
@@ -80,7 +82,7 @@ public enum SampleAwsDataCenterInfo {
         }
     };
 
-    public abstract AwsDataCenterInfo.Builder builder();
+    public abstract AwsDataCenterInfoBuilder builder();
 
     public AwsDataCenterInfo build() {
         return builder().build();
@@ -103,7 +105,7 @@ public enum SampleAwsDataCenterInfo {
             public AwsDataCenterInfo next() {
                 NetworkAddress publicAddress = publicAddresses.next();
                 NetworkAddress privateAddress = privateAddresses.next();
-                return new AwsDataCenterInfo.Builder()
+                return InstanceModel.getDefaultModel().newAwsDataCenterInfo()
                         .withAwsDataCenter(template)
                         .withInstanceId(String.format("id-%08d", ++instanceId))
                         .withPublicHostName(publicAddress.getHostName())

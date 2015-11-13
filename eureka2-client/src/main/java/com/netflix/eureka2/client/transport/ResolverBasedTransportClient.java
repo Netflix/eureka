@@ -2,7 +2,7 @@ package com.netflix.eureka2.client.transport;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.EurekaTransportConfig;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
@@ -53,7 +53,7 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
     }
 
     @Override
-    public Observable<MessageConnection> connect() {
+    public Observable<EurekaConnection> connect() {
         return resolver.resolve()
                 .take(1)
                 .map(new Func1<Server, RxClient<Object, Object>>() {
@@ -70,13 +70,13 @@ public abstract class ResolverBasedTransportClient implements TransportClient {
                         return client;
                     }
                 })
-                .flatMap(new Func1<RxClient<Object, Object>, Observable<MessageConnection>>() {
+                .flatMap(new Func1<RxClient<Object, Object>, Observable<EurekaConnection>>() {
                     @Override
-                    public Observable<MessageConnection> call(final RxClient<Object, Object> client) {
+                    public Observable<EurekaConnection> call(final RxClient<Object, Object> client) {
                         return client.connect()
-                                .map(new Func1<ObservableConnection<Object, Object>, MessageConnection>() {
+                                .map(new Func1<ObservableConnection<Object, Object>, EurekaConnection>() {
                                     @Override
-                                    public MessageConnection call(
+                                    public EurekaConnection call(
                                             ObservableConnection<Object, Object> conn) {
                                         String clientInstanceId = clientId + '#' + clientInstanceIdx.incrementAndGet();
                                         return new SelfClosingConnection(

@@ -1,26 +1,26 @@
 package com.netflix.eureka2.utils.functions;
 
+import java.util.Collections;
+import java.util.Map;
+
+import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.instance.Delta;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.model.notification.SourcedChangeNotification;
 import com.netflix.eureka2.model.notification.SourcedModifyNotification;
 import com.netflix.eureka2.model.notification.SourcedStreamStateNotification;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
-import com.netflix.eureka2.protocol.common.AddInstance;
-import com.netflix.eureka2.protocol.common.DeleteInstance;
-import com.netflix.eureka2.protocol.common.InterestSetNotification;
-import com.netflix.eureka2.protocol.common.StreamStateUpdate;
-import com.netflix.eureka2.protocol.interest.UpdateInstanceInfo;
+import com.netflix.eureka2.spi.protocol.common.AddInstance;
+import com.netflix.eureka2.spi.protocol.common.DeleteInstance;
+import com.netflix.eureka2.spi.protocol.common.InterestSetNotification;
+import com.netflix.eureka2.spi.protocol.common.StreamStateUpdate;
+import com.netflix.eureka2.spi.protocol.interest.UpdateInstanceInfo;
 import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.model.instance.Delta;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 import org.slf4j.Logger;
 import rx.Observable;
 import rx.functions.Func1;
-
-import java.util.Collections;
-import java.util.Map;
 
 /**
  * @author David Liu
@@ -99,6 +99,7 @@ public final class ChannelFunctions {
                 }
                 return false;
             }
+
             @Override
             public String toString() {
                 return "evictAllOlderMatcher{" + currentSource + "}";

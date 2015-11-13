@@ -19,12 +19,12 @@ package com.netflix.eureka2.server.transport.tcp.replication;
 import javax.inject.Inject;
 
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
-import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.server.channel.ReceiverReplicationChannel;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
 import io.reactivex.netty.channel.ConnectionHandler;
@@ -60,7 +60,7 @@ public class TcpReplicationHandler implements ConnectionHandler<Object, Object> 
 
     @Override
     public Observable<Void> handle(ObservableConnection<Object, Object> connection) {
-        final MessageConnection broker = new HeartBeatConnection(
+        final EurekaConnection broker = new HeartBeatConnection(
                 new BaseMessageConnection("replicationReceiver", connection, metricFactory.getReplicationReceiverConnectionMetrics()),
                 config.getEurekaTransport().getHeartbeatIntervalMs(), 3,
                 Schedulers.computation()
@@ -76,7 +76,7 @@ public class TcpReplicationHandler implements ConnectionHandler<Object, Object> 
                 });
     }
 
-    /* visible for testing */ ReceiverReplicationChannel doHandle(MessageConnection connection) {
+    /* visible for testing */ ReceiverReplicationChannel doHandle(EurekaConnection connection) {
         return new ReceiverReplicationChannel(connection, selfIdentityService, registry, metricFactory.getReplicationChannelMetrics());
     }
 }

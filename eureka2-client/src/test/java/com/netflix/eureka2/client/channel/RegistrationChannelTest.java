@@ -6,12 +6,14 @@ import java.util.concurrent.TimeUnit;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.channel.RegistrationChannel.STATE;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
-import com.netflix.eureka2.protocol.registration.Register;
-import com.netflix.eureka2.protocol.registration.Unregister;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
+import com.netflix.eureka2.model.instance.StdInstanceInfo;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.transport.TransportClient;
 import org.junit.After;
 import org.junit.Before;
@@ -37,26 +39,30 @@ import static org.mockito.Mockito.when;
  */
 public class RegistrationChannelTest {
 
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     private final RegistrationChannelMetrics channelMetrics = mock(RegistrationChannelMetrics.class);
 
     private InstanceInfo instanceStarting;
     private InstanceInfo instanceUp;
     private InstanceInfo instanceDown;
 
-    private MessageConnection messageConnection;
+    private EurekaConnection messageConnection;
     private TransportClient transportClient;
     private RegistrationChannel channel;
 
     @Before
     public void setUp() {
-        InstanceInfo.Builder seed = SampleInstanceInfo.DiscoveryServer.builder().withId("id").withApp("app");
+        InstanceInfoBuilder seed = SampleInstanceInfo.DiscoveryServer.builder().withId("id").withApp("app");
 
-        instanceStarting = seed.withStatus(InstanceInfo.Status.STARTING).build();
-        instanceUp = seed.withStatus(InstanceInfo.Status.UP).build();
-        instanceDown = seed.withStatus(InstanceInfo.Status.DOWN).build();
+        instanceStarting = seed.withStatus(StdInstanceInfo.Status.STARTING).build();
+        instanceUp = seed.withStatus(StdInstanceInfo.Status.UP).build();
+        instanceDown = seed.withStatus(StdInstanceInfo.Status.DOWN).build();
 
         final ReplaySubject<Void> connectionLifecycle = ReplaySubject.create();
-        messageConnection = mock(MessageConnection.class);
+        messageConnection = mock(EurekaConnection.class);
         when(messageConnection.submitWithAck(anyObject())).thenReturn(Observable.<Void>empty());
         when(messageConnection.lifecycleObservable()).thenReturn(connectionLifecycle);
 
@@ -79,10 +85,10 @@ public class RegistrationChannelTest {
         channel.unregister().subscribe();
 
         InOrder inOrder = inOrder(messageConnection);
-        inOrder.verify(messageConnection).submitWithAck(new Register(instanceStarting));
-        inOrder.verify(messageConnection).submitWithAck(new Register(instanceUp));
-        inOrder.verify(messageConnection).submitWithAck(new Register(instanceDown));
-        inOrder.verify(messageConnection).submitWithAck(Unregister.INSTANCE);
+        inOrder.verify(messageConnection).submitWithAck(ProtocolModel.getDefaultModel().newRegister(instanceStarting));
+        inOrder.verify(messageConnection).submitWithAck(ProtocolModel.getDefaultModel().newRegister(instanceUp));
+        inOrder.verify(messageConnection).submitWithAck(ProtocolModel.getDefaultModel().newRegister(instanceDown));
+        inOrder.verify(messageConnection).submitWithAck(ProtocolModel.getDefaultModel().newUnregister());
     }
 
     @Test(timeout = 60000)

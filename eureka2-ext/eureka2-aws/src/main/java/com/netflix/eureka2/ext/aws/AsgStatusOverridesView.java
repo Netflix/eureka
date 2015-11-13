@@ -1,5 +1,13 @@
 package com.netflix.eureka2.ext.aws;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.inject.Inject;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import com.amazonaws.services.autoscaling.AmazonAutoScaling;
 import com.amazonaws.services.autoscaling.model.AutoScalingGroup;
 import com.amazonaws.services.autoscaling.model.DescribeAutoScalingGroupsRequest;
@@ -8,8 +16,8 @@ import com.amazonaws.services.autoscaling.model.SuspendedProcess;
 import com.netflix.eureka2.model.datacenter.AwsDataCenterInfo;
 import com.netflix.eureka2.model.datacenter.DataCenterInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.service.overrides.InstanceStatusOverridesView;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -21,14 +29,6 @@ import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.subjects.BehaviorSubject;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.inject.Inject;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * An overrides source implementation that determines instance status overrides based on AWS asg
@@ -122,12 +122,12 @@ public class AsgStatusOverridesView implements InstanceStatusOverridesView {
                 .map(new Func1<Map<AsgAndAccount, Boolean>, Boolean>() {
                     @Override
                     public Boolean call(Map<AsgAndAccount, Boolean> map) {
-                        if (! (instanceInfo.getDataCenterInfo() instanceof AwsDataCenterInfo) ) {
+                        if (!(instanceInfo.getDataCenterInfo() instanceof AwsDataCenterInfo)) {
                             return false;
                         }
 
                         String asgName = instanceInfo.getAsg();
-                        String accountId = ((AwsDataCenterInfo)instanceInfo.getDataCenterInfo()).getAccountId();
+                        String accountId = ((AwsDataCenterInfo) instanceInfo.getDataCenterInfo()).getAccountId();
                         if (accountId == null) {
                             accountId = defaultAccountId;
                         }
@@ -231,13 +231,17 @@ public class AsgStatusOverridesView implements InstanceStatusOverridesView {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof AsgAndAccount)) return false;
+            if (this == o)
+                return true;
+            if (!(o instanceof AsgAndAccount))
+                return false;
 
             AsgAndAccount that = (AsgAndAccount) o;
 
-            if (accountId != null ? !accountId.equals(that.accountId) : that.accountId != null) return false;
-            if (asgName != null ? !asgName.equals(that.asgName) : that.asgName != null) return false;
+            if (accountId != null ? !accountId.equals(that.accountId) : that.accountId != null)
+                return false;
+            if (asgName != null ? !asgName.equals(that.asgName) : that.asgName != null)
+                return false;
 
             return true;
         }

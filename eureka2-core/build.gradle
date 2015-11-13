@@ -16,17 +16,14 @@
 
 apply plugin: 'osgi'
 
-configurations {
-    avroTool
-}
-
 dependencies {
-    avroTool "org.apache.avro:avro-tools:${avro_version}"
-
+    compile project(':eureka2-api')
     compile "javax.inject:javax.inject:${javax_inject_version}"
     compile "io.reactivex:rxjava:${rxjava_version}"
     compile "io.reactivex:rxnetty:${rxnetty_version}"
-    compile "org.apache.avro:avro:${avro_version}"
+    compile "com.fasterxml.jackson.core:jackson-annotations:${jackson_version}"
+    compile "com.fasterxml.jackson.core:jackson-core:${jackson_version}"
+    compile "com.fasterxml.jackson.core:jackson-databind:${jackson_version}"
 
     testCompile project(':eureka2-test-utils')
     testCompile project(':eureka2-testkit')
@@ -39,55 +36,4 @@ jar {
         instruction 'Bundle-DocURL', 'https://github.com/Netflix/eureka'
         instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
     }
-    from("${projectDir}/build/classes/main") {
-        include("*.avpr")
-    }
 }
-
-// Avro schema processing
-
-task prepareOutputDir << {
-    mkdir "build/classes/main"
-}
-
-task buildRegistrationSchema (type: JavaExec, dependsOn: 'prepareOutputDir') {
-    group = "Avro"
-    description = "Process Avro IDL files and generate Avro schema documents for registration protocol"
-
-    main = "org.apache.avro.tool.Main"
-    classpath = configurations.avroTool
-    args = [
-            "idl",
-            "src/main/avro/registration-schema.avdl",
-            "build/classes/main/registration-schema.avpr"
-    ]
-}
-task buildReplicationSchema (type: JavaExec, dependsOn: 'prepareOutputDir') {
-    group = "Avro"
-    description = "Process Avro IDL files and generate Avro schema documents for replication protocol"
-
-    main = "org.apache.avro.tool.Main"
-    classpath = configurations.avroTool
-    args = [
-            "idl",
-            "src/main/avro/replication-schema.avdl",
-            "build/classes/main/replication-schema.avpr"
-    ]
-}
-task buildInterestSchema (type: JavaExec, dependsOn: 'prepareOutputDir') {
-    group = "Avro"
-    description = "Process Avro IDL files and generate Avro schema documents for discovery protocol"
-
-    main = "org.apache.avro.tool.Main"
-    classpath = configurations.avroTool
-    args = [
-            "idl",
-            "src/main/avro/interest-schema.avdl",
-            "build/classes/main/interest-schema.avpr"
-    ]
-}
-
-task avroSchemas << {}
-avroSchemas.dependsOn buildRegistrationSchema, buildReplicationSchema, buildInterestSchema
-
-compileJava.dependsOn avroSchemas

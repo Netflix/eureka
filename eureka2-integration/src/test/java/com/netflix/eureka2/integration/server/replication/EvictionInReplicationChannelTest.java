@@ -4,6 +4,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.integration.EurekaDeploymentClients;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
@@ -21,6 +22,10 @@ import static com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResour
  */
 @Category(IntegrationTest.class)
 public class EvictionInReplicationChannelTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final int CLUSTER_SIZE = 20;
 

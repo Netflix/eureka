@@ -4,9 +4,10 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.utils.rx.SettableSubscriber;
@@ -85,7 +86,7 @@ public class EurekaWriteServerSelfRegistrationService extends SelfRegistrationSe
                 .switchMap(new Func1<InstanceInfo, Observable<? extends Void>>() {
                     @Override
                     public Observable<? extends Void> call(InstanceInfo instanceInfo) {
-                        selfSource = new Source(Source.Origin.LOCAL, instanceInfo.getId());
+                        selfSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, instanceInfo.getId());
                         logger.info("registering self InstanceInfo {}", instanceInfo);
                         input.subscribe(lastInstanceInfoSubject);
                         return registrationProcessor.connect(instanceInfo.getId(), selfSource, data);

@@ -21,9 +21,9 @@ import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
 import com.netflix.eureka2.client.interest.EurekaInterestClientImpl;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.EurekaRegistryImpl;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 
 /**
  * @author David Liu

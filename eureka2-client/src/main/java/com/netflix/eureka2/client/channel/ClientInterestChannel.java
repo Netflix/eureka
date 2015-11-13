@@ -1,18 +1,22 @@
 package com.netflix.eureka2.client.channel;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.netflix.eureka2.channel.AbstractClientChannel;
-import com.netflix.eureka2.utils.functions.ChannelFunctions;
 import com.netflix.eureka2.channel.InterestChannel;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
-import com.netflix.eureka2.protocol.common.InterestSetNotification;
-import com.netflix.eureka2.protocol.interest.InterestRegistration;
-import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.protocol.common.InterestSetNotification;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.transport.TransportClient;
+import com.netflix.eureka2.utils.functions.ChannelFunctions;
 import com.netflix.eureka2.utils.rx.LoggingSubscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,9 +24,6 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action1;
 import rx.functions.Func1;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author David Liu
@@ -55,7 +56,7 @@ public class ClientInterestChannel extends AbstractClientChannel<InterestChannel
      *
      * <h2>Thread safety</h2>
      *
-     * Since this channel directly leverages the underlying {@link com.netflix.eureka2.transport.MessageConnection} and our underlying stack guarantees
+     * Since this channel directly leverages the underlying {@link EurekaConnection} and our underlying stack guarantees
      * that there are not concurrent updates sent to the input reader, we can safely assume that this code is single
      * threaded.
      */
@@ -66,7 +67,7 @@ public class ClientInterestChannel extends AbstractClientChannel<InterestChannel
                                  long generationId,
                                  InterestChannelMetrics metrics) {
         super(STATE.Idle, client, metrics);
-        this.selfSource = new Source(Source.Origin.INTERESTED, "clientInterestChannel", generationId);
+        this.selfSource = InstanceModel.getDefaultModel().createSource(Source.Origin.INTERESTED, "clientInterestChannel", generationId);
         this.registry = registry;
         this.channelSubscriber = new LoggingSubscriber<>(logger, "channel");
         this.channelInterestStream = createInterestStream();
@@ -90,10 +91,10 @@ public class ClientInterestChannel extends AbstractClientChannel<InterestChannel
         }
 
         Observable<Void> serverRequest = connect() // Connect is idempotent and does not connect on every call.
-                .switchMap(new Func1<MessageConnection, Observable<Void>>() {
+                .switchMap(new Func1<EurekaConnection, Observable<Void>>() {
                     @Override
-                    public Observable<Void> call(MessageConnection serverConnection) {
-                        return sendExpectAckOnConnection(serverConnection, new InterestRegistration(newInterest));
+                    public Observable<Void> call(EurekaConnection serverConnection) {
+                        return sendExpectAckOnConnection(serverConnection, ProtocolModel.getDefaultModel().newInterestRegistration(newInterest));
                     }
                 });
 
@@ -138,9 +139,9 @@ public class ClientInterestChannel extends AbstractClientChannel<InterestChannel
 
     protected Observable<ChangeNotification<InstanceInfo>> createInterestStream() {
 
-        return connect().switchMap(new Func1<MessageConnection, Observable<? extends ChangeNotification<InstanceInfo>>>() {
+        return connect().switchMap(new Func1<EurekaConnection, Observable<? extends ChangeNotification<InstanceInfo>>>() {
             @Override
-            public Observable<? extends ChangeNotification<InstanceInfo>> call(final MessageConnection connection) {
+            public Observable<? extends ChangeNotification<InstanceInfo>> call(final EurekaConnection connection) {
                 return connection.incoming()
                         .filter(new Func1<Object, Boolean>() {
                             @Override

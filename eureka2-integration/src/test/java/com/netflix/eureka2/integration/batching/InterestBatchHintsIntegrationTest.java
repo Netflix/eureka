@@ -1,25 +1,31 @@
 package com.netflix.eureka2.integration.batching;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.channel.ClientChannelFactory;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
 import com.netflix.eureka2.client.interest.EurekaInterestClientImpl;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
-import com.netflix.eureka2.protocol.common.InterestSetNotification;
-import com.netflix.eureka2.protocol.interest.SampleAddInstance;
-import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Sourced;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.spi.protocol.common.InterestSetNotification;
+import com.netflix.eureka2.spi.protocol.interest.SampleAddInstance;
+import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistryImpl;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import org.junit.After;
 import org.junit.Before;
@@ -33,15 +39,9 @@ import rx.Observable;
 import rx.functions.Func1;
 import rx.subjects.ReplaySubject;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-
 import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -59,7 +59,7 @@ public class InterestBatchHintsIntegrationTest extends AbstractBatchHintsIntegra
 
     private ReplaySubject<Object> incomingSubject;
     private ReplaySubject<Void> serverConnectionLifecycle;
-    private MessageConnection serverConnection;
+    private EurekaConnection serverConnection;
     private TransportClient transport;
 
     private ClientChannelFactory<InterestChannel> channelFactory;
@@ -76,7 +76,7 @@ public class InterestBatchHintsIntegrationTest extends AbstractBatchHintsIntegra
         incomingSubject = ReplaySubject.create();
         serverConnectionLifecycle = ReplaySubject.create();
 
-        serverConnection = mock(MessageConnection.class);
+        serverConnection = mock(EurekaConnection.class);
         when(serverConnection.incoming()).thenReturn(incomingSubject);
         when(serverConnection.acknowledge()).thenReturn(Observable.<Void>empty());
         when(serverConnection.lifecycleObservable()).thenReturn(serverConnectionLifecycle);
@@ -170,7 +170,7 @@ public class InterestBatchHintsIntegrationTest extends AbstractBatchHintsIntegra
         ReplaySubject<Void> serverConnection2Lifecycle = ReplaySubject.create();
         ReplaySubject<Object> incomingSubject2 = ReplaySubject.create();
 
-        MessageConnection serverConnection2 = mock(MessageConnection.class);
+        EurekaConnection serverConnection2 = mock(EurekaConnection.class);
         when(serverConnection2.incoming()).thenReturn(incomingSubject2);
         when(serverConnection2.acknowledge()).thenReturn(Observable.<Void>empty());
         when(serverConnection2.lifecycleObservable()).thenReturn(serverConnection2Lifecycle);
@@ -231,15 +231,15 @@ public class InterestBatchHintsIntegrationTest extends AbstractBatchHintsIntegra
         serverConnectionLifecycle.onError(new Exception("test channel failure"));
 
         Thread.sleep(200); // give it a bit of time
-        verify(registry, times(1)).evictAll(Matchers.any(Source.SourceMatcher.class));  // channel1's eviction event
+        verify(registry, times(1)).evictAll(Matchers.any(StdSource.SourceMatcher.class));  // channel1's eviction event
 
         incomingSubject2.onNext(newBufferStart(interest));
         Thread.sleep(200); // give it a bit of time
-        verify(registry, times(1)).evictAll(Matchers.any(Source.SourceMatcher.class));  // still channel1's event
+        verify(registry, times(1)).evictAll(Matchers.any(StdSource.SourceMatcher.class));  // still channel1's event
 
         incomingSubject2.onNext(newBufferEnd(interest));
         Thread.sleep(2000); // give it a bit of time
-        verify(registry, times(2)).evictAll(Matchers.any(Source.SourceMatcher.class));  // channel2's eviction event
+        verify(registry, times(2)).evictAll(Matchers.any(StdSource.SourceMatcher.class));  // channel2's eviction event
 
         assertThat(createdInterestChannels.size(), is(2));
         assertThat(createdInterestChannels.get(1), instanceOf(Sourced.class));

@@ -1,14 +1,15 @@
 package com.netflix.eureka2.client.interest;
 
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.MultipleInterests;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import com.netflix.eureka2.model.InterestModel;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.MultipleInterests;
 import rx.Observable;
 import rx.subjects.BehaviorSubject;
 import rx.subjects.Subject;
-
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * A class that tracks and refCounts current interests for EurekaInterestClient.
@@ -19,7 +20,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class InterestTracker {
     private final ConcurrentMap<Interest<InstanceInfo>, Integer> interests = new ConcurrentHashMap<>();
-    private volatile MultipleInterests<InstanceInfo> multipleInterests = new MultipleInterests<>();
+    private volatile MultipleInterests<InstanceInfo> multipleInterests = InterestModel.getDefaultModel().newMultipleInterests();
 
     private final Subject<Interest<InstanceInfo>, Interest<InstanceInfo>> interestSubject = BehaviorSubject.create();
 

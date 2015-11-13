@@ -1,5 +1,6 @@
 package com.netflix.eureka2.testkit.junit.matchers;
 
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -14,6 +15,10 @@ import static org.junit.Assert.*;
  * @author Tomasz Bak
  */
 public class ChangeNotificationMatcherTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final InstanceInfo INFO = SampleInstanceInfo.EurekaWriteServer.build();
     private static final InstanceInfo OTHER_INFO = SampleInstanceInfo.EurekaReadServer.build();

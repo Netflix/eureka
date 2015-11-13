@@ -3,9 +3,10 @@ package com.netflix.eureka2.server.service.selfinfo;
 import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.datacenter.DataCenterInfo;
 import com.netflix.eureka2.model.datacenter.LocalDataCenterInfo;
-import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.model.selector.AddressSelector;
 import com.netflix.eureka2.server.config.EurekaInstanceInfoConfig;
 import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
@@ -48,35 +49,35 @@ public class PeriodicDataCenterInfoResolver extends ChainableSelfInfoResolver {
             final Func0<Observable<? extends DataCenterInfo>> dataCenterInfoFunc,
             final Scheduler scheduler) {
         super(Observable.timer(0, config.getDataCenterResolveIntervalSec(), TimeUnit.SECONDS, scheduler)
-                        .flatMap(new Func1<Long, Observable<? extends DataCenterInfo>>() {
+                .flatMap(new Func1<Long, Observable<? extends DataCenterInfo>>() {
+                    @Override
+                    public Observable<? extends DataCenterInfo> call(Long aLong) {
+                        logger.debug("Re-resolving datacenter info");
+
+                        Observable returnObservable = dataCenterInfoFunc.call();
+                        return returnObservable.onErrorResumeNext(new Func1<Throwable, Observable>() {
                             @Override
-                            public Observable<? extends DataCenterInfo> call(Long aLong) {
-                                logger.debug("Re-resolving datacenter info");
-
-                                Observable returnObservable = dataCenterInfoFunc.call();
-                                return returnObservable.onErrorResumeNext(new Func1<Throwable, Observable>() {
-                                    @Override
-                                    public Observable call(Throwable throwable) {
-                                        logger.warn("failed to Resolve datacenter info, skipping this round", throwable);
-                                        return Observable.empty();
-                                    }
-                                });
+                            public Observable call(Throwable throwable) {
+                                logger.warn("failed to Resolve datacenter info, skipping this round", throwable);
+                                return Observable.empty();
                             }
-                        })
-                        .map(new Func1<DataCenterInfo, InstanceInfo.Builder>() {
-                            @Override
-                            public InstanceInfo.Builder call(DataCenterInfo dataCenterInfo) {
+                        });
+                    }
+                })
+                .map(new Func1<DataCenterInfo, InstanceInfoBuilder>() {
+                    @Override
+                    public InstanceInfoBuilder call(DataCenterInfo dataCenterInfo) {
 
-                                // also update the healthcheck urls
-                                String address = AddressSelector.selectBy().publicIp(true).or().any().returnNameOrIp(dataCenterInfo.getAddresses());
-                                HashSet<String> healthCheckUrls = new HashSet<>();
-                                healthCheckUrls.add("http://" + address + ':' + transportConfig.getWebAdminPort() + "/healthcheck");
+                        // also update the healthcheck urls
+                        String address = AddressSelector.selectBy().publicIp(true).or().any().returnNameOrIp(dataCenterInfo.getAddresses());
+                        HashSet<String> healthCheckUrls = new HashSet<>();
+                        healthCheckUrls.add("http://" + address + ':' + transportConfig.getWebAdminPort() + "/healthcheck");
 
-                                return new InstanceInfo.Builder()
-                                        .withHealthCheckUrls(healthCheckUrls)
-                                        .withDataCenterInfo(dataCenterInfo);
-                            }
-                        })
+                        return InstanceModel.getDefaultModel().newInstanceInfo()
+                                .withHealthCheckUrls(healthCheckUrls)
+                                .withDataCenterInfo(dataCenterInfo);
+                    }
+                })
         );
     }
 }

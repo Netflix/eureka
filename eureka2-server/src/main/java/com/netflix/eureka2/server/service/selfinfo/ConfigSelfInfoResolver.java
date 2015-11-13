@@ -1,10 +1,12 @@
 package com.netflix.eureka2.server.service.selfinfo;
 
+import java.util.UUID;
+
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.server.config.EurekaInstanceInfoConfig;
 import rx.Observable;
-
-import java.util.UUID;
 
 /**
  * A self info resolver that auto resolves datacenter info and then resolves config information into an instance info.
@@ -17,13 +19,13 @@ public class ConfigSelfInfoResolver extends ChainableSelfInfoResolver {
         super(getFixedSelfInfo(instanceConfig));
     }
 
-    private static Observable<InstanceInfo.Builder> getFixedSelfInfo(EurekaInstanceInfoConfig instanceConfig) {
+    private static Observable<InstanceInfoBuilder> getFixedSelfInfo(EurekaInstanceInfoConfig instanceConfig) {
         String uniqueId = instanceConfig.getUniqueId() == null
                 ? UUID.randomUUID().toString()
                 : instanceConfig.getUniqueId();
 
         final String instanceId = instanceConfig.getEurekaApplicationName() + "__" + uniqueId;
-        InstanceInfo.Builder builder = new InstanceInfo.Builder()
+        InstanceInfoBuilder builder = InstanceModel.getDefaultModel().newInstanceInfo()
                 .withId(instanceId)
                 .withApp(instanceConfig.getEurekaApplicationName())
                 .withVipAddress(instanceConfig.getEurekaVipAddress())

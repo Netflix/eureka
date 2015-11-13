@@ -23,14 +23,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.netflix.eureka2.codec.CodecType;
-import com.netflix.eureka2.codec.EurekaCodec;
-import com.netflix.eureka2.codec.EurekaCodecs;
 import com.netflix.eureka2.codec.RxNettyCodecUtils;
-import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.registry.MultiSourcedDataHolder;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.MultiSourcedDataHolder;
+import com.netflix.eureka2.spi.codec.EurekaCodec;
+import com.netflix.eureka2.spi.codec.EurekaCodecFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpHeaders.Names;
 import io.netty.handler.codec.http.HttpMethod;
@@ -62,13 +61,15 @@ public class DiagnosticInstanceHoldersResource implements RequestHandler<ByteBuf
     private static final Pattern INSTANCE_HOLDERS_RE = Pattern.compile(PATH_DIAGNOSTIC_ENTRYHOLDERS);
     private static final Pattern INSTANCE_HOLDER_RE = Pattern.compile(PATH_DIAGNOSTIC_ENTRYHOLDERS + "/([^/]+)$");
 
-    private final EurekaCodec<MultiSourcedDataHolder<InstanceInfo>> fullCodec = EurekaCodecs.getMultiSourcedDataHolderCodec(CodecType.Json);
-    private final EurekaCodec<MultiSourcedDataHolder<InstanceInfo>> compactCodec = EurekaCodecs.getCompactMultiSourcedDataHolderCodec(CodecType.Json);
+    private final EurekaCodec fullCodec;
+    private final EurekaCodec compactCodec;
     private final EurekaRegistry<InstanceInfo> registry;
 
     @Inject
     public DiagnosticInstanceHoldersResource(EurekaRegistry registry) {
         this.registry = registry;
+        this.fullCodec = EurekaCodecFactory.getDefaultFactory().getCodec();
+        this.compactCodec = EurekaCodecFactory.getDefaultFactory().getCodec();
     }
 
     @Override

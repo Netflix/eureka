@@ -4,10 +4,12 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interests;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.datacenter.AwsDataCenterInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
 import org.junit.Before;
 import org.mockito.Mock;
@@ -18,14 +20,18 @@ import static org.mockito.Mockito.when;
 
 public class RegistryTestBase {
 
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     public static final String ZUUL = "zuul";
 
     @Mock
     protected EurekaInterestClient interestClient;
 
     private InstanceInfo instance(String app, int instId) {
-        final AwsDataCenterInfo awsDataCenterInfo = new AwsDataCenterInfo.Builder().withInstanceId("Inst-" + instId).build();
-        return new InstanceInfo.Builder()
+        final AwsDataCenterInfo awsDataCenterInfo = InstanceModel.getDefaultModel().newAwsDataCenterInfo().withInstanceId("Inst-" + instId).build();
+        return InstanceModel.getDefaultModel().newInstanceInfo()
                 .withApp(app)
                 .withId("id#-" + instId)
                 .withVipAddress(app + ":8080")

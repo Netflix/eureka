@@ -9,24 +9,27 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.model.Sourced;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.utils.functions.ChangeNotifications;
-import com.netflix.eureka2.registry.index.IndexRegistryImpl;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.model.notification.SourcedStreamStateNotification;
-import com.netflix.eureka2.model.notification.StreamStateNotification;
-import com.netflix.eureka2.model.notification.StreamStateNotification.BufferState;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.EurekaRegistryMetrics;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Source.Origin;
+import com.netflix.eureka2.model.Sourced;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.InstanceInfo.Builder;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.model.instance.StdInstanceInfo;
+import com.netflix.eureka2.model.instance.StdInstanceInfo.Builder;
+import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.SourcedStreamStateNotification;
+import com.netflix.eureka2.model.notification.StreamStateNotification;
+import com.netflix.eureka2.model.notification.StreamStateNotification.BufferState;
+import com.netflix.eureka2.registry.index.IndexRegistryImpl;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
+import com.netflix.eureka2.utils.functions.ChangeNotifications;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -41,10 +44,10 @@ import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotificationOf;
+import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -66,13 +69,18 @@ import static org.mockito.Mockito.when;
  * @author David Liu
  */
 public class EurekaRegistryImplTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     private final EurekaRegistryMetricFactory registryMetricFactory = mock(EurekaRegistryMetricFactory.class);
     private final EurekaRegistryMetrics registryMetrics = mock(EurekaRegistryMetrics.class);
     private final SerializedTaskInvokerMetrics registryTaskInvokerMetrics = mock(SerializedTaskInvokerMetrics.class);
 
     private final TestScheduler testScheduler = Schedulers.test();
-    private final Source localSource = new Source(Source.Origin.LOCAL, "local");
-    private final Source replicatedSource = new Source(Source.Origin.REPLICATED, "abc");
+    private final StdSource localSource = new StdSource(StdSource.Origin.LOCAL, "local");
+    private final StdSource replicatedSource = new StdSource(StdSource.Origin.REPLICATED, "abc");
 
     private MultiSourcedDataStore<InstanceInfo> internalStore;
     private EurekaRegistry<InstanceInfo> registry;
@@ -228,7 +236,7 @@ public class EurekaRegistryImplTest {
         InstanceInfo snapshot1 = holder.get();
         assertThat(snapshot1, equalTo(original));
 
-        InstanceInfo newInstanceInfo = new InstanceInfo.Builder()
+        InstanceInfo newInstanceInfo = new StdInstanceInfo.Builder()
                 .withInstanceInfo(original)
                 .withStatus(InstanceInfo.Status.OUT_OF_SERVICE).build();
 
@@ -357,7 +365,7 @@ public class EurekaRegistryImplTest {
 
         localDataStream.unregister(original.getId());
         final List<ChangeNotification<InstanceInfo>> notifications = new ArrayList<>();
-        registry.forInterest(Interests.forFullRegistry(), Source.matcherFor(Source.Origin.LOCAL))
+        registry.forInterest(Interests.forFullRegistry(), Source.matcherFor(StdSource.Origin.LOCAL))
                 .filter(ChangeNotifications.dataOnlyFilter())
                 .subscribe(new Subscriber<ChangeNotification<InstanceInfo>>() {
                     @Override
@@ -482,7 +490,7 @@ public class EurekaRegistryImplTest {
         InstanceInfo snapshot1 = holder.get();
         assertThat(snapshot1, equalTo(original));
 
-        InstanceInfo newInstanceInfo = new InstanceInfo.Builder()
+        InstanceInfo newInstanceInfo = new StdInstanceInfo.Builder()
                 .withInstanceInfo(original)
                 .withStatus(InstanceInfo.Status.STARTING).build();
 
@@ -579,9 +587,9 @@ public class EurekaRegistryImplTest {
 
     @Test(timeout = 60000)
     public void testRegisterAndUnregisterOfMultipleLocalSourcesWithDifferentNames() throws Exception {
-        Source local1 = new Source(Origin.LOCAL, "aaa");
-        Source local2 = new Source(Origin.LOCAL, "bbb");
-        Source local3 = new Source(Origin.LOCAL, "ccc");
+        StdSource local1 = new StdSource(Origin.LOCAL, "aaa");
+        StdSource local2 = new StdSource(Origin.LOCAL, "bbb");
+        StdSource local3 = new StdSource(Origin.LOCAL, "ccc");
 
         ChangeNotificationObservable local1Stream = ChangeNotificationObservable.create();
         ChangeNotificationObservable local2Stream = ChangeNotificationObservable.create();
@@ -597,12 +605,12 @@ public class EurekaRegistryImplTest {
                 .withStatus(InstanceInfo.Status.UP)
                 .build();
 
-        InstanceInfo copy2 = new InstanceInfo.Builder()
+        InstanceInfo copy2 = new StdInstanceInfo.Builder()
                 .withInstanceInfo(copy1)
                 .withStatus(InstanceInfo.Status.OUT_OF_SERVICE)
                 .build();
 
-        InstanceInfo copy3 = new InstanceInfo.Builder()
+        InstanceInfo copy3 = new StdInstanceInfo.Builder()
                 .withInstanceInfo(copy1)
                 .withStatus(InstanceInfo.Status.DOWN)
                 .build();

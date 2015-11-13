@@ -19,17 +19,18 @@ package com.netflix.eureka2.server.channel;
 import com.netflix.eureka2.channel.AbstractClientChannel;
 import com.netflix.eureka2.channel.ReplicationChannel;
 import com.netflix.eureka2.channel.ReplicationChannel.STATE;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
-import com.netflix.eureka2.protocol.common.AddInstance;
-import com.netflix.eureka2.protocol.common.DeleteInstance;
-import com.netflix.eureka2.protocol.common.StreamStateUpdate;
-import com.netflix.eureka2.protocol.replication.ReplicationHello;
-import com.netflix.eureka2.protocol.replication.ReplicationHelloReply;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.StreamStateNotification;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.protocol.common.AddInstance;
+import com.netflix.eureka2.spi.protocol.common.DeleteInstance;
+import com.netflix.eureka2.spi.protocol.common.StreamStateUpdate;
+import com.netflix.eureka2.spi.protocol.replication.ReplicationHello;
+import com.netflix.eureka2.spi.protocol.replication.ReplicationHelloReply;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.transport.TransportClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,9 +59,9 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
         if (!moveToState(STATE.Idle, STATE.Handshake)) {
             return invalidStateError();
         }
-        return connect().switchMap(new Func1<MessageConnection, Observable<ReplicationHelloReply>>() {
+        return connect().switchMap(new Func1<EurekaConnection, Observable<ReplicationHelloReply>>() {
             @Override
-            public Observable<ReplicationHelloReply> call(final MessageConnection connection) {
+            public Observable<ReplicationHelloReply> call(final EurekaConnection connection) {
                 return sendOnConnection(connection, hello)
                         .cast(ReplicationHelloReply.class)
                         .concatWith(
@@ -81,9 +82,9 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
 
     @Override
     public Observable<Void> replicate(final ChangeNotification<InstanceInfo> notification) {
-        return connect().switchMap(new Func1<MessageConnection, Observable<Void>>() {
+        return connect().switchMap(new Func1<EurekaConnection, Observable<Void>>() {
             @Override
-            public Observable<Void> call(MessageConnection connection) {
+            public Observable<Void> call(EurekaConnection connection) {
                 if (state.get() != STATE.Connected) {
                     return invalidStateError();
                 }
@@ -91,11 +92,11 @@ public class SenderReplicationChannel extends AbstractClientChannel<STATE> imple
                 switch (notification.getKind()) {
                     case Add:
                     case Modify:
-                        return sendOnConnection(connection, new AddInstance(notification.getData()));
+                        return sendOnConnection(connection, ProtocolModel.getDefaultModel().newAddInstance(notification.getData()));
                     case Delete:
-                        return sendOnConnection(connection, new DeleteInstance(notification.getData().getId()));
+                        return sendOnConnection(connection, ProtocolModel.getDefaultModel().newDeleteInstance(notification.getData().getId()));
                     case BufferSentinel:
-                        return sendOnConnection(connection, new StreamStateUpdate((StreamStateNotification<InstanceInfo>)notification));
+                        return sendOnConnection(connection, ProtocolModel.getDefaultModel().newStreamStateUpdate((StreamStateNotification<InstanceInfo>) notification));
                     default:
                         logger.warn("Unrecognised notification kind {}, not sending", notification);
                         return Observable.empty();

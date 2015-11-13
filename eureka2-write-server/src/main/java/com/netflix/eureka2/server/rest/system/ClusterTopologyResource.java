@@ -25,9 +25,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.server.service.EurekaWriteServerSelfInfoResolver;
 import com.netflix.eureka2.utils.Json;
 import io.netty.buffer.ByteBuf;

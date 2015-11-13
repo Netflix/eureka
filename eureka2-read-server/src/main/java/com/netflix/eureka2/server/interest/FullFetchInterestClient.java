@@ -1,32 +1,31 @@
 package com.netflix.eureka2.server.interest;
 
 import javax.inject.Inject;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.InterestChannel;
-import com.netflix.eureka2.client.interest.AbstractInterestClient;
 import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.interest.AbstractInterestClient;
 import com.netflix.eureka2.connection.RetryableConnection;
 import com.netflix.eureka2.connection.RetryableConnectionFactory;
 import com.netflix.eureka2.health.AbstractHealthStatusProvider;
 import com.netflix.eureka2.health.HealthStatusProvider;
 import com.netflix.eureka2.health.HealthStatusUpdate;
 import com.netflix.eureka2.health.SubsystemDescriptor;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
+import com.netflix.eureka2.registry.EurekaRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * {@link EurekaInterestClient} implementation with single full registry fetch subscription.

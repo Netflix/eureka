@@ -1,21 +1,22 @@
 package com.netflix.eureka2.registry.index;
 
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.utils.rx.PauseableSubject;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import rx.Subscriber;
-
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -26,6 +27,10 @@ import static org.hamcrest.Matchers.is;
  * @author David Liu
  */
 public class IndexRegistryTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final Iterator<ChangeNotification<InstanceInfo>> EMPTY_CHANGE_NOTIFICATION_IT = Collections.emptyIterator();
 

@@ -1,16 +1,17 @@
 package com.netflix.eureka2.utils.rx;
 
-import com.netflix.eureka2.model.notification.ChangeNotification;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TestName;
 import rx.functions.Action1;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -22,14 +23,20 @@ import static org.hamcrest.Matchers.is;
  */
 public class PauseableSubjectTest {
 
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     private PauseableSubject<ChangeNotification<InstanceInfo>> notificationsSubject;
     private List<ChangeNotification<InstanceInfo>> receivedNotifications;
 
     private ChangeNotification<InstanceInfo> discoveryAdd = SampleChangeNotification.DiscoveryAdd.newNotification();
     private ChangeNotification<InstanceInfo> zuulAdd = SampleChangeNotification.ZuulAdd.newNotification();
 
-    @Rule public TestName testName = new TestName();
-    @Rule public final ExternalResource subjectResource = new ExternalResource() {
+    @Rule
+    public TestName testName = new TestName();
+    @Rule
+    public final ExternalResource subjectResource = new ExternalResource() {
 
         @Override
         protected void before() throws Throwable {

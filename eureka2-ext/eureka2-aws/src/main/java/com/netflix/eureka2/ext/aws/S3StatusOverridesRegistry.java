@@ -1,25 +1,5 @@
 package com.netflix.eureka2.ext.aws;
 
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectResult;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.server.service.overrides.InstanceStatusOverridesView;
-import com.netflix.eureka2.server.service.overrides.InstanceStatusOverridesSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import rx.Observable;
-import rx.Scheduler;
-import rx.Subscriber;
-import rx.Subscription;
-import rx.functions.Action1;
-import rx.functions.Func1;
-import rx.schedulers.Schedulers;
-import rx.subjects.BehaviorSubject;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
@@ -30,6 +10,26 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectResult;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.server.service.overrides.InstanceStatusOverridesSource;
+import com.netflix.eureka2.server.service.overrides.InstanceStatusOverridesView;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.Observable;
+import rx.Scheduler;
+import rx.Subscriber;
+import rx.Subscription;
+import rx.functions.Action1;
+import rx.functions.Func1;
+import rx.schedulers.Schedulers;
+import rx.subjects.BehaviorSubject;
 
 /**
  * @author David Liu
@@ -63,7 +63,7 @@ public class S3StatusOverridesRegistry implements InstanceStatusOverridesView, I
 
     @PostConstruct
     public void start() {
-        refreshSubscription = Observable.timer(config.getRefreshIntervalSec()/2, config.getRefreshIntervalSec(), TimeUnit.SECONDS, scheduler)
+        refreshSubscription = Observable.timer(config.getRefreshIntervalSec() / 2, config.getRefreshIntervalSec(), TimeUnit.SECONDS, scheduler)
                 .doOnNext(new Action1<Long>() {
                     @Override
                     public void call(Long aLong) {

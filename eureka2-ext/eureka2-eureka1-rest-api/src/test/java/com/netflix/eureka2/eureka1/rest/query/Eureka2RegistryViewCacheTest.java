@@ -4,12 +4,13 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interest.Operator;
-import com.netflix.eureka2.interests.Interests;
-import com.netflix.eureka2.registry.SourcedRegistryMockResource;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interest.Operator;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.rx.ExtTestSubscriber;
+import com.netflix.eureka2.registry.SourcedRegistryMockResource;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,6 +27,10 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 public class Eureka2RegistryViewCacheTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final int APPLICATION_CLUSTER_SIZE = 3;
     private static final long REFRESH_INTERVAL = 30000;

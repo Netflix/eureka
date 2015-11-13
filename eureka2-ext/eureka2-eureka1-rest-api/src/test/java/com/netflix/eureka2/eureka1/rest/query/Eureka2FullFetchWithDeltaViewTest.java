@@ -5,13 +5,15 @@ import java.util.concurrent.TimeUnit;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.eureka1.rest.query.Eureka2FullFetchWithDeltaView.RegistryFetch;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.interests.Interest;
-import com.netflix.eureka2.interests.Interests;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.SourcedRegistryMockResource;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Rule;
@@ -31,6 +33,10 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 public class Eureka2FullFetchWithDeltaViewTest {
+
+    static {
+        StdModelsInjector.injectStdModels();
+    }
 
     private static final int APPLICATION_CLUSTER_SIZE = 3;
     private static final long REFRESH_INTERVAL = 30000;
@@ -126,7 +132,7 @@ public class Eureka2FullFetchWithDeltaViewTest {
         latestCopy();
 
         // Second batch
-        InstanceInfo secondInstance = new InstanceInfo.Builder().withInstanceInfo(firstInstance).withAppGroup("new_app_group").build();
+        InstanceInfo secondInstance = new StdInstanceInfo.Builder().withInstanceInfo(firstInstance).withAppGroup("new_app_group").build();
         registryMockResource.uploadBatchToRegistry(appInterest, secondInstance);
 
         testScheduler.advanceTimeBy(REFRESH_INTERVAL, TimeUnit.MILLISECONDS);

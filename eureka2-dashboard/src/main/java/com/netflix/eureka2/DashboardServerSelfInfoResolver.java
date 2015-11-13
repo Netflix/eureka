@@ -5,8 +5,9 @@ import javax.inject.Singleton;
 import java.util.HashSet;
 
 import com.netflix.eureka2.config.EurekaDashboardConfig;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.InstanceInfo.Builder;
+import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.model.instance.ServicePort;
 import com.netflix.eureka2.server.service.selfinfo.CachingSelfInfoResolver;
 import com.netflix.eureka2.server.service.selfinfo.ChainableSelfInfoResolver;
@@ -34,17 +35,17 @@ public class DashboardServerSelfInfoResolver implements SelfInfoResolver {
                 new ConfigSelfInfoResolver(config.getEurekaInstance()),
                 // dashboard server specific resolver
                 new ChainableSelfInfoResolver(Observable.just(new HashSet<ServicePort>())
-                        .map(new Func1<HashSet<ServicePort>, Builder>() {
+                        .map(new Func1<HashSet<ServicePort>, InstanceInfoBuilder>() {
                             @Override
-                            public InstanceInfo.Builder call(HashSet<ServicePort> ports) {
-                                ports.add(new ServicePort(WEB_SOCKET_SERVICE, webSocketServer.serverPort(), false));
-                                return new InstanceInfo.Builder().withPorts(ports);
+                            public InstanceInfoBuilder call(HashSet<ServicePort> ports) {
+                                ports.add(InstanceModel.getDefaultModel().newServicePort(WEB_SOCKET_SERVICE, webSocketServer.serverPort(), false));
+                                return InstanceModel.getDefaultModel().newInstanceInfo().withPorts(ports);
                             }
                         })
                 ),
                 new PeriodicDataCenterInfoResolver(config.getEurekaInstance(), config.getEurekaTransport()),
                 // TODO override with more meaningful health check
-                new ChainableSelfInfoResolver(Observable.just(new InstanceInfo.Builder().withStatus(InstanceInfo.Status.UP)))
+                new ChainableSelfInfoResolver(Observable.just(InstanceModel.getDefaultModel().newInstanceInfo().withStatus(InstanceInfo.Status.UP)))
         );
 
         this.delegate = new CachingSelfInfoResolver(resolverChain);

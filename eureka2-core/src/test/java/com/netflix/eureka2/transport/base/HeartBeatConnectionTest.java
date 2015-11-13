@@ -19,8 +19,9 @@ package com.netflix.eureka2.transport.base;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.protocol.common.Heartbeat;
-import com.netflix.eureka2.transport.MessageConnection;
+import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,13 +46,17 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class HeartBeatConnectionTest {
 
+    static {
+        StdModelsInjector.injectStdModels();
+    }
+
     private static final String MESSAGE = "My MESSAGE";
 
     private static final long HEART_BEAT_INTERVAL = 5000;
     private static final long TOLERANCE = 3;
 
     @Mock
-    private MessageConnection delegate;
+    private EurekaConnection delegate;
 
     private final ReplaySubject<Void> delegateLifecycleSubject = ReplaySubject.create();
 
@@ -67,7 +72,7 @@ public class HeartBeatConnectionTest {
 
         heartBeatConnection = new HeartBeatConnection(delegate, HEART_BEAT_INTERVAL, TOLERANCE, scheduler);
 
-        when(delegate.submit(Heartbeat.INSTANCE)).thenReturn(Observable.<Void>empty());
+        when(delegate.submit(ProtocolModel.getDefaultModel().newHeartbeat())).thenReturn(Observable.<Void>empty());
     }
 
     @Test(timeout = 60000)
@@ -75,7 +80,7 @@ public class HeartBeatConnectionTest {
         // Just after first heartbeat should be sent
         scheduler.advanceTimeBy(HEART_BEAT_INTERVAL, TimeUnit.MILLISECONDS);
 
-        verify(delegate, times(1)).submit(Heartbeat.INSTANCE);
+        verify(delegate, times(1)).submit(ProtocolModel.getDefaultModel().newHeartbeat());
     }
 
     @Test(timeout = 60000)
@@ -89,7 +94,7 @@ public class HeartBeatConnectionTest {
     @Test(timeout = 60000)
     public void testHeartbeatIsReceivedAndCounted() throws Exception {
         // Sent heartbeat
-        mockedIncomingStream.onNext(Heartbeat.INSTANCE);
+        mockedIncomingStream.onNext(ProtocolModel.getDefaultModel().newHeartbeat());
         scheduler.advanceTimeBy(HEART_BEAT_INTERVAL, TimeUnit.MILLISECONDS);
 
         // Still within the limits
@@ -119,6 +124,6 @@ public class HeartBeatConnectionTest {
         scheduler.advanceTimeBy(HEART_BEAT_INTERVAL * (TOLERANCE + 1), TimeUnit.MILLISECONDS);
 
         // Check that no heartbeat message was sent
-        verify(delegate, times(0)).submit(Heartbeat.INSTANCE);
+        verify(delegate, times(0)).submit(ProtocolModel.getDefaultModel().newHeartbeat());
     }
 }
