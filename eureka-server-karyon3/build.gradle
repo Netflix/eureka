@@ -3,6 +3,7 @@ apply plugin: 'jetty'
 
 dependencies {
     compile project(':eureka-core')
+    compile project(':eureka-client-archaius2')
     runtime 'xerces:xercesImpl:2.4.0'
     compile "com.netflix.governator:governator:${governatorVersion}"
     compile "com.netflix.governator:governator-servlet:${governatorVersion}"

@@ -2,12 +2,12 @@ package com.netflix.eureka;
 
 import com.netflix.archaius.bridge.StaticArchaiusBridgeModule;
 import com.netflix.archaius.guice.ArchaiusModule;
-import com.netflix.eureka.guice.LocalEurekaServerModule;
 import com.netflix.governator.LifecycleInjector;
 import com.netflix.governator.ProvisionDebugModule;
 import com.netflix.governator.guice.annotations.Bootstrap;
 import com.netflix.governator.guice.jetty.JettyModule;
 import com.netflix.karyon.Karyon;
+import com.netflix.karyon.ModuleListProviders;
 import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.guice.JerseyServletModule;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
@@ -28,8 +28,8 @@ public class EurekaInjectorCreator {
     public static LifecycleInjector createInjector(boolean embedded) {
         try {
             return Karyon.forApplication(NAME)
+                    .addAutoModuleListProvider(ModuleListProviders.forPackages("com.netflix.eureka.guice"))
                     .addModules(
-                            new LocalEurekaServerModule(),  // server
                             new ArchaiusModule(),
                             new StaticArchaiusBridgeModule(),
                             new ProvisionDebugModule(),

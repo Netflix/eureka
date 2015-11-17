@@ -50,17 +50,16 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
         // Instance id being null means we could not get the amazon metadata
         AmazonInfo amazonInfo = (AmazonInfo) info;
         if (amazonInfo.get(MetaDataKey.instanceId) == null) {
-            if (config.getBoolean("validateInstanceId", true)) {
+            if (config.getBoolean(namespace + ".validateInstanceId", true)) {
                 throw new RuntimeException(
                         "Your datacenter is defined as cloud but we are not able to get the amazon metadata to "
                                 + "register. \nSet the property 'eureka.validateInstanceId' to false to ignore the"
                                 + "metadata call");
             } 
             else {
-                // The property to not validate instance ids may be set for
-                // development and in that scenario, populate instance id
-                // and public hostname with the hostname of the machine
-                Map<String, String> metadataMap = new HashMap<String, String>();
+                // The property to not validate instance ids may be set for development and in that scenario,
+                // populate instance id and public hostname with the hostname of the machine
+                Map<String, String> metadataMap = new HashMap<>();
                 metadataMap.put(MetaDataKey.instanceId.getName(),     super.getIpAddress());
                 metadataMap.put(MetaDataKey.publicHostname.getName(), super.getHostName(false));
                 amazonInfo.setMetadata(metadataMap);
