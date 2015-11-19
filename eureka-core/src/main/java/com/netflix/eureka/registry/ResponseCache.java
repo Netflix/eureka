@@ -57,7 +57,7 @@ public interface ResponseCache {
             this.timestamp = timestamp;
             this.payload = payload;
             this.gzipped = gzipped;
-            this.etag = "source=" + source + ",id=" + id + ",timestamp=" + timestamp;
+            this.etag = "source=" + source + ",entityId=" + id + ",timestamp=" + timestamp;
         }
 
         public long getId() {

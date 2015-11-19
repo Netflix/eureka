@@ -97,7 +97,7 @@ public class AbstractTester {
         client = new DiscoveryClient(applicationInfoManager, clientConfig);
 
         ServerCodecs serverCodecs = new DefaultServerCodecs(serverConfig);
-        registry = new TestPeerAwareInstanceRegistry(serverConfig, clientConfig, serverCodecs, client);
+        registry = new TestPeerAwareInstanceRegistry(serverConfig, clientConfig, serverCodecs, client, applicationInfoManager);
         serverContext = new DefaultEurekaServerContext(
                 serverConfig,
                 serverCodecs,
@@ -183,11 +183,12 @@ public class AbstractTester {
 
     private static class TestPeerAwareInstanceRegistry extends PeerAwareInstanceRegistryImpl {
 
-        public TestPeerAwareInstanceRegistry(EurekaServerConfig serverConfig,
-                                             EurekaClientConfig clientConfig,
-                                             ServerCodecs serverCodecs,
-                                             EurekaClient eurekaClient) {
-            super(serverConfig, clientConfig, serverCodecs, eurekaClient);
+        TestPeerAwareInstanceRegistry(EurekaServerConfig serverConfig,
+                                      EurekaClientConfig clientConfig,
+                                      ServerCodecs serverCodecs,
+                                      EurekaClient eurekaClient,
+                                      ApplicationInfoManager applicationInfoManager) {
+            super(serverConfig, clientConfig, serverCodecs, eurekaClient, applicationInfoManager);
         }
 
         @Override

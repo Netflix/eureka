@@ -1,5 +1,6 @@
 package com.netflix.eureka.registry;
 
+import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.eureka.AbstractTester;
@@ -13,6 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
 /**
@@ -21,6 +23,8 @@ import static org.mockito.Mockito.spy;
 public class ResponseCacheTest extends AbstractTester {
 
     private static final String REMOTE_REGION = "myremote";
+
+    private final ApplicationInfoManager applicationInfoManager = mock(ApplicationInfoManager.class);
 
     private PeerAwareInstanceRegistry testRegistry;
 
@@ -37,7 +41,8 @@ public class ResponseCacheTest extends AbstractTester {
                 serverConfig,
                 new DefaultEurekaClientConfig(),
                 new DefaultServerCodecs(serverConfig),
-                client
+                client,
+                applicationInfoManager
         );
         testRegistry.init(serverContext.getPeerEurekaNodes());
         testRegistry.syncUp();

@@ -41,6 +41,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.google.common.cache.CacheBuilder;
+import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
@@ -107,14 +108,19 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     protected final EurekaClientConfig clientConfig;
     protected final ServerCodecs serverCodecs;
     protected volatile ResponseCache responseCache;
+    private ApplicationInfoManager applicationInfoManager;
 
     /**
      * Create a new, empty instance registry.
      */
-    protected AbstractInstanceRegistry(EurekaServerConfig serverConfig, EurekaClientConfig clientConfig, ServerCodecs serverCodecs) {
+    protected AbstractInstanceRegistry(EurekaServerConfig serverConfig,
+                                       EurekaClientConfig clientConfig,
+                                       ServerCodecs serverCodecs,
+                                       ApplicationInfoManager applicationInfoManager) {
         this.serverConfig = serverConfig;
         this.clientConfig = clientConfig;
         this.serverCodecs = serverCodecs;
+        this.applicationInfoManager = applicationInfoManager;
         this.recentCanceledQueue = new CircularQueue<Pair<Long, String>>(1000);
         this.recentRegisteredQueue = new CircularQueue<Pair<Long, String>>(1000);
         this.deltaRetentionTimer.schedule(getDeltaRetentionTask(),
@@ -126,7 +132,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     @Override
     public synchronized void initializedResponseCache() {
         if (responseCache == null) {
-            responseCache = new ResponseCacheImpl(serverConfig, serverCodecs, this);
+            responseCache = new ResponseCacheImpl(serverConfig, serverCodecs, this, applicationInfoManager);
         }
     }
 

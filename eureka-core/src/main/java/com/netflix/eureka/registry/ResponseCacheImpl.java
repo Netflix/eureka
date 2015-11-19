@@ -40,6 +40,7 @@ import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.wrappers.EncoderWrapper;
@@ -81,8 +82,6 @@ public class ResponseCacheImpl implements ResponseCache {
     public static final String ALL_APPS = "ALL_APPS";
     public static final String ALL_APPS_DELTA = "ALL_APPS_DELTA";
 
-    private static final String LOCAL_IP = SystemUtil.getServerIPv4();
-
     // FIXME deprecated, here for backwards compatibility.
     private static final AtomicLong versionDeltaLegacy = new AtomicLong(0);
     private static final AtomicLong versionDeltaWithRegionsLegacy = new AtomicLong(0);
@@ -120,14 +119,17 @@ public class ResponseCacheImpl implements ResponseCache {
     private final LoadingCache<Key, CacheValue> readWriteCacheMap;
     private final boolean shouldUseReadOnlyResponseCache;
     private final AbstractInstanceRegistry registry;
-    private final EurekaServerConfig serverConfig;
     private final ServerCodecs serverCodecs;
+    private final String sourceId;
 
-    ResponseCacheImpl(EurekaServerConfig serverConfig, ServerCodecs serverCodecs, AbstractInstanceRegistry registry) {
-        this.serverConfig = serverConfig;
+    ResponseCacheImpl(EurekaServerConfig serverConfig,
+                      ServerCodecs serverCodecs,
+                      AbstractInstanceRegistry registry,
+                      ApplicationInfoManager applicationInfoManager) {
         this.serverCodecs = serverCodecs;
         this.shouldUseReadOnlyResponseCache = serverConfig.shouldUseReadOnlyResponseCache();
         this.registry = registry;
+        this.sourceId = applicationInfoManager.getInfo() == null ? SystemUtil.getServerIPv4() : applicationInfoManager.getInfo().getId();
 
         long responseCacheUpdateIntervalMs = serverConfig.getResponseCacheUpdateIntervalMs();
         this.readWriteCacheMap =
@@ -446,7 +448,7 @@ public class ResponseCacheImpl implements ResponseCache {
                     payload = EMPTY_PAYLOAD;
                     break;
             }
-            return new CacheValue(LOCAL_IP, key.nextId(), System.currentTimeMillis(), payload, compress(payload));
+            return new CacheValue(sourceId, key.nextId(), System.currentTimeMillis(), payload, compress(payload));
         } finally {
             if (tracer != null) {
                 tracer.stop();

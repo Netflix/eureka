@@ -16,6 +16,10 @@
 
 package com.netflix.eureka.registry;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
@@ -26,9 +30,6 @@ import com.netflix.eureka.lease.Lease;
 import com.netflix.eureka.resources.ServerCodecs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Override some methods with aws specific usecases.
@@ -45,8 +46,9 @@ public class AwsInstanceRegistry extends PeerAwareInstanceRegistryImpl {
     public AwsInstanceRegistry(EurekaServerConfig serverConfig,
                                EurekaClientConfig clientConfig,
                                ServerCodecs serverCodecs,
-                               EurekaClient eurekaClient) {
-        super(serverConfig, clientConfig, serverCodecs, eurekaClient);
+                               EurekaClient eurekaClient,
+                               ApplicationInfoManager applicationInfoManager) {
+        super(serverConfig, clientConfig, serverCodecs, eurekaClient, applicationInfoManager);
     }
 
     @Override
