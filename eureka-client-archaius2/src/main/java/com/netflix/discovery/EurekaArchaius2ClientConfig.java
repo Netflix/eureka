@@ -195,12 +195,12 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
 
     @Override
     public String getEncoderName() {
-        return config.getString("encoderName");
+        return config.getString("encoderName", null);
     }
 
     @Override
     public String getDecoderName() {
-        return config.getString("decoderName");
+        return config.getString("decoderName", null);
     }
 
     @Override
@@ -210,7 +210,7 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
 
     @Override
     public String getExperimental(String name) {
-        return config.getString("experimental." + name);
+        return config.getString("experimental." + name, null);
     }
 
     @Override
