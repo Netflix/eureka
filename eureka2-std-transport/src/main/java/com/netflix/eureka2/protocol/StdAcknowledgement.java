@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.protocol;
 
-import com.netflix.eureka2.spi.protocol.Acknowledgement;
+import com.netflix.eureka2.spi.model.Acknowledgement;
 
 /**
  */

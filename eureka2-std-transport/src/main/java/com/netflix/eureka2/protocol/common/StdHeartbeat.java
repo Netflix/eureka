@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.protocol.common;
 
-import com.netflix.eureka2.spi.protocol.common.Heartbeat;
+import com.netflix.eureka2.spi.model.Heartbeat;
 
 /**
  */

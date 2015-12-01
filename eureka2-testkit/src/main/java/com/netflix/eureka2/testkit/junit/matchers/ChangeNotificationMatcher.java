@@ -46,6 +46,9 @@ public class ChangeNotificationMatcher extends BaseMatcher<ChangeNotification<In
 
     @Override
     public void describeTo(Description description) {
-        description.appendText("Change notification of type " + notificationKind).appendValue(expectedValue);
+        description.appendText("Change notification of type " + notificationKind);
+        if(expectedValue != null) {
+            description.appendText("/").appendValue(expectedValue);
+        }
     }
 }

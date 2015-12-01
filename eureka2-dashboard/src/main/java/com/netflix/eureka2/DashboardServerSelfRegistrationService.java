@@ -32,7 +32,7 @@ public class DashboardServerSelfRegistrationService extends SelfRegistrationServ
 
     @Override
     public Observable<Void> connect(Observable<InstanceInfo> registrant) {
-        return registrationClient.register(registrant);
+        return registrationClient.register(registrant).ignoreElements().cast(Void.class);
     }
 
     @Override

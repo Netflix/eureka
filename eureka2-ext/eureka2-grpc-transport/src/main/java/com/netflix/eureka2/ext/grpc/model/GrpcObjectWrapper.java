@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.spi.protocol.common;
+package com.netflix.eureka2.ext.grpc.model;
 
 /**
- * We assume that heart beats are at the application level, not embedded
- * into the transport layer/message broker.
- *
- * @author Tomasz Bak
  */
-public interface Heartbeat {
+public interface GrpcObjectWrapper<G> {
+    G getGrpcObject();
 }

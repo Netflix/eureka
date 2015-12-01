@@ -23,13 +23,15 @@ import rx.Observable;
 /**
  * An Eureka client that support registering registrants to remote Eureka servers. Multiple registrants can
  * use the same client for remote server registration.
- *
+ * <p>
  * Once registered, the client is responsible for maintaining persisted heartbeating connections with the remote
  * server to maintain the registration until the registrant explicitly unregisters.
  *
  * @author David Liu
  */
 public interface EurekaRegistrationClient {
+
+    enum RegistrationStatus {Registered, Retrying}
 
     /**
      * Return a {@link RegistrationObservable} that when subscribes to, initiates registration with the remote server
@@ -42,7 +44,7 @@ public interface EurekaRegistrationClient {
      *                   by the input observable.
      * @return {@link RegistrationObservable}
      */
-    RegistrationObservable register(Observable<InstanceInfo> registrant);
+    Observable<RegistrationStatus> register(Observable<InstanceInfo> registrant);
 
     /**
      * shutdown and clean up all resources for this client

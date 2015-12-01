@@ -19,7 +19,7 @@ package com.netflix.eureka2.client.transport;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.transport.tcp.TcpRegistrationClient;
 import com.netflix.eureka2.codec.CodecType;

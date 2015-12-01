@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.client.EurekaRegistrationClient.RegistrationStatus;
 import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
@@ -95,10 +96,10 @@ public class EurekaClientIntegrationTest {
                 .build();
 
         try {
-            ExtTestSubscriber<Void> testSubscriber = new ExtTestSubscriber<>();
+            ExtTestSubscriber<RegistrationStatus> testSubscriber = new ExtTestSubscriber<>();
 
-            RegistrationObservable result = registrationClient.register(Observable.just(SampleInstanceInfo.CliServer.build()));
-            result.initialRegistrationResult().subscribe(testSubscriber);
+            Observable<RegistrationStatus> result = registrationClient.register(Observable.just(SampleInstanceInfo.CliServer.build()));
+            result.take(1).subscribe(testSubscriber);
             result.subscribe();  // start the registration
 
             testSubscriber.assertOnCompleted(10, TimeUnit.SECONDS);

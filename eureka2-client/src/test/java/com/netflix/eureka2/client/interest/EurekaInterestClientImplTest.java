@@ -550,7 +550,7 @@ public class EurekaInterestClientImplTest {
     }
 
     // easiest way is to cast both interests to multipleInterests and apply equals
-    private static <T> boolean matchInterests(Interest<T> one, Interest<T> two) {
+    private static boolean matchInterests(Interest<InstanceInfo> one, Interest<InstanceInfo> two) {
         return InterestModel.getDefaultModel().newMultipleInterests(one).equals(InterestModel.getDefaultModel().newMultipleInterests(two));
     }
 

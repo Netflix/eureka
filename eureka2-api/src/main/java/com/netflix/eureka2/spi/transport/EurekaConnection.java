@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.spi.transport;
 
+import com.netflix.eureka2.spi.model.Acknowledgement;
 import rx.Observable;
 
 import java.util.concurrent.TimeoutException;
@@ -63,7 +64,7 @@ public interface EurekaConnection {
      *
      * @param  timeout maximum waiting time for acknowledgement
      *
-     * @return observable that returns exactly one {@link com.netflix.eureka2.spi.protocol.Acknowledgement} object or {@link TimeoutException}
+     * @return observable that returns exactly one {@link Acknowledgement} object or {@link TimeoutException}
      *         if no acknowledgment received on time
      */
     Observable<Void> submitWithAck(Object message, long timeout);

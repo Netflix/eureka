@@ -18,6 +18,7 @@ buildscript {
     dependencies {
         classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:2.2.0'
         classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.1'
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.7.1'
     }
     if (project.hasProperty('useMavenLocal')) {
         repositories {

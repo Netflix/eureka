@@ -51,7 +51,7 @@ public class EurekaRegistrationClientImpl implements EurekaRegistrationClient {
     }
 
     @Override
-    public RegistrationObservable register(Observable<InstanceInfo> instanceInfoStream) {
+    public Observable<RegistrationStatus> register(Observable<InstanceInfo> instanceInfoStream) {
         Observable<InstanceInfo> opStream = instanceInfoStream.distinctUntilChanged();
         Func2<RegistrationChannel, InstanceInfo, Observable<Void>> executeOnChannel = new Func2<RegistrationChannel, InstanceInfo, Observable<Void>>() {
             @Override
@@ -88,7 +88,7 @@ public class EurekaRegistrationClientImpl implements EurekaRegistrationClient {
                 })
                 .share();
 
-        return RegistrationObservable.from(lifecycle, initObservable);
+        return RegistrationObservable.from(lifecycle, initObservable).ignoreElements().cast(RegistrationStatus.class);
     }
 
     @Override

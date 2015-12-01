@@ -5,7 +5,7 @@ import com.netflix.eureka2.channel.ReplicationChannel;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.transport.TransportClient;
-import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.Server;
 
 /**
  * @author David Liu

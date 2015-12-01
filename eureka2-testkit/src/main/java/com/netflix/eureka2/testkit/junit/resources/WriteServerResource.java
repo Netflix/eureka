@@ -1,6 +1,6 @@
 package com.netflix.eureka2.testkit.junit.resources;
 
-import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.model.notification.ChangeNotification;

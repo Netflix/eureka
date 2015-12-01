@@ -4,7 +4,7 @@ import java.net.InetSocketAddress;
 import java.util.LinkedHashSet;
 import java.util.List;
 
-import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.selector.ServiceSelector;

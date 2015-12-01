@@ -7,16 +7,15 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.netflix.eureka2.model.datacenter.StdAwsDataCenterInfo;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.datacenter.AwsDataCenterInfo;
 import com.netflix.eureka2.model.datacenter.DataCenterInfo;
+import com.netflix.eureka2.model.datacenter.StdAwsDataCenterInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
 import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
-import com.netflix.eureka2.model.instance.StdInstanceInfo.Builder;
 import com.netflix.eureka2.model.instance.NetworkAddress;
 import com.netflix.eureka2.model.instance.ServicePort;
-import com.netflix.eureka2.model.instance.StdServicePort;
 import com.netflix.eureka2.utils.ExtCollections;
 
 /**
@@ -68,6 +67,8 @@ public enum SampleInstanceInfo {
     }
 
     protected InstanceInfoBuilder templateFor(String name) {
+        InstanceModel model = InstanceModel.getDefaultModel();
+
         HashSet<String> healthCheckUrls = new HashSet<>();
         healthCheckUrls.add("http://eureka/healthCheck/" + name);
         healthCheckUrls.add("https://eureka/healthCheck/" + name);
@@ -77,14 +78,15 @@ public enum SampleInstanceInfo {
         HashSet<Integer> securePorts = new HashSet<>();
         securePorts.add(443);
         securePorts.add(8443);
-        return new Builder()
+
+        return model.newInstanceInfo()
                 .withId("id#" + name + "_" + UUID.randomUUID().toString())
                 .withApp("app#" + name)
                 .withAppGroup("group#" + name)
                 .withAsg("asg#" + name)
                 .withHealthCheckUrls(healthCheckUrls)
                 .withHomePageUrl("http://eureka/home/" + name)
-                .withPorts(ExtCollections.asSet((ServicePort) new StdServicePort(7200, false), new StdServicePort(7210, true)))
+                .withPorts(ExtCollections.asSet((ServicePort) model.newServicePort(7200, false), model.newServicePort(7210, true)))
                 .withSecureVipAddress("vipSecure#" + name)
                 .withStatus(Status.UP)
                 .withStatusPageUrl("http://eureka/status/" + name)
@@ -110,7 +112,7 @@ public enum SampleInstanceInfo {
      * appName and vipAddress for all the IsntanceInfos
      */
     public static Iterator<InstanceInfo> collectionOf(final String baseName, final InstanceInfo template) {
-        final StdAwsDataCenterInfo templateDataCenter = (StdAwsDataCenterInfo) template.getDataCenterInfo();
+        final AwsDataCenterInfo templateDataCenter = (AwsDataCenterInfo) template.getDataCenterInfo();
         final AtomicInteger idx = new AtomicInteger();
         final Iterator<NetworkAddress> publicAddresses = SampleNetworkAddress.collectionOfIPv4("20.20", baseName + ".public.net", null);
         final Iterator<NetworkAddress> privateAddresses = SampleNetworkAddress.collectionOfIPv4("192.168", baseName + ".private.internal", null);
@@ -122,6 +124,8 @@ public enum SampleInstanceInfo {
 
             @Override
             public InstanceInfo next() {
+                InstanceModel model = InstanceModel.getDefaultModel();
+
                 int cidx = idx.incrementAndGet();
                 String name = baseName + '_' + cidx;
                 NetworkAddress publicAddress = publicAddresses.next();
@@ -134,7 +138,7 @@ public enum SampleInstanceInfo {
                         .withPrivateHostName(privateAddress.getHostName())
                         .withPrivateIPv4(privateAddress.getIpAddress())
                         .build();
-                return new StdInstanceInfo.Builder()
+                return model.newInstanceInfo()
                         .withId("id#" + name)
                         .withApp(template.getApp())
                         .withAppGroup(template.getAppGroup())

@@ -30,7 +30,7 @@ public class EurekaRegistrationClientStub implements EurekaRegistrationClient {
     private final Map<RegistrationObservable, RegistrationTracker> registrationTrackers = new HashMap<>();
 
     @Override
-    public RegistrationObservable register(Observable<InstanceInfo> registrant) {
+    public Observable<RegistrationStatus> register(Observable<InstanceInfo> registrant) {
         final RegistrationTracker registrationTracker = new RegistrationTracker(registrant);
 
         OnSubscribe<Void> onSubscribe = new OnSubscribe<Void>() {
@@ -52,7 +52,8 @@ public class EurekaRegistrationClientStub implements EurekaRegistrationClient {
         pendingRegistrations.add(registrationObservable);
         registrationTrackers.put(registrationObservable, registrationTracker);
 
-        return registrationObservable;
+        // FIXME This requires some refactoring
+        return Observable.empty();
     }
 
     @Override

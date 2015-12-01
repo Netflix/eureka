@@ -246,7 +246,7 @@ public class InstanceInfoField<T> {
         valueType = ((ParameterizedType) accessor.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[0];
     }
 
-    InstanceInfoBuilder update(InstanceInfoBuilder builder, T value) {
+    public InstanceInfoBuilder update(InstanceInfoBuilder builder, T value) {
         accessor.update(builder, value);
         return builder;
     }

@@ -24,11 +24,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.client.EurekaRegistrationClient.RegistrationStatus;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.utils.ExtCollections;
+import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.subjects.BehaviorSubject;
@@ -115,8 +117,8 @@ public class Session {
         }
 
         registrationStatus = Status.Initiated;
-        RegistrationObservable registrationRequest = registrationClient.register(infoSubject);
-        registrationRequest.initialRegistrationResult().subscribe(new Subscriber<Void>() {
+        Observable<RegistrationStatus> registrationRequest = registrationClient.register(infoSubject);
+        registrationRequest.subscribe(new Subscriber<RegistrationStatus>() {
             @Override
             public void onCompleted() {
                 System.out.println("Successfully registered with Eureka server");
@@ -132,8 +134,8 @@ public class Session {
             }
 
             @Override
-            public void onNext(Void aVoid) {
-                // no-op
+            public void onNext(RegistrationStatus status) {
+                System.out.println("Registration status: " + status);
             }
         });
 

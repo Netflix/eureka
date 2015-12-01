@@ -1,6 +1,6 @@
 package com.netflix.eureka2.server.service.bootstrap;
 
-import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.metric.noop.NoOpMessageConnectionMetrics;

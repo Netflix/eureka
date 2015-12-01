@@ -1,11 +1,12 @@
 package com.netflix.eureka2.testkit.junit.stubs;
 
-import com.netflix.eureka2.client.registration.RegistrationObservable;
+import com.netflix.eureka2.client.EurekaRegistrationClient.RegistrationStatus;
 import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.junit.Test;
+import rx.Observable;
 import rx.subjects.PublishSubject;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -26,12 +27,12 @@ public class EurekaRegistrationClientStubTest {
         EurekaRegistrationClientStub clientStub = new EurekaRegistrationClientStub();
         PublishSubject<InstanceInfo> registrarSubject = PublishSubject.create();
 
-        RegistrationObservable registrationObservable = clientStub.register(registrarSubject);
+        Observable<RegistrationStatus> registrationObservable = clientStub.register(registrarSubject);
 
-        ExtTestSubscriber<Void> registrationSubscriber = new ExtTestSubscriber<>();
-        ExtTestSubscriber<Void> initSubscriber = new ExtTestSubscriber<>();
+        ExtTestSubscriber<RegistrationStatus> registrationSubscriber = new ExtTestSubscriber<>();
+        ExtTestSubscriber<RegistrationStatus> initSubscriber = new ExtTestSubscriber<>();
         registrationObservable.subscribe(registrationSubscriber);
-        registrationObservable.initialRegistrationResult().subscribe(initSubscriber);
+        registrationObservable.take(1).subscribe(initSubscriber);
 
         assertThat(registrationSubscriber.isUnsubscribed(), is(false));
         assertThat(initSubscriber.isUnsubscribed(), is(false));

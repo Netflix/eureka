@@ -2,7 +2,7 @@ package com.netflix.eureka2.testkit.cli.command.connect;
 
 import java.util.List;
 
-import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.server.resolver.ClusterAddress;

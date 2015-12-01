@@ -2,7 +2,13 @@ package com.netflix.eureka2.testkit.embedded;
 
 import java.util.concurrent.CountDownLatch;
 
+import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
+import com.netflix.eureka2.protocol.StdProtocolModel;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.transport.EurekaTransportFactory;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment.EurekaDeploymentBuilder;
+import com.netflix.eureka2.transport.EurekaTransports;
+import com.netflix.eureka2.transport.StdEurekaTransportFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,6 +16,12 @@ import org.slf4j.LoggerFactory;
  * @author Tomasz Bak
  */
 public class EmbeddedRunner {
+
+    static {
+        GrpcModelsInjector.injectGrpcModels();
+        EurekaTransports.setTransportFactory(new StdEurekaTransportFactory());
+        ProtocolModel.setDefaultModel(StdProtocolModel.getStdModel());
+    }
 
     private static final Logger logger = LoggerFactory.getLogger(EmbeddedRunner.class);
 

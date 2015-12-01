@@ -2,7 +2,7 @@ package com.netflix.eureka2.server;
 
 import java.util.Arrays;
 
-import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.client.resolver.RoundRobinServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.model.notification.ChangeNotification;

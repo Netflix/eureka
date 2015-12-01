@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.spi.protocol.ProtocolModel;
-import com.netflix.eureka2.spi.protocol.common.Heartbeat;
+import com.netflix.eureka2.spi.model.Heartbeat;
 import com.netflix.eureka2.spi.transport.EurekaConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

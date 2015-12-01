@@ -18,6 +18,7 @@ package com.netflix.eureka2.server;
 
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
+import com.netflix.eureka2.ext.grpc.transport.server.GrpcEurekaServerTransportFactory;
 import com.netflix.eureka2.metric.server.SpectatorWriteServerMetricFactory;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.EurekaRegistryImpl;
@@ -34,12 +35,11 @@ import com.netflix.eureka2.server.service.SelfRegistrationService;
 import com.netflix.eureka2.server.service.bootstrap.BackupClusterBootstrapService;
 import com.netflix.eureka2.server.service.bootstrap.RegistryBootstrapCoordinator;
 import com.netflix.eureka2.server.service.bootstrap.RegistryBootstrapService;
-import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.spi.ExtensionContext;
-import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
-import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
+import com.netflix.eureka2.server.transport.RegistrationTransportServer;
+import com.netflix.eureka2.spi.transport.EurekaServerTransportFactory;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
 
@@ -83,7 +83,9 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
         bind(MetricEventsListenerFactory.class)
                 .annotatedWith(Names.named(com.netflix.eureka2.Names.REGISTRATION))
                 .toInstance(new SpectatorEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
-        bind(TcpRegistrationServer.class).asEagerSingleton();
+//        bind(TcpRegistrationServer.class).asEagerSingleton();
+        bind(RegistrationTransportServer.class).asEagerSingleton();
+        bind(EurekaServerTransportFactory.class).toInstance(new GrpcEurekaServerTransportFactory());
         bind(AuditServiceController.class).asEagerSingleton();
 
         bind(EurekaRegistrationProcessor.class).to(PreservableRegistrationProcessor.class).in(Scopes.SINGLETON);
@@ -96,8 +98,8 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
         bind(MetricEventsListenerFactory.class)
                 .annotatedWith(Names.named(com.netflix.eureka2.Names.REPLICATION))
                 .toInstance(new SpectatorEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
-        bind(TcpReplicationServer.class).asEagerSingleton();
-        bind(ReplicationService.class).asEagerSingleton();
+//        bind(TcpReplicationServer.class).asEagerSingleton();
+//        bind(ReplicationService.class).asEagerSingleton();
     }
 
     protected void bindRegistryComponents() {

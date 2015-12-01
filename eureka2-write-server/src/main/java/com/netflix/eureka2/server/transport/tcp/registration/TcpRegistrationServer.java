@@ -32,7 +32,6 @@ import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 @Singleton
 public class TcpRegistrationServer extends AbstractTcpServer {
 
-    @Inject
     public TcpRegistrationServer(EurekaServerTransportConfig config,
                                  @Named(Names.REGISTRATION) MetricEventsListenerFactory servoEventsListenerFactory,
                                  TcpRegistrationHandler tcpRegistrationHandler) {

@@ -5,7 +5,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import com.netflix.eureka2.Names;
-import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.model.StdModelsInjector;

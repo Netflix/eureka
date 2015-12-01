@@ -10,6 +10,7 @@ import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.channel.TestChannelFactory;
 import com.netflix.eureka2.channel.TestRegistrationChannel;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.client.EurekaRegistrationClient.RegistrationStatus;
 import com.netflix.eureka2.client.channel.RegistrationChannelFactory;
 import com.netflix.eureka2.client.channel.RegistrationChannelImpl;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
@@ -61,8 +62,8 @@ public class EurekaRegistrationClientImplTest {
     private TestChannelFactory<RegistrationChannel> factory;
     private EurekaRegistrationClient client;
 
-    private TestSubscriber<Void> initSubscriber;
-    private TestSubscriber<Void> testSubscriber;
+    private TestSubscriber<RegistrationStatus> initSubscriber;
+    private TestSubscriber<RegistrationStatus> testSubscriber;
 
     @Before
     public void setUp() {
@@ -102,8 +103,8 @@ public class EurekaRegistrationClientImplTest {
             }
         });
 
-        RegistrationObservable response = client.register(registrationSubject);
-        response.initialRegistrationResult().subscribe(initSubscriber);
+        Observable<RegistrationStatus> response = client.register(registrationSubject);
+        response.take(1).subscribe(initSubscriber);
         response.subscribe(testSubscriber);
 
         // send the first registration information
@@ -167,8 +168,8 @@ public class EurekaRegistrationClientImplTest {
             }
         });
 
-        RegistrationObservable response = client.register(registrationSubject);
-        response.initialRegistrationResult().subscribe(initSubscriber);
+        Observable<RegistrationStatus> response = client.register(registrationSubject);
+        response.take(1).subscribe(initSubscriber);
         response.subscribe(testSubscriber);
 
         // send the first registration information
@@ -234,8 +235,8 @@ public class EurekaRegistrationClientImplTest {
             }
         });
 
-        RegistrationObservable response = client.register(registrationSubject);
-        response.initialRegistrationResult().subscribe(initSubscriber);
+        Observable<RegistrationStatus> response = client.register(registrationSubject);
+        response.take(1).subscribe(initSubscriber);
         response.subscribe(testSubscriber);
 
         // send the first registration information
@@ -294,8 +295,8 @@ public class EurekaRegistrationClientImplTest {
             }
         });
 
-        RegistrationObservable response = client.register(registrationSubject);
-        response.initialRegistrationResult().subscribe(initSubscriber);
+        Observable<RegistrationStatus> response = client.register(registrationSubject);
+        response.take(1).subscribe(initSubscriber);
         response.subscribe(testSubscriber);
 
         // send the first registration information
@@ -332,8 +333,8 @@ public class EurekaRegistrationClientImplTest {
             }
         });
 
-        RegistrationObservable response = client.register(registrationSubject);
-        response.initialRegistrationResult().subscribe(initSubscriber);
+        Observable<RegistrationStatus> response = client.register(registrationSubject);
+        response.take(1).subscribe(initSubscriber);
         response.subscribe(testSubscriber);
 
         // send the first registration information
@@ -350,7 +351,7 @@ public class EurekaRegistrationClientImplTest {
 
     @Test
     public void testMultipleSubscriberOnSameRegistrationLifecycle() {
-        TestSubscriber<Void> anotherSubscriber = new TestSubscriber<>();
+        TestSubscriber<RegistrationStatus> anotherSubscriber = new TestSubscriber<>();
 
         when(mockFactory.newChannel()).then(new Answer<RegistrationChannel>() {
             @Override
@@ -359,7 +360,7 @@ public class EurekaRegistrationClientImplTest {
             }
         });
 
-        RegistrationObservable response = client.register(registrationSubject);
+        Observable<RegistrationStatus> response = client.register(registrationSubject);
         response.subscribe(testSubscriber);
         response.subscribe(anotherSubscriber);
 

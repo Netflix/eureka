@@ -1,0 +1,266 @@
+syntax = "proto3";
+
+package com.netflix.eureka2.grpc;
+
+/**
+ * Common protocol messages
+ */
+
+message GrpcSource {
+    enum GrpcOrigin {
+        LOCAL = 0;
+        REPLICATED = 1;
+        BOOTSTRAP = 2;
+        INTERESTED = 3;
+    }
+
+    GrpcOrigin origin = 1;
+    string name = 2;
+    int64 id = 3;
+}
+
+message GrpcServicePort {
+    string name = 1;
+    int32 port = 2;
+    bool secure = 3;
+    repeated string addressLabels = 4;
+}
+
+message GrpcNetworkAddress {
+    enum GrpcProtocolType {
+        IPv4 = 0;
+        IPv6 = 1;
+    }
+
+    string label = 1;
+    GrpcProtocolType protocolType = 2;
+    string ipAddress = 3;
+    string hostName = 4;
+}
+
+message GrpcDataCenterInfo {
+    message GrpcBasicDataCenterInfo {
+        string name = 1;
+        repeated GrpcNetworkAddress addresses = 2;
+    }
+
+    message GrpcAwsDataCenterInfo {
+        string name = 1;
+        string region = 2;
+        string zone = 3;
+        string placementGroup = 4;
+        GrpcNetworkAddress publicAddress = 5;
+        GrpcNetworkAddress privateAddress = 6;
+        string amiId = 7;
+        string instanceId = 8;
+        string instanceType = 9;
+        string vpcId = 10;
+        string accountId = 11;
+        string eth0mac = 12;
+    }
+
+    oneof oneof_dataCenterInfo {
+        GrpcBasicDataCenterInfo basic = 1;
+        GrpcAwsDataCenterInfo aws = 2;
+    }
+}
+
+// TODO Optimize it. We should not serialize these objects here, but use a reference.
+message GrpcServiceEndpoint {
+    GrpcNetworkAddress address = 1;
+    GrpcServicePort servicePort = 2;
+}
+
+message GrpcInstanceInfo {
+
+    enum GrpcStatus {
+        UP = 0;
+        DOWN = 1;
+        STARTING = 2;
+        OUT_OF_SERVICE = 3;
+        UNKNOWN = 4;
+    }
+
+    string id = 1;
+    string appGroup = 2;
+    string app = 3;
+    string asg = 4;
+    string vipAddress = 5;
+    string secureVipAddress = 6;
+    repeated GrpcServicePort ports = 7;
+    GrpcStatus status = 8;
+    string homePageUrl = 9;
+    string statusPageUrl = 10;
+    repeated string healthCheckUrls = 11;
+    map<string, string> metadata = 12;
+    GrpcDataCenterInfo dataCenterInfo = 13;
+    repeated GrpcServiceEndpoint serviceEndpoints = 14;
+}
+
+message GrpcDelta {
+    message GrpcServicePortSet {
+        repeated GrpcServicePort ports = 1;
+    }
+
+    message GrpcMetaData {
+        map<string, string> metaData = 1;
+    }
+
+    message StringSet {
+        repeated string values = 1;
+    }
+
+    message GrpcDeltaValue {
+        oneof oneof_delta {
+            string appGroup = 1;
+            string app = 2;
+            string asg = 3;
+            string vipAddress = 4;
+            string secureVipAddress = 5;
+            GrpcServicePortSet ports = 6;
+            GrpcInstanceInfo.GrpcStatus status = 7;
+            string homePageUrl = 8;
+            string statusPageUrl = 9;
+            StringSet healthCheckUrls = 10;
+            GrpcMetaData MetaData = 11;
+            GrpcDataCenterInfo DataCenterInfo = 12;
+        }
+    }
+
+    string id = 1;
+    GrpcDeltaValue deltaValue = 2;
+}
+
+message GrpcAcknowledgement {
+}
+
+message GrpcHeartbeat {
+}
+
+message GrpcClientHello {
+    GrpcSource clientSource = 1;
+}
+
+message GrpcServerHello {
+    GrpcSource serverSource = 1;
+}
+
+/**
+ * Registration protocol messages
+ */
+
+message GrpcRegistrationRequest {
+    oneof oneof_request {
+        GrpcClientHello clientHello = 1;
+        GrpcInstanceInfo instanceInfo = 2;
+        GrpcHeartbeat heartbeat = 3;
+    }
+}
+
+message GrpcRegistrationResponse {
+    oneof item {
+        GrpcServerHello serverHello = 1;
+        GrpcHeartbeat heartbeat = 2;
+        GrpcAcknowledgement ack = 3;
+    }
+}
+
+/**
+ * Interest protocol messages
+ */
+
+message GrpcInterest {
+
+    enum GrpcInterestOperator {
+        Equal = 0;
+        Like = 1;
+    }
+
+    message GrpcNoneInterest {
+    }
+
+    message GrpcAllInterest {
+    }
+
+    message GrpcApplicationInterest {
+        GrpcInterestOperator operator = 1;
+        string pattern = 2;
+    }
+
+    message GrpcVipInterest {
+        GrpcInterestOperator operator = 1;
+        string pattern = 2;
+    }
+
+    message GrpcSecureVipInterest {
+        GrpcInterestOperator operator = 1;
+        string pattern = 2;
+    }
+
+    oneof interest_oneof {
+        GrpcNoneInterest none = 1;
+        GrpcAllInterest all = 2;
+        GrpcApplicationInterest application = 3;
+        GrpcVipInterest vip = 4;
+        GrpcSecureVipInterest secureVip = 5;
+    }
+}
+
+message GrpcChangeNotification {
+
+    message GrpcAddChangeNotification {
+        GrpcInstanceInfo instanceInfo = 1;
+    }
+    message GrpcModifyChangeNotification {
+        repeated GrpcDelta deltas = 1;
+    }
+    message GrpcDeleteChangeNotification {
+        string instanceId = 1;
+    }
+    message GrpcBufferSentinelNotification {
+        bool bufferStart = 1;
+        repeated GrpcInterest interest = 2;
+    }
+
+    oneof notification_oneof {
+        GrpcAddChangeNotification add = 1;
+        GrpcModifyChangeNotification modify = 2;
+        GrpcDeleteChangeNotification delete = 3;
+        GrpcBufferSentinelNotification bufferSentinel = 4;
+    }
+}
+
+message GrpcInterestRegistration {
+    repeated GrpcInterest interests = 1;
+}
+
+message GrpcInterestRequest {
+    oneof item {
+        GrpcClientHello clientHello = 1;
+        GrpcHeartbeat heartbeat = 2;
+        GrpcInterestRegistration interestRegistration = 3;
+    }
+}
+
+message GrpcInterestResponse {
+    oneof item {
+        GrpcServerHello serverHello = 1;
+        GrpcHeartbeat heartbeat = 2;
+        GrpcChangeNotification changeNotification = 3;
+    }
+}
+
+/**
+ * Services
+ */
+
+service Eureka2Registration {
+
+    rpc Register(stream GrpcRegistrationRequest) returns (stream GrpcRegistrationResponse) {
+    }
+}
+
+service Eureka2Interest {
+    rpc Subscribe(stream GrpcInterestRequest) returns (stream GrpcInterestResponse) {
+    }
+}

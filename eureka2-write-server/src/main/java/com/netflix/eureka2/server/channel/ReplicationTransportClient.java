@@ -24,7 +24,7 @@ import com.netflix.eureka2.transport.base.BaseMessageConnection;
 import com.netflix.eureka2.transport.base.HeartBeatConnection;
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.transport.base.SelfClosingConnection;
-import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.Server;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ObservableConnection;
 import io.reactivex.netty.client.RxClient;

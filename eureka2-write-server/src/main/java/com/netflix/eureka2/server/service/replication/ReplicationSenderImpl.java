@@ -3,7 +3,7 @@ package com.netflix.eureka2.server.service.replication;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.ReplicationChannel;
 import com.netflix.eureka2.connection.RetryableConnection;

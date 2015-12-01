@@ -1,6 +1,6 @@
 package com.netflix.eureka2.server.service.bootstrap;
 
-import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;

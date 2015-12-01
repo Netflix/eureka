@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.eureka1.rest.Eureka1RestApiReadModule;
 import com.netflix.eureka2.eureka1.rest.Eureka1RestApiWriteModule;
 import com.netflix.eureka2.eureka1.rest.config.Eureka1Configuration;
@@ -112,7 +113,7 @@ public class Eureka1RestApiIntegrationTest {
         assertThat(app, is(notNullValue()));
 
         // Register a client with Eureka 2.x cluster
-        TestSubscriber<Void> registrationSubscriber = new TestSubscriber<>();
+        TestSubscriber<EurekaRegistrationClient.RegistrationStatus> registrationSubscriber = new TestSubscriber<>();
         final InstanceInfo instanceInfo = SampleInstanceInfo.WebServer.build();
         deploymentResource.registrationClientToWriteCluster()
                 .register(Observable.just(instanceInfo))

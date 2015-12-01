@@ -12,7 +12,6 @@ import com.netflix.eureka2.metric.server.SpectatorEurekaServerMetricFactory;
 import com.netflix.eureka2.server.health.EurekaHealthStatusAggregatorImpl;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.server.http.HealthConnectionHandler;
-import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
 
@@ -41,6 +40,5 @@ public abstract class AbstractEurekaServerModule extends AbstractModule {
         bind(MetricEventsListenerFactory.class)
                 .annotatedWith(Names.named(com.netflix.eureka2.Names.INTEREST))
                 .toInstance(new SpectatorEventsListenerFactory("discovery-rx-client-", "discovery-rx-server-"));
-        bind(TcpInterestServer.class).asEagerSingleton();
     }
 }

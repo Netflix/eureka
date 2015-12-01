@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.client.EurekaRegistrationClient.RegistrationStatus;
 import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
@@ -48,9 +49,9 @@ public class EmbeddedWriteServerTest {
                 .build();
 
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
-        RegistrationObservable request = registrationClient.register(Observable.just(instanceInfo));
+        Observable<RegistrationStatus> request = registrationClient.register(Observable.just(instanceInfo));
         request.subscribe();
-        request.initialRegistrationResult().toBlocking().lastOrDefault(null);
+        request.take(1).toBlocking().lastOrDefault(null);
 
         List<ChangeNotification<InstanceInfo>> notifications = interestClient
                 .forInterest(Interests.forFullRegistry())

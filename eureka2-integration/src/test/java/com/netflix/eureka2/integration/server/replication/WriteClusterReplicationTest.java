@@ -1,23 +1,18 @@
 package com.netflix.eureka2.integration.server.replication;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.client.registration.RegistrationObservable;
+import com.netflix.eureka2.client.EurekaRegistrationClient.RegistrationStatus;
+import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
+import com.netflix.eureka2.model.instance.StdInstanceInfo.Builder;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
-import com.netflix.eureka2.junit.categories.IntegrationTest;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.StdInstanceInfo.Builder;
-import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,10 +21,13 @@ import rx.Observable;
 import rx.Subscription;
 import rx.subjects.BehaviorSubject;
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import static com.netflix.eureka2.testkit.internal.rx.RxBlocking.iteratorFrom;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.*;
 import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -77,9 +75,9 @@ public class WriteClusterReplicationTest {
                                                             EurekaInterestClient interestClient,
                                                             InstanceInfo clientInfo) throws Exception {
         // Register via first write server
-        RegistrationObservable request = registrationClient.register(Observable.just(clientInfo));
+        Observable<RegistrationStatus> request = registrationClient.register(Observable.just(clientInfo));
         Subscription subscription = request.subscribe();
-        request.initialRegistrationResult().toBlocking().firstOrDefault(null);  // wait for initial registration
+        request.take(1).toBlocking().firstOrDefault(null);  // wait for initial registration
 
         // Subscribe to second write server
         Interest<InstanceInfo> interest = Interests.forApplications(clientInfo.getApp());

@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.spi.protocol;
+package com.netflix.eureka2.spi.model;
 
 /**
- * Internal message used for sending acknowledgements over the wire.
+ * We assume that heart beats are at the application level, not embedded
+ * into the transport layer/message broker.
  *
  * @author Tomasz Bak
  */
-public interface Acknowledgement extends ProtocolMessage {
+public interface Heartbeat {
 }

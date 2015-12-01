@@ -2,7 +2,7 @@ package com.netflix.eureka2.testkit.embedded.cluster;
 
 import java.util.List;
 
-import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;

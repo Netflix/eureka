@@ -69,7 +69,7 @@ public class StdInterestModel extends InterestModel {
     }
 
     @Override
-    public <T> MultipleInterests<T> newMultipleInterests(Interest<T>... interests) {
+    public MultipleInterests<InstanceInfo> newMultipleInterests(Interest<InstanceInfo>... interests) {
         return new StdMultipleInterests<>(interests);
     }
 }

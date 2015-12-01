@@ -24,7 +24,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
-import com.netflix.eureka2.spi.protocol.Acknowledgement;
+import com.netflix.eureka2.spi.model.Acknowledgement;
 import com.netflix.eureka2.spi.protocol.ProtocolModel;
 import com.netflix.eureka2.spi.transport.EurekaConnection;
 import io.reactivex.netty.channel.ObservableConnection;

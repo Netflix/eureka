@@ -39,7 +39,7 @@ public abstract class InterestModel {
 
     public abstract Interest<InstanceInfo> newInstanceInterest(String instanceId, Operator operator);
 
-    public abstract <T> MultipleInterests<T> newMultipleInterests(Interest<T>... interests);
+    public abstract MultipleInterests<InstanceInfo> newMultipleInterests(Interest<InstanceInfo>... interests);
 
     public static InterestModel getDefaultModel() {
         return defaultModel;

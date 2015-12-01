@@ -5,6 +5,8 @@ import java.util.List;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
@@ -12,8 +14,12 @@ import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.StdInstanceInfo.Builder;
 import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.protocol.StdProtocolModel;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
 import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
+import com.netflix.eureka2.transport.EurekaTransports;
+import com.netflix.eureka2.transport.StdEurekaTransportFactory;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -35,19 +41,20 @@ import static org.hamcrest.Matchers.is;
 public class WriteServerRegistrationTest {
 
     static {
-        StdModelsInjector.injectStdModels();
+        GrpcModelsInjector.injectGrpcModels();
+        EurekaTransports.setTransportFactory(new StdEurekaTransportFactory());
+        ProtocolModel.setDefaultModel(StdProtocolModel.getStdModel());
     }
 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource = anEurekaDeploymentResource(1, 0).build();
-
 
     @Test(timeout = 60000)
     public void testRegistrationLifecycle() throws Exception {
         final EurekaRegistrationClient registrationClient = eurekaDeploymentResource.registrationClientToWriteServer(0);
         final EurekaInterestClient interestClient = eurekaDeploymentResource.interestClientToWriteServer(0);
 
-        InstanceInfoBuilder seedBuilder = new Builder().withId("id").withApp("app");
+        InstanceInfoBuilder seedBuilder = InstanceModel.getDefaultModel().newInstanceInfo().withId("id").withApp("app");
         List<InstanceInfo> infos = Arrays.asList(
                 seedBuilder.withAppGroup("AAA").build(),
                 seedBuilder.withAppGroup("BBB").build(),

@@ -1,18 +1,11 @@
 package com.netflix.eureka2.integration;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.client.registration.RegistrationObservable;
-import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.client.EurekaRegistrationClient.RegistrationStatus;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.StdInstanceInfo;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +16,13 @@ import rx.Subscription;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
 
@@ -119,7 +119,7 @@ public class IntegrationTestClient {
                 );
 
         final CountDownLatch registrantCountLatch = new CountDownLatch(expectedLifecycle.size());
-        RegistrationObservable registrationRequest = writeClient.register(registrant.doOnEach(new Action1<Notification<? super InstanceInfo>>() {
+        Observable<RegistrationStatus> registrationRequest = writeClient.register(registrant.doOnEach(new Action1<Notification<? super InstanceInfo>>() {
             @Override
             public void call(Notification<? super InstanceInfo> notification) {
                 registrantCountLatch.countDown();

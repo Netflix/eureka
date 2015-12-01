@@ -3,7 +3,7 @@ package com.netflix.eureka2.server;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.server.config.EurekaClusterDiscoveryConfig;
 import com.netflix.eureka2.server.resolver.ClusterAddress.ServiceType;

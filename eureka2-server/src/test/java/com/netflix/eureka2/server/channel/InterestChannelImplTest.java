@@ -15,7 +15,7 @@ import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.registry.EurekaRegistryView;
-import com.netflix.eureka2.spi.protocol.Acknowledgement;
+import com.netflix.eureka2.spi.model.Acknowledgement;
 import com.netflix.eureka2.spi.protocol.ProtocolModel;
 import com.netflix.eureka2.spi.protocol.common.AddInstance;
 import com.netflix.eureka2.spi.transport.EurekaConnection;
