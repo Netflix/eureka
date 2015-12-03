@@ -10,7 +10,6 @@ dependencies {
     compile "com.netflix.governator:governator:${governatorVersion}"
     compile 'com.thoughtworks.xstream:xstream:1.4.2'
     compile 'javax.ws.rs:jsr311-api:1.1.1'
-    compile "com.netflix.blitz4j:blitz4j:${blitzVersion}"
 
     // These dependencies are marked 'provided' in the client, but we need them always on the server
     compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${jacksonVersion}"
