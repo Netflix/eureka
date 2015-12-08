@@ -1,7 +1,9 @@
 package com.netflix.appinfo;
 
 import com.netflix.discovery.util.InstanceInfoGenerator;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.*;
@@ -18,16 +20,26 @@ import static org.mockito.Mockito.when;
  */
 public class ApplicationInfoManagerTest {
 
-    private EurekaInstanceConfig config = spy(new CloudInstanceConfig());
+    private CloudInstanceConfig config = spy(new CloudInstanceConfig());
     private String dummyDefault = "dummyDefault";
     private InstanceInfo instanceInfo;
     private ApplicationInfoManager applicationInfoManager;
+
+    @BeforeClass
+    public static void setUpClass() {
+        System.setProperty("eureka.validateInstanceId", "false");
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+        System.clearProperty("eureka.validateInstanceId");
+    }
 
     @Before
     public void setUp() {
         instanceInfo = InstanceInfoGenerator.takeOne();
         this.applicationInfoManager = new ApplicationInfoManager(config, instanceInfo);
-        when(config.getDefaultAddressResolutionOrder()).thenReturn(new String[] {
+        when(config.getDefaultAddressResolutionOrder()).thenReturn(new String[]{
                 publicHostname.name(),
                 localIpv4.name()
         });

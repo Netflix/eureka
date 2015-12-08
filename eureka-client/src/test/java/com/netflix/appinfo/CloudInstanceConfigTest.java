@@ -1,7 +1,9 @@
 package com.netflix.appinfo;
 
 import com.netflix.discovery.util.InstanceInfoGenerator;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.localIpv4;
@@ -20,6 +22,16 @@ public class CloudInstanceConfigTest {
     private CloudInstanceConfig config;
     private String dummyDefault = "dummyDefault";
     private InstanceInfo instanceInfo;
+
+    @BeforeClass
+    public static void setUpClass() {
+        System.setProperty("eureka.validateInstanceId", "false");
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+        System.clearProperty("eureka.validateInstanceId");
+    }
 
     @Before
     public void setUp() {
