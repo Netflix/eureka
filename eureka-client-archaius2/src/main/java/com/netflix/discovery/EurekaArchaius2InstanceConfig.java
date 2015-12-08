@@ -167,6 +167,12 @@ public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
     }
 
     @Override
+    public String[] getDefaultAddressResolutionOrder() {
+        String result = config.getString(namespace + "defaultAddressResolutionOrder", null);
+        return result == null ? new String[0] : result.split(",");
+    }
+
+    @Override
     public String getNamespace() {
         return namespace;
     }

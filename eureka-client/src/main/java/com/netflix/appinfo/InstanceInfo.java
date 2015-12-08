@@ -861,6 +861,22 @@ public class InstanceInfo {
         return hostName;
     }
 
+    /**
+     * Return the default network address to connect to this instance.
+     *
+     * The address can either be a hostname or an ip and there is no guarantee which will be returned.
+     * Assume the address can change dynamically over time.
+     * If a usecase need more specific hostnames or ips, please use data from {@link #getDataCenterInfo()}.
+     *
+     * For legacy reasons, the data backing this field is extracted from the hostname field
+     *
+     * @return either a hostname or an ipAddress
+     */
+    @JsonIgnore
+    public String getDefaultAddress() {
+        return hostName;
+    }
+
     @Deprecated
     public void setSID(String sid) {
         this.sid = sid;

@@ -305,6 +305,12 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
     }
 
     @Override
+    public String[] getDefaultAddressResolutionOrder() {
+        String result = INSTANCE.getStringProperty(namespace + "defaultAddressResolutionOrder", null).get();
+        return result == null ? new String[0] : result.split(",");
+    }
+
+    @Override
     public String getNamespace() {
         return this.namespace;
     }

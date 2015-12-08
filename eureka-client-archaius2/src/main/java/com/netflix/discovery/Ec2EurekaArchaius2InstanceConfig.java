@@ -27,8 +27,13 @@ import com.netflix.archaius.Config;
 @Singleton
 public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceConfig {
     private static final Logger LOG = LoggerFactory.getLogger(Ec2EurekaArchaius2InstanceConfig.class);
-    
-    private volatile DataCenterInfo info;
+
+    private static final String[] DEFAULT_AWS_ADDRESS_RESOLUTION_ORDER = new String[] {
+            MetaDataKey.publicHostname.name(),
+            MetaDataKey.localIpv4.name()
+    };
+
+    private volatile AmazonInfo amazonInfo;
 
     @Inject
     public Ec2EurekaArchaius2InstanceConfig(Config config) {
@@ -39,7 +44,7 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
         super(config, namespace);
         
         try {
-            this.info = AmazonInfo.Builder.newBuilder().autoBuild(namespace);
+            this.amazonInfo = AmazonInfo.Builder.newBuilder().autoBuild(namespace);
             LOG.info("Datacenter is: " + Name.Amazon);
         } 
         catch (Exception e) {
@@ -48,7 +53,6 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
         }
         
         // Instance id being null means we could not get the amazon metadata
-        AmazonInfo amazonInfo = (AmazonInfo) info;
         if (amazonInfo.get(MetaDataKey.instanceId) == null) {
             if (config.getBoolean(namespace + ".validateInstanceId", true)) {
                 throw new RuntimeException(
@@ -79,12 +83,18 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
         if (refresh) {
             refreshAmazonInfo();
         }
-        return ((AmazonInfo) info).get(MetaDataKey.publicHostname);
+        return amazonInfo.get(MetaDataKey.publicHostname);
     }
 
     @Override
     public DataCenterInfo getDataCenterInfo() {
-        return info;
+        return amazonInfo;
+    }
+
+    @Override
+    public String[] getDefaultAddressResolutionOrder() {
+        String[] order = super.getDefaultAddressResolutionOrder();
+        return (order.length == 0) ? DEFAULT_AWS_ADDRESS_RESOLUTION_ORDER : order;
     }
 
     /**
@@ -94,14 +104,12 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
     public synchronized void refreshAmazonInfo() {
         try {
             AmazonInfo newInfo = AmazonInfo.Builder.newBuilder().autoBuild(DEFAULT_NAMESPACE);
-            String newHostname = newInfo.get(MetaDataKey.publicHostname);
-            String existingHostname = ((AmazonInfo) info).get(MetaDataKey.publicHostname);
-            if (newHostname != null && !newHostname.equals(existingHostname)) {
-                // public dns has changed on us, re-sync it
-                LOG.warn("The public hostname changed from : {} => {}", existingHostname, newHostname);
-                this.info = newInfo;
+            if (!newInfo.equals(amazonInfo)) {
+                // the datacenter info has changed, re-sync it
+                LOG.warn("The AmazonInfo changed from : {} => {}", amazonInfo, newInfo);
+                this.amazonInfo = newInfo;
             }
-        } 
+        }
         catch (Exception e) {
             LOG.error("Cannot refresh the Amazon Info ", e);
         }

@@ -50,8 +50,13 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
     private static final Logger logger = LoggerFactory.getLogger(CloudInstanceConfig.class);
     private static final DynamicPropertyFactory INSTANCE = DynamicPropertyFactory.getInstance();
 
+    private static final String[] DEFAULT_AWS_ADDRESS_RESOLUTION_ORDER = new String[] {
+            MetaDataKey.publicHostname.name(),
+            MetaDataKey.localIpv4.name()
+    };
+
     private DynamicBooleanProperty propValidateInstanceId;
-    private DataCenterInfo info;
+    private volatile AmazonInfo info;
 
     public CloudInstanceConfig() {
         initCloudInstanceConfig(namespace);
@@ -63,13 +68,12 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
     }
 
     private void initCloudInstanceConfig(String namespace) {
-        propValidateInstanceId = INSTANCE.getBooleanProperty(namespace
-                + "validateInstanceId", true);
+        propValidateInstanceId = INSTANCE.getBooleanProperty(namespace + "validateInstanceId", true);
         info = initDataCenterInfo();
     }
 
-    private DataCenterInfo initDataCenterInfo() {
-        DataCenterInfo info;
+    private AmazonInfo initDataCenterInfo() {
+        AmazonInfo info;
         try {
             info = AmazonInfo.Builder.newBuilder().autoBuild(namespace);
             logger.info("Datacenter is: " + Name.Amazon);
@@ -78,13 +82,12 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
             throw new RuntimeException(e);
         }
         // Instance id being null means we could not get the amazon metadata
-        AmazonInfo amazonInfo = (AmazonInfo) info;
-        if (amazonInfo.get(MetaDataKey.instanceId) == null) {
+        if (info.get(MetaDataKey.instanceId) == null) {
             if (propValidateInstanceId.get()) {
                 throw new RuntimeException(
                         "Your datacenter is defined as cloud but we are not able to get the amazon metadata to "
-                                + "register. \nSet the property " + namespace + "validateInstanceId to false to ignore the"
-                                + "metadata call");
+                                + "register. \nSet the property " + namespace + "validateInstanceId to false to "
+                                + "ignore the metadata call");
             } else {
                 // The property to not validate instance ids may be set for
                 // development and in that scenario, populate instance id
@@ -92,16 +95,40 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
                 Map<String, String> metadataMap = new HashMap<String, String>();
                 metadataMap.put(MetaDataKey.instanceId.getName(), super.getIpAddress());
                 metadataMap.put(MetaDataKey.publicHostname.getName(), super.getHostName(false));
-                amazonInfo.setMetadata(metadataMap);
+                info.setMetadata(metadataMap);
             }
-        } else if ((amazonInfo.get(MetaDataKey.publicHostname) == null)
-                && (amazonInfo.get(MetaDataKey.localIpv4) != null)) {
+        } else if ((info.get(MetaDataKey.publicHostname) == null)
+                && (info.get(MetaDataKey.localIpv4) != null)) {
+            // :( legacy code and logic
             // This might be a case of VPC where the instance id is not null, but
             // public hostname might be null
-            amazonInfo.getMetadata().put(MetaDataKey.publicHostname.getName(),
-                    (amazonInfo.get(MetaDataKey.localIpv4)));
+            info.getMetadata().put(MetaDataKey.publicHostname.getName(), (info.get(MetaDataKey.localIpv4)));
         }
         return info;
+    }
+
+    public String resolveDefaultAddress(DataCenterInfo dataCenterInfo) {
+        String result = getHostName(true);
+
+        if (dataCenterInfo instanceof AmazonInfo) {
+            AmazonInfo amazonInfo = (AmazonInfo) dataCenterInfo;
+            for (String name : getDefaultAddressResolutionOrder()) {
+                try {
+                    AmazonInfo.MetaDataKey key = AmazonInfo.MetaDataKey.valueOf(name);
+                    String address = amazonInfo.get(key);
+                    if (address != null && !address.isEmpty()) {
+                        result = address;
+                        break;
+                    }
+                } catch (Exception e) {
+                    logger.error("failed to resolve default address for key {}, skipping", name, e);
+                }
+            }
+        } else {
+            logger.warn("DataCenterInfo is not of type AmazonInfo. Defaulting to default resolution");
+        }
+
+        return result;
     }
 
     @Override
@@ -109,12 +136,24 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
         if (refresh) {
             refreshAmazonInfo();
         }
-        return ((AmazonInfo) info).get(MetaDataKey.publicHostname);
+        return info.get(MetaDataKey.publicHostname);
+    }
+
+    @Override
+    public String getIpAddress() {
+        String ipAddr = info.get(MetaDataKey.localIpv4);
+        return ipAddr == null ? super.getIpAddress() : ipAddr;
     }
 
     @Override
     public DataCenterInfo getDataCenterInfo() {
         return info;
+    }
+
+    @Override
+    public String[] getDefaultAddressResolutionOrder() {
+        String[] order = super.getDefaultAddressResolutionOrder();
+        return (order.length == 0) ? DEFAULT_AWS_ADDRESS_RESOLUTION_ORDER : order;
     }
 
     /**
@@ -124,16 +163,13 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
     public synchronized void refreshAmazonInfo() {
         try {
             AmazonInfo newInfo = AmazonInfo.Builder.newBuilder().autoBuild(namespace);
-            String newHostname = newInfo.get(MetaDataKey.publicHostname);
-            String existingHostname = ((AmazonInfo) info).get(MetaDataKey.publicHostname);
-            if (newHostname != null && !newHostname.equals(existingHostname)) {
-                // public dns has changed on us, re-sync it
-                logger.warn("The public hostname changed from : {} => {}", existingHostname, newHostname);
+            if (!newInfo.equals(info)) {
+                // the datacenter info has changed, re-sync it
+                logger.warn("The AmazonInfo changed from : {} => {}", info, newInfo);
                 this.info = newInfo;
             }
         } catch (Throwable t) {
             logger.error("Cannot refresh the Amazon Info ", t);
         }
     }
-
 }
