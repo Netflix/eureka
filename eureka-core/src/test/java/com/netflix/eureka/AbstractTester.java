@@ -13,7 +13,6 @@ import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.LeaseInfo;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
-import com.netflix.blitz4j.LoggingConfiguration;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryClient;
@@ -36,10 +35,6 @@ import static org.mockito.Mockito.spy;
  * @author Nitesh Kant
  */
 public class AbstractTester {
-
-    static {
-        LoggingConfiguration.getInstance().configure();
-    }
 
     public static final String REMOTE_REGION_NAME = "us-east-1";
     public static final String REMOTE_REGION_APP_NAME = "MYAPP";
