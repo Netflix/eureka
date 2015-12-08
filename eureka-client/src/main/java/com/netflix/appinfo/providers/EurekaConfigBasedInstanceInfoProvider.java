@@ -5,6 +5,7 @@ import javax.inject.Singleton;
 import java.util.Map;
 
 import com.google.inject.Provider;
+import com.netflix.appinfo.CloudInstanceConfig;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
@@ -60,13 +61,20 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
                 }
             }
 
+            String defaultAddress;
+            if (config instanceof CloudInstanceConfig) {
+                defaultAddress = ((CloudInstanceConfig) config).resolveDefaultAddress(dataCenterInfo);
+            } else {
+                defaultAddress = config.getHostName(false);
+            }
+
             builder.setNamespace(config.getNamespace())
                     .setInstanceId(instanceId)
                     .setAppName(config.getAppname())
                     .setAppGroupName(config.getAppGroupName())
                     .setDataCenterInfo(config.getDataCenterInfo())
                     .setIPAddr(config.getIpAddress())
-                    .setHostName(config.getHostName(false))
+                    .setHostName(defaultAddress)
                     .setPort(config.getNonSecurePort())
                     .enablePort(PortType.UNSECURE, config.isNonSecurePortEnabled())
                     .setSecurePort(config.getSecurePort())

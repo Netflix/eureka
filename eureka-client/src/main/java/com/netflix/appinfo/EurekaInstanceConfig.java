@@ -351,6 +351,21 @@ public interface EurekaInstanceConfig {
     String getSecureHealthCheckUrl();
 
     /**
+     * An instance's network addresses should be fully expressed in it's {@link DataCenterInfo}.
+     * For example for instances in AWS, this will include the publicHostname, publicIp,
+     * privateHostname and privateIp, when available. The {@link com.netflix.appinfo.InstanceInfo}
+     * will further express a "default address", which is a field that can be configured by the
+     * registering instance to advertise it's default address. This configuration allowed
+     * for the expression of an ordered list of fields that can be used to resolve the default
+     * address. The exact field values will depend on the implementation details of the corresponding
+     * implementing DataCenterInfo types.
+     *
+     * @return an ordered list of fields that should be used to preferentially
+     *         resolve this instance's default address, empty String[] for default.
+     */
+    String[] getDefaultAddressResolutionOrder();
+
+    /**
      * Get the namespace used to find properties.
      * @return the namespace used to find properties.
      */

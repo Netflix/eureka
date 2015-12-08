@@ -536,6 +536,10 @@ public interface EurekaClientConfig {
      */
     String getExperimental(String name);
 
-
+    /**
+     * For compatibility, return the transport layer config class
+     *
+     * @return an instance of {@link EurekaTransportConfig}
+     */
     EurekaTransportConfig getTransportConfig();
 }

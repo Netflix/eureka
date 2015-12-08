@@ -1,6 +1,8 @@
 package com.netflix.discovery.shared.transport;
 
 /**
+ * Config class that governs configurations relevant to the transport layer
+ *
  * @author David Liu
  */
 public interface EurekaTransportConfig {

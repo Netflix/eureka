@@ -146,17 +146,29 @@ public class ApplicationInfoManager {
      * Refetches the hostname to check if it has changed. If it has, the entire
      * <code>DataCenterInfo</code> is refetched and passed on to the eureka
      * server on next heartbeat.
+     *
+     * see {@link InstanceInfo#getHostName()} for explanation on why the hostname is used as the default address
      */
     public void refreshDataCenterInfoIfRequired() {
-        String existingHostname = instanceInfo.getHostName();
-        String newHostname = config.getHostName(true);
-        if (newHostname != null && !newHostname.equals(existingHostname)) {
-            logger.warn("The public hostname changed from : "
-                    + existingHostname + " => " + newHostname);
-            InstanceInfo.Builder builder = new InstanceInfo.Builder(
-                    instanceInfo);
-            builder.setHostName(newHostname).setDataCenterInfo(
-                    config.getDataCenterInfo());
+        String existingAddress = instanceInfo.getHostName();
+        DataCenterInfo dataCenterInfo = instanceInfo.getDataCenterInfo();
+
+        String newAddress;
+        if (config instanceof CloudInstanceConfig) {
+            newAddress = ((CloudInstanceConfig) config).resolveDefaultAddress(dataCenterInfo);
+        } else {
+            newAddress = config.getHostName(true);
+        }
+        String newIp = config.getIpAddress();
+
+        if (newAddress != null && !newAddress.equals(existingAddress)) {
+            logger.warn("The address changed from : {} => {}", existingAddress, newAddress);
+
+            // :( in the legacy code here the builder is acting as a mutator.
+            // This is hard to fix as this same instanceInfo instance is referenced elsewhere.
+            // We will most likely re-write the client at sometime so not fixing for now.
+            InstanceInfo.Builder builder = new InstanceInfo.Builder(instanceInfo);
+            builder.setHostName(newAddress).setIPAddr(newIp).setDataCenterInfo(config.getDataCenterInfo());
             instanceInfo.setIsDirty();
         }
     }
@@ -169,8 +181,7 @@ public class ApplicationInfoManager {
         int currentLeaseDuration = config.getLeaseExpirationDurationInSeconds();
         int currentLeaseRenewal = config.getLeaseRenewalIntervalInSeconds();
         if (leaseInfo.getDurationInSecs() != currentLeaseDuration || leaseInfo.getRenewalIntervalInSecs() != currentLeaseRenewal) {
-            LeaseInfo newLeaseInfo = LeaseInfo.Builder
-                    .newBuilder()
+            LeaseInfo newLeaseInfo = LeaseInfo.Builder.newBuilder()
                     .setRenewalIntervalInSecs(currentLeaseRenewal)
                     .setDurationInSecs(currentLeaseDuration)
                     .build();
