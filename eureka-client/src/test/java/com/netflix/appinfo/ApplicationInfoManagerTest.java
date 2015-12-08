@@ -50,12 +50,12 @@ public class ApplicationInfoManagerTest {
     public void testRefreshDataCenterInfoWithAmazonInfo() {
         AmazonInfo info = (AmazonInfo) instanceInfo.getDataCenterInfo();
         String newPublicHostname = "newValue";
-        assertThat(instanceInfo.getDefaultAddress(), is(not(newPublicHostname)));
+        assertThat(instanceInfo.getHostName(), is(not(newPublicHostname)));
 
         info.getMetadata().put(publicHostname.getName(), newPublicHostname);
         applicationInfoManager.refreshDataCenterInfoIfRequired();
 
-        assertThat(instanceInfo.getDefaultAddress(), is(newPublicHostname));
+        assertThat(instanceInfo.getHostName(), is(newPublicHostname));
     }
 
     @Test
@@ -68,6 +68,6 @@ public class ApplicationInfoManagerTest {
         assertThat(info, instanceOf(MyDataCenterInfo.class));
 
         applicationInfoManager.refreshDataCenterInfoIfRequired();
-        assertThat(instanceInfo.getDefaultAddress(), is(dummyDefault));
+        assertThat(instanceInfo.getHostName(), is(dummyDefault));
     }
 }

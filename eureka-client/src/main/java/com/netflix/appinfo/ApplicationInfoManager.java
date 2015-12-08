@@ -147,10 +147,10 @@ public class ApplicationInfoManager {
      * <code>DataCenterInfo</code> is refetched and passed on to the eureka
      * server on next heartbeat.
      *
-     * see {@link InstanceInfo#getDefaultAddress()} for explanation on why the hostname is used as the default address
+     * see {@link InstanceInfo#getHostName()} for explanation on why the hostname is used as the default address
      */
     public void refreshDataCenterInfoIfRequired() {
-        String existingAddress = instanceInfo.getDefaultAddress();
+        String existingAddress = instanceInfo.getHostName();
         DataCenterInfo dataCenterInfo = instanceInfo.getDataCenterInfo();
 
         String newAddress;

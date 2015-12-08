@@ -852,28 +852,21 @@ public class InstanceInfo {
         return appGroupName;
     }
 
-    /**
-     * Returns the fully qualified hostname of this running instance.
-     *
-     * @return the hostname.
-     */
-    public String getHostName() {
-        return hostName;
-    }
 
     /**
-     * Return the default network address to connect to this instance.
+     * Return the default network address to connect to this instance. Typically this would be the fully
+     * qualified public hostname.
      *
-     * The address can either be a hostname or an ip and there is no guarantee which will be returned.
-     * Assume the address can change dynamically over time.
-     * If a usecase need more specific hostnames or ips, please use data from {@link #getDataCenterInfo()}.
+     * However the user can configure the {@link EurekaInstanceConfig} to change the default value used
+     * to populate this field using the {@link EurekaInstanceConfig#getDefaultAddressResolutionOrder()} property.
      *
-     * For legacy reasons, the data backing this field is extracted from the hostname field
+     * If a use case need more specific hostnames or ips, please use data from {@link #getDataCenterInfo()}.
      *
-     * @return either a hostname or an ipAddress
+     * For legacy reasons, it is difficult to introduce a new address-type field that is agnostic to hostname/ip.
+     *
+     * @return the default address (by default the public hostname)
      */
-    @JsonIgnore
-    public String getDefaultAddress() {
+    public String getHostName() {
         return hostName;
     }
 
