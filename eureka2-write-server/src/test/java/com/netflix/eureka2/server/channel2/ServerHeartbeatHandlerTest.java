@@ -27,7 +27,7 @@ import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
-import rx.Scheduler;
+import rx.Subscription;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 /**
  */
@@ -56,13 +56,14 @@ public class ServerHeartbeatHandlerTest {
 
     private final PublishSubject<ChannelNotification<InstanceInfo>> inputStream = PublishSubject.create();
     private final ExtTestSubscriber<ChannelNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
-    private final ServerHeartbeatHandler<InstanceInfo, InstanceInfo> handler = new ServerHeartbeatHandler<>(HEARTBEAT_TIMEOUT, testScheduler);
 
+    private final ServerHeartbeatHandler<InstanceInfo, InstanceInfo> handler = new ServerHeartbeatHandler<>(HEARTBEAT_TIMEOUT, testScheduler);
+    private Subscription subscription;
 
     @Before
     public void setUp() throws Exception {
         new ChannelPipeline<>("heartbeat", handler, nextHandler);
-        handler.handle(inputStream).subscribe(testSubscriber);
+        subscription = handler.handle(inputStream).subscribe(testSubscriber);
     }
 
     @Test
@@ -74,6 +75,10 @@ public class ServerHeartbeatHandlerTest {
         // CHeck data is passed transparently
         inputStream.onNext(ChannelNotification.newData(INSTANCE));
         assertThat(testSubscriber.takeNext().getKind(), is(equalTo(ChannelNotification.Kind.Data)));
+
+        // Check that unsubscribe closes all subscriptions
+        subscription.unsubscribe();
+        assertThat(inputStream.hasObservers(), is(false));
     }
 
     @Test
@@ -85,6 +90,10 @@ public class ServerHeartbeatHandlerTest {
         // Wait until timeout
         testScheduler.advanceTimeBy(HEARTBEAT_TIMEOUT, TimeUnit.MILLISECONDS);
         testSubscriber.assertOnError();
+
+        // Check that unsubscribe closes all subscriptions
+        subscription.unsubscribe();
+        assertThat(inputStream.hasObservers(), is(false));
     }
 
     static class ChannelHandlerStub implements ChannelHandler<InstanceInfo, InstanceInfo> {

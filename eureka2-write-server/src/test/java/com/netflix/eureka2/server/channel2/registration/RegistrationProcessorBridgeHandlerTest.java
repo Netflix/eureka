@@ -29,8 +29,10 @@ import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
+import rx.Subscription;
 import rx.subjects.PublishSubject;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -66,29 +68,53 @@ public class RegistrationProcessorBridgeHandlerTest {
         PublishSubject<ChannelNotification<InstanceInfo>> registrationUpdates = PublishSubject.create();
         ExtTestSubscriber<ChannelNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
 
-        handler.handle(registrationUpdates).subscribe(testSubscriber);
+        Subscription subscription = handler.handle(registrationUpdates).subscribe(testSubscriber);
 
+        // Send registration update
+        registrationUpdates.onNext(channelNotification);
+        assertThat(registrationProcessor.getConnectedClient(), is(equalTo(CLIENT_SOURCE)));
+        assertThat(testSubscriber.takeNext().getKind(), is(equalTo(ChannelNotification.Kind.Data)));
+
+        // Check that unsubscribe sends unregister request, and closes all subscriptions
+        subscription.unsubscribe();
+        assertThat(registrationUpdates.hasObservers(), is(false));
+        assertThat(registrationProcessor.getCollectedUpdates().size(), is(equalTo(2)));
+        assertThat(registrationProcessor.getCollectedUpdates().get(1).getKind(), is(equalTo(ChangeNotification.Kind.Delete)));
+    }
+
+    @Test
+    public void testRegistrationErrorIsPropagated() throws Exception {
+        PublishSubject<ChannelNotification<InstanceInfo>> registrationUpdates = PublishSubject.create();
+        ExtTestSubscriber<ChannelNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
+
+        Subscription subscription = handler.handle(registrationUpdates).subscribe(testSubscriber);
+
+        // Send registration update, to force processor connect
         registrationUpdates.onNext(channelNotification);
 
-        assertThat(registrationProcessor.getConnectedClient(), is(equalTo(CLIENT_SOURCE)));
+        // Simulate transport error
+        registrationUpdates.onError(new IOException("Simulated transport error"));
+        assertThat(registrationProcessor.getErrorCounter(), is(equalTo(1)));
+        assertThat(subscription.isUnsubscribed(), is(true));
     }
 
     static class EurekaRegistrationProcessorStub implements EurekaRegistrationProcessor<InstanceInfo> {
 
         private volatile Source connectedClient;
+        private volatile int errorCounter;
         private final List<ChangeNotification<InstanceInfo>> collectedUpdates = new CopyOnWriteArrayList<>();
 
         @Override
         public Observable<Void> connect(String id, Source source, Observable<ChangeNotification<InstanceInfo>> registrationUpdates) {
             this.connectedClient = source;
 
-            registrationUpdates.subscribe(
+            Subscription subscription = registrationUpdates.subscribe(
                     next -> collectedUpdates.add(next),
-                    e -> e.printStackTrace(),
+                    e -> errorCounter++,
                     () -> System.out.println("RegistrationProcess input stream onCompleted")
             );
 
-            return Observable.never();
+            return Observable.<Void>never().doOnUnsubscribe(() -> subscription.unsubscribe());
         }
 
         @Override
@@ -113,6 +139,14 @@ public class RegistrationProcessorBridgeHandlerTest {
 
         public Source getConnectedClient() {
             return connectedClient;
+        }
+
+        public int getErrorCounter() {
+            return errorCounter;
+        }
+
+        public List<ChangeNotification<InstanceInfo>> getCollectedUpdates() {
+            return collectedUpdates;
         }
     }
 }

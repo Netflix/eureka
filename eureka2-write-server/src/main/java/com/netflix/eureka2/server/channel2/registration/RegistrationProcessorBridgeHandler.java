@@ -22,6 +22,7 @@ import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.server.channel2.ServerHandlers;
 import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.spi.channel.ChannelContext;
+import com.netflix.eureka2.spi.channel.ChannelHandler;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.RegistrationHandler;
 import org.slf4j.Logger;
@@ -33,8 +34,12 @@ import rx.subjects.SerializedSubject;
 import rx.subjects.Subject;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * Complex logic in this handler stems from differences between {@link ChannelHandler} interface, and
+ * {@link EurekaRegistrationProcessor}. We should be able to replace the latter with {@link ChannelHandler}, which
+ * should simplify or even eliminate this bridge.
  */
 public class RegistrationProcessorBridgeHandler implements RegistrationHandler {
 
@@ -59,14 +64,27 @@ public class RegistrationProcessorBridgeHandler implements RegistrationHandler {
     public Observable<ChannelNotification<InstanceInfo>> handle(Observable<ChannelNotification<InstanceInfo>> registrationUpdates) {
         return Observable.create(subscriber -> {
             Subject<ChannelNotification<InstanceInfo>, ChannelNotification<InstanceInfo>> reply = new SerializedSubject<>(PublishSubject.create());
+            reply.subscribe(subscriber);
+
+            PublishSubject<ChangeNotification<InstanceInfo>> processorInput = PublishSubject.create();
+            AtomicReference<InstanceInfo> lastInstanceRef = new AtomicReference<InstanceInfo>();
 
             Observable<ChannelNotification<InstanceInfo>> trackedUpdates = registrationUpdates
                     .filter(next -> next.getKind() == ChannelNotification.Kind.Data)
-                    .doOnNext(reply::onNext)
-                    .doOnError(reply::onError)
-                    .doOnCompleted(reply::onCompleted);
+                    .doOnNext(next -> {
+                        reply.onNext(next);
+                        if (next.getKind() == ChannelNotification.Kind.Data) {
+                            lastInstanceRef.set(next.getData());
+                        }
+                    })
+                    .doOnUnsubscribe(() -> {
+                        logger.debug("Unsubscribing registration input");
+                        if (lastInstanceRef.get() != null) {
+                            processorInput.onNext(new ChangeNotification<>(ChangeNotification.Kind.Delete, lastInstanceRef.get()));
+                            processorInput.onCompleted();
+                        }
+                    });
 
-            PublishSubject<ChangeNotification<InstanceInfo>> processorInput = PublishSubject.create();
             Subscription inputSubscription = trackedUpdates.subscribe(
                     next -> {
                         if (!processorInput.hasObservers()) {
@@ -84,8 +102,11 @@ public class RegistrationProcessorBridgeHandler implements RegistrationHandler {
                         }
                         processorInput.onNext(new ChangeNotification<>(ChangeNotification.Kind.Add, next.getData()));
                     },
-                    e -> reply.onError(e),
-                    () -> reply.onCompleted()
+                    e -> {
+                        processorInput.onError(e);
+                        reply.onError(e);
+                    },
+                    reply::onCompleted
             );
             subscriber.add(inputSubscription);
         });

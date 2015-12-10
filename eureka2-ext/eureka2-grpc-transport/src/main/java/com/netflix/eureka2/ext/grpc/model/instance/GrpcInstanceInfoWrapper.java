@@ -17,8 +17,8 @@
 package com.netflix.eureka2.ext.grpc.model.instance;
 
 import com.netflix.eureka2.ext.grpc.model.GrpcObjectWrapper;
+import com.netflix.eureka2.ext.grpc.util.TextPrinter;
 import com.netflix.eureka2.grpc.Eureka2;
-import com.netflix.eureka2.model.datacenter.BasicDataCenterInfo;
 import com.netflix.eureka2.model.datacenter.DataCenterInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
@@ -180,7 +180,7 @@ public class GrpcInstanceInfoWrapper implements InstanceInfo, GrpcObjectWrapper<
 
     @Override
     public String toString() {
-        return grpcInstanceInfo.toString();
+        return TextPrinter.toString(grpcInstanceInfo);
     }
 
     public static InstanceInfo asInstanceInfo(Eureka2.GrpcInstanceInfo grpcInstanceInfo) {

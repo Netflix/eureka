@@ -17,8 +17,8 @@
 package com.netflix.eureka2.ext.grpc.model.instance;
 
 import com.netflix.eureka2.ext.grpc.model.GrpcObjectWrapper;
+import com.netflix.eureka2.ext.grpc.util.TextPrinter;
 import com.netflix.eureka2.grpc.Eureka2;
-import com.netflix.eureka2.model.datacenter.DataCenterInfo;
 import com.netflix.eureka2.model.instance.*;
 
 import java.util.ArrayList;
@@ -160,7 +160,7 @@ public class GrpcDeltaWrapper<ValueType> implements GrpcObjectWrapper<Eureka2.Gr
 
     @Override
     public String toString() {
-        return grpcDelta.toString();
+        return TextPrinter.toString(grpcDelta).replace("\n", " ");
     }
 
     public static final class Builder extends DeltaBuilder {

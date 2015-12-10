@@ -27,6 +27,7 @@ import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
 import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.junit.Before;
 import org.junit.Test;
+import rx.Subscription;
 import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 
@@ -60,7 +61,7 @@ public class InterestMultiplexerBridgeHandlerTest {
     @Test
     public void testInterestRegistration() throws Exception {
         PublishSubject<ChannelNotification<Interest<InstanceInfo>>> interestNotifications = PublishSubject.create();
-        handler.handle(interestNotifications).subscribe(testSubscriber);
+        Subscription subscription = handler.handle(interestNotifications).subscribe(testSubscriber);
 
         // First interest
         Interest<InstanceInfo> firstInterest = Interests.forFullRegistry();
@@ -75,5 +76,10 @@ public class InterestMultiplexerBridgeHandlerTest {
 
         verify(registry, times(1)).forInterest(secondInterest);
         assertThat(testSubscriber.takeNext().getKind(), is(equalTo(ChannelNotification.Kind.Data)));
+
+
+        // Check that unsubscribe closes all subscriptions
+        subscription.unsubscribe();
+        assertThat(interestNotifications.hasObservers(), is(false));
     }
 }

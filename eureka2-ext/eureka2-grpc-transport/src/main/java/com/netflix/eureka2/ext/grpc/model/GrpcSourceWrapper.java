@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.ext.grpc.model;
 
+import com.netflix.eureka2.ext.grpc.util.TextPrinter;
 import com.netflix.eureka2.grpc.Eureka2;
 import com.netflix.eureka2.model.Source;
 
@@ -68,7 +69,7 @@ public class GrpcSourceWrapper implements Source, GrpcObjectWrapper<Eureka2.Grpc
 
     @Override
     public String toString() {
-        return grpcSource.toString();
+        return TextPrinter.toString(grpcSource);
     }
 
     public static GrpcSourceWrapper asSource(Eureka2.GrpcSource grpcSource) {

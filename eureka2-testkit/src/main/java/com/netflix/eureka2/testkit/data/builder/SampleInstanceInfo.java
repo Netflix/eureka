@@ -1,22 +1,17 @@
 package com.netflix.eureka2.testkit.data.builder;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.datacenter.AwsDataCenterInfo;
 import com.netflix.eureka2.model.datacenter.DataCenterInfo;
-import com.netflix.eureka2.model.datacenter.StdAwsDataCenterInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
 import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.model.instance.NetworkAddress;
 import com.netflix.eureka2.model.instance.ServicePort;
 import com.netflix.eureka2.utils.ExtCollections;
+
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Tomasz Bak
@@ -130,7 +125,7 @@ public enum SampleInstanceInfo {
                 String name = baseName + '_' + cidx;
                 NetworkAddress publicAddress = publicAddresses.next();
                 NetworkAddress privateAddress = privateAddresses.next();
-                DataCenterInfo dataCenter = new StdAwsDataCenterInfo.Builder()
+                DataCenterInfo dataCenter = InstanceModel.getDefaultModel().newAwsDataCenterInfo()
                         .withAwsDataCenter(templateDataCenter)
                         .withInstanceId(String.format("i-%s-%08d", baseName, cidx))
                         .withPublicHostName(publicAddress.getHostName())

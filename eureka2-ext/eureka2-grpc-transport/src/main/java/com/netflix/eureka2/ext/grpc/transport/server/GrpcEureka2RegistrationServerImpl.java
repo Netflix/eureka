@@ -109,6 +109,7 @@ class GrpcEureka2RegistrationServerImpl implements Eureka2RegistrationGrpc.Eurek
 
         void onError(Throwable t) {
             registrationSubject.onError(t);
+            pipelineSubscription.unsubscribe();
         }
 
         void onCompleted() {
@@ -117,20 +118,22 @@ class GrpcEureka2RegistrationServerImpl implements Eureka2RegistrationGrpc.Eurek
         }
 
         private Subscription connectPipeline() {
-            return pipeline.getFirst().handle(registrationSubject).subscribe(
-                    next -> {
-                        logger.debug("Sending channel notification to client {}", next.getKind());
-                        responseObserver.onNext(convert(next));
-                    },
-                    e -> {
-                        logger.debug("Send onError to transport ({})", e.getMessage());
-                        responseObserver.onError(e);
-                    },
-                    () -> {
-                        logger.debug("Send onCompleted to transport ({})");
-                        responseObserver.onCompleted();
-                    }
-            );
+            return pipeline.getFirst().handle(registrationSubject)
+                    .doOnUnsubscribe(() -> logger.debug("Registration pipeline unsubscribed"))
+                    .subscribe(
+                            next -> {
+                                logger.debug("Sending channel notification to client {}", next.getKind());
+                                responseObserver.onNext(convert(next));
+                            },
+                            e -> {
+                                logger.debug("Send onError to transport ({})", e.getMessage());
+                                responseObserver.onError(e);
+                            },
+                            () -> {
+                                logger.debug("Send onCompleted to transport ({})");
+                                responseObserver.onCompleted();
+                            }
+                    );
         }
 
         private Eureka2.GrpcRegistrationResponse convert(ChannelNotification<InstanceInfo> channelNotification) {

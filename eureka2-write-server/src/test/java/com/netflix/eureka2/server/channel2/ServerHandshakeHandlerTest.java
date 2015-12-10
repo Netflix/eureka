@@ -31,6 +31,7 @@ import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
+import rx.Subscription;
 import rx.subjects.PublishSubject;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -64,15 +65,19 @@ public class ServerHandshakeHandlerTest {
     public void testHandshake() throws Exception {
         PublishSubject<ChannelNotification<InstanceInfo>> inputStream = PublishSubject.create();
         ExtTestSubscriber<ChannelNotification<InstanceInfo>> testSubscriber = new ExtTestSubscriber<>();
-        handler.handle(inputStream).subscribe(testSubscriber);
+        Subscription subscription = handler.handle(inputStream).subscribe(testSubscriber);
 
         // Check hello
         inputStream.onNext(ChannelNotification.newHello(CLIENT_HELLO));
         assertThat(testSubscriber.takeNext().getKind(), is(equalTo(ChannelNotification.Kind.Hello)));
 
-        // CHeck data is passed transparently
+        // Check data is passed transparently
         inputStream.onNext(ChannelNotification.newData(INSTANCE));
         assertThat(testSubscriber.takeNext().getKind(), is(equalTo(ChannelNotification.Kind.Data)));
+
+        // Check that unsubscribe closes all subscriptions
+        subscription.unsubscribe();
+        assertThat(inputStream.hasObservers(), is(false));
     }
 
     private static class ChannelHandlerStub implements ChannelHandler<InstanceInfo, InstanceInfo> {

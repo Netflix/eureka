@@ -1,19 +1,21 @@
 package com.netflix.eureka2.integration.server.interest;
 
-import java.util.concurrent.TimeUnit;
-
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
+import com.netflix.eureka2.protocol.StdProtocolModel;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.embedded.EurekaDeployment;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import com.netflix.eureka2.testkit.netrouter.NetworkLink;
+import com.netflix.eureka2.transport.EurekaTransports;
+import com.netflix.eureka2.transport.StdEurekaTransportFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -21,6 +23,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import rx.Observable;
 import rx.Subscription;
+
+import java.util.concurrent.TimeUnit;
 
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
@@ -36,7 +40,9 @@ import static org.hamcrest.Matchers.is;
 public class ReadWriteClusterIntegrationTest {
 
     static {
-        StdModelsInjector.injectStdModels();
+        GrpcModelsInjector.injectGrpcModels();
+        EurekaTransports.setTransportFactory(new StdEurekaTransportFactory());
+        ProtocolModel.setDefaultModel(StdProtocolModel.getStdModel());
     }
 
     @Rule
