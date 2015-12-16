@@ -16,13 +16,15 @@
 
 package com.netflix.eureka2.ext.grpc.model.instance;
 
+import com.netflix.eureka2.ext.grpc.model.GrpcObjectWrapper;
+import com.netflix.eureka2.ext.grpc.util.TextPrinter;
 import com.netflix.eureka2.grpc.Eureka2;
 import com.netflix.eureka2.model.instance.NetworkAddress;
 import com.netflix.eureka2.model.instance.NetworkAddressBuilder;
 
 /**
  */
-public class GrpcNetworkAddressWrapper implements NetworkAddress {
+public class GrpcNetworkAddressWrapper implements NetworkAddress, GrpcObjectWrapper<Eureka2.GrpcNetworkAddress> {
     private final Eureka2.GrpcNetworkAddress grpcNetworkAddress;
 
     public GrpcNetworkAddressWrapper(Eureka2.GrpcNetworkAddress grpcNetworkAddress) {
@@ -52,6 +54,29 @@ public class GrpcNetworkAddressWrapper implements NetworkAddress {
     @Override
     public String getHostName() {
         return grpcNetworkAddress.getHostName();
+    }
+
+    @Override
+    public Eureka2.GrpcNetworkAddress getGrpcObject() {
+        return grpcNetworkAddress;
+    }
+
+    @Override
+    public int hashCode() {
+        return grpcNetworkAddress.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof GrpcNetworkAddressWrapper) {
+            return grpcNetworkAddress.equals(((GrpcNetworkAddressWrapper) obj).getGrpcObject());
+        }
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        return TextPrinter.toString(grpcNetworkAddress);
     }
 
     public static GrpcNetworkAddressWrapper asNetworkAddress(Eureka2.GrpcNetworkAddress grpcNetworkAddress) {

@@ -17,6 +17,7 @@
 package com.netflix.eureka2.ext.grpc.model.instance;
 
 import com.netflix.eureka2.ext.grpc.model.GrpcObjectWrapper;
+import com.netflix.eureka2.ext.grpc.util.TextPrinter;
 import com.netflix.eureka2.grpc.Eureka2;
 import com.netflix.eureka2.model.instance.ServicePort;
 
@@ -56,6 +57,24 @@ public class GrpcServicePortWrapper implements ServicePort, GrpcObjectWrapper<Eu
         }
         addressLabels = new HashSet<>(grpcServicePort.getAddressLabelsList());
         return addressLabels;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(o instanceof GrpcServicePortWrapper) {
+            return grpcServicePort.equals(((GrpcServicePortWrapper) o).getGrpcObject());
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return grpcServicePort.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return TextPrinter.toString(grpcServicePort);
     }
 
     @Override

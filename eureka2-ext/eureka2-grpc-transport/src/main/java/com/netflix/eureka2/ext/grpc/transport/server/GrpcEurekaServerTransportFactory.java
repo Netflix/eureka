@@ -38,11 +38,11 @@ public class GrpcEurekaServerTransportFactory implements EurekaServerTransportFa
                                              Source serverSource,
                                              ChannelPipelineFactory<InstanceInfo, InstanceInfo> registrationPipelineFactory,
                                              ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> interestPipelineFactory,
-                                             ChannelPipelineFactory<Object, Object> replicationAcceptor) {
+                                             ChannelPipelineFactory<ChangeNotification<InstanceInfo>, Void> replicationPipelineFactory) {
         return Observable.create(subscriber -> {
             GrpcEurekaServer server;
             try {
-                server = new GrpcEurekaServer(port, serverSource, registrationPipelineFactory, interestPipelineFactory, replicationAcceptor);
+                server = new GrpcEurekaServer(port, serverSource, registrationPipelineFactory, interestPipelineFactory, replicationPipelineFactory);
             } catch (Exception e) {
                 subscriber.onError(e);
                 return;

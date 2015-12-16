@@ -34,7 +34,7 @@ public interface EurekaServerTransportFactory {
                                       Source serverSource,
                                       ChannelPipelineFactory<InstanceInfo, InstanceInfo> registrationPipelineFactory,
                                       ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> interestPipelineFactory,
-                                      ChannelPipelineFactory<Object, Object> replicationAcceptor);
+                                      ChannelPipelineFactory<ChangeNotification<InstanceInfo>, Void> replicationAcceptor);
 
     interface ServerContext {
         int getPort();

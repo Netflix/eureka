@@ -18,6 +18,7 @@ package com.netflix.eureka2.ext.grpc.transport.client;
 
 import com.netflix.eureka2.grpc.Eureka2InterestGrpc;
 import com.netflix.eureka2.grpc.Eureka2RegistrationGrpc;
+import com.netflix.eureka2.grpc.Eureka2ReplicationGrpc;
 import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.spi.channel.InterestHandler;
 import com.netflix.eureka2.spi.channel.RegistrationHandler;
@@ -53,7 +54,10 @@ public class GrpcEurekaClientTransportFactory implements EurekaClientTransportFa
 
     @Override
     public ReplicationHandler newReplicationTransport(Server eurekaServer) {
-        throw new IllegalStateException("Not implemented");
+        ManagedChannel channel = createManagedChannel(eurekaServer);
+        Eureka2ReplicationGrpc.Eureka2ReplicationStub stub = Eureka2ReplicationGrpc.newStub(channel);
+
+        return new GrpcReplicationClientTransportHandler(stub);
     }
 
     private static ManagedChannel createManagedChannel(Server eurekaServer) {

@@ -7,6 +7,7 @@ import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster.ReadClus
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteClusterReport;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedDashboardServer.DashboardServerReport;
 import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.protocol.http.server.HttpServer;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
@@ -16,6 +17,8 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+
+import javax.ws.rs.core.MediaType;
 
 /**
  * @author Tomasz Bak
@@ -47,6 +50,7 @@ public class ClusterViewHttpServer {
                 } catch (IOException e) {
                     return Observable.error(e);
                 }
+                response.getHeaders().add(HttpHeaderNames.CONTENT_TYPE, MediaType.APPLICATION_JSON);
                 return response.writeStringAndFlush(result);
             }
         }).start();

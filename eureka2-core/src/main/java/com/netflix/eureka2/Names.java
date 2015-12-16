@@ -33,6 +33,7 @@ public final class Names {
 
     public static final String REGISTRATION_SERVER = "registrationServer";
     public static final String INTEREST_SERVER = "interestServer";
+
     private Names() {
     }
 }

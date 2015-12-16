@@ -16,35 +16,36 @@
 
 package com.netflix.eureka2.server.service.replication;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
+import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Server;
-import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
+import com.netflix.eureka2.server.channel2.replication.ReplicationHandlerStub;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
+import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
+import rx.Subscription;
+import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
+
+import java.util.Map;
 
 import static com.netflix.eureka2.metric.server.WriteServerMetricFactory.writeServerMetrics;
 import static com.netflix.eureka2.server.config.bean.WriteServerConfigBean.aWriteServerConfig;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -53,19 +54,22 @@ import static org.mockito.Mockito.when;
 public class ReplicationServiceTest {
 
     static {
-        StdModelsInjector.injectStdModels();
+        GrpcModelsInjector.injectGrpcModels();
     }
 
     private static final InstanceInfo SELF_INFO = SampleInstanceInfo.DiscoveryServer.build();
 
     private static final Server ADDRESS1 = new Server("host1", 123);
     private static final Server ADDRESS2 = new Server("host2", 456);
-    private static final Server ADDRESS3 = new Server("host3", 789);
 
     private final WriteServerConfig config = aWriteServerConfig().build();
-    private final EurekaRegistry<StdInstanceInfo> eurekaRegistry = mock(EurekaRegistry.class);
+
+    private final EurekaRegistry<InstanceInfo> eurekaRegistry = mock(EurekaRegistry.class);
+    private final PublishSubject<ChangeNotification<InstanceInfo>> localForInterest = PublishSubject.create();
+
     private final SelfInfoResolver selfIdentityService = mock(SelfInfoResolver.class);
     private final ReplicationPeerAddressesProvider peerAddressProvider = mock(ReplicationPeerAddressesProvider.class);
+    private final EurekaClientTransportFactory transportFactory = mock(EurekaClientTransportFactory.class);
 
     private final ReplaySubject<ChangeNotification<Server>> peerAddressSubject = ReplaySubject.create();
 
@@ -73,14 +77,19 @@ public class ReplicationServiceTest {
 
     @Before
     public void setUp() throws Exception {
-        replicationService = new ReplicationService(config, eurekaRegistry, selfIdentityService, peerAddressProvider, writeServerMetrics());
+        replicationService = new ReplicationService(config, eurekaRegistry, selfIdentityService, peerAddressProvider, writeServerMetrics(), transportFactory);
         when(selfIdentityService.resolve()).thenReturn(Observable.just(SELF_INFO));
         when(peerAddressProvider.get()).thenReturn(peerAddressSubject.asObservable());
+        when(eurekaRegistry.forInterest(any(), any())).thenReturn(localForInterest);
+        when(transportFactory.newReplicationTransport(any())).thenAnswer(invocation -> {
+            Server server = (Server) invocation.getArguments()[0];
+            return new ReplicationHandlerStub(InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, server.getHost()));
+        });
     }
 
     @Test(timeout = 60000)
     public void testConnectsToRemotePeers() throws Exception {
-        Map<Server, ReplicationSender> addressVsHandler = replicationService.addressVsHandler;
+        Map<Server, Subscription> addressVsHandler = replicationService.addressVsPipelineSubscription;
         assertThat(addressVsHandler.size(), is(0));
 
         // Connect to trigger replication process
@@ -94,31 +103,27 @@ public class ReplicationServiceTest {
 
     @Test(timeout = 60000)
     public void testDisconnectsFromRemovedServers() throws Exception {
-        Map<Server, ReplicationSender> addressVsHandler = replicationService.addressVsHandler;
+        Map<Server, Subscription> addressVsHandler = replicationService.addressVsPipelineSubscription;
         assertThat(addressVsHandler.size(), is(0));
 
         // Connect to trigger replication process
         replicationService.connect();
         assertThat(addressVsHandler.size(), is(0));
 
+        // Add server1
         peerAddressSubject.onNext(new ChangeNotification<>(Kind.Add, ADDRESS1));
         assertThat(addressVsHandler.size(), is(1));
-        Map.Entry<Server, ReplicationSender> entry = addressVsHandler.entrySet().iterator().next();
+        Map.Entry<Server, Subscription> entry = addressVsHandler.entrySet().iterator().next();
         assertThat(entry.getKey(), is(equalTo(ADDRESS1)));
 
-        // hotswap the handler with a spy of itself so we can check shutdown
-        ReplicationSender spyHandler = spy(entry.getValue());
-        addressVsHandler.put(entry.getKey(), spyHandler);
-
+        // Remove server1
         peerAddressSubject.onNext(new ChangeNotification<>(Kind.Delete, ADDRESS1));
         assertThat(addressVsHandler.size(), is(0));
-
-        verify(spyHandler, times(1)).shutdown();
     }
 
     @Test(timeout = 60000)
     public void testShutdownCleanUpResources() {
-        Map<Server, ReplicationSender> addressVsHandler = replicationService.addressVsHandler;
+        Map<Server, Subscription> addressVsHandler = replicationService.addressVsPipelineSubscription;
         assertThat(addressVsHandler.size(), is(0));
 
         // Connect to trigger replication process
@@ -129,23 +134,7 @@ public class ReplicationServiceTest {
         peerAddressSubject.onNext(new ChangeNotification<>(Kind.Add, ADDRESS2));
         assertThat(addressVsHandler.size(), is(2));
 
-        // hotswap all of the handlers with spies so we can check shutdown
-        List<ReplicationSender> spies = new ArrayList<>();
-        for (Map.Entry<Server, ReplicationSender> entry : replicationService.addressVsHandler.entrySet()) {
-            ReplicationSender spyHandler = spy(entry.getValue());
-            spies.add(spyHandler);
-            addressVsHandler.put(entry.getKey(), spyHandler);
-        }
-
         replicationService.close();
-
-        assertThat(addressVsHandler.size(), is(0));
-        for (ReplicationSender spyHandler : spies) {
-            verify(spyHandler, times(1)).shutdown();
-        }
-
-        // try to send more servers after close and verify they are not added to the map
-        peerAddressSubject.onNext(new ChangeNotification<>(Kind.Add, ADDRESS3));
         assertThat(addressVsHandler.size(), is(0));
     }
 }

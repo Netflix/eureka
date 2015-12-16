@@ -18,10 +18,8 @@ package com.netflix.eureka2.spi.channel;
 
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import rx.Observable;
 
 /**
  */
-public interface ReplicationHandler extends ChannelHandler<Object, Object> {
-    Observable<Void> replicationUpdates(Observable<ChangeNotification<InstanceInfo>> replicationUpdates);
+public interface ReplicationHandler extends ChannelHandler<ChangeNotification<InstanceInfo>, Void> {
 }

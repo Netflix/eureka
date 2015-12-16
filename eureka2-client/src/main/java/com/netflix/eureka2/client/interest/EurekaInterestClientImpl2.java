@@ -16,10 +16,12 @@
 
 package com.netflix.eureka2.client.interest;
 
-import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.client.channel2.ClientHeartbeatHandler;
 import com.netflix.eureka2.channel2.LoggingChannelHandler;
 import com.netflix.eureka2.channel2.LoggingChannelHandler.LogLevel;
+import com.netflix.eureka2.channel2.OutputChangeNotificationSourcingHandler;
+import com.netflix.eureka2.channel2.SourceIdGenerator;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.channel2.ClientHeartbeatHandler;
 import com.netflix.eureka2.client.channel2.interest.DeltaMergingInterestClientHandler;
 import com.netflix.eureka2.client.channel2.interest.DisconnectingOnEmptyInterestHandler;
 import com.netflix.eureka2.client.channel2.interest.InterestClientHandshakeHandler;
@@ -71,14 +73,16 @@ public class EurekaInterestClientImpl2 implements EurekaInterestClient {
                                      long retryDelayMs,
                                      Scheduler scheduler) {
         this.eurekaRegistry = eurekaRegistry;
+        SourceIdGenerator idGenerator = new SourceIdGenerator();
         this.transportPipelineFactory = new ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
             @Override
             public Observable<ChannelPipeline<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>> createPipeline() {
                 return serverResolver.resolve().map(server -> {
                             String pipelineId = "interest[client=" + clientSource.getName() + ",server=" + server.getHost();
                             return new ChannelPipeline<>(pipelineId,
+                                    new OutputChangeNotificationSourcingHandler(),
                                     new DeltaMergingInterestClientHandler(),
-                                    new InterestClientHandshakeHandler(clientSource),
+                                    new InterestClientHandshakeHandler(clientSource, idGenerator),
                                     new ClientHeartbeatHandler(transportConfig.getHeartbeatIntervalMs(), scheduler),
                                     new LoggingChannelHandler<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>(LogLevel.INFO),
                                     transportFactory.newInterestTransport(server)

@@ -57,14 +57,13 @@ public class GrpcInterestClientTransportHandler implements InterestHandler {
         return Observable.create(subscriber -> {
                     Map<String, InstanceInfo> instanceCache = new HashMap<>();
 
-                    Source channelSource = InstanceModel.getDefaultModel().createSource(Source.Origin.INTERESTED, "interestClient", channelCounter.getAndIncrement());
-                    logger.debug("Subscribed to GrpcInterestClientTransportHandler handler with channel source {}", channelSource);
+                    logger.debug("Subscribed to GrpcInterestClientTransportHandler handler");
 
                     StreamObserver<Eureka2.GrpcInterestRequest> interestObserver = interestService.subscribe(new StreamObserver<Eureka2.GrpcInterestResponse>() {
                         @Override
                         public void onNext(Eureka2.GrpcInterestResponse notification) {
                             logger.debug("Received response of type {}", notification.getItemCase());
-                            ChannelNotification<ChangeNotification<InstanceInfo>> change = toChannelNotification(notification, channelSource, instanceCache);
+                            ChannelNotification<ChangeNotification<InstanceInfo>> change = toChannelNotification(notification, instanceCache);
                             if (change != null) {
                                 subscriber.onNext(change);
                             } else {
@@ -107,7 +106,6 @@ public class GrpcInterestClientTransportHandler implements InterestHandler {
     }
 
     private static ChannelNotification<ChangeNotification<InstanceInfo>> toChannelNotification(Eureka2.GrpcInterestResponse notification,
-                                                                                               Source channelSource,
                                                                                                Map<String, InstanceInfo> instanceCache) {
         switch (notification.getItemCase()) {
             case HEARTBEAT:
@@ -115,7 +113,7 @@ public class GrpcInterestClientTransportHandler implements InterestHandler {
             case SERVERHELLO:
                 return ChannelNotification.newHello(toServerHello(notification.getServerHello()));
             case CHANGENOTIFICATION:
-                ChangeNotification<InstanceInfo> change = toChangeNotification(notification.getChangeNotification(), channelSource, instanceCache);
+                ChangeNotification<InstanceInfo> change = toChangeNotification(notification.getChangeNotification(), instanceCache);
                 return change == null ? null : ChannelNotification.newData(change);
         }
         throw new IllegalStateException("Unrecognized channel notification type " + notification.getItemCase());

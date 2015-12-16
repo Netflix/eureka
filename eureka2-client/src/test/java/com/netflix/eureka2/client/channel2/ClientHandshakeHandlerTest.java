@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.client.channel2.interest;
+package com.netflix.eureka2.client.channel2;
 
-import com.netflix.eureka2.client.channel2.ChannelTestkit;
+import com.netflix.eureka2.channel2.SourceIdGenerator;
+import com.netflix.eureka2.client.channel2.interest.InterestClientHandshakeHandler;
+import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
@@ -24,6 +26,7 @@ import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.ChannelPipeline;
 import com.netflix.eureka2.spi.channel.InterestHandler;
+import com.netflix.eureka2.spi.model.TransportModel;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.junit.Before;
@@ -38,13 +41,17 @@ import static org.junit.Assert.assertThat;
 
 /**
  */
-public class InterestClientHandshakeHandlerTest {
+public class ClientHandshakeHandlerTest {
+
+    static {
+        GrpcModelsInjector.injectGrpcModels();
+    }
 
     private static final ChangeNotification<InstanceInfo> CHANGE_NOTIFICATION = new ChangeNotification<>(ChangeNotification.Kind.Add, SampleInstanceInfo.Backend.build());
     private static final ChannelNotification<ChangeNotification<InstanceInfo>> CHANNEL_NOTIFICATION = ChannelNotification.newData(CHANGE_NOTIFICATION);
 
     private final InterestClientStub nextHandlerStub = new InterestClientStub();
-    private final InterestClientHandshakeHandler handler = new InterestClientHandshakeHandler(ChannelTestkit.CLIENT_SOURCE);
+    private final ClientHandshakeHandler<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> handler = new InterestClientHandshakeHandler(ChannelTestkit.CLIENT_SOURCE, new SourceIdGenerator());
 
     private final ExtTestSubscriber<ChannelNotification<ChangeNotification<InstanceInfo>>> testSubscriber = new ExtTestSubscriber<>();
 
@@ -74,7 +81,7 @@ public class InterestClientHandshakeHandlerTest {
             return inputStream.map(inputNotification -> {
                 if (inputNotification.getKind() == ChannelNotification.Kind.Hello) {
                     handshakeCompleted = true;
-                    return ChannelNotification.newHello(SERVER_SOURCE);
+                    return ChannelNotification.newHello(TransportModel.getDefaultModel().newServerHello(SERVER_SOURCE));
                 }
                 return CHANNEL_NOTIFICATION;
             });

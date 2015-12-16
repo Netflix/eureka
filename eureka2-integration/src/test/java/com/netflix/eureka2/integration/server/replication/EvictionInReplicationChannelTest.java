@@ -2,6 +2,7 @@ package com.netflix.eureka2.integration.server.replication;
 
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.integration.EurekaDeploymentClients;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.model.StdModelsInjector;
@@ -24,7 +25,7 @@ import static com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResour
 public class EvictionInReplicationChannelTest {
 
     static {
-        StdModelsInjector.injectStdModels();
+        GrpcModelsInjector.injectGrpcModels();
     }
 
     private static final int CLUSTER_SIZE = 20;

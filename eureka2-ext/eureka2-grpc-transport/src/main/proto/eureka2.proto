@@ -141,6 +141,11 @@ message GrpcClientHello {
     GrpcSource clientSource = 1;
 }
 
+message GrpcReplicationClientHello {
+    GrpcSource clientSource = 1;
+    int32 registrySize = 2;
+}
+
 message GrpcServerHello {
     GrpcSource serverSource = 1;
 }
@@ -251,6 +256,25 @@ message GrpcInterestResponse {
 }
 
 /**
+ * Replication protocol messages
+ */
+
+message GrpcReplicationRequest {
+    oneof item {
+        GrpcReplicationClientHello clientHello = 1;
+        GrpcHeartbeat heartbeat = 2;
+        GrpcChangeNotification changeNotification = 3;
+    }
+}
+
+message GrpcReplicationResponse {
+    oneof item {
+        GrpcServerHello serverHello = 1;
+        GrpcHeartbeat heartbeat = 2;
+    }
+}
+
+/**
  * Services
  */
 
@@ -262,5 +286,10 @@ service Eureka2Registration {
 
 service Eureka2Interest {
     rpc Subscribe(stream GrpcInterestRequest) returns (stream GrpcInterestResponse) {
+    }
+}
+
+service Eureka2Replication {
+    rpc Subscribe(stream GrpcReplicationRequest) returns (stream GrpcReplicationResponse) {
     }
 }

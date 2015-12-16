@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.server.channel2;
 
+import com.netflix.eureka2.channel2.SourceIdGenerator;
 import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
@@ -54,7 +55,10 @@ public class ServerHandshakeHandlerTest {
 
     private final ChannelHandlerStub nextHandler = new ChannelHandlerStub();
 
-    private final ServerHandshakeHandler<InstanceInfo, InstanceInfo> handler = new ServerHandshakeHandler<>(SERVER_SOURCE);
+    private final ServerHandshakeHandler<InstanceInfo, InstanceInfo> handler = new ServerHandshakeHandler<>(
+            SERVER_SOURCE,
+            new SourceIdGenerator()
+    );
 
     @Before
     public void setUp() throws Exception {

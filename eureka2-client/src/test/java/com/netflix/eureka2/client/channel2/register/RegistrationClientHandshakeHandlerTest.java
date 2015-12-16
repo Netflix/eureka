@@ -49,7 +49,7 @@ public class RegistrationClientHandshakeHandlerTest {
 
     @Test
     public void testHandshake() throws Exception {
-        ReplaySubject<ChannelNotification<InstanceInfo>> registrationUpdates = ReplaySubject.create().create();
+        ReplaySubject<ChannelNotification<InstanceInfo>> registrationUpdates = ReplaySubject.create();
         handler.handle(registrationUpdates).subscribe(testSubscriber);
 
         registrationUpdates.onNext(CHANNEL_INSTANCE_NOTIFICATION);

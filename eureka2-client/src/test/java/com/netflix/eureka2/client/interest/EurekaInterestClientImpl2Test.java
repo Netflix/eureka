@@ -31,6 +31,7 @@ import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.InterestHandler;
+import com.netflix.eureka2.spi.model.TransportModel;
 import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
@@ -62,9 +63,8 @@ public class EurekaInterestClientImpl2Test {
 
     private static final long RETRY_DELAY_MS = 1000;
 
-    private final Source notificationSource = InstanceModel.getDefaultModel().createSource(Source.Origin.INTERESTED, "registrySource");
     private final Source clientSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, "testClient");
-    private final Source serverSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, "testServer");
+    private final Source serverSource = InstanceModel.getDefaultModel().createSource(Source.Origin.INTERESTED, "testServer");
 
     private final TestScheduler testScheduler = Schedulers.test();
 
@@ -94,7 +94,8 @@ public class EurekaInterestClientImpl2Test {
             @Override
             public Observable<Void> answer(InvocationOnMock invocation) throws Throwable {
                 Source source = (Source) invocation.getArguments()[0];
-                assertThat(source, is(equalTo(notificationSource)));
+                assertThat(source.getOrigin(), is(equalTo(serverSource.getOrigin())));
+                assertThat(source.getName(), is(equalTo(serverSource.getName())));
 
                 Observable<ChangeNotification<InstanceInfo>> updates = (Observable<ChangeNotification<InstanceInfo>>) invocation.getArguments()[1];
                 updates.subscribe(registrySubject);
@@ -126,8 +127,8 @@ public class EurekaInterestClientImpl2Test {
 
     private class InterestHandlerStub implements InterestHandler {
 
-        private final ChangeNotification<InstanceInfo> notification = new SourcedChangeNotification<InstanceInfo>(
-                ChangeNotification.Kind.Add, SampleInstanceInfo.Backend.build(), notificationSource
+        private final ChangeNotification<InstanceInfo> notification = new ChangeNotification<>(
+                ChangeNotification.Kind.Add, SampleInstanceInfo.Backend.build()
         );
 
         private volatile PublishSubject<ChannelNotification<ChangeNotification<InstanceInfo>>> replySubject;
@@ -145,7 +146,9 @@ public class EurekaInterestClientImpl2Test {
                 inputStream.subscribe(
                         inputNotification -> {
                             if (inputNotification.getKind() == ChannelNotification.Kind.Hello) {
-                                replySubject.onNext(ChannelNotification.newHello(serverSource));
+                                replySubject.onNext(ChannelNotification.newHello(
+                                        TransportModel.getDefaultModel().newServerHello(serverSource)
+                                ));
                             } else if (inputNotification.getKind() == ChannelNotification.Kind.Heartbeat) {
                                 replySubject.onNext(ChannelNotification.newHeartbeat());
                             } else {

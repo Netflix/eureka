@@ -17,13 +17,11 @@
 package com.netflix.eureka2.ext.grpc.model;
 
 import com.netflix.eureka2.ext.grpc.model.transport.GrpcClientHelloWrapper;
+import com.netflix.eureka2.ext.grpc.model.transport.GrpcReplicationClientHelloWrapper;
 import com.netflix.eureka2.ext.grpc.model.transport.GrpcServerHelloWrapper;
 import com.netflix.eureka2.ext.grpc.model.transport.HeartbeatImpl;
 import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.spi.model.ClientHello;
-import com.netflix.eureka2.spi.model.ServerHello;
-import com.netflix.eureka2.spi.model.Heartbeat;
-import com.netflix.eureka2.spi.model.TransportModel;
+import com.netflix.eureka2.spi.model.*;
 
 /**
  */
@@ -38,6 +36,11 @@ public class GrpcTransportModel extends TransportModel {
     @Override
     public ClientHello newClientHello(Source clientSource) {
         return GrpcClientHelloWrapper.newClientHello(clientSource);
+    }
+
+    @Override
+    public ReplicationClientHello newReplicationClientHello(Source clientSource, int registrySize) {
+        return GrpcReplicationClientHelloWrapper.newClientHello(clientSource, registrySize);
     }
 
     @Override

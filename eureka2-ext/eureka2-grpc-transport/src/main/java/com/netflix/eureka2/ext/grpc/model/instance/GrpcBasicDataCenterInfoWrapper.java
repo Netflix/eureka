@@ -17,6 +17,7 @@
 package com.netflix.eureka2.ext.grpc.model.instance;
 
 import com.netflix.eureka2.ext.grpc.model.GrpcObjectWrapper;
+import com.netflix.eureka2.ext.grpc.util.TextPrinter;
 import com.netflix.eureka2.grpc.Eureka2;
 import com.netflix.eureka2.model.datacenter.BasicDataCenterInfo;
 import com.netflix.eureka2.model.datacenter.BasicDataCenterInfoBuilder;
@@ -64,13 +65,31 @@ public class GrpcBasicDataCenterInfoWrapper implements GrpcObjectWrapper<Eureka2
         return networkAddresses.get(0);
     }
 
-    public static GrpcBasicDataCenterInfoWrapper asBasicDataCenterInfo(Eureka2.GrpcDataCenterInfo grpcDataCenterInfo) {
-        return new GrpcBasicDataCenterInfoWrapper(grpcDataCenterInfo);
-    }
-
     @Override
     public Eureka2.GrpcDataCenterInfo getGrpcObject() {
         return grpcDataCenterInfo;
+    }
+
+    @Override
+    public int hashCode() {
+        return grpcDataCenterInfo.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof GrpcAwsDataCenterInfoWrapper) {
+            return grpcDataCenterInfo.equals(((GrpcAwsDataCenterInfoWrapper) obj).getGrpcObject());
+        }
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        return TextPrinter.toString(grpcDataCenterInfo);
+    }
+
+    public static GrpcBasicDataCenterInfoWrapper asBasicDataCenterInfo(Eureka2.GrpcDataCenterInfo grpcDataCenterInfo) {
+        return new GrpcBasicDataCenterInfoWrapper(grpcDataCenterInfo);
     }
 
     public static class GrpcBasicDataCenterInfoWrapperBuilder extends BasicDataCenterInfoBuilder {

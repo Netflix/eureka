@@ -25,6 +25,7 @@ import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.spi.channel.*;
 import com.netflix.eureka2.spi.model.ClientHello;
+import com.netflix.eureka2.spi.model.ReplicationClientHello;
 import com.netflix.eureka2.spi.model.ServerHello;
 import com.netflix.eureka2.spi.model.TransportModel;
 import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
@@ -33,7 +34,6 @@ import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import rx.Observable;
 import rx.Subscription;
@@ -42,6 +42,8 @@ import rx.subjects.ReplaySubject;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -52,6 +54,7 @@ import static org.junit.Assert.assertThat;
 public abstract class EurekaTransportCompatibilityTestSuite {
 
     private ClientHello clientHello;
+    private ReplicationClientHello replicationClientHello;
     private ServerHello serverHello;
     private InstanceInfo instance;
 
@@ -60,8 +63,9 @@ public abstract class EurekaTransportCompatibilityTestSuite {
     private TransportModel transportModel;
 
     private final RegistrationHandler registrationAcceptor = new TestableRegistrationAcceptor();
-
     private final InterestHandler interestAcceptor = new TestableInterestTransportHandler();
+    private final TestableReplicationTransportHandler replicationAcceptor = new TestableReplicationTransportHandler();
+
     private Subscription serverSubscription;
     private Server eurekaServer;
 
@@ -72,6 +76,7 @@ public abstract class EurekaTransportCompatibilityTestSuite {
         transportModel = TransportModel.getDefaultModel();
 
         clientHello = transportModel.newClientHello(instanceModel.createSource(Source.Origin.LOCAL, "testClient", 1));
+        replicationClientHello = transportModel.newReplicationClientHello(instanceModel.createSource(Source.Origin.LOCAL, "replicationClient", 1), 1);
         Source serverSource = instanceModel.createSource(Source.Origin.LOCAL, "testServer", 1);
         serverHello = transportModel.newServerHello(serverSource);
         instance = SampleInstanceInfo.WebServer.build();
@@ -90,8 +95,14 @@ public abstract class EurekaTransportCompatibilityTestSuite {
                 return Observable.just(new ChannelPipeline<>("interest", interestAcceptor));
             }
         };
+        ChannelPipelineFactory<ChangeNotification<InstanceInfo>, Void> replicationPipelineFactory = new ChannelPipelineFactory<ChangeNotification<InstanceInfo>, Void>() {
+            @Override
+            public Observable<ChannelPipeline<ChangeNotification<InstanceInfo>, Void>> createPipeline() {
+                return Observable.just(new ChannelPipeline<>("replication", replicationAcceptor));
+            }
+        };
 
-        serverSubscription = newServerTransportFactory().connect(0, serverSource, registrationPipelineFactory, interestPipelineFactory, null)
+        serverSubscription = newServerTransportFactory().connect(0, serverSource, registrationPipelineFactory, interestPipelineFactory, replicationPipelineFactory)
                 .doOnNext(context -> serverContextQueue.add(context))
                 .doOnError(e -> e.printStackTrace())
                 .subscribe();
@@ -202,10 +213,53 @@ public abstract class EurekaTransportCompatibilityTestSuite {
         assertThat(notification2.getData().getData(), is(equalTo(instance)));
     }
 
+    @Test(timeout = 30000)
+    public void testReplicationHello() throws InterruptedException {
+        ReplicationHandler clientTransport = newClientTransportFactory().newReplicationTransport(eurekaServer);
+        ReplaySubject<ChannelNotification<ChangeNotification<InstanceInfo>>> replicationUpdates = ReplaySubject.create();
+
+        ExtTestSubscriber<ChannelNotification<Void>> testSubscriber = new ExtTestSubscriber<>();
+        clientTransport.handle(replicationUpdates).subscribe(testSubscriber);
+
+        replicationUpdates.onNext(ChannelNotification.newHello(replicationClientHello));
+        ChannelNotification<Void> helloReply = testSubscriber.takeNextOrWait();
+
+        assertThat(helloReply.getKind(), is(equalTo(ChannelNotification.Kind.Hello)));
+        assertThat(helloReply.getHello(), is(equalTo(serverHello)));
+    }
+
+    @Test(timeout = 30000)
+    public void testReplicationHeartbeat() throws InterruptedException {
+        ReplicationHandler clientTransport = newClientTransportFactory().newReplicationTransport(eurekaServer);
+        ReplaySubject<ChannelNotification<ChangeNotification<InstanceInfo>>> replicationUpdates = ReplaySubject.create();
+
+        ExtTestSubscriber<ChannelNotification<Void>> testSubscriber = new ExtTestSubscriber<>();
+        clientTransport.handle(replicationUpdates).subscribe(testSubscriber);
+
+        replicationUpdates.onNext(ChannelNotification.newHeartbeat());
+        ChannelNotification<Void> heartbeatReply = testSubscriber.takeNextOrWait();
+
+        assertThat(heartbeatReply.getKind(), is(equalTo(ChannelNotification.Kind.Heartbeat)));
+    }
+
+    @Test(timeout = 30000)
+    public void testReplicationConnection() throws InterruptedException {
+        ReplicationHandler clientTransport = newClientTransportFactory().newReplicationTransport(eurekaServer);
+        ReplaySubject<ChannelNotification<ChangeNotification<InstanceInfo>>> replicationUpdates = ReplaySubject.create();
+
+        ExtTestSubscriber<ChannelNotification<Void>> testSubscriber = new ExtTestSubscriber<>();
+        clientTransport.handle(replicationUpdates).subscribe(testSubscriber);
+
+        ChangeNotification<InstanceInfo> addNotification = new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, instance);
+        replicationUpdates.onNext(ChannelNotification.newHello(replicationClientHello));
+        replicationUpdates.onNext(ChannelNotification.newData(addNotification));
+
+        assertThat(replicationAcceptor.takeNextUpdate().getKind(), is(equalTo(ChangeNotification.Kind.Add)));
+    }
+
     class TestableRegistrationAcceptor implements RegistrationHandler {
         @Override
         public void init(ChannelContext<InstanceInfo, InstanceInfo> channelContext) {
-
         }
 
         @Override
@@ -251,6 +305,43 @@ public abstract class EurekaTransportCompatibilityTestSuite {
                         .doOnError(e -> e.printStackTrace())
                         .subscribe();
             });
+        }
+    }
+
+    class TestableReplicationTransportHandler implements ReplicationHandler {
+
+        private final BlockingQueue<ChangeNotification<InstanceInfo>> replicationUpdates = new LinkedBlockingQueue<>();
+
+        @Override
+        public void init(ChannelContext<ChangeNotification<InstanceInfo>, Void> channelContext) {
+        }
+
+        @Override
+        public Observable<ChannelNotification<Void>> handle(Observable<ChannelNotification<ChangeNotification<InstanceInfo>>> inputStream) {
+            return Observable.create(subscriber -> {
+                AtomicReference<Source> clientSourceRef = new AtomicReference<Source>();
+                inputStream
+                        .doOnNext(replicationNotification -> {
+                            switch (replicationNotification.getKind()) {
+                                case Hello:
+                                    ChannelNotification<Void> serverHelloNotification = ChannelNotification.newHello(serverHello);
+                                    clientSourceRef.set(serverHelloNotification.getHello());
+                                    subscriber.onNext(serverHelloNotification);
+                                    break;
+                                case Heartbeat:
+                                    subscriber.onNext(ChannelNotification.<Void>newHeartbeat());
+                                    break;
+                                case Data:
+                                    replicationUpdates.add(replicationNotification.getData());
+                            }
+                        })
+                        .doOnError(e -> e.printStackTrace())
+                        .subscribe();
+            });
+        }
+
+        public ChangeNotification<InstanceInfo> takeNextUpdate() throws InterruptedException {
+            return replicationUpdates.poll(5, TimeUnit.SECONDS);
         }
     }
 }

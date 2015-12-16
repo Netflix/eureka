@@ -19,7 +19,10 @@ package com.netflix.eureka2.client.channel2.interest;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.spi.channel.*;
+import com.netflix.eureka2.spi.channel.ChannelContext;
+import com.netflix.eureka2.spi.channel.ChannelNotification;
+import com.netflix.eureka2.spi.channel.ChannelPipelineFactory;
+import com.netflix.eureka2.spi.channel.InterestHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -68,8 +71,6 @@ public class RetryableInterestClientHandler implements InterestHandler {
 
         private final Observable<ChannelNotification<Interest<InstanceInfo>>> interests;
 
-        private volatile ChannelPipeline<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> pipeline;
-
         private final Subscription pipelineSubscription;
 
         InterestSession(Observable<ChannelNotification<Interest<InstanceInfo>>> interests,
@@ -93,7 +94,6 @@ public class RetryableInterestClientHandler implements InterestHandler {
 
         private Observable<ChannelNotification<ChangeNotification<InstanceInfo>>> connectPipeline() {
             return factory.createPipeline().flatMap(newPipeline -> {
-                pipeline = newPipeline;
                 return newPipeline.getFirst().handle(interests);
             }).doOnSubscribe(() -> logger.debug("Creating new internal interest pipeline"));
         }

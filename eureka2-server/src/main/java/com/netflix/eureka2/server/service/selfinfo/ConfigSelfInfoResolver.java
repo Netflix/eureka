@@ -19,7 +19,7 @@ public class ConfigSelfInfoResolver extends ChainableSelfInfoResolver {
         super(getFixedSelfInfo(instanceConfig));
     }
 
-    private static Observable<InstanceInfoBuilder> getFixedSelfInfo(EurekaInstanceInfoConfig instanceConfig) {
+    public static Observable<InstanceInfoBuilder> getFixedSelfInfo(EurekaInstanceInfoConfig instanceConfig) {
         String uniqueId = instanceConfig.getUniqueId() == null
                 ? UUID.randomUUID().toString()
                 : instanceConfig.getUniqueId();

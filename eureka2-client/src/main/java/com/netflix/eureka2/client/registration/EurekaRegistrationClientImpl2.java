@@ -83,7 +83,9 @@ public class EurekaRegistrationClientImpl2 implements EurekaRegistrationClient {
                     .doOnNext(subscriber::onNext)
                     .doOnError(subscriber::onError)
                     .doOnCompleted(subscriber::onCompleted)
-                    .doOnUnsubscribe(() -> logger.debug("Unsubscribing registration client"))
+                    .doOnUnsubscribe(() -> {
+                        logger.debug("Unsubscribing registration client");
+                    })
                     .subscribe();
 
             subscriber.add(subscription);

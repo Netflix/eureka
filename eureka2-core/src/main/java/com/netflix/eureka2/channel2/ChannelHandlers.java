@@ -14,25 +14,34 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.channel2;
+package com.netflix.eureka2.channel2;
 
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 
 /**
  */
-public final class ServerHandlers {
+public final class ChannelHandlers {
 
     public static final String CLIENT_SOURCE = "client.source";
+    public static final String SERVER_SOURCE = "server.source";
 
-    private ServerHandlers() {
+    private ChannelHandlers() {
     }
 
     public static <T> Source getClientSource(ChannelNotification<T> notification) {
         return (Source) notification.getContext().get(CLIENT_SOURCE);
     }
 
-    public static <T> void setClientSource(ChannelNotification<T> notification, Source clientSource) {
-        notification.getContext().put(CLIENT_SOURCE, clientSource);
+    public static <T> Source getServerSource(ChannelNotification<T> notification) {
+        return (Source) notification.getContext().get(SERVER_SOURCE);
+    }
+
+    public static <T> ChannelNotification<T> setClientSource(ChannelNotification<T> notification, Source clientSource) {
+        return notification.setContext(CLIENT_SOURCE, clientSource);
+    }
+
+    public static <T> ChannelNotification<T> setServerSource(ChannelNotification<T> notification, Source serverSource) {
+        return notification.setContext(CLIENT_SOURCE, serverSource);
     }
 }

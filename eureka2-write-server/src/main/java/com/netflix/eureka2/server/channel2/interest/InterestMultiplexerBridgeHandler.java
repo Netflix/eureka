@@ -21,7 +21,7 @@ import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.server.channel.InterestNotificationMultiplexer;
-import com.netflix.eureka2.server.channel2.ServerHandlers;
+import com.netflix.eureka2.channel2.ChannelHandlers;
 import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.InterestHandler;
@@ -56,7 +56,7 @@ public class InterestMultiplexerBridgeHandler implements InterestHandler {
             } else {
                 logger.info(
                         "Updating interest subscription for client {} to {}",
-                        ServerHandlers.getClientSource(interestNotification),
+                        ChannelHandlers.getClientSource(interestNotification),
                         interestNotification.getData()
                 );
                 notificationMultiplexer.update(interestNotification.getData());

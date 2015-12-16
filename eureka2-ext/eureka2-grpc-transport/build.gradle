@@ -61,10 +61,10 @@ sourceSets {
 }
 
 jar {
-    sourceSets.all { sourceSet ->
-        from sourceSet.output
-        dependsOn sourceSet.getCompileTaskName('java')
-    }
+//    sourceSets.all { sourceSet ->
+//        from sourceSet.output
+//        dependsOn sourceSet.getCompileTaskName('java')
+//    }
     manifest {
         name = 'eureka2-grpc-transport'
         instruction 'Bundle-Vendor', 'Netflix'

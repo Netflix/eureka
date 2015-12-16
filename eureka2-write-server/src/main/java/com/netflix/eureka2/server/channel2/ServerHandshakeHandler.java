@@ -16,6 +16,8 @@
 
 package com.netflix.eureka2.server.channel2;
 
+import com.netflix.eureka2.channel2.ChannelHandlers;
+import com.netflix.eureka2.channel2.SourceIdGenerator;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelHandler;
@@ -26,7 +28,6 @@ import com.netflix.eureka2.spi.model.TransportModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
-import rx.Subscription;
 import rx.observers.SerializedSubscriber;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -38,10 +39,12 @@ public class ServerHandshakeHandler<I, O> implements ChannelHandler<I, O> {
     private static final Logger logger = LoggerFactory.getLogger(ServerHandshakeHandler.class);
 
     private final ServerHello serverHello;
+    private final SourceIdGenerator idGenerator;
 
     private ChannelContext<I, O> channelContext;
 
-    public ServerHandshakeHandler(Source serverSource) {
+    public ServerHandshakeHandler(Source serverSource, SourceIdGenerator idGenerator) {
+        this.idGenerator = idGenerator;
         this.serverHello = TransportModel.getDefaultModel().newServerHello(serverSource);
     }
 
@@ -62,18 +65,18 @@ public class ServerHandshakeHandler<I, O> implements ChannelHandler<I, O> {
 
             Observable<ChannelNotification<I>> interceptedInput = inputStream.flatMap(inputNotification -> {
                 if (inputNotification.getKind() != ChannelNotification.Kind.Hello) {
-                    ServerHandlers.setClientSource(inputNotification, clientSource.get());
-                    return Observable.just(inputNotification);
+                    ChannelNotification<I> sourcedNotification = ChannelHandlers.setClientSource(inputNotification, clientSource.get());
+                    return Observable.just(sourcedNotification);
                 }
                 ClientHello clientHello = inputNotification.getHello();
                 logger.info("Received client hello {}", clientHello);
-                clientSource.set(clientHello.getClientSource());
+                clientSource.set(idGenerator.nextOf(clientHello.getClientSource()));
 
                 serializedSubscriber.onNext(ChannelNotification.newHello(serverHello));
                 return Observable.empty();
             });
 
-            Subscription subscription = channelContext.next().handle(interceptedInput).subscribe(serializedSubscriber);
+            channelContext.next().handle(interceptedInput).subscribe(serializedSubscriber);
             serializedSubscriber.add(subscriber);
         });
     }

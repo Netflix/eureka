@@ -68,7 +68,7 @@ public class DeltaMergingInterestClientHandler implements InterestHandler {
                         if (merged == null) {
                             return null;
                         }
-                        return ChannelNotification.newData(merged);
+                        return next.setData(merged);
                     })
                     .filter(RxFunctions.filterNullValuesFunc())
                     .subscribe(subscriber);

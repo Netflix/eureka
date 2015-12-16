@@ -22,18 +22,17 @@ import com.netflix.eureka2.ext.grpc.model.interest.GrpcEmptyRegistryInterestWrap
 import com.netflix.eureka2.ext.grpc.model.interest.GrpcInterestWrapper;
 import com.netflix.eureka2.ext.grpc.model.interest.GrpcMultipleInterestWrapper;
 import com.netflix.eureka2.ext.grpc.model.transport.GrpcClientHelloWrapper;
+import com.netflix.eureka2.ext.grpc.model.transport.GrpcReplicationClientHelloWrapper;
 import com.netflix.eureka2.ext.grpc.model.transport.GrpcServerHelloWrapper;
 import com.netflix.eureka2.grpc.Eureka2;
-import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.interest.MultipleInterests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.model.notification.SourcedChangeNotification;
-import com.netflix.eureka2.model.notification.SourcedStreamStateNotification;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.spi.model.ClientHello;
+import com.netflix.eureka2.spi.model.ReplicationClientHello;
 import com.netflix.eureka2.spi.model.ServerHello;
 
 import java.util.*;
@@ -130,13 +129,12 @@ public final class GrpcModelConverters {
     }
 
     public static ChangeNotification<InstanceInfo> toChangeNotification(Eureka2.GrpcChangeNotification grpcNotification,
-                                                                        Source channelSource,
                                                                         Map<String, InstanceInfo> instanceCache) {
         switch (grpcNotification.getNotificationOneofCase()) {
             case ADD:
                 InstanceInfo instance = GrpcInstanceInfoWrapper.asInstanceInfo(grpcNotification.getAdd().getInstanceInfo());
                 instanceCache.put(instance.getId(), instance);
-                return new SourcedChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, instance, channelSource);
+                return new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, instance);
             case DELETE:
                 String id = grpcNotification.getDelete().getInstanceId();
                 InstanceInfo lastCopy = instanceCache.get(id);
@@ -144,13 +142,13 @@ public final class GrpcModelConverters {
                     return null;
                 }
                 instanceCache.remove(id);
-                return new SourcedChangeNotification<InstanceInfo>(ChangeNotification.Kind.Delete, lastCopy, channelSource);
+                return new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Delete, lastCopy);
             case BUFFERSENTINEL:
                 StreamStateNotification.BufferState state = grpcNotification.getBufferSentinel().getBufferStart()
                         ? StreamStateNotification.BufferState.BufferStart
                         : StreamStateNotification.BufferState.BufferEnd;
                 Interest<InstanceInfo> interest = toInterest(grpcNotification.getBufferSentinel().getInterestList());
-                return new SourcedStreamStateNotification<InstanceInfo>(state, interest, channelSource);
+                return new StreamStateNotification<InstanceInfo>(state, interest);
         }
         throw new IllegalArgumentException("Unrecognized change notification type " + grpcNotification.getNotificationOneofCase());
     }
@@ -189,12 +187,20 @@ public final class GrpcModelConverters {
         return ((GrpcClientHelloWrapper) clientHello).getGrpcObject();
     }
 
+    public static Eureka2.GrpcReplicationClientHello toGrpcReplicationClientHello(ReplicationClientHello clientHello) {
+        return ((GrpcReplicationClientHelloWrapper) clientHello).getGrpcObject();
+    }
+
     public static Eureka2.GrpcServerHello toGrpcServerHello(ServerHello serverHello) {
         return ((GrpcServerHelloWrapper) serverHello).getGrpcObject();
     }
 
     public static ClientHello toClientHello(Eureka2.GrpcClientHello grpcClientHello) {
         return GrpcClientHelloWrapper.asClientHello(grpcClientHello);
+    }
+
+    public static ClientHello toReplicationClientHello(Eureka2.GrpcReplicationClientHello grpcClientHello) {
+        return GrpcReplicationClientHelloWrapper.asClientHello(grpcClientHello);
     }
 
     public static ServerHello toServerHello(Eureka2.GrpcServerHello grpcServerHello) {

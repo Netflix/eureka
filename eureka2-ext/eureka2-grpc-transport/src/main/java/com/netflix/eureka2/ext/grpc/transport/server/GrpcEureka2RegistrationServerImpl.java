@@ -45,8 +45,8 @@ class GrpcEureka2RegistrationServerImpl implements Eureka2RegistrationGrpc.Eurek
     private final ChannelPipelineFactory<InstanceInfo, InstanceInfo> registrationPipelineFactory;
 
     GrpcEureka2RegistrationServerImpl(ServerHello serverHello, ChannelPipelineFactory<InstanceInfo, InstanceInfo> registrationPipelineFactory) {
-        this.registrationPipelineFactory = registrationPipelineFactory;
         this.grpcServerHello = GrpcModelConverters.toGrpcServerHello(serverHello);
+        this.registrationPipelineFactory = registrationPipelineFactory;
     }
 
     @Override

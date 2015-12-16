@@ -12,6 +12,10 @@ import com.netflix.eureka2.model.instance.Delta;
 public class SourcedModifyNotification<T> extends ModifyNotification<T> implements Sourced {
     private final Source source;
 
+    public SourcedModifyNotification(ModifyNotification<T> notification, Source source) {
+        this(notification.getData(), notification.getDelta(), source);
+    }
+
     public SourcedModifyNotification(T data, Set<Delta<?>> delta, Source source) {
         super(data, delta);
         this.source = source;

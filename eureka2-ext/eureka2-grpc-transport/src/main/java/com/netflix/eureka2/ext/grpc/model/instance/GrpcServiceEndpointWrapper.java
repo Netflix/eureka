@@ -16,6 +16,8 @@
 
 package com.netflix.eureka2.ext.grpc.model.instance;
 
+import com.netflix.eureka2.ext.grpc.model.GrpcObjectWrapper;
+import com.netflix.eureka2.ext.grpc.util.TextPrinter;
 import com.netflix.eureka2.grpc.Eureka2;
 import com.netflix.eureka2.model.instance.NetworkAddress;
 import com.netflix.eureka2.model.instance.ServiceEndpoint;
@@ -23,18 +25,57 @@ import com.netflix.eureka2.model.instance.ServicePort;
 
 /**
  */
-public class GrpcServiceEndpointWrapper implements ServiceEndpoint {
+public class GrpcServiceEndpointWrapper implements ServiceEndpoint, GrpcObjectWrapper<Eureka2.GrpcServiceEndpoint> {
+
+    private final Eureka2.GrpcServiceEndpoint grpcServiceEndpoint;
+
+    private volatile ServicePort servicePort;
+    private volatile NetworkAddress networkAddress;
+
+    public GrpcServiceEndpointWrapper(Eureka2.GrpcServiceEndpoint grpcServiceEndpoint) {
+        this.grpcServiceEndpoint = grpcServiceEndpoint;
+    }
+
     @Override
     public NetworkAddress getAddress() {
-        return null;
+        if (networkAddress == null) {
+            networkAddress = new GrpcNetworkAddressWrapper(grpcServiceEndpoint.getAddress());
+        }
+        return networkAddress;
     }
 
     @Override
     public ServicePort getServicePort() {
-        return null;
+        if (servicePort == null) {
+            servicePort = new GrpcServicePortWrapper(grpcServiceEndpoint.getServicePort());
+        }
+        return servicePort;
+    }
+
+    @Override
+    public Eureka2.GrpcServiceEndpoint getGrpcObject() {
+        return grpcServiceEndpoint;
+    }
+
+    @Override
+    public int hashCode() {
+        return grpcServiceEndpoint.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof GrpcServiceEndpointWrapper) {
+            return grpcServiceEndpoint.equals(((GrpcServiceEndpointWrapper) obj).getGrpcObject());
+        }
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        return TextPrinter.toString(grpcServiceEndpoint);
     }
 
     public static ServiceEndpoint asServiceEndpoint(Eureka2.GrpcServiceEndpoint grpcServiceEndpoint) {
-        return null;
+        return new GrpcServiceEndpointWrapper(grpcServiceEndpoint);
     }
 }

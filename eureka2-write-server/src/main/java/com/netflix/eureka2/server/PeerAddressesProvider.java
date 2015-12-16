@@ -53,7 +53,7 @@ public class PeerAddressesProvider implements Provider<Observable<ChangeNotifica
                 }
                 Server server = new Server(
                         notification.getData().getHostName(),
-                        notification.getData().getPortFor(serviceType)
+                        notification.getData().getPortFor(ServiceType.Registration) // We run all on single port now
                 );
                 return new ChangeNotification<Server>(notification.getKind(), server);
             }

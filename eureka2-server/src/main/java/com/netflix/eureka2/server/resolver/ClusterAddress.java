@@ -40,11 +40,11 @@ public class ClusterAddress {
     }
 
     public Integer getInterestPort() {
-        return interestPort;
+        return registrationPort;
     }
 
     public Integer getReplicationPort() {
-        return replicationPort;
+        return registrationPort;
     }
 
     public Integer getPortFor(ServiceType serviceType) {

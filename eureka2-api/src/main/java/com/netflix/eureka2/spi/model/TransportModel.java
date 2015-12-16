@@ -28,6 +28,8 @@ public abstract class TransportModel {
 
     public abstract ClientHello newClientHello(Source clientSource);
 
+    public abstract ReplicationClientHello newReplicationClientHello(Source clientSource, int registrySize);
+
     public abstract ServerHello newServerHello(Source serverSource);
 
     public static TransportModel getDefaultModel() {

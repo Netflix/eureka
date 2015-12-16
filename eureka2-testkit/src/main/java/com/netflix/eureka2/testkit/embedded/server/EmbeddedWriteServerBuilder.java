@@ -17,6 +17,7 @@ import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
+import com.netflix.eureka2.server.transport.WriteTransportServer;
 import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
 import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
 import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
@@ -96,9 +97,10 @@ public class EmbeddedWriteServerBuilder extends EmbeddedServerBuilder<WriteServe
         @Override
         protected void configure() {
             bind(NetworkRouter.class).toInstance(networkRouter);
-            bind(TcpRegistrationServer.class).to(EmbeddedTcpRegistrationServer.class).in(Scopes.SINGLETON);
-            bind(TcpReplicationServer.class).to(EmbeddedTcpReplicationServer.class).in(Scopes.SINGLETON);
-            bind(TcpInterestServer.class).to(EmbeddedTcpInterestServer.class).in(Scopes.SINGLETON);
+            bind(WriteTransportServer.class).to(EmbeddedWriteTransportServer.class).in(Scopes.SINGLETON);
+//            bind(TcpRegistrationServer.class).to(EmbeddedTcpRegistrationServer.class).in(Scopes.SINGLETON);
+//            bind(TcpReplicationServer.class).to(EmbeddedTcpReplicationServer.class).in(Scopes.SINGLETON);
+//            bind(TcpInterestServer.class).to(EmbeddedTcpInterestServer.class).in(Scopes.SINGLETON);
         }
     }
 }

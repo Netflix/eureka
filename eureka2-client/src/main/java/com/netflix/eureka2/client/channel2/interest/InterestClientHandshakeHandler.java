@@ -16,7 +16,8 @@
 
 package com.netflix.eureka2.client.channel2.interest;
 
-import com.netflix.eureka2.client.channel2.AbstractHandshakeHandler;
+import com.netflix.eureka2.channel2.SourceIdGenerator;
+import com.netflix.eureka2.client.channel2.ClientHandshakeHandler;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
@@ -24,34 +25,22 @@ import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.InterestHandler;
 import com.netflix.eureka2.spi.model.TransportModel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import rx.Observable;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  */
-public class InterestClientHandshakeHandler extends AbstractHandshakeHandler<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> implements InterestHandler {
+public class InterestClientHandshakeHandler extends ClientHandshakeHandler<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> implements InterestHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(InterestClientHandshakeHandler.class);
+    private final ChannelNotification<Interest<InstanceInfo>> clientHelloNotification;
 
-    private final ChannelNotification<Interest<InstanceInfo>> clientHello;
-
-    public InterestClientHandshakeHandler(Source clientSource) {
-        this.clientHello = ChannelNotification.newHello(TransportModel.getDefaultModel().newClientHello(clientSource));
+    public InterestClientHandshakeHandler(Source clientSource, SourceIdGenerator serverIdGenerator) {
+        super(serverIdGenerator);
+        this.clientHelloNotification = ChannelNotification.newHello(
+                TransportModel.getDefaultModel().newClientHello(clientSource)
+        );
     }
 
     @Override
-    public Observable<ChannelNotification<ChangeNotification<InstanceInfo>>> handle(Observable<ChannelNotification<Interest<InstanceInfo>>> inputStream) {
-        return Observable.create(subscriber -> {
-            logger.debug("Subscription to InterestClientHandshakeHandler started");
-
-            AtomicBoolean handshakeCompleted = new AtomicBoolean();
-            channelContext.next().handle(Observable.just(clientHello).concatWith(inputStream))
-                    .flatMap(handshakeVerifier(handshakeCompleted))
-                    .doOnUnsubscribe(() -> logger.debug("Unsubscribing from InterestClientHandshakeHandler"))
-                    .subscribe(subscriber);
-        });
+    protected ChannelNotification<Interest<InstanceInfo>> createClientHello() {
+        return clientHelloNotification;
     }
 }
