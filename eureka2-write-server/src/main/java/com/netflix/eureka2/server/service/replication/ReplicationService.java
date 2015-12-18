@@ -17,7 +17,7 @@
 package com.netflix.eureka2.server.service.replication;
 
 import com.netflix.eureka2.channel2.SourceIdGenerator;
-import com.netflix.eureka2.client.channel2.ClientHeartbeatHandler;
+import com.netflix.eureka2.channel2.client.ClientHeartbeatHandler;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Server;

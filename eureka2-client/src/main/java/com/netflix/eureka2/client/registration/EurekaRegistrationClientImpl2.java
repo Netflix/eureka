@@ -19,7 +19,7 @@ package com.netflix.eureka2.client.registration;
 import com.netflix.eureka2.channel2.LoggingChannelHandler;
 import com.netflix.eureka2.channel2.LoggingChannelHandler.LogLevel;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.client.channel2.ClientHeartbeatHandler;
+import com.netflix.eureka2.channel2.client.ClientHeartbeatHandler;
 import com.netflix.eureka2.client.channel2.register.RegistrationClientHandshakeHandler;
 import com.netflix.eureka2.client.channel2.register.RetryableRegistrationClientHandler;
 import com.netflix.eureka2.client.resolver.ServerResolver;

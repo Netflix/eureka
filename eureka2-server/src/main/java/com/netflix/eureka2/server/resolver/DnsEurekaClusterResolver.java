@@ -62,8 +62,8 @@ abstract class DnsEurekaClusterResolver implements EurekaClusterResolver {
                                       Scheduler scheduler) {
             super(domainName, scheduler);
             this.registrationPort = registrationPort;
-            this.interestPort = interestPort;
-            this.replicationPort = replicationPort;
+            this.interestPort = registrationPort;
+            this.replicationPort = registrationPort;
         }
 
         @Override

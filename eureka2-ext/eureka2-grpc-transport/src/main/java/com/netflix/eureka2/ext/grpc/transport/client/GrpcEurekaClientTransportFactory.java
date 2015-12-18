@@ -26,6 +26,8 @@ import com.netflix.eureka2.spi.channel.ReplicationHandler;
 import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * For each client connection a new stub is created, as the stub holds information about a particular
@@ -33,6 +35,9 @@ import io.grpc.ManagedChannelBuilder;
  */
 public class GrpcEurekaClientTransportFactory implements EurekaClientTransportFactory {
 
+    private static final Logger logger = LoggerFactory.getLogger(GrpcEurekaClientTransportFactory.class);
+
+    // FIXME clientId not used
     public GrpcEurekaClientTransportFactory(String clientId) {
     }
 
@@ -49,7 +54,7 @@ public class GrpcEurekaClientTransportFactory implements EurekaClientTransportFa
         ManagedChannel channel = createManagedChannel(eurekaServer);
         Eureka2InterestGrpc.Eureka2InterestStub stub = Eureka2InterestGrpc.newStub(channel);
 
-        return new GrpcInterestClientTransportHandler(stub);
+        return new GrpcInterestClientTransportHandler(eurekaServer, stub);
     }
 
     @Override

@@ -117,7 +117,7 @@ public class ClusterAddress {
     }
 
     public static ClusterAddress readClusterAddressFrom(String domainName, int interestPort) {
-        return new ClusterAddress(domainName, -1, interestPort, -1);
+        return new ClusterAddress(domainName, interestPort, interestPort, interestPort);
     }
 
     /**

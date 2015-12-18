@@ -93,6 +93,7 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
                         anEurekaServerTransportConfig()
                                 .withCodec(codec)
                                 .withHttpPort(httpPort)
+                                .withRegistrationPort(discoveryPort)
                                 .withInterestPort(discoveryPort)
                                 .withShutDownPort(0)
                                 .withWebAdminPort(adminPort)

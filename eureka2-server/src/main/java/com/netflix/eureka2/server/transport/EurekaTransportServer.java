@@ -47,59 +47,55 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
-import rx.schedulers.Schedulers;
 
-import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Singleton;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
  */
-@Singleton
-public class WriteTransportServer {
+public class EurekaTransportServer {
 
-    private static final Logger logger = LoggerFactory.getLogger(WriteTransportServer.class);
+    private static final Logger logger = LoggerFactory.getLogger(EurekaTransportServer.class);
 
-    private static final long SERVER_STARTUP_TIMEOUT_MS = 5 * 1000;
+    private static final long SERVER_STARTUP_TIMEOUT_MS = 30 * 1000;
 
-    private final CompletableFuture<ServerContext> serverContext = new CompletableFuture<>();
-    private final EurekaRegistrationProcessor<InstanceInfo> registrationProcessor;
+    protected final CompletableFuture<ServerContext> serverContext = new CompletableFuture<>();
+    private final Provider<EurekaRegistrationProcessor> registrationProcessor;
     private final EurekaRegistry<InstanceInfo> registry;
-    private final EurekaRegistryView<InstanceInfo> registryView;
-    private final EurekaServerTransportConfig config;
-    private final Scheduler scheduler;
-    private volatile Source serverSource;
+    protected final EurekaRegistryView<InstanceInfo> registryView;
+    private final EurekaServerTransportFactory transportFactory;
+    protected final EurekaServerTransportConfig config;
+    protected final Scheduler scheduler;
+    protected final Source serverSource;
 
-    @Inject
-    public WriteTransportServer(EurekaServerTransportFactory transportFactory,
-                                EurekaServerTransportConfig config,
-                                @Named(Names.REGISTRATION) Provider<EurekaRegistrationProcessor> registrationProcessor,
-                                @Named(Names.REGISTRATION) MetricEventsListenerFactory servoEventsListenerFactory,
-                                EurekaRegistry registry,
-                                EurekaRegistryView registryView,
-                                EurekaInstanceInfoConfig instanceInfoConfig) {
-        this(transportFactory, config, registrationProcessor, servoEventsListenerFactory, registry, registryView, instanceInfoConfig, Schedulers.computation());
-    }
-
-    public WriteTransportServer(EurekaServerTransportFactory transportFactory,
-                                EurekaServerTransportConfig config,
-                                @Named(Names.REGISTRATION) Provider<EurekaRegistrationProcessor> registrationProcessor,
-                                @Named(Names.REGISTRATION) MetricEventsListenerFactory servoEventsListenerFactory,
-                                EurekaRegistry registry,
-                                EurekaRegistryView registryView,
-                                EurekaInstanceInfoConfig instanceInfoConfig,
-                                Scheduler scheduler) {
+    public EurekaTransportServer(EurekaServerTransportFactory transportFactory,
+                                 EurekaServerTransportConfig config,
+                                 @Named(Names.REGISTRATION) Provider<EurekaRegistrationProcessor> registrationProcessor,
+                                 @Named(Names.REGISTRATION) MetricEventsListenerFactory servoEventsListenerFactory,
+                                 EurekaRegistry registry,
+                                 EurekaRegistryView registryView,
+                                 EurekaInstanceInfoConfig instanceInfoConfig,
+                                 Scheduler scheduler) {
+        this.transportFactory = transportFactory;
         this.config = config;
+        this.registrationProcessor = registrationProcessor;
         this.registry = registry;
         this.registryView = registryView;
         this.scheduler = scheduler;
-        this.registrationProcessor = registrationProcessor.get();
 
         // FIXME This is very akward way to get own id, to be able to initialize transport
         String serverName = ConfigSelfInfoResolver.getFixedSelfInfo(instanceInfoConfig).toBlocking().first().build().getId();
         this.serverSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, serverName);
+
+        if (registrationProcessor != null) {
+            connectWrite();
+        } else {
+            connectRead();
+        }
+    }
+
+    private void connectWrite() {
         transportFactory.connect(
                 config.getRegistrationPort(),
                 serverSource,
@@ -108,7 +104,23 @@ public class WriteTransportServer {
                 createReplicationPipelineFactory()
         ).subscribe(
                 next -> serverContext.complete(next),
-                e -> logger.error("EurekaServerTransportFactory connect error")
+                e -> logger.error("EurekaTransportServer connect error", e)
+        );
+    }
+
+    private void connectRead() {
+        transportFactory.connect(
+                config.getRegistrationPort(),
+                serverSource,
+                null,
+                createInterestPipelineFactory(),
+                null
+        ).subscribe(
+                next -> serverContext.complete(next),
+                e -> {
+                    logger.error("EurekaTransportServer connect error");
+                    serverContext.completeExceptionally(e);
+                }
         );
     }
 
@@ -119,7 +131,7 @@ public class WriteTransportServer {
             public Observable<ChannelPipeline<ChangeNotification<InstanceInfo>, Void>> createPipeline() {
                 return Observable.create(subscriber -> {
                     subscriber.onNext(new ChannelPipeline<>("replicationServer",
-                            new LoggingChannelHandler<ChangeNotification<InstanceInfo>, Void>(LogLevel.INFO),
+                            new LoggingChannelHandler<ChangeNotification<InstanceInfo>, Void>(LoggingChannelHandler.LogLevel.INFO),
                             new ServerHeartbeatHandler<ChangeNotification<InstanceInfo>, Void>(config.getHeartbeatIntervalMs() * 3, scheduler),
                             new ServerHandshakeHandler<ChangeNotification<InstanceInfo>, Void>(serverSource, idGenerator),
                             new InputChangeNotificationSourcingHandler<InstanceInfo, Void>(),
@@ -138,10 +150,10 @@ public class WriteTransportServer {
             public Observable<ChannelPipeline<InstanceInfo, InstanceInfo>> createPipeline() {
                 return Observable.create(subscriber -> {
                     subscriber.onNext(new ChannelPipeline<>("registrationServer",
-                            new LoggingChannelHandler<InstanceInfo, InstanceInfo>(LogLevel.INFO),
+                            new LoggingChannelHandler<InstanceInfo, InstanceInfo>(LoggingChannelHandler.LogLevel.INFO),
                             new ServerHeartbeatHandler<InstanceInfo, InstanceInfo>(config.getHeartbeatIntervalMs() * 3, scheduler),
                             new ServerHandshakeHandler<InstanceInfo, InstanceInfo>(serverSource, idGenerator),
-                            new RegistrationProcessorBridgeHandler(registrationProcessor)
+                            new RegistrationProcessorBridgeHandler(registrationProcessor.get())
                     ));
                     subscriber.onCompleted();
                 });
@@ -149,7 +161,7 @@ public class WriteTransportServer {
         };
     }
 
-    private ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> createInterestPipelineFactory() {
+    protected ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> createInterestPipelineFactory() {
         SourceIdGenerator idGenerator = new SourceIdGenerator();
         return new ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
             @Override

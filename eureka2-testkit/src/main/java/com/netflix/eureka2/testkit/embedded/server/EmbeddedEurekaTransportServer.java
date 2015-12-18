@@ -23,11 +23,11 @@ import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.server.config.EurekaInstanceInfoConfig;
 import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
-import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
-import com.netflix.eureka2.server.transport.WriteTransportServer;
+import com.netflix.eureka2.server.transport.EurekaTransportServer;
 import com.netflix.eureka2.spi.transport.EurekaServerTransportFactory;
 import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
+import rx.schedulers.Schedulers;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -38,22 +38,22 @@ import javax.inject.Singleton;
 /**
  */
 @Singleton
-public class EmbeddedWriteTransportServer extends WriteTransportServer {
+public class EmbeddedEurekaTransportServer extends EurekaTransportServer {
 
     private final NetworkRouter networkRouter;
 
     private int proxyPort;
 
     @Inject
-    public EmbeddedWriteTransportServer(EurekaServerTransportFactory transportFactory,
-                                        EurekaServerTransportConfig config,
-                                        @Named(Names.REGISTRATION) Provider<EurekaRegistrationProcessor> registrationProcessor,
-                                        @Named(Names.REGISTRATION) MetricEventsListenerFactory servoEventsListenerFactory,
-                                        EurekaRegistry registry,
-                                        EurekaRegistryView registryView,
-                                        EurekaInstanceInfoConfig instanceInfoConfig,
-                                        NetworkRouter networkRouter) {
-        super(transportFactory, config, registrationProcessor, servoEventsListenerFactory, registry, registryView, instanceInfoConfig);
+    public EmbeddedEurekaTransportServer(EurekaServerTransportFactory transportFactory,
+                                         EurekaServerTransportConfig config,
+                                         @Named(Names.REGISTRATION) Provider<EurekaRegistrationProcessor> registrationProcessor,
+                                         @Named(Names.REGISTRATION) MetricEventsListenerFactory servoEventsListenerFactory,
+                                         EurekaRegistry registry,
+                                         EurekaRegistryView registryView,
+                                         EurekaInstanceInfoConfig instanceInfoConfig,
+                                         NetworkRouter networkRouter) {
+        super(transportFactory, config, registrationProcessor, servoEventsListenerFactory, registry, registryView, instanceInfoConfig, Schedulers.computation());
         this.networkRouter = networkRouter;
     }
 

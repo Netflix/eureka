@@ -20,10 +20,7 @@ import com.netflix.eureka2.ext.grpc.model.GrpcObjectWrapper;
 import com.netflix.eureka2.ext.grpc.util.TextPrinter;
 import com.netflix.eureka2.grpc.Eureka2;
 import com.netflix.eureka2.model.datacenter.DataCenterInfo;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
-import com.netflix.eureka2.model.instance.ServiceEndpoint;
-import com.netflix.eureka2.model.instance.ServicePort;
+import com.netflix.eureka2.model.instance.*;
 
 import java.util.*;
 
@@ -144,21 +141,8 @@ public class GrpcInstanceInfoWrapper implements InstanceInfo, GrpcObjectWrapper<
 
     @Override
     public Iterator<ServiceEndpoint> serviceEndpoints() {
-        List<Eureka2.GrpcServiceEndpoint> grpcServiceEndpoints = grpcInstanceInfo.getServiceEndpointsList();
-        if (grpcServiceEndpoints == null) {
-            return null;
-        }
-        if (serviceEndpoints != null) {
-            return serviceEndpoints.iterator();
-        }
-        List<ServiceEndpoint> serviceEndpoints = new ArrayList<>(grpcServiceEndpoints.size());
-        for (Eureka2.GrpcServiceEndpoint grpcServiceEndpoint : grpcServiceEndpoints) {
-            serviceEndpoints.add(GrpcServiceEndpointWrapper.asServiceEndpoint(grpcServiceEndpoint));
-        }
-        this.serviceEndpoints = serviceEndpoints;
-        return serviceEndpoints.iterator();
+        return ServiceEndpointImpl.iteratorFrom(this);
     }
-
 
     @Override
     public Eureka2.GrpcInstanceInfo getGrpcObject() {
@@ -271,6 +255,66 @@ public class GrpcInstanceInfoWrapper implements InstanceInfo, GrpcObjectWrapper<
             }
 
             return asInstanceInfo(builder.build());
+        }
+    }
+
+    public static class ServiceEndpointImpl implements ServiceEndpoint {
+
+        private final NetworkAddress address;
+        private final ServicePort servicePort;
+
+        private ServiceEndpointImpl(NetworkAddress address, ServicePort servicePort) {
+            this.address = address;
+            this.servicePort = servicePort;
+        }
+
+        public NetworkAddress getAddress() {
+            return address;
+        }
+
+        public ServicePort getServicePort() {
+            return servicePort;
+        }
+
+        public static Iterator<ServiceEndpoint> iteratorFrom(final InstanceInfo instanceInfo) {
+            final List<NetworkAddress> addresses = instanceInfo.getDataCenterInfo().getAddresses();
+            final HashSet<ServicePort> ports = (HashSet<ServicePort>) instanceInfo.getPorts();
+            if (ports == null || ports.isEmpty() || addresses == null || addresses.isEmpty()) {
+                return Collections.emptyIterator();
+            }
+
+            return new Iterator<ServiceEndpoint>() {
+                private final Iterator<ServicePort> servicePortIt = ports.iterator();
+                private ServicePort currentPort = servicePortIt.next();
+
+                private Iterator<NetworkAddress> networkAddressIt = addresses.iterator();
+
+                @Override
+                public boolean hasNext() {
+                    if (networkAddressIt.hasNext()) {
+                        return true;
+                    }
+                    if (servicePortIt.hasNext()) {
+                        currentPort = servicePortIt.next();
+                        networkAddressIt = addresses.iterator();
+                        return true;
+                    }
+                    return false;
+                }
+
+                @Override
+                public ServiceEndpointImpl next() {
+                    if (hasNext()) {
+                        return new ServiceEndpointImpl(networkAddressIt.next(), currentPort);
+                    }
+                    throw new NoSuchElementException();
+                }
+
+                @Override
+                public void remove() {
+                    throw new IllegalStateException("Operation not supported");
+                }
+            };
         }
     }
 }

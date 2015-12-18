@@ -17,6 +17,7 @@
 package com.netflix.eureka2.client.channel2;
 
 import com.netflix.eureka2.channel2.SourceIdGenerator;
+import com.netflix.eureka2.channel2.client.ClientHandshakeHandler;
 import com.netflix.eureka2.client.channel2.interest.InterestClientHandshakeHandler;
 import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;

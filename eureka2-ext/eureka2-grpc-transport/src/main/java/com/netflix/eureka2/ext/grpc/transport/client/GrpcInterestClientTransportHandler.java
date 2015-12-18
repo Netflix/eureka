@@ -19,6 +19,7 @@ package com.netflix.eureka2.ext.grpc.transport.client;
 import com.netflix.eureka2.grpc.Eureka2;
 import com.netflix.eureka2.grpc.Eureka2InterestGrpc;
 import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
@@ -42,9 +43,10 @@ public class GrpcInterestClientTransportHandler implements InterestHandler {
     private static final Logger logger = LoggerFactory.getLogger(GrpcInterestClientTransportHandler.class);
 
     private final Eureka2InterestGrpc.Eureka2Interest interestService;
-    private final AtomicLong channelCounter = new AtomicLong();
+    private final String target;
 
-    public GrpcInterestClientTransportHandler(Eureka2InterestGrpc.Eureka2Interest interestService) {
+    public GrpcInterestClientTransportHandler(Server eurekaServer, Eureka2InterestGrpc.Eureka2Interest interestService) {
+        this.target = '[' + eurekaServer.getHost() + ':' + eurekaServer.getPort();
         this.interestService = interestService;
     }
 
@@ -57,29 +59,29 @@ public class GrpcInterestClientTransportHandler implements InterestHandler {
         return Observable.create(subscriber -> {
                     Map<String, InstanceInfo> instanceCache = new HashMap<>();
 
-                    logger.debug("Subscribed to GrpcInterestClientTransportHandler handler");
+                    logger.debug("{} Subscribed to GrpcInterestClientTransportHandler handler", target);
 
                     StreamObserver<Eureka2.GrpcInterestRequest> interestObserver = interestService.subscribe(new StreamObserver<Eureka2.GrpcInterestResponse>() {
                         @Override
                         public void onNext(Eureka2.GrpcInterestResponse notification) {
-                            logger.debug("Received response of type {}", notification.getItemCase());
+                            logger.debug("{} Received response of type {}", target, notification.getItemCase());
                             ChannelNotification<ChangeNotification<InstanceInfo>> change = toChannelNotification(notification, instanceCache);
                             if (change != null) {
                                 subscriber.onNext(change);
                             } else {
-                                logger.warn("Ignoring notification, as it cannot be fully reconstructed {}", notification.getItemCase());
+                                logger.warn("{} Ignoring notification, as it cannot be fully reconstructed {}", target, notification.getItemCase());
                             }
                         }
 
                         @Override
                         public void onError(Throwable t) {
-                            logger.debug("Received onError from reply channel", t);
+                            logger.debug(target + " Received onError from reply channel", t);
                             subscriber.onError(t);
                         }
 
                         @Override
                         public void onCompleted() {
-                            logger.debug("Received onCompleted from reply channel");
+                            logger.debug("{} Received onCompleted from reply channel", target);
                             subscriber.onCompleted();
                         }
                     });

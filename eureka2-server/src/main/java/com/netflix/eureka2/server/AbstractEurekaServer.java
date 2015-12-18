@@ -7,7 +7,7 @@ import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.server.service.EurekaShutdownService;
-import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
+import com.netflix.eureka2.server.transport.EurekaTransportServer;
 import com.netflix.governator.LifecycleShutdownSignal;
 import netflix.adminresources.AdminResourcesContainer;
 
@@ -27,7 +27,7 @@ public abstract class AbstractEurekaServer {
     }
 
     public int getInterestPort() {
-        return injector.getInstance(TcpInterestServer.class).serverPort();
+        return injector.getInstance(EurekaTransportServer.class).getServerPort();
     }
 
     public int getHttpServerPort() {

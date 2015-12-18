@@ -16,15 +16,7 @@
 
 package com.netflix.eureka2.client.interest;
 
-import com.netflix.eureka2.channel2.LoggingChannelHandler;
-import com.netflix.eureka2.channel2.LoggingChannelHandler.LogLevel;
-import com.netflix.eureka2.channel2.OutputChangeNotificationSourcingHandler;
-import com.netflix.eureka2.channel2.SourceIdGenerator;
-import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.client.channel2.ClientHeartbeatHandler;
-import com.netflix.eureka2.client.channel2.interest.DeltaMergingInterestClientHandler;
 import com.netflix.eureka2.client.channel2.interest.DisconnectingOnEmptyInterestHandler;
-import com.netflix.eureka2.client.channel2.interest.InterestClientHandshakeHandler;
 import com.netflix.eureka2.client.channel2.interest.RetryableInterestClientHandler;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.EurekaTransportConfig;
@@ -55,7 +47,7 @@ import static com.netflix.eureka2.client.util.InterestUtil.isEmptyInterest;
 
 /**
  */
-public class EurekaInterestClientImpl2 implements EurekaInterestClient {
+public class EurekaInterestClientImpl2 extends AbstractInterestClient2 {
 
     private final ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> transportPipelineFactory;
     private final EurekaRegistry<InstanceInfo> eurekaRegistry;
@@ -73,24 +65,7 @@ public class EurekaInterestClientImpl2 implements EurekaInterestClient {
                                      long retryDelayMs,
                                      Scheduler scheduler) {
         this.eurekaRegistry = eurekaRegistry;
-        SourceIdGenerator idGenerator = new SourceIdGenerator();
-        this.transportPipelineFactory = new ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
-            @Override
-            public Observable<ChannelPipeline<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>> createPipeline() {
-                return serverResolver.resolve().map(server -> {
-                            String pipelineId = "interest[client=" + clientSource.getName() + ",server=" + server.getHost();
-                            return new ChannelPipeline<>(pipelineId,
-                                    new OutputChangeNotificationSourcingHandler(),
-                                    new DeltaMergingInterestClientHandler(),
-                                    new InterestClientHandshakeHandler(clientSource, idGenerator),
-                                    new ClientHeartbeatHandler(transportConfig.getHeartbeatIntervalMs(), scheduler),
-                                    new LoggingChannelHandler<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>(LogLevel.INFO),
-                                    transportFactory.newInterestTransport(server)
-                            );
-                        }
-                );
-            }
-        };
+        this.transportPipelineFactory = createPipelineFactory(clientSource, serverResolver, transportFactory, transportConfig, scheduler);
 
         retryablePipeline = new ChannelPipeline<>("interest",
                 new DisconnectingOnEmptyInterestHandler(),
@@ -100,33 +75,7 @@ public class EurekaInterestClientImpl2 implements EurekaInterestClient {
         Observable<ChannelNotification<Interest<InstanceInfo>>> interestNotifications = interestTracker.interestChangeStream()
                 .map(interest -> ChannelNotification.newData(interest));
 
-        PublishSubject<ChangeNotification<InstanceInfo>> registryUpdates = PublishSubject.create();
-        AtomicReference<Subscription> registrySubscriptionRef = new AtomicReference<>();
-        AtomicReference<Source> lastSourceRef = new AtomicReference<>();
-        registryUpdateSubscription = retryablePipeline.getFirst()
-                .handle(interestNotifications)
-                .subscribe(
-                        next -> {
-                            if (next.getKind() == ChannelNotification.Kind.Data) {
-                                Sourced sourced = (Sourced) next.getData();
-
-                                // Disconnect previous updates if source changes
-                                if (lastSourceRef.get() != null && !sourced.getSource().equals(lastSourceRef.get())) {
-                                    registrySubscriptionRef.getAndSet(null).unsubscribe();
-                                    eurekaRegistry.evictAll(Source.matcherFor(lastSourceRef.get()));
-                                }
-
-                                // This will be executed each time a new source is encountered
-                                if (registrySubscriptionRef.get() == null) {
-                                    registrySubscriptionRef.set(
-                                            eurekaRegistry.connect(sourced.getSource(), registryUpdates).subscribe()
-                                    );
-                                    lastSourceRef.set(sourced.getSource());
-                                }
-                                registryUpdates.onNext(next.getData());
-                            }
-                        }
-                );
+        this.registryUpdateSubscription = connectUpdatesToRegistry(retryablePipeline, eurekaRegistry, interestNotifications);
     }
 
     @Override
@@ -165,7 +114,6 @@ public class EurekaInterestClientImpl2 implements EurekaInterestClient {
                         }
                     }
                 })
-                .doOnError(e -> e.printStackTrace())
                 .filter(RxFunctions.filterNullValuesFunc());
 
         Observable toReturn = appendInterest

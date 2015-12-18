@@ -16,17 +16,21 @@
 
 package com.netflix.eureka2.server;
 
+import com.google.inject.Provider;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.netflix.eureka2.ext.grpc.transport.client.GrpcEurekaClientTransportFactory;
 import com.netflix.eureka2.ext.grpc.transport.server.GrpcEurekaServerTransportFactory;
 import com.netflix.eureka2.metric.server.SpectatorWriteServerMetricFactory;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
-import com.netflix.eureka2.registry.EurekaRegistryImpl;
-import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.server.audit.AuditServiceController;
+import com.netflix.eureka2.server.config.EurekaInstanceInfoConfig;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
+import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.server.registry.PreservableRegistrationProcessor;
 import com.netflix.eureka2.server.registry.RegistrationChannelProcessorProvider;
 import com.netflix.eureka2.server.rest.WriteServerRootResource;
@@ -40,11 +44,16 @@ import com.netflix.eureka2.server.service.replication.ReplicationService;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.spi.ExtensionContext;
-import com.netflix.eureka2.server.transport.WriteTransportServer;
+import com.netflix.eureka2.server.transport.EurekaTransportServer;
 import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
 import com.netflix.eureka2.spi.transport.EurekaServerTransportFactory;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
+import rx.schedulers.Schedulers;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
 import static com.netflix.eureka2.Names.REGISTRATION;
 
@@ -54,10 +63,11 @@ import static com.netflix.eureka2.Names.REGISTRATION;
 public class EurekaWriteServerModule extends AbstractEurekaServerModule {
 
     @Override
-    public void configure() {
+    protected void configure() {
         bindBase();
         bindMetricFactories();
         bindSelfInfo();
+        bindEurekaTransportServer();
 
         bindBootstrapComponents();
 
@@ -87,7 +97,6 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
                 .annotatedWith(Names.named(com.netflix.eureka2.Names.REGISTRATION))
                 .toInstance(new SpectatorEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
 //        bind(TcpRegistrationServer.class).asEagerSingleton();
-        bind(WriteTransportServer.class).asEagerSingleton();
         bind(EurekaClientTransportFactory.class).toInstance(new GrpcEurekaClientTransportFactory("WriteServerClient"));
         bind(EurekaServerTransportFactory.class).toInstance(new GrpcEurekaServerTransportFactory());
         bind(AuditServiceController.class).asEagerSingleton();
@@ -114,5 +123,32 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
     protected void bindBootstrapComponents() {
         bind(RegistryBootstrapCoordinator.class).asEagerSingleton();
         bind(RegistryBootstrapService.class).to(BackupClusterBootstrapService.class);
+    }
+
+    protected void bindEurekaTransportServer() {
+        bind(EurekaTransportServer.class).toProvider(WriteServerTransportProvider.class);
+    }
+
+
+    @Singleton
+    static class WriteServerTransportProvider implements Provider<EurekaTransportServer> {
+
+        private final EurekaTransportServer transportServer;
+
+        @Inject
+        WriteServerTransportProvider(EurekaServerTransportFactory transportFactory,
+                                     EurekaServerTransportConfig config,
+                                     @Named(REGISTRATION) Provider<EurekaRegistrationProcessor> registrationProcessor,
+                                     @Named(REGISTRATION) MetricEventsListenerFactory servoEventsListenerFactory,
+                                     EurekaRegistry registry,
+                                     EurekaRegistryView registryView,
+                                     EurekaInstanceInfoConfig instanceInfoConfig) {
+            this.transportServer = new EurekaTransportServer(transportFactory, config, registrationProcessor, servoEventsListenerFactory, registry, registryView, instanceInfoConfig, Schedulers.computation());
+        }
+
+        @Override
+        public EurekaTransportServer get() {
+            return transportServer;
+        }
     }
 }

@@ -37,7 +37,7 @@ public class DnsClusterAddressResolverTest {
     @Test
     public void testWriteClusterServerResolution() throws Exception {
         DnsWriteServerClusterResolver resolver = new DnsWriteServerClusterResolver("eureka2.cluster.com",
-                DEFAULT_REGISTRATION_PORT, DEFAULT_DISCOVERY_PORT, DEFAULT_REPLICATION_PORT, Schedulers.computation()) {
+                DEFAULT_REGISTRATION_PORT, DEFAULT_REGISTRATION_PORT, DEFAULT_REGISTRATION_PORT, Schedulers.computation()) {
             @Override
             protected Observable<ChangeNotification<String>> createDnsChangeNotificationSource(String domainName, Scheduler scheduler) {
                 return dnsChangeNotificationSubject;
@@ -49,7 +49,7 @@ public class DnsClusterAddressResolverTest {
     @Test
     public void testReadClusterServerResolution() throws Exception {
         DnsReadServerClusterResolver resolver = new DnsReadServerClusterResolver("eureka2.cluster.com",
-                DEFAULT_DISCOVERY_PORT, Schedulers.computation()) {
+                DEFAULT_REGISTRATION_PORT, Schedulers.computation()) {
             @Override
             protected Observable<ChangeNotification<String>> createDnsChangeNotificationSource(String domainName, Scheduler scheduler) {
                 return dnsChangeNotificationSubject;
@@ -68,6 +68,6 @@ public class DnsClusterAddressResolverTest {
         ChangeNotification<ClusterAddress> actual = testSubscriber.takeNextOrFail();
         assertThat(actual.getKind(), is(equalTo(Kind.Add)));
         assertThat(actual.getData().getHostName(), is(equalTo(server)));
-        assertThat(actual.getData().getInterestPort(), is(equalTo(DEFAULT_DISCOVERY_PORT)));
+        assertThat(actual.getData().getInterestPort(), is(equalTo(DEFAULT_REGISTRATION_PORT)));
     }
 }

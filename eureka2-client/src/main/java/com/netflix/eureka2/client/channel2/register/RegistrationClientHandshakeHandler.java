@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.client.channel2.register;
 
-import com.netflix.eureka2.client.channel2.AbstractHandshakeHandler;
+import com.netflix.eureka2.channel2.client.AbstractHandshakeHandler;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;

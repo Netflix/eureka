@@ -1,16 +1,11 @@
 package com.netflix.eureka2.client.resolver;
 
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.netflix.eureka2.Names;
-import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaInterestClientBuilder;
-import com.netflix.eureka2.client.channel.ClientChannelFactory;
-import com.netflix.eureka2.client.channel.InterestChannelFactory;
 import com.netflix.eureka2.client.functions.InterestFunctions;
-import com.netflix.eureka2.client.interest.EurekaInterestClientImpl;
+import com.netflix.eureka2.client.interest.EurekaInterestClientImpl2;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.NetworkAddress;
@@ -24,8 +19,12 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action0;
+import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
+
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * This resolver uses a custom, light weight eureka interest client for reading eureka read server data from
@@ -92,6 +91,8 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
     @SuppressWarnings("deprecation")
     static class ResolverEurekaInterestClientBuilder extends EurekaInterestClientBuilder {
 
+        private static final long RETRY_DELAY_MS = 5 * 1000;
+
         @Override
         protected EurekaInterestClient buildClient() {
             if (serverResolver == null) {
@@ -100,10 +101,8 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
 
             EurekaRegistry<InstanceInfo> registry = new PassThroughRegistry();
 
-            ClientChannelFactory<InterestChannel> channelFactory
-                    = new InterestChannelFactory(RESOLVER_CLIENT_ID, transportConfig, serverResolver, registry, clientMetricFactory);
-
-            return new EurekaInterestClientImpl(registry, channelFactory);
+            Source clientSource = InstanceModel.getDefaultModel().createSource(Source.Origin.INTERESTED, RESOLVER_CLIENT_ID);
+            return new EurekaInterestClientImpl2(clientSource, serverResolver, transportFactory, transportConfig, registry, RETRY_DELAY_MS, Schedulers.computation());
         }
     }
 

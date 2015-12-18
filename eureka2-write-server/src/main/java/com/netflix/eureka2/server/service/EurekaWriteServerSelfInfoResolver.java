@@ -11,7 +11,7 @@ import com.netflix.eureka2.server.health.EurekaHealthStatusAggregatorImpl;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.server.service.selfinfo.*;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
-import com.netflix.eureka2.server.transport.WriteTransportServer;
+import com.netflix.eureka2.server.transport.EurekaTransportServer;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -31,7 +31,7 @@ public class EurekaWriteServerSelfInfoResolver implements SelfInfoResolver {
     public EurekaWriteServerSelfInfoResolver(
             final WriteServerConfig config,
             final EurekaHttpServer httpServer,
-            final Provider<WriteTransportServer> registrationServer,
+            final Provider<EurekaTransportServer> registrationServer,
             final EurekaHealthStatusAggregatorImpl healthStatusAggregator) {
 
         SelfInfoResolverChain resolverChain = new SelfInfoResolverChain(
