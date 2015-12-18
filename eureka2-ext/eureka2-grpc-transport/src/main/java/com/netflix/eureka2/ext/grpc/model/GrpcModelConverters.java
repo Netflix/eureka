@@ -16,7 +16,11 @@
 
 package com.netflix.eureka2.ext.grpc.model;
 
+import java.util.*;
+
 import com.google.protobuf.Message;
+import com.netflix.eureka2.ext.grpc.model.instance.GrpcAwsDataCenterInfoWrapper;
+import com.netflix.eureka2.ext.grpc.model.instance.GrpcBasicDataCenterInfoWrapper;
 import com.netflix.eureka2.ext.grpc.model.instance.GrpcInstanceInfoWrapper;
 import com.netflix.eureka2.ext.grpc.model.interest.GrpcEmptyRegistryInterestWrapper;
 import com.netflix.eureka2.ext.grpc.model.interest.GrpcInterestWrapper;
@@ -25,6 +29,7 @@ import com.netflix.eureka2.ext.grpc.model.transport.GrpcClientHelloWrapper;
 import com.netflix.eureka2.ext.grpc.model.transport.GrpcReplicationClientHelloWrapper;
 import com.netflix.eureka2.ext.grpc.model.transport.GrpcServerHelloWrapper;
 import com.netflix.eureka2.grpc.Eureka2;
+import com.netflix.eureka2.model.datacenter.DataCenterInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
@@ -34,8 +39,6 @@ import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.spi.model.ClientHello;
 import com.netflix.eureka2.spi.model.ReplicationClientHello;
 import com.netflix.eureka2.spi.model.ServerHello;
-
-import java.util.*;
 
 /**
  */
@@ -205,5 +208,16 @@ public final class GrpcModelConverters {
 
     public static ServerHello toServerHello(Eureka2.GrpcServerHello grpcServerHello) {
         return GrpcServerHelloWrapper.asServerHello(grpcServerHello);
+    }
+
+    public static DataCenterInfo toDataCenterInfo(Eureka2.GrpcDataCenterInfo dataCenterInfo) {
+        Eureka2.GrpcDataCenterInfo.OneofDataCenterInfoCase dataCenterType = dataCenterInfo.getOneofDataCenterInfoCase();
+        switch (dataCenterType) {
+            case AWS:
+                return new GrpcAwsDataCenterInfoWrapper(dataCenterInfo);
+            case BASIC:
+                return new GrpcBasicDataCenterInfoWrapper(dataCenterInfo);
+        }
+        throw new IllegalStateException("Unsupported datacenter type " + dataCenterType);
     }
 }

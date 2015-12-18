@@ -19,7 +19,6 @@ package com.netflix.eureka2.client.channel2;
 import com.netflix.eureka2.channel2.SourceIdGenerator;
 import com.netflix.eureka2.channel2.client.ClientHandshakeHandler;
 import com.netflix.eureka2.client.channel2.interest.InterestClientHandshakeHandler;
-import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
@@ -43,10 +42,6 @@ import static org.junit.Assert.assertThat;
 /**
  */
 public class ClientHandshakeHandlerTest {
-
-    static {
-        GrpcModelsInjector.injectGrpcModels();
-    }
 
     private static final ChangeNotification<InstanceInfo> CHANGE_NOTIFICATION = new ChangeNotification<>(ChangeNotification.Kind.Add, SampleInstanceInfo.Backend.build());
     private static final ChannelNotification<ChangeNotification<InstanceInfo>> CHANNEL_NOTIFICATION = ChannelNotification.newData(CHANGE_NOTIFICATION);

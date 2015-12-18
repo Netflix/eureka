@@ -1,7 +1,6 @@
 package com.netflix.eureka2.testkit.junit.stubs;
 
 import com.netflix.eureka2.client.EurekaRegistrationClient.RegistrationStatus;
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
@@ -17,10 +16,6 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 public class EurekaRegistrationClientStubTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     @Test
     public void testStateRecording() throws Exception {

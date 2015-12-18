@@ -17,7 +17,6 @@
 package com.netflix.eureka2.server.channel2;
 
 import com.netflix.eureka2.channel2.SourceIdGenerator;
-import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -42,10 +41,6 @@ import static org.junit.Assert.assertThat;
 /**
  */
 public class ServerHandshakeHandlerTest {
-
-    static {
-        GrpcModelsInjector.injectGrpcModels();
-    }
 
     private static final Source CLIENT_SOURCE = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, "testClient");
     private static final Source SERVER_SOURCE = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, "testServer");

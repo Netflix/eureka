@@ -21,7 +21,6 @@ import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.model.InstanceModel;
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.datacenter.LocalDataCenterInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
@@ -42,10 +41,6 @@ import static com.netflix.eureka2.model.interest.Interests.forVips;
  * @author Tomasz Bak
  */
 public final class SimpleApp {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     public static final InstanceInfo SERVICE_A = InstanceModel.getDefaultModel().newInstanceInfo()
             .withId("id_serviceA")

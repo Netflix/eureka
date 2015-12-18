@@ -23,27 +23,11 @@ import java.util.TreeMap;
 import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
-import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
-import com.netflix.eureka2.protocol.StdProtocolModel;
-import com.netflix.eureka2.spi.protocol.ProtocolModel;
 import com.netflix.eureka2.testkit.cli.command.CloseCommand;
 import com.netflix.eureka2.testkit.cli.command.StatusCommand;
 import com.netflix.eureka2.testkit.cli.command.bootstrap.BootstrapCommand;
-import com.netflix.eureka2.testkit.cli.command.connect.ConnectCanonicalCommand;
-import com.netflix.eureka2.testkit.cli.command.connect.ConnectReadClusterCommand;
-import com.netflix.eureka2.testkit.cli.command.connect.ConnectReadNodeCommand;
-import com.netflix.eureka2.testkit.cli.command.connect.ConnectWriteClusterCommand;
-import com.netflix.eureka2.testkit.cli.command.connect.ConnectWriteNodeCommand;
-import com.netflix.eureka2.testkit.cli.command.session.DescribeCommand;
-import com.netflix.eureka2.testkit.cli.command.session.DisconnectCommand;
-import com.netflix.eureka2.testkit.cli.command.session.InterestCommand;
-import com.netflix.eureka2.testkit.cli.command.session.QueryCommand;
-import com.netflix.eureka2.testkit.cli.command.session.RegisterCommand;
-import com.netflix.eureka2.testkit.cli.command.session.SearchCommand;
-import com.netflix.eureka2.testkit.cli.command.session.UnregisterCommand;
-import com.netflix.eureka2.testkit.cli.command.session.UpdateCommand;
-import com.netflix.eureka2.transport.EurekaTransports;
-import com.netflix.eureka2.transport.StdEurekaTransportFactory;
+import com.netflix.eureka2.testkit.cli.command.connect.*;
+import com.netflix.eureka2.testkit.cli.command.session.*;
 import jline.Terminal;
 import jline.TerminalFactory;
 import jline.console.ConsoleReader;
@@ -55,12 +39,6 @@ import jline.console.ConsoleReader;
  */
 @SuppressWarnings("CallToPrintStackTrace")
 public class EurekaCLI {
-
-    static {
-        GrpcModelsInjector.injectGrpcModels();
-        EurekaTransports.setTransportFactory(new StdEurekaTransportFactory());
-        ProtocolModel.setDefaultModel(StdProtocolModel.getStdModel());
-    }
 
     private final Command[] sharedCommands = {
             new HelpCommand(),

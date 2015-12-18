@@ -19,7 +19,6 @@ package com.netflix.eureka2.transport.base;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.spi.protocol.ProtocolModel;
 import com.netflix.eureka2.spi.transport.EurekaConnection;
 import org.junit.Before;
@@ -36,19 +35,13 @@ import rx.subjects.ReplaySubject;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Tomasz Bak
  */
 @RunWith(MockitoJUnitRunner.class)
 public class HeartBeatConnectionTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private static final String MESSAGE = "My MESSAGE";
 

@@ -4,9 +4,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
-import com.netflix.eureka2.model.instance.StdInstanceInfo.Builder;
 import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
 
@@ -39,7 +39,7 @@ public class Service {
 
         Map<String, String> metaData = new HashMap<>();
         metaData.put("key1", "value1");
-        InstanceInfoBuilder builder = new Builder()
+        InstanceInfoBuilder builder = InstanceModel.getDefaultModel().newInstanceInfo()
                 .withId(id)
                 .withApp(application.getName())
                 .withAppGroup(application.getName() + "_group")

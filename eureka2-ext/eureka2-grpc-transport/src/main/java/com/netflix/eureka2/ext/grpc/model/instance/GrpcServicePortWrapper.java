@@ -16,13 +16,14 @@
 
 package com.netflix.eureka2.ext.grpc.model.instance;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 import com.netflix.eureka2.ext.grpc.model.GrpcObjectWrapper;
 import com.netflix.eureka2.ext.grpc.util.TextPrinter;
 import com.netflix.eureka2.grpc.Eureka2;
 import com.netflix.eureka2.model.instance.ServicePort;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  */
@@ -84,6 +85,17 @@ public class GrpcServicePortWrapper implements ServicePort, GrpcObjectWrapper<Eu
 
     public static GrpcServicePortWrapper asServicePort(Eureka2.GrpcServicePort grpcServicePort) {
         return new GrpcServicePortWrapper(grpcServicePort);
+    }
+
+    public static Set<ServicePort> asServicePortSet(Eureka2.GrpcDelta.GrpcServicePortSet grpcPortSet) {
+        if(grpcPortSet.getPortsCount() == 0) {
+            return Collections.emptySet();
+        }
+        HashSet<ServicePort> ports = new HashSet<>(grpcPortSet.getPortsCount());
+        for(Eureka2.GrpcServicePort grpcPort: grpcPortSet.getPortsList()) {
+            ports.add(asServicePort(grpcPort));
+        }
+        return ports;
     }
 
     public static ServicePort newServicePort(String name, int port, boolean secure, Set<String> labels) {

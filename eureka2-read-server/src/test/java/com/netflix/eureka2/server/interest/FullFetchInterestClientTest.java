@@ -3,12 +3,12 @@ package com.netflix.eureka2.server.interest;
 import com.netflix.eureka2.channel.ChannelFactory;
 import com.netflix.eureka2.channel.InterestChannel;
 import com.netflix.eureka2.client.channel.ClientInterestChannel;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.interest.Interest;
-import com.netflix.eureka2.model.interest.Interests;
-import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Source.Origin;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.model.notification.SourcedChangeNotification;
@@ -17,8 +17,8 @@ import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.registry.index.IndexRegistryImpl;
-import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.junit.Before;
 import org.junit.Test;
 import rx.schedulers.Schedulers;
@@ -31,26 +31,19 @@ import static com.netflix.eureka2.testkit.junit.EurekaMatchers.bufferStartNotifi
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Tomasz Bak
  */
 public class FullFetchInterestClientTest {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
     private static final ChangeNotification<InstanceInfo> ADD_INSTANCE_1 = new ChangeNotification<>(Kind.Add, SampleInstanceInfo.EurekaWriteServer.build());
     private static final ChangeNotification<InstanceInfo> ADD_INSTANCE_2 = new ChangeNotification<>(Kind.Add, SampleInstanceInfo.EurekaWriteServer.build());
     private static final ChangeNotification<InstanceInfo> ADD_ANOTHER_VIP = new ChangeNotification<>(Kind.Add, SampleInstanceInfo.EurekaReadServer.build());
 
     private static final Interest<InstanceInfo> INTEREST = Interests.forVips(ADD_INSTANCE_1.getData().getVipAddress());
-    private static final StdSource SOURCE = new StdSource(Origin.INTERESTED, "test");
+    private static final Source SOURCE = InstanceModel.getDefaultModel().createSource(Origin.INTERESTED, "test");
 
     private static final StreamStateNotification<InstanceInfo> BUFFER_BEGIN = SourcedStreamStateNotification.bufferStartNotification(Interests.forFullRegistry(), SOURCE);
     private static final StreamStateNotification<InstanceInfo> BUFFER_END = SourcedStreamStateNotification.bufferEndNotification(Interests.forFullRegistry(), SOURCE);

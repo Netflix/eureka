@@ -16,15 +16,11 @@
 
 package com.netflix.eureka2.client.channel2;
 
-import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
-import com.netflix.eureka2.spi.model.ClientHello;
-import com.netflix.eureka2.spi.model.ServerHello;
-import com.netflix.eureka2.spi.model.TransportModel;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInterest;
 import rx.Observable;
@@ -33,15 +29,8 @@ import rx.Observable;
  */
 public final class ChannelTestkit {
 
-    static {
-        GrpcModelsInjector.injectGrpcModels();
-    }
-
     public static final Source CLIENT_SOURCE = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, "testClient");
     public static final Source SERVER_SOURCE = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, "testServer");
-
-    public static final ClientHello CLIENT_HELLO = TransportModel.getDefaultModel().newClientHello(CLIENT_SOURCE);
-    public static final ServerHello SERVER_HELLO = TransportModel.getDefaultModel().newServerHello(SERVER_SOURCE);
 
     public static final Interest<InstanceInfo> INTEREST = SampleInterest.DiscoveryApp.build();
     public static final InstanceInfo INSTANCE = SampleInstanceInfo.Backend.build();

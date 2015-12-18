@@ -3,12 +3,11 @@ package com.netflix.eureka2.server.registry;
 import java.util.concurrent.Semaphore;
 
 import com.netflix.eureka2.config.BasicEurekaRegistryConfig;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Source.Origin;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
-import com.netflix.eureka2.model.instance.StdInstanceInfo.Builder;
 import com.netflix.eureka2.registry.ChangeNotificationObservable;
 import com.netflix.eureka2.registry.EurekaRegistryRegistrationStub;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -33,10 +32,6 @@ import static org.mockito.Mockito.spy;
  */
 public class PreservableRegistrationProcessorTest {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
     private static final InstanceInfo FIRST_INSTANCE_INFO = SampleInstanceInfo.WebServer.build();
 
     private final EurekaRegistryRegistrationStub registryStub = new EurekaRegistryRegistrationStub();
@@ -60,7 +55,7 @@ public class PreservableRegistrationProcessorTest {
     @Test
     public void testRegistrationLifecycle() throws Exception {
         String id = FIRST_INSTANCE_INFO.getId();
-        StdSource source = new StdSource(Origin.LOCAL, id);
+        Source source = InstanceModel.getDefaultModel().createSource(Origin.LOCAL, id);
         registrationProcessor.connect(FIRST_INSTANCE_INFO.getId(), source, dataStream).subscribe();
 
         // First registration
@@ -68,7 +63,7 @@ public class PreservableRegistrationProcessorTest {
         registryStub.verifyRegisteredWith(FIRST_INSTANCE_INFO);
 
         // Second registrations
-        InstanceInfo update = new Builder().withInstanceInfo(FIRST_INSTANCE_INFO).withStatus(Status.DOWN).build();
+        InstanceInfo update = InstanceModel.getDefaultModel().newInstanceInfo().withInstanceInfo(FIRST_INSTANCE_INFO).withStatus(Status.DOWN).build();
         dataStream.register(update);
         registryStub.verifyRegisteredWith(update);
 
@@ -79,7 +74,7 @@ public class PreservableRegistrationProcessorTest {
     @Test
     public void testRegisterWithOnCompleteTerminatesRegistration() throws Exception {
         String id = FIRST_INSTANCE_INFO.getId();
-        StdSource source = new StdSource(Origin.LOCAL, id);
+        Source source = InstanceModel.getDefaultModel().createSource(Origin.LOCAL, id);
         registrationProcessor.connect(FIRST_INSTANCE_INFO.getId(), source, dataStream).subscribe();
 
         // First registration
@@ -87,7 +82,7 @@ public class PreservableRegistrationProcessorTest {
         registryStub.verifyRegisteredWith(FIRST_INSTANCE_INFO);
 
         // Second registrations
-        InstanceInfo update = new Builder().withInstanceInfo(FIRST_INSTANCE_INFO).withStatus(Status.DOWN).build();
+        InstanceInfo update = InstanceModel.getDefaultModel().newInstanceInfo().withInstanceInfo(FIRST_INSTANCE_INFO).withStatus(Status.DOWN).build();
         dataStream.register(update);
         registryStub.verifyRegisteredWith(update);
 
@@ -99,7 +94,7 @@ public class PreservableRegistrationProcessorTest {
     @Test
     public void testRegisterWithOnErrorPutsRegistrationOnTheEvictionQueue() throws Exception {
         String id = FIRST_INSTANCE_INFO.getId();
-        StdSource source = new StdSource(Origin.LOCAL, id);
+        Source source = InstanceModel.getDefaultModel().createSource(Origin.LOCAL, id);
         registrationProcessor.connect(FIRST_INSTANCE_INFO.getId(), source, dataStream).subscribe();
 
         // First registration

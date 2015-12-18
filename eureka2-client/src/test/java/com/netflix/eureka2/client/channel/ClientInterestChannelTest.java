@@ -6,7 +6,6 @@ import java.util.List;
 
 import com.netflix.eureka2.channel.InterestChannel.STATE;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
@@ -40,27 +39,17 @@ import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 
 import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.bufferEndNotification;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.bufferStartNotification;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.*;
 import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author David Liu
  */
 public class ClientInterestChannelTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private final TestScheduler testScheduler = Schedulers.test();
 

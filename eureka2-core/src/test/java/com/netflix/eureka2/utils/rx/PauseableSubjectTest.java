@@ -3,7 +3,6 @@ package com.netflix.eureka2.utils.rx;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
@@ -14,18 +13,12 @@ import org.junit.rules.TestName;
 import rx.functions.Action1;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 /**
  * @author Nitesh Kant
  */
 public class PauseableSubjectTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private PauseableSubject<ChangeNotification<InstanceInfo>> notificationsSubject;
     private List<ChangeNotification<InstanceInfo>> receivedNotifications;

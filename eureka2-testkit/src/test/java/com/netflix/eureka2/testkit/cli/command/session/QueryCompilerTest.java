@@ -1,6 +1,5 @@
 package com.netflix.eureka2.testkit.cli.command.session;
 
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.interest.StdVipInterest;
 import org.junit.Test;
@@ -15,10 +14,6 @@ import static org.junit.Assert.fail;
  * @author Tomasz Bak
  */
 public class QueryCompilerTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     @Test
     public void testSelectWithWildcardAndNoWhereClause() throws Exception {

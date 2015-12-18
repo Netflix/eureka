@@ -1,24 +1,19 @@
 package com.netflix.eureka2.server.service.overrides;
 
-import com.netflix.eureka2.model.StdModelsInjector;
+import java.util.Arrays;
+
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Test;
 import rx.observers.TestSubscriber;
 
-import java.util.Arrays;
-
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.equalTo;
 
 /**
  * @author David Liu
  */
 public class InMemoryStatusOverridesRegistryTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private final InMemoryStatusOverridesRegistry overridesSource = new InMemoryStatusOverridesRegistry();
     private final TestSubscriber<Boolean> testSubscriber1 = new TestSubscriber<>();

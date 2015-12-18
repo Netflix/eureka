@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.metric.noop.NoOpMessageConnectionMetrics;
-import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.StdTransportInjector;
 import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.testkit.compatibility.transport.TransportCompatibilityTestSuite.DiscoveryProtocolTest;
 import com.netflix.eureka2.testkit.compatibility.transport.TransportCompatibilityTestSuite.RegistrationProtocolTest;
@@ -38,9 +38,7 @@ import org.junit.Test;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
-import static com.netflix.eureka2.transport.EurekaTransports.interestPipeline;
-import static com.netflix.eureka2.transport.EurekaTransports.registrationPipeline;
-import static com.netflix.eureka2.transport.EurekaTransports.replicationPipeline;
+import static com.netflix.eureka2.transport.EurekaTransports.*;
 
 /**
  * This is protocol compatibility test for any underlying transport we implement.
@@ -50,7 +48,7 @@ import static com.netflix.eureka2.transport.EurekaTransports.replicationPipeline
 public class StdEurekaTransportsTest {
 
     static {
-        StdModelsInjector.injectStdModels();
+        StdTransportInjector.inject();
     }
 
     private RxServer<Object, Object> server;

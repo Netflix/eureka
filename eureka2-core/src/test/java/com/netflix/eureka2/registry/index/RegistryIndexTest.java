@@ -5,13 +5,12 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.interest.Interest;
-import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
+import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.model.notification.ModifyNotification;
@@ -20,8 +19,6 @@ import com.netflix.eureka2.model.notification.SourcedModifyNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
@@ -29,23 +26,15 @@ import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.model.interest.Interests.forFullRegistry;
-import static com.netflix.eureka2.model.interest.Interests.forInstances;
-import static com.netflix.eureka2.model.interest.Interests.forSome;
+import static com.netflix.eureka2.model.interest.Interests.*;
 import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.*;
 
 /**
  * @author Nitesh Kant
  */
 public class RegistryIndexTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private InstanceInfoBuilder discoveryServerBuilder;
     private InstanceInfoBuilder zuulServerBuilder;
@@ -56,7 +45,7 @@ public class RegistryIndexTest {
     private InstanceInfo cliServer;
 
     private EurekaRegistry<InstanceInfo> registry;
-    private StdSource localSource;
+    private Source localSource;
 
     @Rule
     public final ExternalResource registryResource = new ExternalResource() {
@@ -72,7 +61,7 @@ public class RegistryIndexTest {
             cliServer = cliServerBuilder.build();
 
             registry = new EurekaRegistryImpl(EurekaRegistryMetricFactory.registryMetrics());
-            localSource = new StdSource(StdSource.Origin.LOCAL);
+            localSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL);
         }
 
         @Override
@@ -89,12 +78,12 @@ public class RegistryIndexTest {
         assertThat(notifications, hasSize(5));
         InstanceInfo newCliServer = cliServerBuilder.withStatus(InstanceInfo.Status.DOWN).build();
 
-        MatcherAssert.assertThat(notifications,  // Checks the order of notifications.
-                Matchers.contains(new ChangeNotification<>(Kind.Add, discoveryServer),
+        assertThat(notifications,  // Checks the order of notifications.
+                contains(new ChangeNotification<>(Kind.Add, discoveryServer),
                         new ChangeNotification<>(Kind.Add, zuulServer),
                         new ChangeNotification<>(Kind.Delete, discoveryServer),
                         new ChangeNotification<>(Kind.Add, cliServer),
-                        new ModifyNotification<>(newCliServer, ((StdInstanceInfo) newCliServer).diffOlder((StdInstanceInfo) cliServer))));
+                        new ModifyNotification<>(newCliServer, newCliServer.diffOlder(cliServer))));
     }
 
     @Test(timeout = 10000)

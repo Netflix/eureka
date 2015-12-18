@@ -31,7 +31,7 @@ import rx.subscriptions.BooleanSubscription;
 
 /**
  */
-public class GrpcEurekaServerTransportFactory implements EurekaServerTransportFactory {
+public class GrpcEurekaServerTransportFactory extends EurekaServerTransportFactory {
 
     @Override
     public Observable<ServerContext> connect(int port,

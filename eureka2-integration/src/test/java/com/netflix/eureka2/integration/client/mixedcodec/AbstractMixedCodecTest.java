@@ -2,12 +2,11 @@ package com.netflix.eureka2.integration.client.mixedcodec;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import rx.Observable;
 import rx.Subscription;
 
@@ -23,10 +22,6 @@ import static org.hamcrest.Matchers.is;
  * @author David Liu
  */
 public abstract class AbstractMixedCodecTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private final InstanceInfo registeringInfo = SampleInstanceInfo.CliServer.build();
 

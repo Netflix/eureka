@@ -1,9 +1,13 @@
 package com.netflix.eureka2.integration.server.replication;
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient.RegistrationStatus;
-import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -21,11 +25,6 @@ import rx.Observable;
 import rx.Subscription;
 import rx.subjects.BehaviorSubject;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import static com.netflix.eureka2.testkit.internal.rx.RxBlocking.iteratorFrom;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.*;
 import static com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource.anEurekaDeploymentResource;
@@ -39,10 +38,6 @@ import static org.hamcrest.Matchers.notNullValue;
  */
 @Category(IntegrationTest.class)
 public class WriteClusterReplicationTest {
-
-    static {
-        GrpcModelsInjector.injectGrpcModels();
-    }
 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource = anEurekaDeploymentResource(2, 0).build();

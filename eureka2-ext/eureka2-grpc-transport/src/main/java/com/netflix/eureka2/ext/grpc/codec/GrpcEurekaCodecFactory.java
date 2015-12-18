@@ -19,29 +19,21 @@ package com.netflix.eureka2.ext.grpc.codec;
 import com.netflix.eureka2.spi.codec.EurekaCodec;
 import com.netflix.eureka2.spi.codec.EurekaCodecFactory;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import static com.netflix.eureka2.ext.grpc.codec.GrpcEurekaCodec.SUPPORTED_TYPES;
 
 /**
  */
 public class GrpcEurekaCodecFactory extends EurekaCodecFactory {
 
-    private final Set<Class<?>> acceptTypes;
     private final GrpcEurekaCodec codec;
 
-    public GrpcEurekaCodecFactory(Class<?>... acceptTypes) {
-        this(new HashSet<>(Arrays.asList(acceptTypes)));
-    }
-
-    public GrpcEurekaCodecFactory(Set<Class<?>> acceptTypes) {
-        this.acceptTypes = acceptTypes;
-        this.codec = new GrpcEurekaCodec(acceptTypes);
+    public GrpcEurekaCodecFactory() {
+        this.codec = new GrpcEurekaCodec(SUPPORTED_TYPES);
     }
 
     @Override
     public <T> boolean accept(Class<T> type) {
-        return acceptTypes.contains(type);
+        return SUPPORTED_TYPES.contains(type);
     }
 
     @Override

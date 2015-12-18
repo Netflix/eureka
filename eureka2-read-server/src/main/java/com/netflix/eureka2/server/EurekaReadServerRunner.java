@@ -16,9 +16,9 @@
 
 package com.netflix.eureka2.server;
 
+import java.util.List;
+
 import com.google.inject.Module;
-import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
@@ -32,16 +32,10 @@ import netflix.adminresources.resources.KaryonWebAdminModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
 /**
  * @author Tomasz Bak
  */
 public class EurekaReadServerRunner extends EurekaServerRunner<EurekaReadServer> {
-
-    static {
-        GrpcModelsInjector.injectGrpcModels();
-    }
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaReadServerRunner.class);
     protected final EurekaServerConfig config;

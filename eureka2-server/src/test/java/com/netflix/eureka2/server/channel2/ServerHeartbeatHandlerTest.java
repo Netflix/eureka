@@ -16,7 +16,6 @@
 
 package com.netflix.eureka2.server.channel2;
 
-import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelHandler;
@@ -41,10 +40,6 @@ import static org.junit.Assert.assertThat;
 /**
  */
 public class ServerHeartbeatHandlerTest {
-
-    static {
-        GrpcModelsInjector.injectGrpcModels();
-    }
 
     private static final long HEARTBEAT_TIMEOUT = 3 * 30 * 1000;
 

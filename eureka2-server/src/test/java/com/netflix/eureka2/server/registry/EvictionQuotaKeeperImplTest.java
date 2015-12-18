@@ -3,8 +3,8 @@ package com.netflix.eureka2.server.registry;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.netflix.eureka2.config.EurekaRegistryConfig;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,8 +26,8 @@ public class EvictionQuotaKeeperImplTest {
     private static final int ALLOWED_PERCENTAGE_DROP = 20;
 
     private final EurekaRegistryConfig config = mock(EurekaRegistryConfig.class);
-    private final EurekaRegistrationProcessor<StdInstanceInfo> registrationProcessor = mock(EurekaRegistrationProcessor.class);
-    private final PublishSubject<ChangeNotification<StdInstanceInfo>> interestSubject = PublishSubject.create();
+    private final EurekaRegistrationProcessor<InstanceInfo> registrationProcessor = mock(EurekaRegistrationProcessor.class);
+    private final PublishSubject<ChangeNotification<InstanceInfo>> interestSubject = PublishSubject.create();
     private final QuotaSubscriber quotaSubscriber = new QuotaSubscriber();
     private final BehaviorSubject<Integer> sizeSubject = BehaviorSubject.create();
 
@@ -42,7 +42,7 @@ public class EvictionQuotaKeeperImplTest {
         evictionQuotaProvider.quota().subscribe(quotaSubscriber);
 
         // Emit buffer sentinel to mark end of available registry content
-        interestSubject.onNext(ChangeNotification.<StdInstanceInfo>bufferSentinel());
+        interestSubject.onNext(ChangeNotification.<InstanceInfo>bufferSentinel());
     }
 
     @After

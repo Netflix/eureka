@@ -16,15 +16,13 @@
 
 package com.netflix.eureka2.ext.grpc.model.instance;
 
+import java.util.*;
+
+import com.netflix.eureka2.ext.grpc.model.GrpcModelConverters;
 import com.netflix.eureka2.ext.grpc.model.GrpcObjectWrapper;
 import com.netflix.eureka2.ext.grpc.util.TextPrinter;
 import com.netflix.eureka2.grpc.Eureka2;
 import com.netflix.eureka2.model.instance.*;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  */
@@ -103,19 +101,19 @@ public class GrpcDeltaWrapper<ValueType> implements GrpcObjectWrapper<Eureka2.Gr
                 value = getGrpcObject().getDeltaValue().getAsg();
                 break;
             case DATACENTERINFO:
-                value = getGrpcObject().getDeltaValue().getDataCenterInfo();
+                value = GrpcModelConverters.toDataCenterInfo(getGrpcObject().getDeltaValue().getDataCenterInfo());
                 break;
             case HEALTHCHECKURLS:
-                value = getGrpcObject().getDeltaValue().getHealthCheckUrls();
+                value = new HashSet<String>(getGrpcObject().getDeltaValue().getHealthCheckUrls().getValuesList());
                 break;
             case HOMEPAGEURL:
                 value = getGrpcObject().getDeltaValue().getHomePageUrl();
                 break;
             case METADATA:
-                value = getGrpcObject().getDeltaValue().getMetaData();
+                value = new HashMap<>(getGrpcObject().getDeltaValue().getMetaData().getMetaData());
                 break;
             case PORTS:
-                value = getGrpcObject().getDeltaValue().getPorts();
+                value = GrpcServicePortWrapper.asServicePortSet(getGrpcObject().getDeltaValue().getPorts());
                 break;
             case SECUREVIPADDRESS:
                 value = getGrpcObject().getDeltaValue().getSecureVipAddress();

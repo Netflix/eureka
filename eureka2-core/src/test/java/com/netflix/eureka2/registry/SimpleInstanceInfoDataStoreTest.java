@@ -1,8 +1,8 @@
 package com.netflix.eureka2.registry;
 
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.metric.EurekaRegistryMetrics;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.model.notification.ChangeNotification;
@@ -19,16 +19,12 @@ import static org.mockito.Mockito.mock;
  */
 public class SimpleInstanceInfoDataStoreTest {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
     private final EurekaRegistryMetrics metrics = mock(EurekaRegistryMetrics.class);
     private final SimpleInstanceInfoDataStore dataStore = new SimpleInstanceInfoDataStore(metrics);
 
-    private final StdSource localSource = new StdSource(StdSource.Origin.LOCAL, "local");
-    private final StdSource remoteSource1 = new StdSource(StdSource.Origin.REPLICATED, "A");
-    private final StdSource remoteSource2 = new StdSource(StdSource.Origin.REPLICATED, "B");
+    private final Source localSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, "local");
+    private final Source remoteSource1 = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "A");
+    private final Source remoteSource2 = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "B");
 
     private final InstanceInfoBuilder templateA = SampleInstanceInfo.ZuulServer.builder().withId("A");
     private final InstanceInfoBuilder templateB = SampleInstanceInfo.WebServer.builder().withId("B");

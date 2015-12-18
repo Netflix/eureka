@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.junit.stubs.EurekaRegistrationClientStub;
@@ -13,7 +13,6 @@ import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
 import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xInstanceInfo;
-import static com.netflix.eureka2.model.instance.StdInstanceInfo.anInstanceInfo;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -22,10 +21,6 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 public class Eureka1RegistryProxyImplTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private static final InstanceInfo V2_SAMPLE_INSTANCE = SampleInstanceInfo.WebServer.build();
     private static final com.netflix.appinfo.InstanceInfo V1_SAMPLE_INSTANCE = toEureka1xInstanceInfo(V2_SAMPLE_INSTANCE);
@@ -50,7 +45,7 @@ public class Eureka1RegistryProxyImplTest {
         meta.put("keyA", "valueA");
         registryProxy.appendMeta(V1_SAMPLE_INSTANCE.getAppName(), V1_SAMPLE_INSTANCE.getId(), meta);
 
-        InstanceInfo v2InstanceWithMeta = anInstanceInfo()
+        InstanceInfo v2InstanceWithMeta = InstanceModel.getDefaultModel().newInstanceInfo()
                 .withInstanceInfo(V2_SAMPLE_INSTANCE)
                 .withMetaData(meta)
                 .build();

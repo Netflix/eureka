@@ -16,16 +16,34 @@
 
 package com.netflix.eureka2.spi.transport;
 
+import com.netflix.eureka2.internal.util.ExtLoader;
 import com.netflix.eureka2.model.Server;
-import com.netflix.eureka2.spi.channel.*;
+import com.netflix.eureka2.spi.channel.InterestHandler;
+import com.netflix.eureka2.spi.channel.RegistrationHandler;
+import com.netflix.eureka2.spi.channel.ReplicationHandler;
 
 /**
  */
-public interface EurekaClientTransportFactory {
+public abstract class EurekaClientTransportFactory {
 
-    RegistrationHandler newRegistrationClientTransport(Server eurekaServer);
+    private static volatile EurekaClientTransportFactory defaultFactory;
 
-    InterestHandler newInterestTransport(Server eurekaServer);
+    public abstract RegistrationHandler newRegistrationClientTransport(Server eurekaServer);
 
-    ReplicationHandler newReplicationTransport(Server eurekaServer);
+    public abstract InterestHandler newInterestTransport(Server eurekaServer);
+
+    public abstract ReplicationHandler newReplicationTransport(Server eurekaServer);
+
+    public static EurekaClientTransportFactory getDefaultFactory() {
+        if(defaultFactory == null) {
+            return ExtLoader.resolveDefaultClientTransportFactory();
+        }
+        return defaultFactory;
+    }
+
+    public static EurekaClientTransportFactory setDefaultFactory(EurekaClientTransportFactory newFactory) {
+        EurekaClientTransportFactory previous = defaultFactory;
+        defaultFactory = newFactory;
+        return previous;
+    }
 }

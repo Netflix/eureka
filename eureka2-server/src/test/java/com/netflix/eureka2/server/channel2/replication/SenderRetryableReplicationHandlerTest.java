@@ -16,7 +16,6 @@
 
 package com.netflix.eureka2.server.channel2.replication;
 
-import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
@@ -45,10 +44,6 @@ import static org.mockito.Mockito.when;
 /**
  */
 public class SenderRetryableReplicationHandlerTest {
-
-    static {
-        GrpcModelsInjector.injectGrpcModels();
-    }
 
     private static final ChangeNotification<InstanceInfo> CHANGE_NOTIFICATION = new ChangeNotification<>(ChangeNotification.Kind.Add, SampleInstanceInfo.Backend.build());
 

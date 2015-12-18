@@ -4,33 +4,25 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interest.Operator;
 import com.netflix.eureka2.model.interest.Interests;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.registry.SourcedRegistryMockResource;
-import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.junit.Rule;
 import org.junit.Test;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.equalToIgnoringCase;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
 /**
  * @author Tomasz Bak
  */
 public class Eureka2RegistryViewCacheTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private static final int APPLICATION_CLUSTER_SIZE = 3;
     private static final long REFRESH_INTERVAL = 30000;

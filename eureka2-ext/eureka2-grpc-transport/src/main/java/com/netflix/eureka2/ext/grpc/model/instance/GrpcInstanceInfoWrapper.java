@@ -16,13 +16,13 @@
 
 package com.netflix.eureka2.ext.grpc.model.instance;
 
+import java.util.*;
+
 import com.netflix.eureka2.ext.grpc.model.GrpcObjectWrapper;
 import com.netflix.eureka2.ext.grpc.util.TextPrinter;
 import com.netflix.eureka2.grpc.Eureka2;
 import com.netflix.eureka2.model.datacenter.DataCenterInfo;
 import com.netflix.eureka2.model.instance.*;
-
-import java.util.*;
 
 /**
  */
@@ -31,9 +31,8 @@ public class GrpcInstanceInfoWrapper implements InstanceInfo, GrpcObjectWrapper<
     private final Eureka2.GrpcInstanceInfo grpcInstanceInfo;
 
     private volatile Set<ServicePort> ports;
-    private volatile Set<String> healthCheckUrls;
+    private volatile HashSet<String> healthCheckUrls;
     private volatile DataCenterInfo dataCenterInfo;
-    private volatile List<ServiceEndpoint> serviceEndpoints;
 
     private GrpcInstanceInfoWrapper(Eureka2.GrpcInstanceInfo grpcInstanceInfo) {
         this.grpcInstanceInfo = grpcInstanceInfo;
@@ -100,7 +99,7 @@ public class GrpcInstanceInfoWrapper implements InstanceInfo, GrpcObjectWrapper<
     @Override
     public HashSet<String> getHealthCheckUrls() {
         if (healthCheckUrls != null || grpcInstanceInfo.getHealthCheckUrlsList() == null) {
-            return null;
+            return healthCheckUrls;
         }
         HashSet<String> healthCheckUrls = new HashSet<>(grpcInstanceInfo.getHealthCheckUrlsList().size());
         for (String healthCheckUrl : grpcInstanceInfo.getHealthCheckUrlsList()) {
@@ -252,6 +251,9 @@ public class GrpcInstanceInfoWrapper implements InstanceInfo, GrpcObjectWrapper<
             }
             if (dataCenterInfo != null) {
                 builder.setDataCenterInfo(((GrpcObjectWrapper<Eureka2.GrpcDataCenterInfo>) dataCenterInfo).getGrpcObject());
+            }
+            if(metaData != null) {
+                builder.putAllMetadata(metaData);
             }
 
             return asInstanceInfo(builder.build());

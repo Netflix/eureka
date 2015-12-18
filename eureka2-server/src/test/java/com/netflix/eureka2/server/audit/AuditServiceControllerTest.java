@@ -1,9 +1,8 @@
 package com.netflix.eureka2.server.audit;
 
 import com.google.inject.util.Providers;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
@@ -18,19 +17,12 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Tomasz Bak
  */
 public class AuditServiceControllerTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private static final InstanceInfo SELF_INFO = SampleInstanceInfo.EurekaWriteServer.build();
     private static final ChangeNotification<InstanceInfo> SOME_APP_ADD = SampleChangeNotification.DiscoveryAdd.newNotification();

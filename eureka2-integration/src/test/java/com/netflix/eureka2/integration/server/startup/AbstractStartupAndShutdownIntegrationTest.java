@@ -5,16 +5,15 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.server.EurekaServerRunner;
 import com.netflix.eureka2.server.resolver.ClusterAddress;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import com.netflix.eureka2.utils.Json;
 import io.netty.buffer.ByteBuf;
@@ -41,10 +40,6 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 public abstract class AbstractStartupAndShutdownIntegrationTest<RUNNER extends EurekaServerRunner<?>> {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractStartupAndShutdownIntegrationTest.class);
 

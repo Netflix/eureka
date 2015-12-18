@@ -9,16 +9,15 @@ import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.eureka1.rest.Eureka1RestApiReadModule;
 import com.netflix.eureka2.eureka1.rest.Eureka1RestApiWriteModule;
 import com.netflix.eureka2.eureka1.rest.config.Eureka1Configuration;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.interest.Interest;
-import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.junit.resources.Eureka1ClientResource;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources;
@@ -45,10 +44,6 @@ import static org.junit.Assert.fail;
  */
 @Category({IntegrationTest.class, LongRunningTest.class})
 public class Eureka1RestApiIntegrationTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private static final String EUREKA1_CLIENT_FILE = "sample-eureka1-client.properties";
     private static final String MY_APP_NAME = "myapp";

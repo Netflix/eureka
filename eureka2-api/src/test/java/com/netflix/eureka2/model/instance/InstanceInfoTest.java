@@ -18,7 +18,7 @@ package com.netflix.eureka2.model.instance;
 
 import java.util.Set;
 
-import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
@@ -33,15 +33,11 @@ import static org.hamcrest.Matchers.nullValue;
  */
 public class InstanceInfoTest {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
-    @Test(timeout = 60000)
+    @Test
     public void testApplyDelta() throws Exception {
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
 
-        Delta delta = new StdDelta.Builder()
+        Delta delta = InstanceModel.getDefaultModel().newDelta()
                 .withId(instanceInfo.getId())
                 .withDelta(InstanceInfoField.STATUS, InstanceInfo.Status.OUT_OF_SERVICE)
                 .build();
@@ -50,7 +46,7 @@ public class InstanceInfoTest {
         assertThat(afterDelta.getStatus(), equalTo(InstanceInfo.Status.OUT_OF_SERVICE));
     }
 
-    @Test(timeout = 60000)
+    @Test
     public void testProduceNullDeltasIfMismatchedIds() throws Exception {
         InstanceInfo oldInstanceInfo = SampleInstanceInfo.DiscoveryServer.build();
         InstanceInfo newInstanceInfo = SampleInstanceInfo.ZuulServer.build();  // different id
@@ -59,7 +55,7 @@ public class InstanceInfoTest {
         assertThat(deltas, nullValue());
     }
 
-    @Test(timeout = 60000)
+    @Test
     public void testProduceSetOfDeltas() throws Exception {
         InstanceInfo oldInstanceInfo = SampleInstanceInfo.DiscoveryServer.build();
         Thread.sleep(2);  // let time elapse a bit for version timestamp to advance

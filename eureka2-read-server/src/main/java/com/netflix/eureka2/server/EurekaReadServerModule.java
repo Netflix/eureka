@@ -16,11 +16,11 @@
 
 package com.netflix.eureka2.server;
 
+import javax.inject.Singleton;
+
 import com.google.inject.Provides;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.ext.grpc.transport.client.GrpcEurekaClientTransportFactory;
-import com.netflix.eureka2.ext.grpc.transport.server.GrpcEurekaServerTransportFactory;
 import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.server.config.EurekaInstanceInfoConfig;
 import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
@@ -36,8 +36,6 @@ import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
 import com.netflix.eureka2.spi.transport.EurekaServerTransportFactory;
 import rx.schedulers.Schedulers;
 
-import javax.inject.Singleton;
-
 /**
  * @author Tomasz Bak
  */
@@ -50,8 +48,8 @@ public class EurekaReadServerModule extends AbstractEurekaServerModule {
         bindSelfInfo();
         bindClients();
 
-        bind(EurekaClientTransportFactory.class).toInstance(new GrpcEurekaClientTransportFactory("ReadServerClient"));
-        bind(EurekaServerTransportFactory.class).toInstance(new GrpcEurekaServerTransportFactory());
+        bind(EurekaClientTransportFactory.class).toInstance(EurekaClientTransportFactory.getDefaultFactory());
+        bind(EurekaServerTransportFactory.class).toInstance(EurekaServerTransportFactory.getDefaultFactory());
 
         bindInterestComponents();
 

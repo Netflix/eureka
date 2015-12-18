@@ -8,15 +8,9 @@ import java.util.HashSet;
 import java.util.Map;
 
 import com.netflix.eureka2.codec.jackson.JacksonEurekaCodecFactory;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.instance.Delta;
-import com.netflix.eureka2.model.instance.DeltaBuilder;
+import com.netflix.eureka2.model.instance.*;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
-import com.netflix.eureka2.model.instance.InstanceInfoField;
-import com.netflix.eureka2.model.instance.ServicePort;
-import com.netflix.eureka2.model.instance.StdDelta;
 import com.netflix.eureka2.model.instance.StdDelta.Builder;
-import com.netflix.eureka2.model.instance.StdServicePort;
 import com.netflix.eureka2.spi.codec.EurekaCodec;
 import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
 import org.junit.Test;
@@ -27,11 +21,7 @@ import static org.junit.Assert.assertThat;
 
 public class DeltaSerializationTest {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
-    private final EurekaCodec eurekaCodec = new JacksonEurekaCodecFactory(StdDelta.class).getCodec();
+    private final EurekaCodec eurekaCodec = new JacksonEurekaCodecFactory().getCodec();
     private final DeltaBuilder deltaBuilder = new Builder().withId("id1");
 
     @Test

@@ -21,7 +21,6 @@ import com.netflix.eureka2.config.BasicEurekaRegistryConfig;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
-import com.netflix.eureka2.ext.grpc.transport.client.GrpcEurekaClientTransportFactory;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
 import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
@@ -97,7 +96,7 @@ abstract class AbstractClientBuilder<CLIENT, T extends AbstractClientBuilder<CLI
         }
 
         if (transportFactory == null) {
-            transportFactory = new GrpcEurekaClientTransportFactory(clientId == null ? "anonymous" : clientId);
+            transportFactory = EurekaClientTransportFactory.getDefaultFactory();
         }
 
         if (registryConfig == null) {

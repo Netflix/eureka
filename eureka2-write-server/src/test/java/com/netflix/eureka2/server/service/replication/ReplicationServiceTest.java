@@ -16,7 +16,8 @@
 
 package com.netflix.eureka2.server.service.replication;
 
-import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
+import java.util.Map;
+
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.Source;
@@ -37,8 +38,6 @@ import rx.Subscription;
 import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 
-import java.util.Map;
-
 import static com.netflix.eureka2.metric.server.WriteServerMetricFactory.writeServerMetrics;
 import static com.netflix.eureka2.server.config.bean.WriteServerConfigBean.aWriteServerConfig;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -52,10 +51,6 @@ import static org.mockito.Mockito.when;
  * @author Tomasz Bak
  */
 public class ReplicationServiceTest {
-
-    static {
-        GrpcModelsInjector.injectGrpcModels();
-    }
 
     private static final InstanceInfo SELF_INFO = SampleInstanceInfo.DiscoveryServer.build();
 

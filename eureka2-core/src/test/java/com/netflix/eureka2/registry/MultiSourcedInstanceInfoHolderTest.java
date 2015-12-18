@@ -1,7 +1,7 @@
 package com.netflix.eureka2.registry;
 
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.model.notification.ChangeNotification;
@@ -10,24 +10,16 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.*;
 
 /**
  * @author David Liu
  */
 public class MultiSourcedInstanceInfoHolderTest {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
-    private final StdSource localSource = new StdSource(StdSource.Origin.LOCAL);
+    private final Source localSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL);
     private final InstanceInfoBuilder builder = SampleInstanceInfo.DiscoveryServer.builder();
 
     InstanceInfo firstInfo = builder.withStatus(InstanceInfo.Status.STARTING).build();
@@ -74,7 +66,7 @@ public class MultiSourcedInstanceInfoHolderTest {
         injectFirst();
 
         InstanceInfo secondInfo = builder.withStatus(InstanceInfo.Status.UP).build();
-        StdSource newLocalSource = new StdSource(localSource.getOrigin(), localSource.getName());
+        Source newLocalSource = InstanceModel.getDefaultModel().createSource(localSource.getOrigin(), localSource.getName());
         notifications = holder.update(newLocalSource, secondInfo);
 
         assertThat(holder.size(), equalTo(1));
@@ -91,7 +83,7 @@ public class MultiSourcedInstanceInfoHolderTest {
 
         InstanceInfo secondInfo = builder.withStatus(InstanceInfo.Status.UP).build();
 
-        StdSource fooSource = new StdSource(StdSource.Origin.REPLICATED, "foo");
+        Source fooSource = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "foo");
         notifications = holder.update(fooSource, secondInfo);
 
         assertThat(holder.size(), equalTo(2));
@@ -111,7 +103,7 @@ public class MultiSourcedInstanceInfoHolderTest {
 
     @Test
     public void testUpdateDifferentSourcesPromoteLocal() throws Exception {
-        StdSource fooSource = new StdSource(StdSource.Origin.REPLICATED, "foo");
+        Source fooSource = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "foo");
 
         notifications = holder.update(fooSource, firstInfo);
         assertThat(notifications.length, is(1));
@@ -167,7 +159,7 @@ public class MultiSourcedInstanceInfoHolderTest {
     public void testRemoveExistingSourceWithDifferentId() throws Exception {
         injectFirst();
 
-        StdSource newLocalSource = new StdSource(localSource.getOrigin(), localSource.getName());
+        Source newLocalSource = InstanceModel.getDefaultModel().createSource(localSource.getOrigin(), localSource.getName());
         notifications = holder.remove(newLocalSource);
 
         assertThat(holder.size(), equalTo(1));
@@ -182,7 +174,7 @@ public class MultiSourcedInstanceInfoHolderTest {
         injectFirst();
 
         // Add non-snapshot copy
-        StdSource fooSource = new StdSource(StdSource.Origin.REPLICATED, "foo");
+        Source fooSource = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "foo");
         notifications = holder.update(fooSource, secondInfo);
 
         assertThat(holder.size(), equalTo(2));
@@ -204,7 +196,7 @@ public class MultiSourcedInstanceInfoHolderTest {
         injectFirst();
 
         // Add second
-        StdSource fooSource = new StdSource(StdSource.Origin.REPLICATED, "foo");
+        Source fooSource = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "foo");
         notifications = holder.update(fooSource, secondInfo);
 
         assertThat(holder.size(), equalTo(2));

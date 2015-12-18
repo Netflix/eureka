@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.spi.model;
 
+import com.netflix.eureka2.internal.util.ExtLoader;
 import com.netflix.eureka2.model.Source;
 
 /**
@@ -33,6 +34,9 @@ public abstract class TransportModel {
     public abstract ServerHello newServerHello(Source serverSource);
 
     public static TransportModel getDefaultModel() {
+        if(defaultModel == null) {
+            return ExtLoader.resolveDefaultModel().getTransportModel();
+        }
         return defaultModel;
     }
 

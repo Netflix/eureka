@@ -34,7 +34,7 @@ import java.util.Set;
  */
 public class GrpcEurekaCodec extends EurekaCodec {
 
-    private static final Set<Class<?>> SUPPORTED_TYPES = new HashSet<>(Arrays.asList(
+    static final Set<Class<?>> SUPPORTED_TYPES = new HashSet<>(Arrays.asList(
             GrpcInstanceInfoWrapper.class,
             GrpcDeltaWrapper.class
     ));

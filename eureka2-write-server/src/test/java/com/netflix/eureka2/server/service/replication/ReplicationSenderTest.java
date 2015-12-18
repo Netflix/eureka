@@ -13,8 +13,8 @@ import com.netflix.eureka2.channel.TestSenderReplicationChannel;
 import com.netflix.eureka2.channel.TestSenderReplicationChannel.ReplicationItem;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
@@ -43,31 +43,21 @@ import rx.schedulers.TestScheduler;
 import rx.subjects.ReplaySubject;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author David Liu
  */
 public class ReplicationSenderTest {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
     private static final int RETRY_WAIT_MILLIS = 10;
 
     private static final InstanceInfo SELF_INFO = SampleInstanceInfo.DiscoveryServer.build();
     private static final InstanceInfo REMOTE_INFO = SampleInstanceInfo.DiscoveryServer.build();
-    private static final StdSource REPLICATION_SOURCE = new StdSource(StdSource.Origin.REPLICATED, REMOTE_INFO.getId(), 0);
+    private static final Source REPLICATION_SOURCE = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, REMOTE_INFO.getId(), 0);
     private static final ReplicationHelloReply HELLO_REPLY = ProtocolModel.getDefaultModel().newReplicationHelloReply(REPLICATION_SOURCE, true);
     private ReplicationHello hello;
 
@@ -77,7 +67,7 @@ public class ReplicationSenderTest {
 
     private final EurekaRegistry<InstanceInfo> registry =
             new EurekaRegistryImpl(new IndexRegistryImpl<InstanceInfo>(), EurekaRegistryMetricFactory.registryMetrics(), testScheduler);
-    private final StdSource localSource = new StdSource(StdSource.Origin.LOCAL);
+    private final Source localSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL);
 
     private ReplaySubject<ChangeNotification<InstanceInfo>> localContentSubject;
     private Subscriber<Void> localContentSubscriber;
@@ -116,7 +106,7 @@ public class ReplicationSenderTest {
         registry.connect(localSource, localContentSubject).subscribe(localContentSubscriber);
         testScheduler.triggerActions();
 
-        StdSource senderSource = new StdSource(StdSource.Origin.REPLICATED, SELF_INFO.getId(), 0);
+        Source senderSource = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, SELF_INFO.getId(), 0);
         hello = ProtocolModel.getDefaultModel().newReplicationHello(senderSource, registry.size());
     }
 

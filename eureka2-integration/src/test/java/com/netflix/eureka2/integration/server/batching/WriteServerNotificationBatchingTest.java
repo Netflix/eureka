@@ -2,18 +2,13 @@ package com.netflix.eureka2.integration.server.batching;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.functions.InterestFunctions;
-import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.integration.EurekaDeploymentClients;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.protocol.StdProtocolModel;
-import com.netflix.eureka2.spi.protocol.ProtocolModel;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
-import com.netflix.eureka2.transport.EurekaTransports;
-import com.netflix.eureka2.transport.StdEurekaTransportFactory;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,12 +27,6 @@ import static org.hamcrest.Matchers.is;
  */
 @Category(IntegrationTest.class)
 public class WriteServerNotificationBatchingTest {
-
-    static {
-        GrpcModelsInjector.injectGrpcModels();
-        EurekaTransports.setTransportFactory(new StdEurekaTransportFactory());
-        ProtocolModel.setDefaultModel(StdProtocolModel.getStdModel());
-    }
 
     private static final int CLUSTER_SIZE = 50;
 

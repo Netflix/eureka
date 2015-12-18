@@ -1,5 +1,9 @@
 package com.netflix.eureka2.testkit.embedded.server;
 
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.Provides;
@@ -7,9 +11,9 @@ import com.google.inject.util.Modules;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.Eurekas;
+import com.netflix.eureka2.client.interest.FullFetchInterestClient2;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
-import com.netflix.eureka2.ext.grpc.transport.client.GrpcEurekaClientTransportFactory;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -22,7 +26,6 @@ import com.netflix.eureka2.server.EurekaReadServerModule;
 import com.netflix.eureka2.server.config.EurekaInstanceInfoConfig;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
-import com.netflix.eureka2.client.interest.FullFetchInterestClient2;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
@@ -36,10 +39,6 @@ import com.netflix.governator.Governator;
 import com.netflix.governator.LifecycleInjector;
 import com.netflix.governator.auto.ModuleListProviders;
 import rx.schedulers.Schedulers;
-
-import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.List;
 
 import static com.netflix.eureka2.metric.EurekaRegistryMetricFactory.registryMetrics;
 import static com.netflix.eureka2.server.config.ServerConfigurationNames.DEFAULT_CONFIG_PREFIX;
@@ -78,7 +77,7 @@ public class EmbeddedReadServerBuilder extends EmbeddedServerBuilder<EurekaServe
         EurekaRegistry<InstanceInfo> registry = new EurekaRegistryImpl(registryMetrics());
 
         Source clientSource = InstanceModel.getDefaultModel().createSource(Source.Origin.INTERESTED, serverId);
-        EurekaClientTransportFactory transportFactory = new GrpcEurekaClientTransportFactory(clientSource.getName());
+        EurekaClientTransportFactory transportFactory = EurekaClientTransportFactory.getDefaultFactory();
         EurekaInterestClient interestClient = new FullFetchInterestClient2(
                 clientSource, registrationResolver, transportFactory, transportConfig, registry, RETRY_DELAYS_MS, Schedulers.computation()
         );

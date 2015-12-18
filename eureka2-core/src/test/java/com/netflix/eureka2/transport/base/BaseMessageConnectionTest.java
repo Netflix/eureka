@@ -10,11 +10,9 @@ import java.util.concurrent.TimeoutException;
 import com.netflix.eureka2.codec.SampleObject;
 import com.netflix.eureka2.codec.jackson.JacksonEurekaCodecFactory;
 import com.netflix.eureka2.metric.MessageConnectionMetrics;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.protocol.StdAcknowledgement;
+import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.internal.rx.RxBlocking;
-import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.transport.EurekaPipelineConfigurator;
 import com.netflix.eureka2.transport.codec.EurekaCodecWrapperFactory;
 import io.netty.handler.logging.LogLevel;
@@ -34,23 +32,14 @@ import rx.observers.TestSubscriber;
 import static com.netflix.eureka2.codec.SampleObject.CONTENT;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Tomasz Bak
  */
 public class BaseMessageConnectionTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private EurekaPipelineConfigurator codecPipeline;
 
@@ -64,7 +53,7 @@ public class BaseMessageConnectionTest {
 
     @Before
     public void setUp() throws Exception {
-        codecPipeline = new EurekaPipelineConfigurator(new EurekaCodecWrapperFactory(new JacksonEurekaCodecFactory(SampleObject.class, StdAcknowledgement.class)));
+        codecPipeline = new EurekaPipelineConfigurator(new EurekaCodecWrapperFactory(new JacksonEurekaCodecFactory()));
         setupServerAndClient();
     }
 

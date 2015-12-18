@@ -19,12 +19,11 @@ package com.netflix.eureka2.client.transport;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.transport.tcp.TcpRegistrationClient;
 import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
-import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.spi.protocol.ProtocolModel;
 import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -42,18 +41,12 @@ import rx.Observable;
 import rx.functions.Func1;
 
 import static com.netflix.eureka2.metric.client.EurekaClientMetricFactory.clientMetrics;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
  * @author Tomasz Bak
  */
 public class ResolverBasedTransportClientTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     RxServer<Object, Object> server;
 

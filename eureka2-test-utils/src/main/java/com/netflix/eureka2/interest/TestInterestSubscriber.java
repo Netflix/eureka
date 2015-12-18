@@ -1,8 +1,8 @@
 package com.netflix.eureka2.interest;
 
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -14,17 +14,17 @@ import static org.junit.Assert.assertThat;
  *
  * @author Tomasz Bak
  */
-public class TestInterestSubscriber extends ExtTestSubscriber<ChangeNotification<StdInstanceInfo>> {
+public class TestInterestSubscriber extends ExtTestSubscriber<ChangeNotification<InstanceInfo>> {
 
     @SafeVarargs
-    public final void assertReceives(ChangeNotification<StdInstanceInfo>... dataNotifications) {
-        for (ChangeNotification<StdInstanceInfo> n : dataNotifications) {
+    public final void assertReceives(ChangeNotification<InstanceInfo>... dataNotifications) {
+        for (ChangeNotification<InstanceInfo> n : dataNotifications) {
             assertThat(takeNextOrFail(), is(equalTo(n)));
         }
     }
 
     @SafeVarargs
-    public final void assertReceivesBatch(ChangeNotification<StdInstanceInfo>... dataNotifications) {
+    public final void assertReceivesBatch(ChangeNotification<InstanceInfo>... dataNotifications) {
         assertReceives(dataNotifications);
         assertThat(takeNextOrFail().getKind(), is(equalTo(Kind.BufferSentinel)));
     }

@@ -26,12 +26,12 @@ import com.netflix.eureka2.transport.StdEurekaTransportFactory;
 /**
  * Inject standard models in test.
  */
-public final class StdModelsInjector {
+public final class StdTransportInjector {
 
-    private StdModelsInjector() {
+    private StdTransportInjector() {
     }
 
-    public static void injectStdModels() {
+    public static void inject() {
         InterestModel.setDefaultModel(StdInterestModel.getStdModel());
         InstanceModel.setDefaultModel(StdInstanceModel.getStdModel());
         InterestModel.setDefaultModel(StdInterestModel.getStdModel());

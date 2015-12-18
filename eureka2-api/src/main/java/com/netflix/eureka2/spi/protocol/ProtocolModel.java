@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.spi.protocol;
 
+import com.netflix.eureka2.internal.util.ExtLoader;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.Delta;
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -65,6 +66,9 @@ public abstract class ProtocolModel {
     public abstract UnregisterInterestSet newUnregisterInterestSet();
 
     public static ProtocolModel getDefaultModel() {
+        if(defaultModel == null) {
+            return ExtLoader.resolveDefaultModel().getProtocolModel();
+        }
         return defaultModel;
     }
 

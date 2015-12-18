@@ -5,14 +5,13 @@ import java.util.concurrent.TimeUnit;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.eureka1.bridge.config.Eureka1BridgeConfiguration;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
-import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.metric.server.BridgeServerMetricFactory;
-import com.netflix.eureka2.registry.EurekaRegistryRegistrationStub;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source.SourceMatcher;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.registry.EurekaRegistryRegistrationStub;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.After;
 import org.junit.Before;
@@ -22,25 +21,17 @@ import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
 import static com.netflix.eureka2.eureka1.bridge.config.bean.Eureka1BridgeConfigurationBean.anEureka1BridgeConfiguration;
-import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xApplicationsFromV2Collection;
-import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka1xInstanceInfo;
-import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.toEureka2xInstanceInfo;
+import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.*;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Tomasz Bak
  */
 public class Eureka1BridgeTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private static final long REFRESH_INTERVAL = 30;
 
@@ -69,7 +60,7 @@ public class Eureka1BridgeTest {
     @Test
     public void testNewInstancesAreAddedToRegistry() throws Exception {
         InstanceInfo firstInstance = SampleInstanceInfo.WebServer.builder().build();
-        InstanceInfo update = new StdInstanceInfo.Builder().withInstanceInfo(firstInstance).withStatus(InstanceInfo.Status.OUT_OF_SERVICE).build();
+        InstanceInfo update = InstanceModel.getDefaultModel().newInstanceInfo().withInstanceInfo(firstInstance).withStatus(InstanceInfo.Status.OUT_OF_SERVICE).build();
         when(discoveryClient.getApplications())
                 .thenReturn(toEureka1xApplicationsFromV2Collection(firstInstance))
                 .thenReturn(toEureka1xApplicationsFromV2Collection(update));

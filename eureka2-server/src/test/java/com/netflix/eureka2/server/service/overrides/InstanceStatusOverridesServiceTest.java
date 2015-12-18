@@ -1,11 +1,10 @@
 package com.netflix.eureka2.server.service.overrides;
 
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Source.Origin;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
-import com.netflix.eureka2.model.instance.StdInstanceInfo.Builder;
 import com.netflix.eureka2.registry.ChangeNotificationObservable;
 import com.netflix.eureka2.registry.EurekaRegistrationProcessorStub;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -17,14 +16,10 @@ import org.junit.Test;
  */
 public class InstanceStatusOverridesServiceTest {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
     private static final InstanceInfo FIRST_INSTANCE_INFO = SampleInstanceInfo.WebServer.builder()
             .withStatus(Status.UP).build();
 
-    private static final StdSource SOURCE = new StdSource(Origin.LOCAL, "connection#1");
+    private static final Source SOURCE = InstanceModel.getDefaultModel().createSource(Origin.LOCAL, "connection#1");
 
     private final EurekaRegistrationProcessorStub registrationDelegate = new EurekaRegistrationProcessorStub();
     private final InMemoryStatusOverridesRegistry overridesSource = new InMemoryStatusOverridesRegistry();
@@ -45,7 +40,7 @@ public class InstanceStatusOverridesServiceTest {
         registrationDelegate.verifyRegisteredWith(FIRST_INSTANCE_INFO);
 
         // Now update
-        InstanceInfo update = new Builder().withInstanceInfo(FIRST_INSTANCE_INFO).withStatus(Status.DOWN).build();
+        InstanceInfo update = InstanceModel.getDefaultModel().newInstanceInfo().withInstanceInfo(FIRST_INSTANCE_INFO).withStatus(Status.DOWN).build();
         dataStream.register(update);
         registrationDelegate.verifyRegisteredWith(update);
 
@@ -56,8 +51,8 @@ public class InstanceStatusOverridesServiceTest {
 
     @Test
     public void testRegistrationEmitsUpdatesWhenOverridesChange() throws Exception {
-        InstanceInfo setOOS = new Builder().withInstanceInfo(FIRST_INSTANCE_INFO).withStatus(Status.OUT_OF_SERVICE).build();
-        InstanceInfo unsetOOS = new Builder().withInstanceInfo(FIRST_INSTANCE_INFO).withStatus(Status.UP).build();
+        InstanceInfo setOOS = InstanceModel.getDefaultModel().newInstanceInfo().withInstanceInfo(FIRST_INSTANCE_INFO).withStatus(Status.OUT_OF_SERVICE).build();
+        InstanceInfo unsetOOS = InstanceModel.getDefaultModel().newInstanceInfo().withInstanceInfo(FIRST_INSTANCE_INFO).withStatus(Status.UP).build();
 
         // First registration
         dataStream.register(FIRST_INSTANCE_INFO);

@@ -1,10 +1,17 @@
 package com.netflix.eureka2.integration;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient.RegistrationStatus;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import org.slf4j.Logger;
@@ -16,13 +23,6 @@ import rx.Subscription;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
 
@@ -155,7 +155,7 @@ public class IntegrationTestClient {
                 .map(new Func1<Integer, InstanceInfo>() {
                     @Override
                     public InstanceInfo call(Integer integer) {
-                        return new StdInstanceInfo.Builder()
+                        return InstanceModel.getDefaultModel().newInstanceInfo()
                                 .withId(appName)
                                 .withApp(appName)
                                 .withAsg("asg_" + integer)

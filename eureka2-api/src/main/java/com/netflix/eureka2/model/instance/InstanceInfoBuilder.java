@@ -16,10 +16,7 @@
 
 package com.netflix.eureka2.model.instance;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 
 import com.netflix.eureka2.model.datacenter.DataCenterInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
@@ -109,7 +106,7 @@ public abstract class InstanceInfoBuilder {
         return this;
     }
 
-    public InstanceInfoBuilder withPorts(HashSet<ServicePort> ports) {
+    public InstanceInfoBuilder withPorts(Set<ServicePort> ports) {
         if (ports == null || ports.isEmpty()) {
             this.ports = null;
         } else {

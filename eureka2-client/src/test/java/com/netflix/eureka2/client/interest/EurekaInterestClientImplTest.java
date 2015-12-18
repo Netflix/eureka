@@ -15,15 +15,14 @@ import com.netflix.eureka2.client.channel.ClientInterestChannel;
 import com.netflix.eureka2.client.channel.InterestChannelFactory;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.InterestChannelMetrics;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.InterestModel;
 import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
-import com.netflix.eureka2.model.interest.StdFullRegistryInterest;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.interest.MultipleInterests;
+import com.netflix.eureka2.model.interest.StdFullRegistryInterest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.EurekaRegistryImpl;
@@ -50,25 +49,16 @@ import rx.subjects.ReplaySubject;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotificationOf;
 import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author David Liu
  */
 public class EurekaInterestClientImplTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private static final int RETRY_WAIT_MILLIS = 10;
     public static final int FAILING_CHANNEL_FAILURE_DELAY_MS = 10;
@@ -266,7 +256,7 @@ public class EurekaInterestClientImplTest {
 
         newSubscriber.assertContainsInAnyOrder(expected);
 
-        InstanceInfo update = new StdInstanceInfo.Builder().withInstanceInfo(discoveryInfos.get(0))
+        InstanceInfo update = InstanceModel.getDefaultModel().newInstanceInfo().withInstanceInfo(discoveryInfos.get(0))
                 .withStatus(InstanceInfo.Status.OUT_OF_SERVICE)
                 .build();
 

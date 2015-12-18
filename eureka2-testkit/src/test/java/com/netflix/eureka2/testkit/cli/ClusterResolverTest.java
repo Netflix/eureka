@@ -2,11 +2,10 @@ package com.netflix.eureka2.testkit.cli;
 
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.cli.bootstrap.ClusterResolver;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import org.junit.Rule;
 import org.junit.Test;
@@ -14,19 +13,13 @@ import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
 import static com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource.anEurekaDeploymentResource;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
 /**
  * @author Tomasz Bak
  */
 public class ClusterResolverTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     @Rule
     public final EurekaDeploymentResource deploymentResource = anEurekaDeploymentResource(1, 1).build();

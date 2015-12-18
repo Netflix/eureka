@@ -3,9 +3,8 @@ package com.netflix.eureka2.testkit.cli.command.session;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.testkit.cli.Command;
 import com.netflix.eureka2.testkit.cli.Context;
@@ -79,7 +78,7 @@ public class SearchCommand extends Command {
             this.pattern = pattern;
         }
 
-        boolean matches(StdInstanceInfo ii) {
+        boolean matches(InstanceInfo ii) {
             return matches(
                     ii.getId(),
                     ii.getApp(),

@@ -18,7 +18,6 @@ package com.netflix.eureka2.client.interest;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.EurekaTransportConfig;
-import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.Source;
@@ -58,10 +57,6 @@ import static org.mockito.Mockito.when;
  * FIXME This test code is identical to EurekaInterestClientImpl2Test. Move FullFetchInterestClient2 and EurekaInterestClientImpl2 to common package and reuse test code
  */
 public class FullFetchInterestClient2Test {
-
-    static {
-        GrpcModelsInjector.injectGrpcModels();
-    }
 
     private static final long RETRY_DELAY_MS = 1000;
 

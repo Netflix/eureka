@@ -26,20 +26,12 @@ import com.netflix.eureka2.spi.channel.ReplicationHandler;
 import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * For each client connection a new stub is created, as the stub holds information about a particular
  * client session.
  */
-public class GrpcEurekaClientTransportFactory implements EurekaClientTransportFactory {
-
-    private static final Logger logger = LoggerFactory.getLogger(GrpcEurekaClientTransportFactory.class);
-
-    // FIXME clientId not used
-    public GrpcEurekaClientTransportFactory(String clientId) {
-    }
+public class GrpcEurekaClientTransportFactory extends EurekaClientTransportFactory {
 
     @Override
     public RegistrationHandler newRegistrationClientTransport(Server eurekaServer) {

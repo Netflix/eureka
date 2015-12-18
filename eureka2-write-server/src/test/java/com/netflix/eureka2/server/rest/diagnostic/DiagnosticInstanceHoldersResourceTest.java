@@ -2,9 +2,9 @@ package com.netflix.eureka2.server.rest.diagnostic;
 
 import javax.ws.rs.core.MediaType;
 
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Source.Origin;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.MultiSourcedDataHolder;
@@ -35,10 +35,6 @@ import static org.mockito.Mockito.when;
  */
 public class DiagnosticInstanceHoldersResourceTest {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
     private final EurekaHttpServer httpServer = new EurekaHttpServer(anEurekaServerTransportConfig().withHttpPort(0).build());
 
     private static final InstanceInfo WEB_INSTANCE = SampleInstanceInfo.WebServer.build();
@@ -46,14 +42,14 @@ public class DiagnosticInstanceHoldersResourceTest {
 
     private static final MultiSourcedDataHolder<InstanceInfo> WEB_SERVER_HOLDER = buildOf(
             WEB_INSTANCE,
-            new StdSource(Origin.LOCAL, "source1", 1),
-            new StdSource(Origin.REPLICATED, "source2", 2)
+            InstanceModel.getDefaultModel().createSource(Origin.LOCAL, "source1", 1),
+            InstanceModel.getDefaultModel().createSource(Origin.REPLICATED, "source2", 2)
     );
     private static final MultiSourcedDataHolder<InstanceInfo> BACKEND_SERVER_HOLDER = buildOf(
             BACKEND_INSTANCE,
-            new StdSource(Origin.LOCAL, "source3", 1),
-            new StdSource(Origin.REPLICATED, "source4", 2),
-            new StdSource(Origin.REPLICATED, "source5", 3)
+            InstanceModel.getDefaultModel().createSource(Origin.LOCAL, "source3", 1),
+            InstanceModel.getDefaultModel().createSource(Origin.REPLICATED, "source4", 2),
+            InstanceModel.getDefaultModel().createSource(Origin.REPLICATED, "source5", 3)
     );
 
     private DiagnosticInstanceHoldersResource resource;
@@ -131,12 +127,12 @@ public class DiagnosticInstanceHoldersResourceTest {
         return HttpResponseUtils.handleGetRequest(httpServer.serverPort(), request, MediaType.APPLICATION_JSON_TYPE);
     }
 
-    private static MultiSourcedDataHolder<InstanceInfo> buildOf(InstanceInfo instanceInfo, StdSource... sources) {
+    private static MultiSourcedDataHolder<InstanceInfo> buildOf(InstanceInfo instanceInfo, Source... sources) {
         MultiSourcedDataHolder<InstanceInfo> holder = new MultiSourcedInstanceInfoHolder(
                 instanceInfo.getId(),
                 registryMetrics().getEurekaServerRegistryMetrics()
         );
-        for (StdSource source : sources) {
+        for (Source source : sources) {
             holder.update(source, instanceInfo);
         }
         return holder;

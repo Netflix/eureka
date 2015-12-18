@@ -16,12 +16,13 @@
 
 package com.netflix.eureka2.server;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import com.google.inject.Provider;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
-import com.netflix.eureka2.ext.grpc.transport.client.GrpcEurekaClientTransportFactory;
-import com.netflix.eureka2.ext.grpc.transport.server.GrpcEurekaServerTransportFactory;
 import com.netflix.eureka2.metric.server.SpectatorWriteServerMetricFactory;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
 import com.netflix.eureka2.registry.EurekaRegistry;
@@ -50,10 +51,6 @@ import com.netflix.eureka2.spi.transport.EurekaServerTransportFactory;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
 import rx.schedulers.Schedulers;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
 
 import static com.netflix.eureka2.Names.REGISTRATION;
 
@@ -97,8 +94,8 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
                 .annotatedWith(Names.named(com.netflix.eureka2.Names.REGISTRATION))
                 .toInstance(new SpectatorEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
 //        bind(TcpRegistrationServer.class).asEagerSingleton();
-        bind(EurekaClientTransportFactory.class).toInstance(new GrpcEurekaClientTransportFactory("WriteServerClient"));
-        bind(EurekaServerTransportFactory.class).toInstance(new GrpcEurekaServerTransportFactory());
+        bind(EurekaClientTransportFactory.class).toInstance(EurekaClientTransportFactory.getDefaultFactory());
+        bind(EurekaServerTransportFactory.class).toInstance(EurekaServerTransportFactory.getDefaultFactory());
         bind(AuditServiceController.class).asEagerSingleton();
 
         bind(EurekaRegistrationProcessor.class).to(PreservableRegistrationProcessor.class).in(Scopes.SINGLETON);

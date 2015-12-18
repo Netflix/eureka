@@ -16,7 +16,6 @@
 
 package com.netflix.eureka2.server.channel2.registration;
 
-import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -43,10 +42,6 @@ import static org.junit.Assert.assertThat;
 /**
  */
 public class RegistrationProcessorBridgeHandlerTest {
-
-    static {
-        GrpcModelsInjector.injectGrpcModels();
-    }
 
     private static final InstanceInfo INSTANCE = SampleInstanceInfo.Backend.build();
     private static final Source CLIENT_SOURCE = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, "testClient");

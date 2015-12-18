@@ -16,7 +16,6 @@
 
 package com.netflix.eureka2.server.channel2.interest;
 
-import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
@@ -39,10 +38,6 @@ import static org.mockito.Mockito.*;
 /**
  */
 public class InterestMultiplexerBridgeHandlerTest {
-
-    static {
-        GrpcModelsInjector.injectGrpcModels();
-    }
 
     private final EurekaRegistryView<InstanceInfo> registry = mock(EurekaRegistryView.class);
 

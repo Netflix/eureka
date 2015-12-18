@@ -7,7 +7,8 @@ import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.server.WriteServerMetricFactory;
-import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
@@ -31,9 +32,7 @@ import rx.subjects.ReplaySubject;
 
 import static com.netflix.eureka2.server.config.bean.WriteServerConfigBean.aWriteServerConfig;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author David Liu
@@ -137,11 +136,11 @@ public class ReplicationBatchHintsIntegrationTest extends AbstractBatchHintsInte
         ReceiverReplicationChannel channel2 = handler.doHandle(channelSet2.connection);
         channel2.asLifecycleObservable().subscribe();
 
-        StdSource senderSource1 = new StdSource(StdSource.Origin.REPLICATED, "removeServer1", 0);
+        Source senderSource1 = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "removeServer1", 0);
         channelSet1.incomingSubject.onNext(ProtocolModel.getDefaultModel().newReplicationHello(senderSource1, data1Size));  // subtract the buffer markers
         remoteData1.concatWith(Observable.<InterestSetNotification>never()).subscribe(channelSet1.incomingSubject);
 
-        StdSource senderSource2 = new StdSource(StdSource.Origin.REPLICATED, "removeServer2", 0);
+        Source senderSource2 = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "removeServer2", 0);
         channelSet2.incomingSubject.onNext(ProtocolModel.getDefaultModel().newReplicationHello(senderSource2, data2Size));
         remoteData2.concatWith(Observable.<InterestSetNotification>never()).subscribe(channelSet2.incomingSubject);
 
@@ -154,7 +153,7 @@ public class ReplicationBatchHintsIntegrationTest extends AbstractBatchHintsInte
         ReceiverReplicationChannel channel3 = handler.doHandle(channelSet3.connection);
         channel3.asLifecycleObservable().subscribe();
 
-        StdSource senderSource3 = new StdSource(StdSource.Origin.REPLICATED, "removeServer2", 1);
+        Source senderSource3 = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "removeServer2", 1);
         channelSet3.incomingSubject.onNext(ProtocolModel.getDefaultModel().newReplicationHello(senderSource3, data2Size));
         // test an unclean channel, where we received 1 less from data2 and also did not see the bufferEnd
         // this should mean the last entry from data2 is still marked as from source2 and there are no eviction.
@@ -170,7 +169,7 @@ public class ReplicationBatchHintsIntegrationTest extends AbstractBatchHintsInte
         ReceiverReplicationChannel channel4 = handler.doHandle(channelSet4.connection);
         channel4.asLifecycleObservable().subscribe();
 
-        StdSource senderSource4 = new StdSource(StdSource.Origin.REPLICATED, "removeServer2", 2);
+        Source senderSource4 = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "removeServer2", 2);
         channelSet4.incomingSubject.onNext(ProtocolModel.getDefaultModel().newReplicationHello(senderSource4, data2Size));
         // test data difference in the channel, where we received 2 less from data2 BUT we also saw a bufferEnd
         // this should mean content from data2 is 2 less from the original list and all other source types are evicted

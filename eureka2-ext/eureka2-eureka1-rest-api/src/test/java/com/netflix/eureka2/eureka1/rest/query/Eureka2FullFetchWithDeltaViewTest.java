@@ -5,11 +5,10 @@ import java.util.concurrent.TimeUnit;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka2.eureka1.rest.query.Eureka2FullFetchWithDeltaView.RegistryFetch;
-import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.registry.EurekaRegistry;
@@ -22,10 +21,7 @@ import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.equalToIgnoringCase;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 
@@ -33,10 +29,6 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 public class Eureka2FullFetchWithDeltaViewTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private static final int APPLICATION_CLUSTER_SIZE = 3;
     private static final long REFRESH_INTERVAL = 30000;
@@ -132,7 +124,7 @@ public class Eureka2FullFetchWithDeltaViewTest {
         latestCopy();
 
         // Second batch
-        InstanceInfo secondInstance = new StdInstanceInfo.Builder().withInstanceInfo(firstInstance).withAppGroup("new_app_group").build();
+        InstanceInfo secondInstance = InstanceModel.getDefaultModel().newInstanceInfo().withInstanceInfo(firstInstance).withAppGroup("new_app_group").build();
         registryMockResource.uploadBatchToRegistry(appInterest, secondInstance);
 
         testScheduler.advanceTimeBy(REFRESH_INTERVAL, TimeUnit.MILLISECONDS);

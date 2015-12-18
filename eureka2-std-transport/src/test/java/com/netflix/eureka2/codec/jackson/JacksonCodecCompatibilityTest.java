@@ -27,7 +27,7 @@ import org.junit.BeforeClass;
 public class JacksonCodecCompatibilityTest extends EurekaCodecCompatibilityTest {
 
     public JacksonCodecCompatibilityTest() {
-        super(new JacksonEurekaCodecFactory(StdEurekaTransportFactory.REGISTRATION_PROTOCOL_MODEL_SET));
+        super(new JacksonEurekaCodecFactory());
     }
 
     @BeforeClass

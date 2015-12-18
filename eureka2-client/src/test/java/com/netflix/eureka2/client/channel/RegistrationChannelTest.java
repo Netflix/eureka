@@ -6,10 +6,8 @@ import java.util.concurrent.TimeUnit;
 import com.netflix.eureka2.channel.RegistrationChannel;
 import com.netflix.eureka2.channel.RegistrationChannel.STATE;
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.spi.protocol.ProtocolModel;
 import com.netflix.eureka2.spi.transport.EurekaConnection;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -24,13 +22,7 @@ import rx.Subscriber;
 import rx.subjects.ReplaySubject;
 
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.anyObject;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * Client side registration channel test
@@ -38,10 +30,6 @@ import static org.mockito.Mockito.when;
  * @author David Liu
  */
 public class RegistrationChannelTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private final RegistrationChannelMetrics channelMetrics = mock(RegistrationChannelMetrics.class);
 
@@ -57,9 +45,9 @@ public class RegistrationChannelTest {
     public void setUp() {
         InstanceInfoBuilder seed = SampleInstanceInfo.DiscoveryServer.builder().withId("id").withApp("app");
 
-        instanceStarting = seed.withStatus(StdInstanceInfo.Status.STARTING).build();
-        instanceUp = seed.withStatus(StdInstanceInfo.Status.UP).build();
-        instanceDown = seed.withStatus(StdInstanceInfo.Status.DOWN).build();
+        instanceStarting = seed.withStatus(InstanceInfo.Status.STARTING).build();
+        instanceUp = seed.withStatus(InstanceInfo.Status.UP).build();
+        instanceDown = seed.withStatus(InstanceInfo.Status.DOWN).build();
 
         final ReplaySubject<Void> connectionLifecycle = ReplaySubject.create();
         messageConnection = mock(EurekaConnection.class);

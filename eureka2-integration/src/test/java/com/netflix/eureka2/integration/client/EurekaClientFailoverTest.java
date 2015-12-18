@@ -4,19 +4,18 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.interest.Interest.Operator;
-import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
+import com.netflix.eureka2.model.interest.Interest.Operator;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedReadCluster;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import com.netflix.eureka2.testkit.netrouter.NetworkLink;
 import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
@@ -43,14 +42,10 @@ import static org.junit.Assert.fail;
 @Category({IntegrationTest.class, LongRunningTest.class})
 public class EurekaClientFailoverTest {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
     private static final Logger logger = LoggerFactory.getLogger(EurekaClientFailoverTest.class);
 
     private static final InstanceInfo INSTANCE_UP = SampleInstanceInfo.WebServer.build();
-    private static final InstanceInfo INSTANCE_DOWN = new StdInstanceInfo.Builder().withInstanceInfo(INSTANCE_UP).withStatus(Status.DOWN).build();
+    private static final InstanceInfo INSTANCE_DOWN = InstanceModel.getDefaultModel().newInstanceInfo().withInstanceInfo(INSTANCE_UP).withStatus(Status.DOWN).build();
 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource =

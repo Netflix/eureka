@@ -16,12 +16,10 @@
 
 package com.netflix.eureka2.client.channel2.interest;
 
-import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.ChannelPipeline;
 import com.netflix.eureka2.spi.channel.InterestHandler;
@@ -32,7 +30,6 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.subjects.PublishSubject;
 
-import static com.netflix.eureka2.client.channel2.ChannelTestkit.CLIENT_HELLO;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -42,10 +39,6 @@ import static org.mockito.Mockito.*;
 /**
  */
 public class DisconnectingOnEmptyInterestHandlerTest {
-
-    static {
-        GrpcModelsInjector.injectGrpcModels();
-    }
 
     private final DisconnectingOnEmptyInterestHandler handler = new DisconnectingOnEmptyInterestHandler();
 

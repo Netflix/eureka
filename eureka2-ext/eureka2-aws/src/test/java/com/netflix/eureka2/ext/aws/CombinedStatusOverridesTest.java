@@ -6,10 +6,9 @@ import com.amazonaws.services.autoscaling.AmazonAutoScaling;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.netflix.eureka2.aws.MockAutoScalingService;
 import com.netflix.eureka2.aws.MockS3Service;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.registry.ChangeNotificationObservable;
 import com.netflix.eureka2.registry.EurekaRegistrationProcessorStub;
 import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
@@ -36,21 +35,17 @@ import static org.mockito.Mockito.when;
  */
 public class CombinedStatusOverridesTest {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
     private static final long REFRESH_INTERVAL_SEC = 30;
 
     private static final InstanceInfo SEED = SampleInstanceInfo.WebServer.builder()
             .withStatus(InstanceInfo.Status.UP).build();
 
-    private static final InstanceInfo IS_OOS = new StdInstanceInfo.Builder()
+    private static final InstanceInfo IS_OOS = InstanceModel.getDefaultModel().newInstanceInfo()
             .withInstanceInfo(SEED).withStatus(InstanceInfo.Status.OUT_OF_SERVICE).build();
-    private static final InstanceInfo NOT_OOS = new StdInstanceInfo.Builder()
+    private static final InstanceInfo NOT_OOS = InstanceModel.getDefaultModel().newInstanceInfo()
             .withInstanceInfo(SEED).withStatus(InstanceInfo.Status.UP).build();
 
-    private static final StdSource SOURCE = new StdSource(StdSource.Origin.LOCAL, "connection#1");
+    private static final Source SOURCE = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, "connection#1");
 
     private final SelfInfoResolver selfInfoResolver = new SelfInfoResolver() {
         @Override

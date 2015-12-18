@@ -17,7 +17,6 @@
 package com.netflix.eureka2.server.channel2.replication;
 
 import com.netflix.eureka2.channel2.SourceIdGenerator;
-import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
@@ -39,10 +38,6 @@ import static org.mockito.Mockito.mock;
 /**
  */
 public class SenderReplicationHandshakeHandlerTest {
-
-    static {
-        GrpcModelsInjector.injectGrpcModels();
-    }
 
     private final EurekaRegistry<InstanceInfo> eurekaRegistry = mock(EurekaRegistry.class);
     private final SenderReplicationHandshakeHandler handler = new SenderReplicationHandshakeHandler(CLIENT_SOURCE, new SourceIdGenerator(), eurekaRegistry);

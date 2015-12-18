@@ -7,14 +7,10 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.model.InstanceModel;
-import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.datacenter.DataCenterInfo;
 import com.netflix.eureka2.model.datacenter.LocalDataCenterInfo;
-import com.netflix.eureka2.model.instance.DeltaBuilder;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.InstanceInfoField;
-import com.netflix.eureka2.model.instance.ServicePort;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
+import com.netflix.eureka2.model.instance.*;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.spi.protocol.ProtocolModel;
@@ -123,7 +119,7 @@ public abstract class TransportCompatibilityTestSuite {
         }
 
         private void handshakeTest() {
-            StdSource source = new StdSource(StdSource.Origin.REPLICATED, "testId", 0);
+            Source source = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "testId", 0);
             runClientToServerWithAck(ProtocolModel.getDefaultModel().newReplicationHello(source, 1));
             runClientToServerWithAck(ProtocolModel.getDefaultModel().newReplicationHelloReply(source, true));
         }
@@ -139,7 +135,7 @@ public abstract class TransportCompatibilityTestSuite {
             HashSet<ServicePort> ports = new HashSet<>();
             ports.add(null);
 
-            InstanceInfo emptyInstanceInfo = new StdInstanceInfo.Builder()
+            InstanceInfo emptyInstanceInfo = InstanceModel.getDefaultModel().newInstanceInfo()
                     .withId("id#empty")
                     .withPorts(ports)
                     .withHealthCheckUrls(healthCheckUrls)

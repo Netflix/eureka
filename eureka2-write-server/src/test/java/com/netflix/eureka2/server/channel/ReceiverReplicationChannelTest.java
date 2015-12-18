@@ -20,11 +20,10 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.channel.ReplicationChannel.STATE;
 import com.netflix.eureka2.metric.server.ReplicationChannelMetrics;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Sourced;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
@@ -48,12 +47,7 @@ import rx.subjects.ReplaySubject;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyObject;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author David Liu
@@ -74,7 +68,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
 
     // Argument captors
     private final ArgumentCaptor<InstanceInfo> infoCaptor = ArgumentCaptor.forClass(InstanceInfo.class);
-    private final ArgumentCaptor<StdSource> sourceCaptor = ArgumentCaptor.forClass(StdSource.class);
+    private final ArgumentCaptor<Source> sourceCaptor = ArgumentCaptor.forClass(Source.class);
 
     @Before
     public void setUp() throws Exception {
@@ -86,7 +80,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         when(SelfIdentityService.resolve()).thenReturn(Observable.just(RECEIVER_INFO));
 
         final ReplaySubject<ChangeNotification<InstanceInfo>> dataSubject = ReplaySubject.create();
-        when(registry.connect(any(StdSource.class), any(Observable.class))).thenAnswer(new Answer<Observable<Void>>() {
+        when(registry.connect(any(Source.class), any(Observable.class))).thenAnswer(new Answer<Observable<Void>>() {
             @Override
             public Observable<Void> answer(InvocationOnMock invocation) throws Throwable {
                 Observable<ChangeNotification<InstanceInfo>> dataStream = (Observable<ChangeNotification<InstanceInfo>>) invocation.getArguments()[1];
@@ -95,7 +89,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
                 return Observable.never();
             }
         });
-        when(registry.forInterest(any(Interest.class), any(StdSource.SourceMatcher.class))).thenAnswer(new Answer<Observable<ChangeNotification<InstanceInfo>>>() {
+        when(registry.forInterest(any(Interest.class), any(Source.SourceMatcher.class))).thenAnswer(new Answer<Observable<ChangeNotification<InstanceInfo>>>() {
             @Override
             public Observable<ChangeNotification<InstanceInfo>> answer(InvocationOnMock invocation) throws Throwable {
                 return dataSubject;
@@ -140,7 +134,7 @@ public class ReceiverReplicationChannelTest extends AbstractReplicationChannelTe
         assertThat(notification.getData(), is(APP_INFO));
 
         // Now update the record
-        InstanceInfo infoUpdate = new StdInstanceInfo.Builder().withInstanceInfo(APP_INFO).withApp("myNewName").build();
+        InstanceInfo infoUpdate = InstanceModel.getDefaultModel().newInstanceInfo().withInstanceInfo(APP_INFO).withApp("myNewName").build();
         incomingSubject.onNext(ProtocolModel.getDefaultModel().newAddInstance(infoUpdate));
 
         notification = dataSubscriber.takeNext(2, TimeUnit.SECONDS);

@@ -16,10 +16,12 @@
 
 package com.netflix.eureka2.client.registration;
 
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
 import com.netflix.eureka2.client.EurekaRegistrationClient.RegistrationStatus;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.EurekaTransportConfig;
-import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.Source;
@@ -39,9 +41,6 @@ import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -52,10 +51,6 @@ import static org.mockito.Mockito.when;
 /**
  */
 public class EurekaRegistrationClientImpl2Test {
-
-    static {
-        GrpcModelsInjector.injectGrpcModels();
-    }
 
     private static final InstanceInfo INSTANCE = SampleInstanceInfo.Backend.build();
 

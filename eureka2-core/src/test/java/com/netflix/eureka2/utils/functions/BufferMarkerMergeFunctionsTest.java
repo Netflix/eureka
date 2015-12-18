@@ -2,13 +2,12 @@ package com.netflix.eureka2.utils.functions;
 
 import java.util.List;
 
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.interest.Interest;
-import com.netflix.eureka2.model.interest.Interests;
-import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Sourced;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.SourcedStreamStateNotification;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
@@ -22,19 +21,12 @@ import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 
 /**
  * @author David Liu
  */
 public class BufferMarkerMergeFunctionsTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private final TestScheduler testScheduler = Schedulers.test();
 
@@ -47,10 +39,10 @@ public class BufferMarkerMergeFunctionsTest {
     public void testMergeDiffSources() throws Exception {
         Interest<InstanceInfo> finalInterest = Interests.forFullRegistry();
 
-        StdSource sourceA = new StdSource(StdSource.Origin.LOCAL, "local");
-        StdSource sourceB = new StdSource(StdSource.Origin.REPLICATED, "rep1", 1);
-        StdSource sourceC = new StdSource(StdSource.Origin.REPLICATED, "rep1", 2);
-        StdSource sourceD = new StdSource(StdSource.Origin.REPLICATED, "rep2", 3);
+        Source sourceA = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, "local");
+        Source sourceB = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "rep1", 1);
+        Source sourceC = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "rep1", 2);
+        Source sourceD = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "rep2", 3);
 
         ChangeNotification<InstanceInfo> bufferStartA = SourcedStreamStateNotification.bufferStartNotification(finalInterest, sourceA);
         ChangeNotification<InstanceInfo> bufferEndA = SourcedStreamStateNotification.bufferEndNotification(finalInterest, sourceA);

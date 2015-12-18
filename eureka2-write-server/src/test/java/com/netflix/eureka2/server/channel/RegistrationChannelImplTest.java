@@ -4,11 +4,10 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.metric.RegistrationChannelMetrics;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
-import com.netflix.eureka2.model.instance.StdInstanceInfo.Builder;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.spi.protocol.ProtocolModel;
@@ -29,10 +28,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * server side registration channel test
@@ -40,10 +36,6 @@ import static org.mockito.Mockito.when;
  * @author David Liu
  */
 public class RegistrationChannelImplTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private final PublishSubject<Void> transportLifeCycle = PublishSubject.create();
     private final PublishSubject<Object> incomingSubject = PublishSubject.create();
@@ -58,7 +50,7 @@ public class RegistrationChannelImplTest {
 
     @Before
     public void setUp() {
-        InstanceInfoBuilder seed = new Builder().withId("id").withApp("app");
+        InstanceInfoBuilder seed = InstanceModel.getDefaultModel().newInstanceInfo().withId("id").withApp("app");
 
         registerInfo = seed.withStatus(InstanceInfo.Status.STARTING).build();
         update1Info = seed.withStatus(InstanceInfo.Status.UP).build();
@@ -72,7 +64,7 @@ public class RegistrationChannelImplTest {
         when(transport.onError(any(Throwable.class))).thenReturn(Observable.<Void>empty());
 
         EurekaRegistrationProcessor<InstanceInfo> registrationProcessor = mock(EurekaRegistrationProcessor.class);
-        when(registrationProcessor.connect(anyString(), any(StdSource.class), any(Observable.class))).thenAnswer(new Answer<Observable<Void>>() {
+        when(registrationProcessor.connect(anyString(), any(Source.class), any(Observable.class))).thenAnswer(new Answer<Observable<Void>>() {
             @Override
             public Observable<Void> answer(InvocationOnMock invocation) throws Throwable {
                 Observable<ChangeNotification<InstanceInfo>> dataStream = (Observable<ChangeNotification<InstanceInfo>>) invocation.getArguments()[2];

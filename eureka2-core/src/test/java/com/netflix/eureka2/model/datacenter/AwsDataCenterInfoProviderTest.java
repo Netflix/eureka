@@ -23,7 +23,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.netflix.eureka2.model.InstanceModel;
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
 import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import io.netty.buffer.ByteBuf;
@@ -47,10 +46,6 @@ import static org.junit.Assert.assertSame;
  * @author Tomasz Bak
  */
 public class AwsDataCenterInfoProviderTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private static final Pattern URI_RE = Pattern.compile("^http[s]?://[^:]+(:[\\d]*)([^?]*).*");
 

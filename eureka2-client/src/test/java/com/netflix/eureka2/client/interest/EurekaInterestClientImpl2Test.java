@@ -18,7 +18,6 @@ package com.netflix.eureka2.client.interest;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.EurekaTransportConfig;
-import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.Source;
@@ -26,7 +25,6 @@ import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.model.notification.SourcedChangeNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
@@ -56,10 +54,6 @@ import static org.mockito.Mockito.*;
 /**
  */
 public class EurekaInterestClientImpl2Test {
-
-    static {
-        GrpcModelsInjector.injectGrpcModels();
-    }
 
     private static final long RETRY_DELAY_MS = 1000;
 

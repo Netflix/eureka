@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.netflix.eureka2.model.InstanceModel;
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
@@ -38,10 +37,6 @@ import static org.hamcrest.Matchers.not;
  */
 public class DeltaTest {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
     InstanceInfo original;
     InstanceInfoBuilder instanceInfoBuilder;
 
@@ -51,12 +46,12 @@ public class DeltaTest {
         @Override
         protected void before() throws Throwable {
             original = SampleInstanceInfo.DiscoveryServer.build();
-            instanceInfoBuilder = new StdInstanceInfo.Builder().withInstanceInfo(original);
+            instanceInfoBuilder = InstanceModel.getDefaultModel().newInstanceInfo().withInstanceInfo(original);
         }
 
     };
 
-    @Test(timeout = 60000)
+    @Test
     public void testSettingFieldOnInstanceInfo_HashSetInt() throws Exception {
         Set<ServicePort> newPorts = SampleServicePort.httpPorts();
         Delta<?> delta = InstanceModel.getDefaultModel().newDelta()
@@ -71,7 +66,7 @@ public class DeltaTest {
         assertThat(instanceInfo.getId(), equalTo(original.getId()));
     }
 
-    @Test(timeout = 60000)
+    @Test
     public void testSettingFieldOnInstanceInfo_HashSetString() throws Exception {
         HashSet<String> newHealthCheckUrls = ExtCollections.asSet("http://foo", "http://bar");
         Delta<?> delta = new StdDelta.Builder()
@@ -86,7 +81,7 @@ public class DeltaTest {
         assertThat(instanceInfo.getId(), equalTo(original.getId()));
     }
 
-    @Test(timeout = 60000)
+    @Test
     public void testSettingFieldOnInstanceInfo_String() throws Exception {
         String newHomepage = "http://something.random.net";
         Delta<?> delta = new StdDelta.Builder()
@@ -101,9 +96,9 @@ public class DeltaTest {
         assertThat(instanceInfo.getId(), equalTo(original.getId()));
     }
 
-    @Test(timeout = 60000)
+    @Test
     public void testSettingFieldOnInstanceInfo_InstanceStatus() throws Exception {
-        Status newStatus = StdInstanceInfo.Status.OUT_OF_SERVICE;
+        Status newStatus = InstanceInfo.Status.OUT_OF_SERVICE;
         Delta<?> delta = new StdDelta.Builder()
                 .withId(original.getId())
                 .withDelta(InstanceInfoField.STATUS, newStatus)

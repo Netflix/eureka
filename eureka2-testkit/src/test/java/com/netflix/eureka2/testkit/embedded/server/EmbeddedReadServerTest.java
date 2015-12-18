@@ -6,11 +6,9 @@ import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient.RegistrationStatus;
 import com.netflix.eureka2.client.Eurekas;
-import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.junit.resources.ReadServerResource;
@@ -29,10 +27,6 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 public class EmbeddedReadServerTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     public final WriteServerResource writeServerResource = new WriteServerResource();
 

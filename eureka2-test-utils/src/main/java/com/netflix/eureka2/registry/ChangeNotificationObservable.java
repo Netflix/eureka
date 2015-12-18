@@ -1,7 +1,7 @@
 package com.netflix.eureka2.registry;
 
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +48,7 @@ public class ChangeNotificationObservable extends Observable<ChangeNotification<
     }
 
     public void unregister(String id) {
-        InstanceInfo idOnlyInstanceInfo = new StdInstanceInfo.Builder()
+        InstanceInfo idOnlyInstanceInfo = InstanceModel.getDefaultModel().newInstanceInfo()
                 .withId(id)
                 .build();
         unregister(idOnlyInstanceInfo);

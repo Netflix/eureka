@@ -3,13 +3,12 @@ package com.netflix.eureka2.server.service.bootstrap;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.model.Server;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import org.junit.Before;
 import org.junit.Rule;
@@ -27,10 +26,6 @@ import static org.junit.Assert.assertThat;
  * @author Tomasz Bak
  */
 public class LightEurekaInterestClientTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     @Rule
     public EurekaDeploymentResource deploymentResource = anEurekaDeploymentResource(1, 0).build();

@@ -1,13 +1,13 @@
 package com.netflix.eureka2.server.service.bootstrap;
 
-import com.netflix.eureka2.model.Server;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.interest.Interest;
-import com.netflix.eureka2.model.interest.Interests;
-import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Server;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Source.Origin;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
@@ -35,13 +35,9 @@ import static org.mockito.Mockito.when;
  */
 public class BackupClusterBootstrapServiceTest {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
     private static final InstanceInfo INSTANCE = SampleInstanceInfo.WebServer.build();
     private static final ChangeNotification<InstanceInfo> INSTANCE_ADD_CHANGE = new ChangeNotification<>(Kind.Add, INSTANCE);
-    private static final StdSource SOURCE = new StdSource(Origin.BOOTSTRAP, "test");
+    private static final Source SOURCE = InstanceModel.getDefaultModel().createSource(Origin.BOOTSTRAP, "test");
 
     private static final Observable<ChangeNotification<InstanceInfo>> FOR_INTEREST_REPLY = Observable.just(
             StreamStateNotification.bufferStartNotification(Interests.forFullRegistry()),

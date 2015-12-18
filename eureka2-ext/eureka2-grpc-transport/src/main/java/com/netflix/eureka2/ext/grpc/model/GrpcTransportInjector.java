@@ -24,12 +24,12 @@ import com.netflix.eureka2.spi.model.TransportModel;
 
 /**
  */
-public final class GrpcModelsInjector {
+public final class GrpcTransportInjector {
 
-    private GrpcModelsInjector() {
+    private GrpcTransportInjector() {
     }
 
-    public static void injectGrpcModels() {
+    public static void inject() {
         InterestModel.setDefaultModel(GrpcInterestModel.getGrpcModel());
         InstanceModel.setDefaultModel(GrpcInstanceModel.getGrpcModel());
         TransportModel.setDefaultModel(GrpcTransportModel.getGrpcModel());

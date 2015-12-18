@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.model.InterestModel;
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.Delta;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
@@ -53,10 +52,6 @@ import static org.mockito.Mockito.when;
  */
 @RunWith(MockitoJUnitRunner.class)
 public class InterestNotificationMultiplexerTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     @Mock
     private EurekaRegistry<InstanceInfo> registryMock;

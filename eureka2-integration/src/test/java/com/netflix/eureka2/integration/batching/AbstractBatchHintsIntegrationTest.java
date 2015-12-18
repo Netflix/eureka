@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.List;
 
 import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
@@ -24,10 +23,6 @@ import static org.hamcrest.Matchers.is;
  * @author David Liu
  */
 public abstract class AbstractBatchHintsIntegrationTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     //
     // ----- helpers -----

@@ -74,9 +74,9 @@ public class StdEurekaTransportFactory implements EurekaTransportFactory {
      * func methods for creating protocol specific codecs
      */
 
-    static final EurekaCodecFactory REGISTRATION_CODEC_FACTORY = new JacksonEurekaCodecFactory(REGISTRATION_PROTOCOL_MODEL_SET);
-    static final EurekaCodecFactory REPLICATION_CODEC_FACTORY = new JacksonEurekaCodecFactory(REPLICATION_PROTOCOL_MODEL_SET);
-    static final EurekaCodecFactory INTEREST_CODEC_FACTORY = new JacksonEurekaCodecFactory(INTEREST_PROTOCOL_MODEL_SET);
+    static final EurekaCodecFactory REGISTRATION_CODEC_FACTORY = new JacksonEurekaCodecFactory();
+    static final EurekaCodecFactory REPLICATION_CODEC_FACTORY = new JacksonEurekaCodecFactory();
+    static final EurekaCodecFactory INTEREST_CODEC_FACTORY = new JacksonEurekaCodecFactory();
 
     @Override
     public PipelineConfigurator<Object, Object> registrationPipeline() {

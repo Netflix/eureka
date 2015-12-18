@@ -16,7 +16,10 @@
 
 package com.netflix.eureka2.server.channel2.replication;
 
-import com.netflix.eureka2.ext.grpc.model.GrpcModelsInjector;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.netflix.eureka2.channel2.ChannelHandlers;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -24,7 +27,6 @@ import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.channel2.ChannelHandlers;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
@@ -32,9 +34,6 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 import rx.subjects.PublishSubject;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
@@ -45,10 +44,6 @@ import static org.mockito.Mockito.when;
 /**
  */
 public class ReceiverReplicationHandlerTest {
-
-    static {
-        GrpcModelsInjector.injectGrpcModels();
-    }
 
     private final Source clientSource = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "testReplicationClient");
 

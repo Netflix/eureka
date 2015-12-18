@@ -3,7 +3,8 @@ package com.netflix.eureka2.channel;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.spi.protocol.replication.ReplicationHello;
@@ -74,8 +75,8 @@ public class TestSenderReplicationChannel extends TestChannel<ReplicationChannel
     }
 
     @Override
-    public StdSource getSource() {
-        return new StdSource(StdSource.Origin.REPLICATED, "test");
+    public Source getSource() {
+        return InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "test");
     }
 
     public static class ReplicationItem {
