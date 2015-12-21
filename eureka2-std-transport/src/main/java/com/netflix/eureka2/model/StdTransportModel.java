@@ -14,48 +14,49 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.ext.grpc.model;
+package com.netflix.eureka2.model;
 
-import com.netflix.eureka2.ext.grpc.model.transport.*;
-import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.transport.*;
+import com.netflix.eureka2.protocol.common.StdHeartbeat;
 import com.netflix.eureka2.spi.model.*;
 
 /**
  */
-public class GrpcTransportModel extends TransportModel {
-    private static final TransportModel INSTANCE = new GrpcTransportModel();
+public class StdTransportModel extends TransportModel {
+
+    private static final TransportModel INSTANCE = new StdTransportModel();
 
     @Override
     public Heartbeat creatHeartbeat() {
-        return HeartbeatImpl.getInstance();
+        return StdHeartbeat.INSTANCE;
     }
 
     @Override
     public Acknowledgement createAcknowledgement() {
-        throw new IllegalStateException("not implemented yet");
+        return StdAcknowledgement.INSTANCE;
     }
 
     @Override
     public ClientHello newClientHello(Source clientSource) {
-        return GrpcClientHelloWrapper.newClientHello(clientSource);
+        return new StdClientHello(clientSource);
     }
 
     @Override
     public ReplicationClientHello newReplicationClientHello(Source clientSource, int registrySize) {
-        return GrpcReplicationClientHelloWrapper.newClientHello(clientSource, registrySize);
+        return new StdReplicationClientHello(clientSource, registrySize);
     }
 
     @Override
     public ServerHello newServerHello(Source serverSource) {
-        return GrpcServerHelloWrapper.newServerHello(serverSource);
+        return new StdServerHello(serverSource);
     }
 
     @Override
     public ReplicationServerHello newReplicationServerHello(Source serverSource) {
-        return GrpcReplicationServerHelloWrapper.newServerHello(serverSource);
+        return new StdReplicationServerHello(serverSource);
     }
 
-    public static TransportModel getGrpcModel() {
+    public static TransportModel getStdModel() {
         return INSTANCE;
     }
 }

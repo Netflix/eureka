@@ -19,4 +19,6 @@ package com.netflix.eureka2.spi.model;
 /**
  */
 public interface ReplicationClientHello extends ClientHello {
+
+    int getRegistrySize();
 }

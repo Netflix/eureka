@@ -36,6 +36,11 @@ public class GrpcReplicationClientHelloWrapper implements GrpcObjectWrapper<Eure
     }
 
     @Override
+    public int getRegistrySize() {
+        return grpcClientHello.getRegistrySize();
+    }
+
+    @Override
     public Source getClientSource() {
         if (clientSource == null) {
             clientSource = GrpcSourceWrapper.asSource(grpcClientHello.getClientSource());

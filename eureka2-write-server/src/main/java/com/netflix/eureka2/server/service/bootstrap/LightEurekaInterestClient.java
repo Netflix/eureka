@@ -136,8 +136,9 @@ public class LightEurekaInterestClient {
             return new ChangeNotification<>(Kind.Add, ((AddInstance) message).getInstanceInfo());
         }
         if (message instanceof UpdateInstanceInfo) {
-            InstanceInfo instanceInfo = InstanceModel.getDefaultModel().newInstanceInfo().withId(((UpdateInstanceInfo) message).getDelta().getId()).build();
-            return new ChangeNotification<>(Kind.Modify, instanceInfo);
+//            InstanceInfo instanceInfo = InstanceModel.getDefaultModel().newInstanceInfo().withId(((UpdateInstanceInfo) message).getDelta().getId()).build();
+//            return new ChangeNotification<>(Kind.Modify, instanceInfo);
+            throw new IllegalStateException("Implementation update required");
         }
         if (message instanceof DeleteInstance) {
             InstanceInfo instanceInfo = InstanceModel.getDefaultModel().newInstanceInfo().withId(((DeleteInstance) message).getInstanceId()).build();

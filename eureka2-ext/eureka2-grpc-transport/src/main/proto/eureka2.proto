@@ -150,6 +150,10 @@ message GrpcServerHello {
     GrpcSource serverSource = 1;
 }
 
+message GrpcReplicationServerHello {
+    GrpcSource serverSource = 1;
+}
+
 /**
  * Registration protocol messages
  */
@@ -269,7 +273,7 @@ message GrpcReplicationRequest {
 
 message GrpcReplicationResponse {
     oneof item {
-        GrpcServerHello serverHello = 1;
+        GrpcReplicationServerHello serverHello = 1;
         GrpcHeartbeat heartbeat = 2;
     }
 }

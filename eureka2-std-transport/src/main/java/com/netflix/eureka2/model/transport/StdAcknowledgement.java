@@ -14,14 +14,25 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.spi.protocol.common;
+package com.netflix.eureka2.model.transport;
 
-import com.netflix.eureka2.spi.protocol.ProtocolMessage;
+import com.netflix.eureka2.spi.model.Acknowledgement;
 
 /**
- * Marker interface for interest set update classes.
- *
- * @author Tomasz Bak
  */
-public interface InterestSetNotification extends ProtocolMessage {
+public class StdAcknowledgement implements Acknowledgement {
+
+    public static final StdAcknowledgement INSTANCE = new StdAcknowledgement();
+
+    private static final int HASH = 234123212;
+
+    @Override
+    public int hashCode() {
+        return HASH;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof StdAcknowledgement;
+    }
 }

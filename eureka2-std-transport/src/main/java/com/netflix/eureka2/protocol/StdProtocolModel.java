@@ -16,14 +16,18 @@
 
 package com.netflix.eureka2.protocol;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.model.instance.Delta;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.StdDelta;
 import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
+import com.netflix.eureka2.model.transport.StdAcknowledgement;
 import com.netflix.eureka2.protocol.common.StdAddInstance;
 import com.netflix.eureka2.protocol.common.StdDeleteInstance;
 import com.netflix.eureka2.protocol.common.StdHeartbeat;
@@ -36,10 +40,10 @@ import com.netflix.eureka2.protocol.register.StdUnregister;
 import com.netflix.eureka2.protocol.replication.StdReplicationHello;
 import com.netflix.eureka2.protocol.replication.StdReplicationHelloReply;
 import com.netflix.eureka2.spi.model.Acknowledgement;
+import com.netflix.eureka2.spi.model.Heartbeat;
 import com.netflix.eureka2.spi.protocol.ProtocolModel;
 import com.netflix.eureka2.spi.protocol.common.AddInstance;
 import com.netflix.eureka2.spi.protocol.common.DeleteInstance;
-import com.netflix.eureka2.spi.model.Heartbeat;
 import com.netflix.eureka2.spi.protocol.common.StreamStateUpdate;
 import com.netflix.eureka2.spi.protocol.interest.InterestRegistration;
 import com.netflix.eureka2.spi.protocol.interest.UnregisterInterestSet;
@@ -85,8 +89,10 @@ public class StdProtocolModel extends ProtocolModel {
     }
 
     @Override
-    public UpdateInstanceInfo newUpdateInstanceInfo(Delta<?> delta) {
-        return new StdUpdateInstanceInfo((StdDelta<?>) delta);
+    public UpdateInstanceInfo newUpdateInstanceInfo(Delta<?>... deltas) {
+        Set deltaSet = new HashSet<>();
+        Collections.addAll(deltaSet, deltas);
+        return new StdUpdateInstanceInfo(deltaSet);
     }
 
     @Override

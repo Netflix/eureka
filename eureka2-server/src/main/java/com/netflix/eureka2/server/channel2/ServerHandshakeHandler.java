@@ -16,6 +16,8 @@
 
 package com.netflix.eureka2.server.channel2;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.netflix.eureka2.channel2.ChannelHandlers;
 import com.netflix.eureka2.channel2.SourceIdGenerator;
 import com.netflix.eureka2.model.Source;
@@ -24,13 +26,10 @@ import com.netflix.eureka2.spi.channel.ChannelHandler;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.model.ClientHello;
 import com.netflix.eureka2.spi.model.ServerHello;
-import com.netflix.eureka2.spi.model.TransportModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.observers.SerializedSubscriber;
-
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  */
@@ -43,9 +42,9 @@ public class ServerHandshakeHandler<I, O> implements ChannelHandler<I, O> {
 
     private ChannelContext<I, O> channelContext;
 
-    public ServerHandshakeHandler(Source serverSource, SourceIdGenerator idGenerator) {
+    public ServerHandshakeHandler(ServerHello serverHello, SourceIdGenerator idGenerator) {
         this.idGenerator = idGenerator;
-        this.serverHello = TransportModel.getDefaultModel().newServerHello(serverSource);
+        this.serverHello = serverHello;
     }
 
     @Override

@@ -101,7 +101,19 @@ public class LoggingChannelHandler<I, O> implements ChannelHandler<I, O> {
                 )
                 .doOnSubscribe(() -> logFun.call("Subscribed to reply stream", null, null))
                 .doOnUnsubscribe(() -> logFun.call("Unsubscribed from reply stream", null, null))
-                .doOnNext(next -> logFun.call("Received {}", new Object[]{next.getKind()}, null))
+                .doOnNext(next -> {
+                    switch (next.getKind()) {
+                        case Heartbeat:
+                            logFun.call("Received Heartbeat", null, null);
+                            break;
+                        case Hello:
+                            logFun.call("Received Hello {}", new Object[]{next.getHello()}, null);
+                            break;
+                        case Data:
+                            logFun.call("Received Data {}", new Object[]{next.getData()}, null);
+                            break;
+                    }
+                })
                 .doOnError(e -> logFun.call("Reply stream terminated with an error", null, e))
                 .doOnCompleted(() -> logFun.call("Reply stream onCompleted", null, null));
     }

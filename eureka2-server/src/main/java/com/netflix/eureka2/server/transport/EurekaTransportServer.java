@@ -16,6 +16,10 @@
 
 package com.netflix.eureka2.server.transport;
 
+import javax.inject.Named;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+
 import com.google.inject.Provider;
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.channel2.InputChangeNotificationSourcingHandler;
@@ -40,6 +44,7 @@ import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.server.service.selfinfo.ConfigSelfInfoResolver;
 import com.netflix.eureka2.spi.channel.ChannelPipeline;
 import com.netflix.eureka2.spi.channel.ChannelPipelineFactory;
+import com.netflix.eureka2.spi.model.TransportModel;
 import com.netflix.eureka2.spi.transport.EurekaServerTransportFactory;
 import com.netflix.eureka2.spi.transport.EurekaServerTransportFactory.ServerContext;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
@@ -47,10 +52,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
-
-import javax.inject.Named;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  */
@@ -98,7 +99,6 @@ public class EurekaTransportServer {
     private void connectWrite() {
         transportFactory.connect(
                 config.getRegistrationPort(),
-                serverSource,
                 createRegistrationPipelineFactory(),
                 createInterestPipelineFactory(),
                 createReplicationPipelineFactory()
@@ -111,7 +111,6 @@ public class EurekaTransportServer {
     private void connectRead() {
         transportFactory.connect(
                 config.getRegistrationPort(),
-                serverSource,
                 null,
                 createInterestPipelineFactory(),
                 null
@@ -133,7 +132,7 @@ public class EurekaTransportServer {
                     subscriber.onNext(new ChannelPipeline<>("replicationServer",
                             new LoggingChannelHandler<ChangeNotification<InstanceInfo>, Void>(LoggingChannelHandler.LogLevel.INFO),
                             new ServerHeartbeatHandler<ChangeNotification<InstanceInfo>, Void>(config.getHeartbeatIntervalMs() * 3, scheduler),
-                            new ServerHandshakeHandler<ChangeNotification<InstanceInfo>, Void>(serverSource, idGenerator),
+                            new ServerHandshakeHandler<ChangeNotification<InstanceInfo>, Void>(TransportModel.getDefaultModel().newReplicationServerHello(serverSource), idGenerator),
                             new InputChangeNotificationSourcingHandler<InstanceInfo, Void>(),
                             new ReceiverReplicationHandler(registry)
                     ));
@@ -152,7 +151,7 @@ public class EurekaTransportServer {
                     subscriber.onNext(new ChannelPipeline<>("registrationServer",
                             new LoggingChannelHandler<InstanceInfo, InstanceInfo>(LoggingChannelHandler.LogLevel.INFO),
                             new ServerHeartbeatHandler<InstanceInfo, InstanceInfo>(config.getHeartbeatIntervalMs() * 3, scheduler),
-                            new ServerHandshakeHandler<InstanceInfo, InstanceInfo>(serverSource, idGenerator),
+                            new ServerHandshakeHandler<InstanceInfo, InstanceInfo>(TransportModel.getDefaultModel().newServerHello(serverSource), idGenerator),
                             new RegistrationProcessorBridgeHandler(registrationProcessor.get())
                     ));
                     subscriber.onCompleted();
@@ -170,7 +169,7 @@ public class EurekaTransportServer {
                     subscriber.onNext(new ChannelPipeline<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>("interestServer",
                             new LoggingChannelHandler(LogLevel.INFO),
                             new ServerHeartbeatHandler<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>(config.getHeartbeatIntervalMs() * 3, scheduler),
-                            new ServerHandshakeHandler<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>(serverSource, idGenerator),
+                            new ServerHandshakeHandler<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>(TransportModel.getDefaultModel().newServerHello(serverSource), idGenerator),
                             new InterestMultiplexerBridgeHandler(registryView)
                     ));
                     subscriber.onCompleted();

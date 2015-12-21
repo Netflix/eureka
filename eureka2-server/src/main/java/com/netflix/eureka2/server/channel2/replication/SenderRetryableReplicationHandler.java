@@ -70,7 +70,11 @@ public class SenderRetryableReplicationHandler implements ReplicationHandler {
                            Subscriber<? super ChannelNotification<Void>> subscriber) {
             this.replicationUpdates = replicationUpdates;
             pipelineSubscription = connectPipeline()
-                    .doOnError(e -> logger.info("Replication pipeline terminated due to an error", e))
+                    .doOnError(e -> {
+                        if (!(e instanceof ReplicationLoopException)) {
+                            logger.info("Replication pipeline terminated due to an error", e);
+                        }
+                    })
                     .retryWhen(errors -> {
                         return errors.flatMap(e -> {
                             if (e instanceof ReplicationLoopException) {

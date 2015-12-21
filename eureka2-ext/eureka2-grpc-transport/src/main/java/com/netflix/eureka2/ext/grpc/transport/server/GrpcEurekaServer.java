@@ -16,26 +16,23 @@
 
 package com.netflix.eureka2.ext.grpc.transport.server;
 
-import com.netflix.eureka2.ext.grpc.model.transport.GrpcServerHelloWrapper;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.net.InetSocketAddress;
+
 import com.netflix.eureka2.grpc.Eureka2InterestGrpc;
 import com.netflix.eureka2.grpc.Eureka2RegistrationGrpc;
 import com.netflix.eureka2.grpc.Eureka2ReplicationGrpc;
-import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.spi.channel.ChannelPipelineFactory;
-import com.netflix.eureka2.spi.model.ServerHello;
 import io.grpc.ServerBuilder;
 import io.grpc.internal.ServerImpl;
 import io.grpc.netty.NettyServer;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.InetSocketAddress;
 
 /**
  */
@@ -51,18 +48,15 @@ class GrpcEurekaServer {
     private final GrpcEureka2ReplicationServerImpl replicationService;
 
     GrpcEurekaServer(int port,
-                     Source serverSource,
                      ChannelPipelineFactory<InstanceInfo, InstanceInfo> registrationPipelineFactory,
                      ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> interestPipelineFactory,
                      ChannelPipelineFactory<ChangeNotification<InstanceInfo>, Void> replicationPipelineFactory) throws IOException {
-
-        ServerHello serverHello = GrpcServerHelloWrapper.newServerHello(serverSource);
 
         ServerBuilder<?> serverBuilder = ServerBuilder.forPort(port);
 
         // Registration
         if (registrationPipelineFactory != null) {
-            registrationService = new GrpcEureka2RegistrationServerImpl(serverHello, registrationPipelineFactory);
+            registrationService = new GrpcEureka2RegistrationServerImpl(registrationPipelineFactory);
             serverBuilder.addService(Eureka2RegistrationGrpc.bindService(registrationService));
         } else {
             registrationService = null;
@@ -70,10 +64,7 @@ class GrpcEurekaServer {
 
         // Interest
         if (interestPipelineFactory != null) {
-            interestService = new GrpcEureka2InterestServerImpl(
-                    serverHello,
-                    interestPipelineFactory
-            );
+            interestService = new GrpcEureka2InterestServerImpl(interestPipelineFactory);
             serverBuilder.addService(Eureka2InterestGrpc.bindService(interestService));
         } else {
             interestService = null;
@@ -81,10 +72,7 @@ class GrpcEurekaServer {
 
         // Replication
         if (replicationPipelineFactory != null) {
-            replicationService = new GrpcEureka2ReplicationServerImpl(
-                    serverHello,
-                    replicationPipelineFactory
-            );
+            replicationService = new GrpcEureka2ReplicationServerImpl(replicationPipelineFactory);
             serverBuilder.addService(Eureka2ReplicationGrpc.bindService(replicationService));
         } else {
             replicationService = null;

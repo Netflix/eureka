@@ -53,7 +53,7 @@ public abstract class ProtocolModel {
 
     public abstract DeleteInstance newDeleteInstance(String instanceId);
 
-    public abstract UpdateInstanceInfo newUpdateInstanceInfo(Delta<?> delta);
+    public abstract UpdateInstanceInfo newUpdateInstanceInfo(Delta<?>... delta);
 
     public abstract StreamStateUpdate newStreamStateUpdate(StreamStateNotification<InstanceInfo> notification);
 

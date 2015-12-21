@@ -99,7 +99,7 @@ public class GrpcReplicationClientTransportHandler implements ReplicationHandler
             case HEARTBEAT:
                 return ChannelNotification.newHeartbeat();
             case SERVERHELLO:
-                return ChannelNotification.newHello(toServerHello(notification.getServerHello()));
+                return ChannelNotification.newHello(toReplicationServerHello(notification.getServerHello()));
         }
         throw new IllegalStateException("Unrecognized channel notification type " + notification.getItemCase());
     }

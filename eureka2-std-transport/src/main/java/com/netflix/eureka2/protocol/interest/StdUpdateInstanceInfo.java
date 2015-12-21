@@ -16,6 +16,11 @@
 
 package com.netflix.eureka2.protocol.interest;
 
+import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.netflix.eureka2.model.instance.Delta;
 import com.netflix.eureka2.model.instance.StdDelta;
 import com.netflix.eureka2.spi.protocol.interest.UpdateInstanceInfo;
@@ -24,42 +29,49 @@ import com.netflix.eureka2.spi.protocol.interest.UpdateInstanceInfo;
  */
 public class StdUpdateInstanceInfo implements UpdateInstanceInfo {
 
-    private final StdDelta<?> delta;
+    private final Set<StdDelta<?>> deltas;
 
     // For serialization framework
     protected StdUpdateInstanceInfo() {
-        delta = null;
+        deltas = null;
     }
 
-    public StdUpdateInstanceInfo(StdDelta<?> delta) {
-        this.delta = delta;
+    public StdUpdateInstanceInfo(Set<StdDelta<?>> deltas) {
+        this.deltas = deltas;
     }
 
     @Override
-    public Delta<?> getDelta() {
-        return delta;
+    public Set<Delta<?>> getDeltas() {
+        return asDeltas(deltas);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
         StdUpdateInstanceInfo that = (StdUpdateInstanceInfo) o;
 
-        return !(delta != null ? !delta.equals(that.delta) : that.delta != null);
+        return deltas != null ? deltas.equals(that.deltas) : that.deltas == null;
 
     }
 
     @Override
     public int hashCode() {
-        return delta != null ? delta.hashCode() : 0;
+        return deltas != null ? deltas.hashCode() : 0;
     }
 
     @Override
     public String toString() {
-        return "StdUpdateInstanceInfo{delta=" + delta + '}';
+        return "StdUpdateInstanceInfo{deltas=" + deltas + '}';
+    }
+
+    @JsonCreator
+    public static StdUpdateInstanceInfo create(@JsonProperty("deltas") Set<StdDelta<?>> deltas) {
+        return new StdUpdateInstanceInfo(deltas);
+    }
+
+    private static Set<Delta<?>> asDeltas(Set deltas) {
+        return deltas;
     }
 }

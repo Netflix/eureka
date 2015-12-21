@@ -46,7 +46,7 @@ public class EurekaCodecWrapper extends ByteToMessageCodec<Object> {
     public void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) throws Exception {
         ByteBufOutputStream byteBufOutputStream = new ByteBufOutputStream(out);
         EurekaCodec eurekaCodec = codecFactory.getCodec();
-        eurekaCodec.encode(new ProtocolMessageEnvelope(msg), byteBufOutputStream);
+        eurekaCodec.encode(new ProtocolMessageEnvelope(null, msg), byteBufOutputStream);
     }
 
     @Override

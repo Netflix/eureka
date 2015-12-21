@@ -16,18 +16,25 @@
 
 package com.netflix.eureka2.testkit.compatibility.transport;
 
+import java.util.Collections;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.InterestModel;
 import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.instance.Delta;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfoField;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.ModifyNotification;
+import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.spi.channel.*;
-import com.netflix.eureka2.spi.model.ClientHello;
-import com.netflix.eureka2.spi.model.ReplicationClientHello;
-import com.netflix.eureka2.spi.model.ServerHello;
-import com.netflix.eureka2.spi.model.TransportModel;
+import com.netflix.eureka2.spi.model.*;
 import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
 import com.netflix.eureka2.spi.transport.EurekaServerTransportFactory;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -37,13 +44,7 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 import rx.Subscription;
-import rx.subjects.PublishSubject;
 import rx.subjects.ReplaySubject;
-
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -56,7 +57,10 @@ public abstract class EurekaTransportCompatibilityTestSuite {
     private ClientHello clientHello;
     private ReplicationClientHello replicationClientHello;
     private ServerHello serverHello;
+    private ReplicationServerHello replicationServerHello;
     private InstanceInfo instance;
+    private Delta<?> updateDelta;
+    private InstanceInfo updatedInstance;
 
     private InstanceModel instanceModel;
     private InterestModel interestModel;
@@ -70,7 +74,7 @@ public abstract class EurekaTransportCompatibilityTestSuite {
     private Server eurekaServer;
 
     @Before
-    public void setup() {
+    public void setup() throws InterruptedException {
         instanceModel = InstanceModel.getDefaultModel();
         interestModel = InterestModel.getDefaultModel();
         transportModel = TransportModel.getDefaultModel();
@@ -79,7 +83,12 @@ public abstract class EurekaTransportCompatibilityTestSuite {
         replicationClientHello = transportModel.newReplicationClientHello(instanceModel.createSource(Source.Origin.LOCAL, "replicationClient", 1), 1);
         Source serverSource = instanceModel.createSource(Source.Origin.LOCAL, "testServer", 1);
         serverHello = transportModel.newServerHello(serverSource);
+        replicationServerHello = transportModel.newReplicationServerHello(serverSource);
+
         instance = SampleInstanceInfo.WebServer.build();
+        updateDelta = InstanceModel.getDefaultModel().newDelta()
+                .withId(instance.getId()).withDelta(InstanceInfoField.STATUS, InstanceInfo.Status.DOWN).build();
+        updatedInstance = instance.applyDelta(updateDelta);
 
         BlockingQueue<EurekaServerTransportFactory.ServerContext> serverContextQueue = new LinkedBlockingQueue<>();
 
@@ -102,11 +111,11 @@ public abstract class EurekaTransportCompatibilityTestSuite {
             }
         };
 
-        serverSubscription = newServerTransportFactory().connect(0, serverSource, registrationPipelineFactory, interestPipelineFactory, replicationPipelineFactory)
+        serverSubscription = newServerTransportFactory().connect(0, registrationPipelineFactory, interestPipelineFactory, replicationPipelineFactory)
                 .doOnNext(context -> serverContextQueue.add(context))
                 .doOnError(e -> e.printStackTrace())
                 .subscribe();
-        EurekaServerTransportFactory.ServerContext serverContext = serverContextQueue.poll();
+        EurekaServerTransportFactory.ServerContext serverContext = serverContextQueue.poll(30, TimeUnit.SECONDS);
         eurekaServer = new Server("localhost", serverContext.getPort());
     }
 
@@ -170,7 +179,7 @@ public abstract class EurekaTransportCompatibilityTestSuite {
     @Test(timeout = 30000)
     public void testInterestHello() throws InterruptedException {
         InterestHandler clientTransport = newClientTransportFactory().newInterestTransport(eurekaServer);
-        PublishSubject<ChannelNotification<Interest<InstanceInfo>>> interestNotifications = PublishSubject.create();
+        ReplaySubject<ChannelNotification<Interest<InstanceInfo>>> interestNotifications = ReplaySubject.create();
 
         ExtTestSubscriber<ChannelNotification<ChangeNotification<InstanceInfo>>> testSubscriber = new ExtTestSubscriber<>();
         clientTransport.handle(interestNotifications).subscribe(testSubscriber);
@@ -184,7 +193,7 @@ public abstract class EurekaTransportCompatibilityTestSuite {
     @Test(timeout = 30000)
     public void testInterestHeartbeat() throws InterruptedException {
         InterestHandler clientTransport = newClientTransportFactory().newInterestTransport(eurekaServer);
-        PublishSubject<ChannelNotification<Interest<InstanceInfo>>> interestNotifications = PublishSubject.create();
+        ReplaySubject<ChannelNotification<Interest<InstanceInfo>>> interestNotifications = ReplaySubject.create();
 
         ExtTestSubscriber<ChannelNotification<ChangeNotification<InstanceInfo>>> testSubscriber = new ExtTestSubscriber<>();
         clientTransport.handle(interestNotifications).subscribe(testSubscriber);
@@ -195,7 +204,7 @@ public abstract class EurekaTransportCompatibilityTestSuite {
         assertThat(helloReply.getKind(), is(equalTo(ChannelNotification.Kind.Heartbeat)));
     }
 
-    @Test(timeout = 30000)
+    @Test
     public void testInterestConnection() throws InterruptedException {
         InterestHandler clientTransport = newClientTransportFactory().newInterestTransport(eurekaServer);
         ReplaySubject<ChannelNotification<Interest<InstanceInfo>>> interestNotifications = ReplaySubject.create();
@@ -209,8 +218,28 @@ public abstract class EurekaTransportCompatibilityTestSuite {
         ChannelNotification<ChangeNotification<InstanceInfo>> notification = testSubscriber.takeNextOrWait();
         assertThat(notification.getKind(), is(equalTo(ChannelNotification.Kind.Hello)));
 
-        ChannelNotification<ChangeNotification<InstanceInfo>> notification2 = testSubscriber.takeNextOrWait();
-        assertThat(notification2.getData().getData(), is(equalTo(instance)));
+        // Sequence of buffeStart / add / modify /delete / bufferEnd
+        ChannelNotification<ChangeNotification<InstanceInfo>> expectedBufferStart = testSubscriber.takeNextOrWait();
+        assertThat(expectedBufferStart.getData().getKind(), is(equalTo(ChangeNotification.Kind.BufferSentinel)));
+        StreamStateNotification<InstanceInfo> bufferStartUpdate = (StreamStateNotification<InstanceInfo>) expectedBufferStart.getData();
+        assertThat(bufferStartUpdate.getBufferState(), is(equalTo(StreamStateNotification.BufferState.BufferStart)));
+
+        ChannelNotification<ChangeNotification<InstanceInfo>> expectedAdd = testSubscriber.takeNextOrWait();
+        assertThat(expectedAdd.getData().getKind(), is(equalTo(ChangeNotification.Kind.Add)));
+        assertThat(expectedAdd.getData().getData(), is(equalTo(instance)));
+
+        ChannelNotification<ChangeNotification<InstanceInfo>> expectedModify = testSubscriber.takeNextOrWait();
+        assertThat(expectedModify.getData().getKind(), is(equalTo(ChangeNotification.Kind.Modify)));
+        assertThat(expectedModify.getData().getData(), is(equalTo(updatedInstance)));
+
+        ChannelNotification<ChangeNotification<InstanceInfo>> expectedDelete = testSubscriber.takeNextOrWait();
+        assertThat(expectedDelete.getData().getKind(), is(equalTo(ChangeNotification.Kind.Delete)));
+        assertThat(expectedDelete.getData().getData(), is(equalTo(updatedInstance)));
+
+        ChannelNotification<ChangeNotification<InstanceInfo>> expectedBufferEnd = testSubscriber.takeNextOrWait();
+        assertThat(expectedBufferEnd.getData().getKind(), is(equalTo(ChangeNotification.Kind.BufferSentinel)));
+        StreamStateNotification<InstanceInfo> bufferEndUpdate = (StreamStateNotification<InstanceInfo>) expectedBufferEnd.getData();
+        assertThat(bufferEndUpdate.getBufferState(), is(equalTo(StreamStateNotification.BufferState.BufferEnd)));
     }
 
     @Test(timeout = 30000)
@@ -225,7 +254,7 @@ public abstract class EurekaTransportCompatibilityTestSuite {
         ChannelNotification<Void> helloReply = testSubscriber.takeNextOrWait();
 
         assertThat(helloReply.getKind(), is(equalTo(ChannelNotification.Kind.Hello)));
-        assertThat(helloReply.getHello(), is(equalTo(serverHello)));
+        assertThat(helloReply.getHello(), is(equalTo(replicationServerHello)));
     }
 
     @Test(timeout = 30000)
@@ -287,7 +316,11 @@ public abstract class EurekaTransportCompatibilityTestSuite {
         @Override
         public Observable<ChannelNotification<ChangeNotification<InstanceInfo>>> handle(Observable<ChannelNotification<Interest<InstanceInfo>>> interests) {
             return Observable.create(subscriber -> {
+
                 ChangeNotification<InstanceInfo> addNotification = new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, instance);
+                ChangeNotification<InstanceInfo> modifyNotification = new ModifyNotification<InstanceInfo>(updatedInstance, Collections.singleton(updateDelta));
+                ChangeNotification<InstanceInfo> deleteNotification = new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Delete, updatedInstance);
+
                 interests
                         .doOnNext(interest -> {
                             switch (interest.getKind()) {
@@ -299,7 +332,13 @@ public abstract class EurekaTransportCompatibilityTestSuite {
                                     subscriber.onNext(ChannelNotification.<ChangeNotification<InstanceInfo>>newHeartbeat());
                                     break;
                                 case Data:
+                                    ChangeNotification<InstanceInfo> bufferStart = StreamStateNotification.bufferStartNotification(interest.getData());
+                                    ChangeNotification<InstanceInfo> bufferEnd = StreamStateNotification.bufferEndNotification(interest.getData());
+                                    subscriber.onNext(ChannelNotification.newData(bufferStart));
                                     subscriber.onNext(ChannelNotification.newData(addNotification));
+                                    subscriber.onNext(ChannelNotification.newData(modifyNotification));
+                                    subscriber.onNext(ChannelNotification.newData(deleteNotification));
+                                    subscriber.onNext(ChannelNotification.newData(bufferEnd));
                             }
                         })
                         .doOnError(e -> e.printStackTrace())
@@ -324,7 +363,7 @@ public abstract class EurekaTransportCompatibilityTestSuite {
                         .doOnNext(replicationNotification -> {
                             switch (replicationNotification.getKind()) {
                                 case Hello:
-                                    ChannelNotification<Void> serverHelloNotification = ChannelNotification.newHello(serverHello);
+                                    ChannelNotification<Void> serverHelloNotification = ChannelNotification.newHello(replicationServerHello);
                                     clientSourceRef.set(serverHelloNotification.getHello());
                                     subscriber.onNext(serverHelloNotification);
                                     break;

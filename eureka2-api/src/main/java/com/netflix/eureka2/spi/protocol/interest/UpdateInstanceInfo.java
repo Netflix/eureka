@@ -16,6 +16,8 @@
 
 package com.netflix.eureka2.spi.protocol.interest;
 
+import java.util.Set;
+
 import com.netflix.eureka2.model.instance.Delta;
 import com.netflix.eureka2.spi.protocol.common.InterestSetNotification;
 
@@ -24,5 +26,5 @@ import com.netflix.eureka2.spi.protocol.common.InterestSetNotification;
  */
 public interface UpdateInstanceInfo extends InterestSetNotification {
 
-    Delta<?> getDelta();
+    Set<Delta<?>> getDeltas();
 }

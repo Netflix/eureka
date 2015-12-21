@@ -16,6 +16,10 @@
 
 package com.netflix.eureka2.ext.grpc.transport.server;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.netflix.eureka2.ext.grpc.model.GrpcModelConverters;
 import com.netflix.eureka2.grpc.Eureka2;
 import com.netflix.eureka2.grpc.Eureka2ReplicationGrpc;
@@ -25,16 +29,11 @@ import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.ChannelPipeline;
 import com.netflix.eureka2.spi.channel.ChannelPipelineFactory;
 import com.netflix.eureka2.spi.model.ClientHello;
-import com.netflix.eureka2.spi.model.ServerHello;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Subscription;
 import rx.subjects.PublishSubject;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static com.netflix.eureka2.ext.grpc.model.GrpcModelConverters.toChangeNotification;
 
@@ -44,13 +43,10 @@ public class GrpcEureka2ReplicationServerImpl implements Eureka2ReplicationGrpc.
 
     private static final Logger logger = LoggerFactory.getLogger(GrpcEureka2ReplicationServerImpl.class);
 
-    private final Eureka2.GrpcServerHello grpcServerHello;
     private final ChannelPipelineFactory<ChangeNotification<InstanceInfo>, Void> replicationPipelineFactory;
 
-    public GrpcEureka2ReplicationServerImpl(ServerHello serverHello,
-                                            ChannelPipelineFactory<ChangeNotification<InstanceInfo>, Void> replicationPipelineFactory) {
+    public GrpcEureka2ReplicationServerImpl(ChannelPipelineFactory<ChangeNotification<InstanceInfo>, Void> replicationPipelineFactory) {
         this.replicationPipelineFactory = replicationPipelineFactory;
-        this.grpcServerHello = GrpcModelConverters.toGrpcServerHello(serverHello);
     }
 
     @Override
@@ -145,7 +141,9 @@ public class GrpcEureka2ReplicationServerImpl implements Eureka2ReplicationGrpc.
         private Eureka2.GrpcReplicationResponse convert(ChannelNotification<Void> channelNotification) {
             switch (channelNotification.getKind()) {
                 case Hello:
-                    return Eureka2.GrpcReplicationResponse.newBuilder().setServerHello(grpcServerHello).build();
+                    return Eureka2.GrpcReplicationResponse.newBuilder().setServerHello(
+                            GrpcModelConverters.toGrpcReplicationServerHello(channelNotification.getHello())
+                    ).build();
                 case Heartbeat:
                     return Eureka2.GrpcReplicationResponse.newBuilder().setHeartbeat(Eureka2.GrpcHeartbeat.getDefaultInstance()).build();
                 case Disconnected:

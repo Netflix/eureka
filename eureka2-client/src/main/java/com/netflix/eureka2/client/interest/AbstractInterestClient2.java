@@ -23,6 +23,7 @@ import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.channel2.client.ClientHeartbeatHandler;
 import com.netflix.eureka2.client.channel2.interest.DeltaMergingInterestClientHandler;
 import com.netflix.eureka2.client.channel2.interest.InterestClientHandshakeHandler;
+import com.netflix.eureka2.client.channel2.interest.InterestLoopDetectorHandler;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.model.Source;
@@ -66,6 +67,37 @@ public abstract class AbstractInterestClient2 implements EurekaInterestClient {
                                     new OutputChangeNotificationSourcingHandler(),
                                     new DeltaMergingInterestClientHandler(),
                                     new InterestClientHandshakeHandler(clientSource, idGenerator),
+                                    new ClientHeartbeatHandler(transportConfig.getHeartbeatIntervalMs(), scheduler),
+                                    new LoggingChannelHandler<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>(LoggingChannelHandler.LogLevel.INFO),
+                                    transportFactory.newInterestTransport(server)
+                            );
+                        }
+                );
+            }
+        };
+    }
+
+    /**
+     * Create a pipeline factory for one-time, single server connection. This pipeline is discarded, and recreated
+     * on each new client connection.
+     */
+    protected ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> createPipelineWithLoopDetectorFactory(
+            final Source clientSource,
+            final ServerResolver serverResolver,
+            final EurekaClientTransportFactory transportFactory,
+            final EurekaTransportConfig transportConfig,
+            final Scheduler scheduler) {
+        SourceIdGenerator idGenerator = new SourceIdGenerator();
+        return new ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
+            @Override
+            public Observable<ChannelPipeline<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>> createPipeline() {
+                return serverResolver.resolve().map(server -> {
+                            String pipelineId = "interest[client=" + clientSource.getName() + ",server=" + server;
+                            return new ChannelPipeline<>(pipelineId,
+                                    new OutputChangeNotificationSourcingHandler(),
+                                    new DeltaMergingInterestClientHandler(),
+                                    new InterestClientHandshakeHandler(clientSource, idGenerator),
+                                    new InterestLoopDetectorHandler(clientSource),
                                     new ClientHeartbeatHandler(transportConfig.getHeartbeatIntervalMs(), scheduler),
                                     new LoggingChannelHandler<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>(LoggingChannelHandler.LogLevel.INFO),
                                     transportFactory.newInterestTransport(server)

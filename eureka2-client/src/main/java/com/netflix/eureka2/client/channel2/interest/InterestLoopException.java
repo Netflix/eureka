@@ -14,25 +14,16 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.protocol;
-
-import com.netflix.eureka2.spi.model.Acknowledgement;
+package com.netflix.eureka2.client.channel2.interest;
 
 /**
  */
-public class StdAcknowledgement implements Acknowledgement {
+public class InterestLoopException extends Exception {
 
-    public static final StdAcknowledgement INSTANCE = new StdAcknowledgement();
+    public static final InterestLoopException INSTANCE = new InterestLoopException("Interest loop detected");
 
-    private static final int HASH = 234123212;
-
-    @Override
-    public int hashCode() {
-        return HASH;
+    public InterestLoopException(String message) {
+        super(message);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        return o instanceof StdAcknowledgement;
-    }
 }

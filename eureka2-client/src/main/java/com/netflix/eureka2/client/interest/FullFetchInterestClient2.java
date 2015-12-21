@@ -73,7 +73,7 @@ public class FullFetchInterestClient2 extends AbstractInterestClient2 implements
 
         this.eurekaRegistry = eurekaRegistry;
         ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> transportPipelineFactory =
-                createPipelineFactory(clientSource, serverResolver, transportFactory, transportConfig, scheduler);
+                createPipelineWithLoopDetectorFactory(clientSource, serverResolver, transportFactory, transportConfig, scheduler);
 
         ChannelPipeline<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> retryablePipeline = new ChannelPipeline<>("interest",
                 new DisconnectingOnEmptyInterestHandler(),

@@ -45,7 +45,7 @@ public final class ChannelFunctions {
             return new SourcedChangeNotification<>(ChangeNotification.Kind.Add, incoming, source);
         } else if (message instanceof UpdateInstanceInfo) {
             UpdateInstanceInfo msg = (UpdateInstanceInfo) message;
-            Delta<?> delta = msg.getDelta();
+            Delta<?> delta = msg.getDeltas().iterator().next();
             InstanceInfo cached = cache.get(delta.getId());
             if (cached == null) {
                 if (logger.isWarnEnabled()) {

@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.netflix.eureka2.codec.jackson.JacksonEurekaCodecFactory;
-import com.netflix.eureka2.protocol.StdAcknowledgement;
+import com.netflix.eureka2.model.transport.StdAcknowledgement;
 import com.netflix.eureka2.protocol.common.StdAddInstance;
 import com.netflix.eureka2.protocol.common.StdDeleteInstance;
 import com.netflix.eureka2.protocol.common.StdHeartbeat;

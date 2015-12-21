@@ -132,8 +132,8 @@ public final class ExtLoader {
 
         public E resolve() {
             if (providers.isEmpty() && stdExtProvider == null) {
-                logger.error("No implementation of {} interface auto-discovered", ModelProvider.class);
-                throw new IllegalStateException("Auto-discovery of model implementation failure");
+                logger.error("No implementation of {} interface auto-discovered", providerType.getName());
+                throw new IllegalStateException("Auto-discovery of " + providerType.getName() + " implementation failure");
             }
             if (System.getProperty(MODEL_PROVIDER_PARAMETER) != null) {
                 return loadFromSystemProperty();

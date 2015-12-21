@@ -25,7 +25,7 @@ import com.netflix.eureka2.codec.jackson.mixin.DataCenterInfoMixIn;
 import com.netflix.eureka2.model.datacenter.DataCenterInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.StdInstanceInfo;
-import com.netflix.eureka2.protocol.StdAcknowledgement;
+import com.netflix.eureka2.model.transport.*;
 import com.netflix.eureka2.protocol.common.StdAddInstance;
 import com.netflix.eureka2.protocol.common.StdDeleteInstance;
 import com.netflix.eureka2.protocol.common.StdHeartbeat;
@@ -55,11 +55,11 @@ public class JacksonEurekaCodec extends EurekaCodec {
     private static final Logger logger = LoggerFactory.getLogger(JacksonEurekaCodec.class);
 
     static final Class<?>[] REGISTRATION_PROTOCOL_MODEL = {
-            StdRegister.class, StdUnregister.class, StdHeartbeat.class, StdAcknowledgement.class
+            StdInstanceInfo.class, StdHeartbeat.class, StdAcknowledgement.class, StdClientHello.class, StdServerHello.class
     };
 
     static final Class<?>[] REPLICATION_PROTOCOL_MODEL = {
-            StdReplicationHello.class, StdHeartbeat.class, StdReplicationHelloReply.class,
+            StdHeartbeat.class, StdReplicationClientHello.class, StdReplicationServerHello.class,
             StdAddInstance.class, StdDeleteInstance.class, StdStreamStateUpdate.class,
             StdAcknowledgement.class
     };

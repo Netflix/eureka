@@ -27,11 +27,15 @@ public abstract class TransportModel {
 
     public abstract Heartbeat creatHeartbeat();
 
+    public abstract Acknowledgement createAcknowledgement();
+
     public abstract ClientHello newClientHello(Source clientSource);
 
     public abstract ReplicationClientHello newReplicationClientHello(Source clientSource, int registrySize);
 
     public abstract ServerHello newServerHello(Source serverSource);
+
+    public abstract ReplicationServerHello newReplicationServerHello(Source serverSource);
 
     public static TransportModel getDefaultModel() {
         if(defaultModel == null) {

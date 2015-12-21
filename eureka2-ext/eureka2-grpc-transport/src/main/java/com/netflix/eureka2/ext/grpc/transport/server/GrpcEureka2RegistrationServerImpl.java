@@ -16,6 +16,8 @@
 
 package com.netflix.eureka2.ext.grpc.transport.server;
 
+import java.io.IOException;
+
 import com.netflix.eureka2.ext.grpc.model.GrpcModelConverters;
 import com.netflix.eureka2.grpc.Eureka2;
 import com.netflix.eureka2.grpc.Eureka2RegistrationGrpc;
@@ -24,14 +26,11 @@ import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.ChannelPipeline;
 import com.netflix.eureka2.spi.channel.ChannelPipelineFactory;
 import com.netflix.eureka2.spi.model.ClientHello;
-import com.netflix.eureka2.spi.model.ServerHello;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Subscription;
 import rx.subjects.PublishSubject;
-
-import java.io.IOException;
 
 import static com.netflix.eureka2.ext.grpc.model.GrpcModelConverters.toInstanceInfo;
 
@@ -41,11 +40,9 @@ class GrpcEureka2RegistrationServerImpl implements Eureka2RegistrationGrpc.Eurek
 
     private static final Logger logger = LoggerFactory.getLogger(GrpcEureka2RegistrationServerImpl.class);
 
-    private final Eureka2.GrpcServerHello grpcServerHello;
     private final ChannelPipelineFactory<InstanceInfo, InstanceInfo> registrationPipelineFactory;
 
-    GrpcEureka2RegistrationServerImpl(ServerHello serverHello, ChannelPipelineFactory<InstanceInfo, InstanceInfo> registrationPipelineFactory) {
-        this.grpcServerHello = GrpcModelConverters.toGrpcServerHello(serverHello);
+    GrpcEureka2RegistrationServerImpl(ChannelPipelineFactory<InstanceInfo, InstanceInfo> registrationPipelineFactory) {
         this.registrationPipelineFactory = registrationPipelineFactory;
     }
 
@@ -139,7 +136,9 @@ class GrpcEureka2RegistrationServerImpl implements Eureka2RegistrationGrpc.Eurek
         private Eureka2.GrpcRegistrationResponse convert(ChannelNotification<InstanceInfo> channelNotification) {
             switch (channelNotification.getKind()) {
                 case Hello:
-                    return Eureka2.GrpcRegistrationResponse.newBuilder().setServerHello(grpcServerHello).build();
+                    return Eureka2.GrpcRegistrationResponse.newBuilder().setServerHello(
+                            GrpcModelConverters.toGrpcServerHello(channelNotification.getHello())
+                    ).build();
                 case Heartbeat:
                     return Eureka2.GrpcRegistrationResponse.newBuilder().setHeartbeat(Eureka2.GrpcHeartbeat.getDefaultInstance()).build();
                 case Data:

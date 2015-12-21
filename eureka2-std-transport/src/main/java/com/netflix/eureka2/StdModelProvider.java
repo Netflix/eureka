@@ -16,10 +16,7 @@
 
 package com.netflix.eureka2;
 
-import com.netflix.eureka2.model.InstanceModel;
-import com.netflix.eureka2.model.InterestModel;
-import com.netflix.eureka2.model.StdInstanceModel;
-import com.netflix.eureka2.model.StdInterestModel;
+import com.netflix.eureka2.model.*;
 import com.netflix.eureka2.protocol.StdProtocolModel;
 import com.netflix.eureka2.spi.model.ModelProvider;
 import com.netflix.eureka2.spi.model.TransportModel;
@@ -46,6 +43,6 @@ public class StdModelProvider implements ModelProvider {
 
     @Override
     public TransportModel getTransportModel() {
-        throw new IllegalStateException("not implemented yet");
+        return StdTransportModel.getStdModel();
     }
 }

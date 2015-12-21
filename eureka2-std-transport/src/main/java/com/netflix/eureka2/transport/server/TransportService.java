@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.spi.protocol.common;
+package com.netflix.eureka2.transport.server;
 
-import com.netflix.eureka2.spi.protocol.ProtocolMessage;
+import com.netflix.eureka2.transport.codec.ProtocolMessageEnvelope;
 
 /**
- * Marker interface for interest set update classes.
- *
- * @author Tomasz Bak
  */
-public interface InterestSetNotification extends ProtocolMessage {
+interface TransportService {
+    void handleInput(ProtocolMessageEnvelope envelope);
 }

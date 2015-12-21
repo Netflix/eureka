@@ -19,21 +19,43 @@ package com.netflix.eureka2.transport.codec;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 
-class ProtocolMessageEnvelope {
+public class ProtocolMessageEnvelope {
+
+    public enum ProtocolType { Registration, Interest, Replication }
+
+    private final ProtocolType protocolType;
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = As.PROPERTY, property = "class")
     private final Object message;
 
     // For serialization framework.
     protected ProtocolMessageEnvelope() {
+        this.protocolType = null;
         this.message = null;
     }
 
-    ProtocolMessageEnvelope(Object message) {
+    public ProtocolMessageEnvelope(ProtocolType protocolType, Object message) {
+        this.protocolType = protocolType;
         this.message = message;
+    }
+
+    public ProtocolType getProtocolType() {
+        return protocolType;
     }
 
     public Object getMessage() {
         return message;
+    }
+
+    public static <T> ProtocolMessageEnvelope registrationEnvelope(T message) {
+        return new ProtocolMessageEnvelope(ProtocolType.Registration, message);
+    }
+
+    public static <T> ProtocolMessageEnvelope interestEnvelope(T message) {
+        return new ProtocolMessageEnvelope(ProtocolType.Interest, message);
+    }
+
+    public static <T> ProtocolMessageEnvelope replicationEnvelope(T message) {
+        return new ProtocolMessageEnvelope(ProtocolType.Replication, message);
     }
 }

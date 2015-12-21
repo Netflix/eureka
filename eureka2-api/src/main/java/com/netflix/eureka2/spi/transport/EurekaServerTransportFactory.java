@@ -17,14 +17,10 @@
 package com.netflix.eureka2.spi.transport;
 
 import com.netflix.eureka2.internal.util.ExtLoader;
-import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.spi.channel.ChannelPipelineFactory;
-import com.netflix.eureka2.spi.channel.InterestHandler;
-import com.netflix.eureka2.spi.channel.RegistrationHandler;
-import com.netflix.eureka2.spi.channel.ReplicationHandler;
 import rx.Observable;
 
 /**
@@ -38,10 +34,9 @@ public abstract class EurekaServerTransportFactory {
     }
 
     public abstract Observable<ServerContext> connect(int port,
-                                      Source serverSource,
-                                      ChannelPipelineFactory<InstanceInfo, InstanceInfo> registrationPipelineFactory,
-                                      ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> interestPipelineFactory,
-                                      ChannelPipelineFactory<ChangeNotification<InstanceInfo>, Void> replicationAcceptor);
+                                                      ChannelPipelineFactory<InstanceInfo, InstanceInfo> registrationPipelineFactory,
+                                                      ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> interestPipelineFactory,
+                                                      ChannelPipelineFactory<ChangeNotification<InstanceInfo>, Void> replicationPipelineFactory);
 
     public static EurekaServerTransportFactory getDefaultFactory() {
         if(defaultFactory == null) {

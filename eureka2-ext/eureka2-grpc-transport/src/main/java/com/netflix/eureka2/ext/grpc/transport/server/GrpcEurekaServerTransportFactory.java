@@ -16,14 +16,10 @@
 
 package com.netflix.eureka2.ext.grpc.transport.server;
 
-import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.spi.channel.ChannelPipelineFactory;
-import com.netflix.eureka2.spi.channel.InterestHandler;
-import com.netflix.eureka2.spi.channel.RegistrationHandler;
-import com.netflix.eureka2.spi.channel.ReplicationHandler;
 import com.netflix.eureka2.spi.transport.EurekaServerTransportFactory;
 import rx.Observable;
 import rx.Subscription;
@@ -35,14 +31,13 @@ public class GrpcEurekaServerTransportFactory extends EurekaServerTransportFacto
 
     @Override
     public Observable<ServerContext> connect(int port,
-                                             Source serverSource,
                                              ChannelPipelineFactory<InstanceInfo, InstanceInfo> registrationPipelineFactory,
                                              ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> interestPipelineFactory,
                                              ChannelPipelineFactory<ChangeNotification<InstanceInfo>, Void> replicationPipelineFactory) {
         return Observable.create(subscriber -> {
             GrpcEurekaServer server;
             try {
-                server = new GrpcEurekaServer(port, serverSource, registrationPipelineFactory, interestPipelineFactory, replicationPipelineFactory);
+                server = new GrpcEurekaServer(port, registrationPipelineFactory, interestPipelineFactory, replicationPipelineFactory);
             } catch (Exception e) {
                 subscriber.onError(e);
                 return;

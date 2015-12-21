@@ -21,23 +21,28 @@ import java.util.*;
 import com.google.protobuf.Message;
 import com.netflix.eureka2.ext.grpc.model.instance.GrpcAwsDataCenterInfoWrapper;
 import com.netflix.eureka2.ext.grpc.model.instance.GrpcBasicDataCenterInfoWrapper;
+import com.netflix.eureka2.ext.grpc.model.instance.GrpcDeltaWrapper;
 import com.netflix.eureka2.ext.grpc.model.instance.GrpcInstanceInfoWrapper;
 import com.netflix.eureka2.ext.grpc.model.interest.GrpcEmptyRegistryInterestWrapper;
 import com.netflix.eureka2.ext.grpc.model.interest.GrpcInterestWrapper;
 import com.netflix.eureka2.ext.grpc.model.interest.GrpcMultipleInterestWrapper;
 import com.netflix.eureka2.ext.grpc.model.transport.GrpcClientHelloWrapper;
 import com.netflix.eureka2.ext.grpc.model.transport.GrpcReplicationClientHelloWrapper;
+import com.netflix.eureka2.ext.grpc.model.transport.GrpcReplicationServerHelloWrapper;
 import com.netflix.eureka2.ext.grpc.model.transport.GrpcServerHelloWrapper;
 import com.netflix.eureka2.grpc.Eureka2;
 import com.netflix.eureka2.model.datacenter.DataCenterInfo;
+import com.netflix.eureka2.model.instance.Delta;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.interest.MultipleInterests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.ModifyNotification;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.spi.model.ClientHello;
 import com.netflix.eureka2.spi.model.ReplicationClientHello;
+import com.netflix.eureka2.spi.model.ReplicationServerHello;
 import com.netflix.eureka2.spi.model.ServerHello;
 
 /**
@@ -80,6 +85,23 @@ public final class GrpcModelConverters {
         return ((GrpcInstanceInfoWrapper) instanceInfo).getGrpcObject();
     }
 
+    public static Set<Delta<?>> toDeltas(Collection<Eureka2.GrpcDelta> grpcDeltas) {
+        Set<Delta<?>> deltas = new HashSet<>();
+        for (Eureka2.GrpcDelta grpcDelta : grpcDeltas) {
+            deltas.add(new GrpcDeltaWrapper(grpcDelta));
+        }
+        return deltas;
+    }
+
+    public static Set<Eureka2.GrpcDelta> toGrpcDeltas(Set<Delta<?>> deltas) {
+        Set<Eureka2.GrpcDelta> grpcDeltas = new HashSet<>();
+        for (Delta<?> delta : deltas) {
+            Eureka2.GrpcDelta grpcDelta = ((GrpcDeltaWrapper) delta).getGrpcObject();
+            grpcDeltas.add(grpcDelta);
+        }
+        return grpcDeltas;
+    }
+
     public static Interest<InstanceInfo> toInterest(List<Eureka2.GrpcInterest> grpcInterests) {
         Interest<InstanceInfo>[] interests = new Interest[grpcInterests.size()];
         for (int i = 0; i < interests.length; i++) {
@@ -107,11 +129,16 @@ public final class GrpcModelConverters {
     public static Eureka2.GrpcChangeNotification toGrpcChangeNotification(ChangeNotification<InstanceInfo> notification) {
         switch (notification.getKind()) {
             case Add:
-            case Modify:
                 return Eureka2.GrpcChangeNotification.newBuilder().setAdd(
                         Eureka2.GrpcChangeNotification.GrpcAddChangeNotification.newBuilder()
                                 .setInstanceInfo(GrpcInstanceInfoWrapper.asGrpcInstanceInfo(notification.getData()))
                                 .build()
+                ).build();
+            case Modify:
+                ModifyNotification<InstanceInfo> modify = (ModifyNotification<InstanceInfo>) notification;
+                return Eureka2.GrpcChangeNotification.newBuilder().setModify(
+                        Eureka2.GrpcChangeNotification.GrpcModifyChangeNotification.newBuilder()
+                                .addAllDeltas(toGrpcDeltas(modify.getDelta()))
                 ).build();
             case Delete:
                 return Eureka2.GrpcChangeNotification.newBuilder().setDelete(
@@ -138,6 +165,18 @@ public final class GrpcModelConverters {
                 InstanceInfo instance = GrpcInstanceInfoWrapper.asInstanceInfo(grpcNotification.getAdd().getInstanceInfo());
                 instanceCache.put(instance.getId(), instance);
                 return new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, instance);
+            case MODIFY:
+                Set<Delta<?>> deltas = toDeltas(grpcNotification.getModify().getDeltasList());
+                String modifyId = deltas.iterator().next().getId();
+                InstanceInfo modifyCopy = instanceCache.get(modifyId);
+                if (modifyCopy == null) {
+                    return null;
+                }
+                InstanceInfo newCopy = modifyCopy;
+                for (Delta<?> delta : deltas) {
+                    newCopy = newCopy.applyDelta(delta);
+                }
+                return new ModifyNotification<>(newCopy, deltas);
             case DELETE:
                 String id = grpcNotification.getDelete().getInstanceId();
                 InstanceInfo lastCopy = instanceCache.get(id);
@@ -198,6 +237,10 @@ public final class GrpcModelConverters {
         return ((GrpcServerHelloWrapper) serverHello).getGrpcObject();
     }
 
+    public static Eureka2.GrpcReplicationServerHello toGrpcReplicationServerHello(ReplicationServerHello serverHello) {
+        return ((GrpcReplicationServerHelloWrapper) serverHello).getGrpcObject();
+    }
+
     public static ClientHello toClientHello(Eureka2.GrpcClientHello grpcClientHello) {
         return GrpcClientHelloWrapper.asClientHello(grpcClientHello);
     }
@@ -208,6 +251,10 @@ public final class GrpcModelConverters {
 
     public static ServerHello toServerHello(Eureka2.GrpcServerHello grpcServerHello) {
         return GrpcServerHelloWrapper.asServerHello(grpcServerHello);
+    }
+
+    public static ServerHello toReplicationServerHello(Eureka2.GrpcReplicationServerHello grpcServerHello) {
+        return GrpcReplicationServerHelloWrapper.asServerHello(grpcServerHello);
     }
 
     public static DataCenterInfo toDataCenterInfo(Eureka2.GrpcDataCenterInfo dataCenterInfo) {
