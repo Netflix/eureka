@@ -1,5 +1,11 @@
 package com.netflix.eureka2.testkit.embedded.server;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.Provider;
@@ -29,12 +35,6 @@ import com.netflix.governator.LifecycleInjector;
 import com.netflix.governator.auto.ModuleListProviders;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import rx.Observable;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.List;
 
 import static com.netflix.eureka2.Names.REGISTRATION;
 import static com.netflix.eureka2.server.config.ServerConfigurationNames.DEFAULT_CONFIG_PREFIX;
@@ -105,9 +105,6 @@ public class EmbeddedWriteServerBuilder extends EmbeddedServerBuilder<WriteServe
             if (networkRouter != null) {
                 bind(NetworkRouter.class).toInstance(networkRouter);
             }
-//            bind(TcpRegistrationServer.class).to(EmbeddedTcpRegistrationServer.class).in(Scopes.SINGLETON);
-//            bind(TcpReplicationServer.class).to(EmbeddedTcpReplicationServer.class).in(Scopes.SINGLETON);
-//            bind(TcpInterestServer.class).to(EmbeddedTcpInterestServer.class).in(Scopes.SINGLETON);
         }
 
         @Override

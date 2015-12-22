@@ -58,7 +58,8 @@ public class GrpcInterestModel extends InterestModel {
 
     @Override
     public Interest<InstanceInfo> newInstanceInterest(String instanceId, Interest.Operator operator) {
-        return null;
+        checkNotNull(instanceId, operator);
+        return new GrpcInstanceInterestWrapper(instanceId, operator);
     }
 
     @Override

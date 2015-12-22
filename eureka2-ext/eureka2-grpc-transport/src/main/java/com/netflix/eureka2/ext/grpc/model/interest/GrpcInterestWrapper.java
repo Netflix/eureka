@@ -63,6 +63,8 @@ public abstract class GrpcInterestWrapper implements Interest<InstanceInfo>, Grp
                 return GrpcVipInterestWrapper.getInstance(grpcInterest);
             case SECUREVIP:
                 return GrpcSecureVipInterestWrapper.getInstance(grpcInterest);
+            case INSTANCE:
+                return GrpcInstanceInterestWrapper.getInstance(grpcInterest);
         }
         return null;
     }

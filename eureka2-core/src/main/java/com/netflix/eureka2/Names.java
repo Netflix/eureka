@@ -22,7 +22,6 @@ package com.netflix.eureka2;
 public final class Names {
 
     public static final String EUREKA_HTTP = "http";
-    public static final String EUREKA_HTTPS = "https";
 
     public static final String REGISTRATION = "registration";
     public static final String INTEREST = "interest";
@@ -30,9 +29,6 @@ public final class Names {
 
     public static final String REGISTRATION_CLIENT = "registrationClient";
     public static final String INTEREST_CLIENT = "interestClient";
-
-    public static final String REGISTRATION_SERVER = "registrationServer";
-    public static final String INTEREST_SERVER = "interestServer";
 
     private Names() {
     }

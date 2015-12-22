@@ -16,16 +16,15 @@
 
 package com.netflix.eureka2.metric.server;
 
-import com.netflix.eureka2.channel.ReplicationChannel.STATE;
-import com.netflix.eureka2.metric.AbstractStateMachineMetrics;
+import com.netflix.eureka2.metric.SpectatorEurekaMetrics;
 import com.netflix.spectator.api.ExtendedRegistry;
 
 /**
  * @author Tomasz Bak
  */
-public class SpectatorReplicationChannelMetrics extends AbstractStateMachineMetrics<STATE> implements ReplicationChannelMetrics {
+public class SpectatorReplicationChannelMetrics extends SpectatorEurekaMetrics implements ReplicationChannelMetrics {
 
     public SpectatorReplicationChannelMetrics(ExtendedRegistry registry, String server) {
-        super(registry, "server", STATE.class);
+        super(registry, "server");
     }
 }

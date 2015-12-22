@@ -16,6 +16,9 @@
 
 package com.netflix.eureka2.client.interest;
 
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.model.InstanceModel;
@@ -25,6 +28,7 @@ import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
@@ -38,12 +42,10 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import rx.Observable;
+import rx.Subscription;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
-
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotification;
 import static org.hamcrest.Matchers.equalTo;
@@ -92,8 +94,8 @@ public class EurekaInterestClientImpl2Test {
                 assertThat(source.getName(), is(equalTo(serverSource.getName())));
 
                 Observable<ChangeNotification<InstanceInfo>> updates = (Observable<ChangeNotification<InstanceInfo>>) invocation.getArguments()[1];
-                updates.subscribe(registrySubject);
-                return Observable.never();
+                Subscription subscription = updates.subscribe(registrySubject);
+                return Observable.<Void>never().doOnUnsubscribe(() -> subscription.unsubscribe());
             }
         });
 
@@ -108,6 +110,7 @@ public class EurekaInterestClientImpl2Test {
         // There should be immediate change notification from server
         testScheduler.triggerActions();
         assertThat(testSubscriber.takeNext(), is(addChangeNotification()));
+        assertThat(testSubscriber.takeNext(), is(ChangeNotification.bufferSentinel()));
 
         // Disconnect transport
         transportHandler.disconnect();
@@ -117,6 +120,7 @@ public class EurekaInterestClientImpl2Test {
 
         // ChangeNotification from new transport
         assertThat(testSubscriber.takeNext(), is(addChangeNotification()));
+        assertThat(testSubscriber.takeNext(), is(ChangeNotification.bufferSentinel()));
     }
 
     private class InterestHandlerStub implements InterestHandler {
@@ -134,28 +138,33 @@ public class EurekaInterestClientImpl2Test {
         @Override
         public Observable<ChannelNotification<ChangeNotification<InstanceInfo>>> handle(Observable<ChannelNotification<Interest<InstanceInfo>>> inputStream) {
             return Observable.create(subscriber -> {
-                this.replySubject = PublishSubject.create();
-                replySubject.subscribe(subscriber);
+                PublishSubject<ChannelNotification<ChangeNotification<InstanceInfo>>> myReplySubject = PublishSubject.create();
+                myReplySubject.subscribe(subscriber);
+
+                this.replySubject = myReplySubject; // Reference to the last one that was not onError-ed
 
                 inputStream.subscribe(
                         inputNotification -> {
                             if (inputNotification.getKind() == ChannelNotification.Kind.Hello) {
-                                replySubject.onNext(ChannelNotification.newHello(
+                                myReplySubject.onNext(ChannelNotification.newHello(
                                         TransportModel.getDefaultModel().newServerHello(serverSource)
                                 ));
                             } else if (inputNotification.getKind() == ChannelNotification.Kind.Heartbeat) {
-                                replySubject.onNext(ChannelNotification.newHeartbeat());
+                                myReplySubject.onNext(ChannelNotification.newHeartbeat());
                             } else {
-                                replySubject.onNext(ChannelNotification.newData(notification));
+                                Interest<InstanceInfo> interest = inputNotification.getData();
+                                myReplySubject.onNext(ChannelNotification.newData(StreamStateNotification.bufferStartNotification(interest)));
+                                myReplySubject.onNext(ChannelNotification.newData(notification));
+                                myReplySubject.onNext(ChannelNotification.newData(StreamStateNotification.bufferEndNotification(interest)));
                             }
                         },
                         e -> {
-                            replySubject.onError(e);
+                            myReplySubject.onError(e);
                             e.printStackTrace();
                         },
                         () -> {
                             System.out.println("Transport reply subscription terminated");
-                            replySubject.onCompleted();
+                            myReplySubject.onCompleted();
                         }
                 );
             });

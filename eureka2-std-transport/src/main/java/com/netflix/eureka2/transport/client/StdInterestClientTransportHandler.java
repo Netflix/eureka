@@ -30,13 +30,13 @@ import com.netflix.eureka2.spi.model.Heartbeat;
 import com.netflix.eureka2.spi.model.ServerHello;
 import com.netflix.eureka2.spi.protocol.ProtocolModel;
 import com.netflix.eureka2.transport.ProtocolConverters;
-import com.netflix.eureka2.transport.codec.ProtocolMessageEnvelope;
-import com.netflix.eureka2.transport.codec.ProtocolMessageEnvelope.ProtocolType;
+import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
+import com.netflix.eureka2.protocol.ProtocolMessageEnvelope.ProtocolType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 
-import static com.netflix.eureka2.transport.codec.ProtocolMessageEnvelope.interestEnvelope;
+import static com.netflix.eureka2.protocol.ProtocolMessageEnvelope.interestEnvelope;
 
 /**
  */

@@ -28,8 +28,6 @@ import org.slf4j.LoggerFactory;
  * If the current snapshot is from a non-local source and an update from a local source is received, this new local
  * sourced update is promoted to the snapshot regardless the write order.
  *
- * This holder serializes actions between update and remove by queuing (via SerializedTaskInvoker)
- *
  * @author David Liu
  */
 public class MultiSourcedInstanceInfoHolder implements MultiSourcedDataHolder<InstanceInfo> {

@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.netflix.eureka2.codec.RxNettyCodecUtils;
+import com.netflix.eureka2.utils.RxNettyCodecUtils;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.registry.EurekaRegistry;

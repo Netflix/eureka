@@ -16,6 +16,13 @@
 
 package com.netflix.eureka2.codec.jackson;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
@@ -31,22 +38,10 @@ import com.netflix.eureka2.protocol.common.StdDeleteInstance;
 import com.netflix.eureka2.protocol.common.StdHeartbeat;
 import com.netflix.eureka2.protocol.common.StdStreamStateUpdate;
 import com.netflix.eureka2.protocol.interest.StdInterestRegistration;
-import com.netflix.eureka2.protocol.interest.StdUnregisterInterestSet;
 import com.netflix.eureka2.protocol.interest.StdUpdateInstanceInfo;
-import com.netflix.eureka2.protocol.register.StdRegister;
-import com.netflix.eureka2.protocol.register.StdUnregister;
-import com.netflix.eureka2.protocol.replication.StdReplicationHello;
-import com.netflix.eureka2.protocol.replication.StdReplicationHelloReply;
 import com.netflix.eureka2.spi.codec.EurekaCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  */
@@ -65,7 +60,7 @@ public class JacksonEurekaCodec extends EurekaCodec {
     };
 
     static final Class<?>[] INTEREST_PROTOCOL_MODEL = {
-            StdInterestRegistration.class, StdUnregisterInterestSet.class, StdHeartbeat.class,
+            StdInterestRegistration.class, StdHeartbeat.class,
             StdAddInstance.class, StdDeleteInstance.class, StdUpdateInstanceInfo.class, StdStreamStateUpdate.class,
             StdAcknowledgement.class
     };

@@ -28,12 +28,12 @@ import com.netflix.eureka2.spi.model.Heartbeat;
 import com.netflix.eureka2.spi.model.ReplicationClientHello;
 import com.netflix.eureka2.spi.model.TransportModel;
 import com.netflix.eureka2.transport.ProtocolConverters;
-import com.netflix.eureka2.transport.codec.ProtocolMessageEnvelope;
-import com.netflix.eureka2.transport.codec.ProtocolMessageEnvelope.ProtocolType;
+import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
+import com.netflix.eureka2.protocol.ProtocolMessageEnvelope.ProtocolType;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
-import static com.netflix.eureka2.transport.codec.ProtocolMessageEnvelope.replicationEnvelope;
+import static com.netflix.eureka2.protocol.ProtocolMessageEnvelope.replicationEnvelope;
 
 /**
  */

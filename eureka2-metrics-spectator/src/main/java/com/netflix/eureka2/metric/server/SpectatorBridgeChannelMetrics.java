@@ -2,14 +2,13 @@ package com.netflix.eureka2.metric.server;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.netflix.eureka2.channel.BridgeChannel.STATE;
 import com.netflix.eureka2.metric.AbstractStateMachineMetrics;
 import com.netflix.spectator.api.ExtendedRegistry;
 
 /**
  * @author Tomasz Bak
  */
-public class SpectatorBridgeChannelMetrics extends AbstractStateMachineMetrics<STATE> implements BridgeChannelMetrics {
+public class SpectatorBridgeChannelMetrics extends AbstractStateMachineMetrics<BridgeChannelMetrics.STATE> implements BridgeChannelMetrics {
     private final AtomicInteger totalCount = new AtomicInteger();
     private final AtomicInteger registerCount = new AtomicInteger();
     private final AtomicInteger updateCount = new AtomicInteger();

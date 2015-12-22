@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.testkit.compatibility.transport;
 
-import java.util.Collections;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -27,9 +27,11 @@ import com.netflix.eureka2.model.InterestModel;
 import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.Delta;
+import com.netflix.eureka2.model.instance.DeltaBuilder;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfoField;
 import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ModifyNotification;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
@@ -37,8 +39,12 @@ import com.netflix.eureka2.spi.channel.*;
 import com.netflix.eureka2.spi.model.*;
 import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
 import com.netflix.eureka2.spi.transport.EurekaServerTransportFactory;
+import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.testkit.data.builder.SampleInterest;
+import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
 import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
+import com.netflix.eureka2.utils.ExtCollections;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,20 +60,24 @@ import static org.junit.Assert.assertThat;
  */
 public abstract class EurekaTransportCompatibilityTestSuite {
 
+    private final InstanceInfo instance = SampleInstanceInfo.WebServer.build();
+    private final Delta<?> updateDelta = InstanceModel.getDefaultModel().newDelta()
+            .withId(instance.getId())
+            .withDelta(InstanceInfoField.STATUS, InstanceInfo.Status.DOWN)
+            .build();
+    private final InstanceInfo updatedInstance = instance.applyDelta(updateDelta);
+
     private ClientHello clientHello;
     private ReplicationClientHello replicationClientHello;
     private ServerHello serverHello;
     private ReplicationServerHello replicationServerHello;
-    private InstanceInfo instance;
-    private Delta<?> updateDelta;
-    private InstanceInfo updatedInstance;
 
     private InstanceModel instanceModel;
     private InterestModel interestModel;
     private TransportModel transportModel;
 
     private final RegistrationHandler registrationAcceptor = new TestableRegistrationAcceptor();
-    private final InterestHandler interestAcceptor = new TestableInterestTransportHandler();
+    private final TestableInterestTransportHandler interestAcceptor = new TestableInterestTransportHandler();
     private final TestableReplicationTransportHandler replicationAcceptor = new TestableReplicationTransportHandler();
 
     private Subscription serverSubscription;
@@ -84,11 +94,6 @@ public abstract class EurekaTransportCompatibilityTestSuite {
         Source serverSource = instanceModel.createSource(Source.Origin.LOCAL, "testServer", 1);
         serverHello = transportModel.newServerHello(serverSource);
         replicationServerHello = transportModel.newReplicationServerHello(serverSource);
-
-        instance = SampleInstanceInfo.WebServer.build();
-        updateDelta = InstanceModel.getDefaultModel().newDelta()
-                .withId(instance.getId()).withDelta(InstanceInfoField.STATUS, InstanceInfo.Status.DOWN).build();
-        updatedInstance = instance.applyDelta(updateDelta);
 
         BlockingQueue<EurekaServerTransportFactory.ServerContext> serverContextQueue = new LinkedBlockingQueue<>();
 
@@ -205,7 +210,7 @@ public abstract class EurekaTransportCompatibilityTestSuite {
     }
 
     @Test
-    public void testInterestConnection() throws InterruptedException {
+    public void testInterestSubscription() throws InterruptedException {
         InterestHandler clientTransport = newClientTransportFactory().newInterestTransport(eurekaServer);
         ReplaySubject<ChannelNotification<Interest<InstanceInfo>>> interestNotifications = ReplaySubject.create();
 
@@ -240,6 +245,77 @@ public abstract class EurekaTransportCompatibilityTestSuite {
         assertThat(expectedBufferEnd.getData().getKind(), is(equalTo(ChangeNotification.Kind.BufferSentinel)));
         StreamStateNotification<InstanceInfo> bufferEndUpdate = (StreamStateNotification<InstanceInfo>) expectedBufferEnd.getData();
         assertThat(bufferEndUpdate.getBufferState(), is(equalTo(StreamStateNotification.BufferState.BufferEnd)));
+    }
+
+    @Test
+    public void testInterestCriteria() throws InterruptedException {
+        testWithInterest(SampleInterest.DiscoveryInstance.build());
+        testWithInterest(SampleInterest.DiscoveryApp.build());
+        testWithInterest(SampleInterest.DiscoveryVip.build());
+        testWithInterest(SampleInterest.DiscoveryVipSecure.build());
+        testWithInterest(SampleInterest.MultipleApps.build());
+        testWithInterest(Interests.forFullRegistry());
+        testWithInterest(Interests.forNone());
+    }
+
+    private void testWithInterest(Interest<InstanceInfo> interest) throws InterruptedException {
+        InterestHandler clientTransport = newClientTransportFactory().newInterestTransport(eurekaServer);
+        Observable<ChannelNotification<Interest<InstanceInfo>>> interestNotifications = Observable.just(ChannelNotification.newData(interest));
+
+        ExtTestSubscriber<ChannelNotification<ChangeNotification<InstanceInfo>>> testSubscriber = new ExtTestSubscriber<>();
+        clientTransport.handle(interestNotifications).subscribe(testSubscriber);
+
+        assertThat(interestAcceptor.getLastInterest(), is(equalTo(interest)));
+    }
+
+    @Test
+    public void testDeltaUpdates() throws InterruptedException {
+        InstanceInfo initialInstance = SampleInstanceInfo.Backend.build();
+        DeltaBuilder builder = InstanceModel.getDefaultModel().newDelta().withId(initialInstance.getId());
+
+        testDeltaUpdate(initialInstance, builder.withDelta(InstanceInfoField.STATUS, InstanceInfo.Status.DOWN).build());
+
+        testDeltaUpdate(initialInstance, builder.withDelta(InstanceInfoField.APPLICATION, "newApp").build());
+        testDeltaUpdate(initialInstance, builder.withDelta(InstanceInfoField.APPLICATION_GROUP, "newAppGroup").build());
+        testDeltaUpdate(initialInstance, builder.withDelta(InstanceInfoField.ASG, "newAsg").build());
+        testDeltaUpdate(initialInstance, builder.withDelta(InstanceInfoField.DATA_CENTER_INFO, SampleAwsDataCenterInfo.UsEast1a.build()).build());
+        testDeltaUpdate(initialInstance, builder.withDelta(InstanceInfoField.HEALTHCHECK_URLS, ExtCollections.asSet("http://newHealthCheck1", "http://newHealthCheck2")).build());
+        testDeltaUpdate(initialInstance, builder.withDelta(InstanceInfoField.HOMEPAGE_URL, "http://homepage").build());
+        testDeltaUpdate(initialInstance, builder.withDelta(InstanceInfoField.STATUS_PAGE_URL, "http://statuspage").build());
+
+        Map<String, String> metaData = new HashMap<>();
+        metaData.put("key1", "value1");
+        testDeltaUpdate(initialInstance, builder.withDelta(InstanceInfoField.META_DATA, metaData).build());
+
+        testDeltaUpdate(initialInstance, builder.withDelta(InstanceInfoField.PORTS, SampleServicePort.httpPorts()).build());
+        testDeltaUpdate(initialInstance, builder.withDelta(InstanceInfoField.VIP_ADDRESS, "unsecureVip").build());
+        testDeltaUpdate(initialInstance, builder.withDelta(InstanceInfoField.SECURE_VIP_ADDRESS, "secureVip").build());
+    }
+
+    private void testDeltaUpdate(InstanceInfo initialInstance, Delta<?> delta) throws InterruptedException {
+        interestAcceptor.setReplyStream(
+                new ChangeNotification<>(ChangeNotification.Kind.Add, initialInstance),
+                new ModifyNotification<>(initialInstance.applyDelta(delta), Collections.singleton(delta))
+        );
+
+        InterestHandler clientTransport = newClientTransportFactory().newInterestTransport(eurekaServer);
+        ReplaySubject<ChannelNotification<Interest<InstanceInfo>>> interestNotifications = ReplaySubject.create();
+
+        ExtTestSubscriber<ChannelNotification<ChangeNotification<InstanceInfo>>> testSubscriber = new ExtTestSubscriber<>();
+        clientTransport.handle(interestNotifications).subscribe(testSubscriber);
+
+        interestNotifications.onNext(ChannelNotification.newData(interestModel.newFullRegistryInterest()));
+
+        testSubscriber.takeNextOrWait(); // Ignore buffer start
+        testSubscriber.takeNextOrWait(); // Ignore add
+        ChannelNotification<ChangeNotification<InstanceInfo>> reply = testSubscriber.takeNextOrWait();
+        assertThat(reply.getKind(), is(equalTo(ChannelNotification.Kind.Data)));
+
+        ModifyNotification<InstanceInfo> modify = (ModifyNotification<InstanceInfo>) reply.getData();
+        assertThat(modify.getDelta().size(), is(equalTo(1)));
+
+        Delta<?> repliedDelta = modify.getDelta().iterator().next();
+        assertThat(repliedDelta, is(equalTo(delta)));
     }
 
     @Test(timeout = 30000)
@@ -309,6 +385,17 @@ public abstract class EurekaTransportCompatibilityTestSuite {
     }
 
     class TestableInterestTransportHandler implements InterestHandler {
+
+        private final BlockingQueue<Interest<InstanceInfo>> interestUpdates = new LinkedBlockingQueue<>();
+
+        private final List<ChangeNotification<InstanceInfo>> replyStream = new ArrayList<>();
+
+        TestableInterestTransportHandler() {
+            replyStream.add(new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, instance));
+            replyStream.add(new ModifyNotification<InstanceInfo>(updatedInstance, Collections.singleton(updateDelta)));
+            replyStream.add(new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Delete, updatedInstance));
+        }
+
         @Override
         public void init(ChannelContext<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> channelContext) {
         }
@@ -316,11 +403,6 @@ public abstract class EurekaTransportCompatibilityTestSuite {
         @Override
         public Observable<ChannelNotification<ChangeNotification<InstanceInfo>>> handle(Observable<ChannelNotification<Interest<InstanceInfo>>> interests) {
             return Observable.create(subscriber -> {
-
-                ChangeNotification<InstanceInfo> addNotification = new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Add, instance);
-                ChangeNotification<InstanceInfo> modifyNotification = new ModifyNotification<InstanceInfo>(updatedInstance, Collections.singleton(updateDelta));
-                ChangeNotification<InstanceInfo> deleteNotification = new ChangeNotification<InstanceInfo>(ChangeNotification.Kind.Delete, updatedInstance);
-
                 interests
                         .doOnNext(interest -> {
                             switch (interest.getKind()) {
@@ -332,18 +414,28 @@ public abstract class EurekaTransportCompatibilityTestSuite {
                                     subscriber.onNext(ChannelNotification.<ChangeNotification<InstanceInfo>>newHeartbeat());
                                     break;
                                 case Data:
+                                    interestUpdates.add(interest.getData());
                                     ChangeNotification<InstanceInfo> bufferStart = StreamStateNotification.bufferStartNotification(interest.getData());
                                     ChangeNotification<InstanceInfo> bufferEnd = StreamStateNotification.bufferEndNotification(interest.getData());
                                     subscriber.onNext(ChannelNotification.newData(bufferStart));
-                                    subscriber.onNext(ChannelNotification.newData(addNotification));
-                                    subscriber.onNext(ChannelNotification.newData(modifyNotification));
-                                    subscriber.onNext(ChannelNotification.newData(deleteNotification));
+                                    for (ChangeNotification<InstanceInfo> reply : replyStream) {
+                                        subscriber.onNext(ChannelNotification.newData(reply));
+                                    }
                                     subscriber.onNext(ChannelNotification.newData(bufferEnd));
                             }
                         })
                         .doOnError(e -> e.printStackTrace())
                         .subscribe();
             });
+        }
+
+        public Interest<InstanceInfo> getLastInterest() throws InterruptedException {
+            return interestUpdates.poll(5, TimeUnit.SECONDS);
+        }
+
+        public void setReplyStream(ChangeNotification<InstanceInfo>... changeNotifications) {
+            replyStream.clear();
+            Collections.addAll(replyStream, changeNotifications);
         }
     }
 

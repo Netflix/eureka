@@ -1,7 +1,5 @@
 package com.netflix.eureka2.config;
 
-import com.netflix.eureka2.codec.CodecType;
-
 /**
  * Configuration for the transport layer that applies to all channels created
  *
@@ -27,13 +25,4 @@ public interface EurekaTransportConfig {
      * @return the timeout period in milliseconds
      */
     long getConnectionAutoTimeoutMs();
-
-    /**
-     * Specify the default encoding codec to encode with when initiating a connection with an remote entity.
-     * Receiving connections should dynamically decode and encode replies with the encoding codec specified by
-     * this initiating connection.
-     *
-     * @return the default encoding codec
-     */
-    CodecType getCodec();
 }

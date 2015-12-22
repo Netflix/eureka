@@ -1,7 +1,6 @@
 package com.netflix.eureka2.server.config;
 
 import com.netflix.archaius.annotations.DefaultValue;
-import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 
 /**
@@ -43,8 +42,4 @@ public interface EurekaServerTransportConfig extends EurekaTransportConfig {
     @Override
     @DefaultValue("" + DEFAULT_CONNECTION_AUTO_TIMEOUT_MS)
     long getConnectionAutoTimeoutMs();
-
-    @Override
-    @DefaultValue("Avro")
-    CodecType getCodec();
 }

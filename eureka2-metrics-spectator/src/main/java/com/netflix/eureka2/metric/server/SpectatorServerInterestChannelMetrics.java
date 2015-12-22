@@ -20,15 +20,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.netflix.eureka2.channel.InterestChannel.STATE;
-import com.netflix.eureka2.metric.AbstractStateMachineMetrics;
+import com.netflix.eureka2.metric.SpectatorEurekaMetrics;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.ExtendedRegistry;
 
 /**
  * @author Tomasz Bak
  */
-public class SpectatorServerInterestChannelMetrics extends AbstractStateMachineMetrics<STATE> implements ServerInterestChannelMetrics {
+public class SpectatorServerInterestChannelMetrics extends SpectatorEurekaMetrics implements ServerInterestChannelMetrics {
 
     /**
      * We could use {@link java.util.concurrent.ConcurrentHashMap} with putIfAbsent method
@@ -42,7 +41,7 @@ public class SpectatorServerInterestChannelMetrics extends AbstractStateMachineM
     private final AtomicInteger totalInstanceInterests = new AtomicInteger();
 
     public SpectatorServerInterestChannelMetrics(ExtendedRegistry registry) {
-        super(registry, "server", STATE.class);
+        super(registry, "server");
         newGauge("interestAll", interestAllCounter);
         newGauge("totalInstanceInterests", totalInstanceInterests);
     }

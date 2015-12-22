@@ -282,7 +282,7 @@ public class EurekaDeployment {
             Map<Class<?>, Object> writeConfigOverrides = configurationOverrides == null ? null : configurationOverrides.get(ServerType.Write);
             EmbeddedWriteCluster writeCluster = new EmbeddedWriteCluster(writeExtensions,
                     extensionsEnabled, writeConfigOverrides,
-                    adminUIEnabled, ephemeralPorts, transportConfig.getCodec(), networkRouter);
+                    adminUIEnabled, ephemeralPorts, networkRouter);
             writeCluster.scaleUpBy(writeClusterSize);
 
             // Read cluster
@@ -291,7 +291,7 @@ public class EurekaDeployment {
             EmbeddedReadCluster readCluster = new EmbeddedReadCluster(writeCluster.registrationResolver(),
                     writeCluster.interestResolver(), readExtensions, extensionsEnabled,
                     readConfigOverrides,
-                    adminUIEnabled, ephemeralPorts, transportConfig.getCodec(), networkRouter);
+                    adminUIEnabled, ephemeralPorts, networkRouter);
             readCluster.scaleUpBy(readClusterSize);
 
             // Dashboard

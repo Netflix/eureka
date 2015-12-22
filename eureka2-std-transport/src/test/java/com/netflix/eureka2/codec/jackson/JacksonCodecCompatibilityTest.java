@@ -19,7 +19,6 @@ package com.netflix.eureka2.codec.jackson;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.StdInstanceModel;
 import com.netflix.eureka2.testkit.compatibility.codec.EurekaCodecCompatibilityTest;
-import com.netflix.eureka2.transport.StdEurekaTransportFactory;
 import org.junit.BeforeClass;
 
 /**

@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.junit.stubs.EurekaRegistrationClientStub.RegistrationTracker.State;
 import rx.Observable;
@@ -26,8 +25,8 @@ public class EurekaRegistrationClientStub implements EurekaRegistrationClient {
 
     private int registrationIdCounter;
 
-    private final List<RegistrationObservable> pendingRegistrations = new ArrayList<>();
-    private final Map<RegistrationObservable, RegistrationTracker> registrationTrackers = new HashMap<>();
+    private final List<Observable<RegistrationStatus>> pendingRegistrations = new ArrayList<>();
+    private final Map<Observable<RegistrationStatus>, RegistrationTracker> registrationTrackers = new HashMap<>();
 
     @Override
     public Observable<RegistrationStatus> register(Observable<InstanceInfo> registrant) {
@@ -47,7 +46,7 @@ public class EurekaRegistrationClientStub implements EurekaRegistrationClient {
         });
         String id = "id#" + registrationIdCounter;
         registrationIdCounter++;
-        InternalRegistrationObservable registrationObservable = new InternalRegistrationObservable(id, onSubscribe, initObservable);
+        Observable<RegistrationStatus> registrationObservable = null;
 
         pendingRegistrations.add(registrationObservable);
         registrationTrackers.put(registrationObservable, registrationTracker);
@@ -65,7 +64,7 @@ public class EurekaRegistrationClientStub implements EurekaRegistrationClient {
         pendingRegistrations.clear();
     }
 
-    public List<RegistrationObservable> getPendingRegistrations() {
+    public List<Observable<RegistrationStatus>> getPendingRegistrations() {
         return new ArrayList<>(pendingRegistrations);
     }
 
@@ -86,56 +85,17 @@ public class EurekaRegistrationClientStub implements EurekaRegistrationClient {
         if (registrationTrackers.isEmpty()) {
             return null;
         }
-        RegistrationObservable lastRegistration = pendingRegistrations.get(pendingRegistrations.size() - 1);
+        Observable<RegistrationStatus> lastRegistration = pendingRegistrations.get(pendingRegistrations.size() - 1);
         List<InstanceInfo> updates = registrationTrackers.get(lastRegistration).getReceivedUpdates();
         return updates == null || updates.isEmpty() ? null : updates.get(updates.size() - 1);
     }
 
-    public List<InstanceInfo> getLastRegistrationUpdates(RegistrationObservable registrationObservable) {
+    public List<InstanceInfo> getLastRegistrationUpdates(Observable<RegistrationStatus> registrationObservable) {
         RegistrationTracker tracker = registrationTrackers.get(registrationObservable);
         if (tracker == null || tracker.getReceivedUpdates() == null) {
             return null;
         }
         return new ArrayList<>(tracker.getReceivedUpdates());
-    }
-
-    static class InternalRegistrationObservable extends RegistrationObservable {
-
-        private final String id;
-
-        InternalRegistrationObservable(String id, OnSubscribe<Void> onSubscribe, Observable<Void> initialRegistrationResult) {
-            super(onSubscribe, initialRegistrationResult);
-            this.id = id;
-        }
-
-        String getId() {
-            return id;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            InternalRegistrationObservable that = (InternalRegistrationObservable) o;
-
-            return !(id != null ? !id.equals(that.id) : that.id != null);
-
-        }
-
-        @Override
-        public int hashCode() {
-            return id != null ? id.hashCode() : 0;
-        }
-
-        @Override
-        public String toString() {
-            return "InternalRegistrationObservable{" +
-                    "id='" + id + '\'' +
-                    '}';
-        }
     }
 
     static class RegistrationTracker {

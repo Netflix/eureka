@@ -33,10 +33,8 @@ import com.netflix.eureka2.protocol.common.StdDeleteInstance;
 import com.netflix.eureka2.protocol.common.StdHeartbeat;
 import com.netflix.eureka2.protocol.common.StdStreamStateUpdate;
 import com.netflix.eureka2.protocol.interest.StdInterestRegistration;
-import com.netflix.eureka2.protocol.interest.StdUnregisterInterestSet;
 import com.netflix.eureka2.protocol.interest.StdUpdateInstanceInfo;
 import com.netflix.eureka2.protocol.register.StdRegister;
-import com.netflix.eureka2.protocol.register.StdUnregister;
 import com.netflix.eureka2.protocol.replication.StdReplicationHello;
 import com.netflix.eureka2.protocol.replication.StdReplicationHelloReply;
 import com.netflix.eureka2.spi.model.Acknowledgement;
@@ -46,10 +44,8 @@ import com.netflix.eureka2.spi.protocol.common.AddInstance;
 import com.netflix.eureka2.spi.protocol.common.DeleteInstance;
 import com.netflix.eureka2.spi.protocol.common.StreamStateUpdate;
 import com.netflix.eureka2.spi.protocol.interest.InterestRegistration;
-import com.netflix.eureka2.spi.protocol.interest.UnregisterInterestSet;
 import com.netflix.eureka2.spi.protocol.interest.UpdateInstanceInfo;
 import com.netflix.eureka2.spi.protocol.registration.Register;
-import com.netflix.eureka2.spi.protocol.registration.Unregister;
 import com.netflix.eureka2.spi.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.spi.protocol.replication.ReplicationHelloReply;
 
@@ -61,11 +57,6 @@ public class StdProtocolModel extends ProtocolModel {
     @Override
     public Register newRegister(InstanceInfo instanceInfo) {
         return new StdRegister((StdInstanceInfo) instanceInfo);
-    }
-
-    @Override
-    public Unregister newUnregister() {
-        return StdUnregister.INSTANCE;
     }
 
     @Override
@@ -113,11 +104,6 @@ public class StdProtocolModel extends ProtocolModel {
     @Override
     public InterestRegistration newInterestRegistration(Interest<InstanceInfo> interest) {
         return new StdInterestRegistration(interest);
-    }
-
-    @Override
-    public UnregisterInterestSet newUnregisterInterestSet() {
-        return StdUnregisterInterestSet.INSTANCE;
     }
 
     public static ProtocolModel getStdModel() {

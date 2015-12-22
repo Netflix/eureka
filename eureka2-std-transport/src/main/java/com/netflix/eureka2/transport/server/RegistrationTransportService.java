@@ -24,11 +24,11 @@ import com.netflix.eureka2.spi.channel.ChannelPipelineFactory;
 import com.netflix.eureka2.spi.model.ClientHello;
 import com.netflix.eureka2.spi.model.Heartbeat;
 import com.netflix.eureka2.spi.model.TransportModel;
-import com.netflix.eureka2.transport.codec.ProtocolMessageEnvelope;
+import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
-import static com.netflix.eureka2.transport.codec.ProtocolMessageEnvelope.registrationEnvelope;
+import static com.netflix.eureka2.protocol.ProtocolMessageEnvelope.registrationEnvelope;
 
 /**
  */

@@ -19,23 +19,14 @@ package com.netflix.eureka2.transport;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
-import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.StdSource;
-import com.netflix.eureka2.model.instance.Delta;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.InstanceInfoField;
 import com.netflix.eureka2.model.transport.StdReplicationServerHello;
-import com.netflix.eureka2.model.transport.StdServerHello;
-import com.netflix.eureka2.protocol.interest.StdUpdateInstanceInfo;
 import com.netflix.eureka2.spi.codec.EurekaCodec;
 import com.netflix.eureka2.spi.codec.EurekaCodecFactory;
-import com.netflix.eureka2.spi.protocol.ProtocolModel;
-import com.netflix.eureka2.transport.codec.ProtocolMessageEnvelope;
+import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
@@ -50,7 +41,6 @@ public class JacksonNettyMessageCodec extends ByteToMessageCodec<Object> {
 
     @Override
     public boolean acceptOutboundMessage(Object msg) throws Exception {
-        boolean accept = false;
         if (msg instanceof ProtocolMessageEnvelope) {
             Object internal = ((ProtocolMessageEnvelope) msg).getMessage();
             if (codecFactory.accept(internal.getClass())) {

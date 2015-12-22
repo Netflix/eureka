@@ -17,10 +17,8 @@
 package com.netflix.eureka2.metric;
 
 
-import com.netflix.eureka2.channel.RegistrationChannel.STATE;
-
 /**
  * @author Tomasz Bak
  */
-public interface RegistrationChannelMetrics extends StateMachineMetrics<STATE> {
+public interface RegistrationChannelMetrics {
 }

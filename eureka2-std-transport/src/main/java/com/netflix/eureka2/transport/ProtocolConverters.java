@@ -35,8 +35,8 @@ import com.netflix.eureka2.spi.protocol.common.AddInstance;
 import com.netflix.eureka2.spi.protocol.common.DeleteInstance;
 import com.netflix.eureka2.spi.protocol.common.StreamStateUpdate;
 import com.netflix.eureka2.spi.protocol.interest.UpdateInstanceInfo;
-import com.netflix.eureka2.transport.codec.ProtocolMessageEnvelope;
-import com.netflix.eureka2.transport.codec.ProtocolMessageEnvelope.ProtocolType;
+import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
+import com.netflix.eureka2.protocol.ProtocolMessageEnvelope.ProtocolType;
 
 /**
  */

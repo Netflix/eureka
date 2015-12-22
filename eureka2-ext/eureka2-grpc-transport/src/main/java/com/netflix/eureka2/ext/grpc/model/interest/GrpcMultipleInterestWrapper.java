@@ -100,6 +100,27 @@ public class GrpcMultipleInterestWrapper extends GrpcInterestWrapper implements 
         return new GrpcMultipleInterestWrapper(newInterests);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        GrpcMultipleInterestWrapper that = (GrpcMultipleInterestWrapper) o;
+
+        return interestWrappers != null ? interestWrappers.equals(that.interestWrappers) : that.interestWrappers == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        return interestWrappers != null ? interestWrappers.hashCode() : 0;
+    }
+
+    @Override
+    public String toString() {
+        return "GrpcMultipleInterestWrapper{interestWrappers=" + interestWrappers + '}';
+    }
+
     private static <T> void append(Interest<T> interest, Set<Interest<T>> collector) {
         if (interest instanceof MultipleInterests) {
             for (Interest<T> i : ((MultipleInterests<T>) interest).getInterests()) {

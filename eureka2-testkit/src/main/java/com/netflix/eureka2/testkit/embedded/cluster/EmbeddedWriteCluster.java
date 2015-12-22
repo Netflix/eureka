@@ -6,10 +6,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.inject.Module;
-import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.codec.CodecType;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.server.config.WriteServerConfig;
@@ -43,21 +42,19 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
     private final Map<Class<?>, Object> configurationOverrides;
     private final boolean withAdminUI;
     private final boolean ephemeralPorts;
-    private final CodecType codec;
     private final NetworkRouter networkRouter;
 
     private int nextAvailablePort = WRITE_SERVER_PORTS_FROM;
 
     public EmbeddedWriteCluster(List<Class<? extends Module>> extensionModules, boolean withExt,
                                 Map<Class<?>, Object> configurationOverrides, boolean withAdminUI,
-                                boolean ephemeralPorts, CodecType codec, NetworkRouter networkRouter) {
+                                boolean ephemeralPorts, NetworkRouter networkRouter) {
         super(WRITE_SERVER_NAME);
         this.extensionModules = extensionModules;
         this.withExt = withExt;
         this.configurationOverrides = configurationOverrides;
         this.withAdminUI = withAdminUI;
         this.ephemeralPorts = ephemeralPorts;
-        this.codec = codec;
         this.networkRouter = networkRouter;
     }
 
@@ -80,7 +77,6 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                 )
                 .withTransportConfig(
                         anEurekaServerTransportConfig()
-                                .withCodec(codec)
                                 .withHttpPort(httpPort)
                                 .withInterestPort(writeServerAddress.getInterestPort())
                                 .withRegistrationPort(writeServerAddress.getRegistrationPort())

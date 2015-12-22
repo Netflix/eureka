@@ -3,7 +3,6 @@ package com.netflix.eureka2.testkit.embedded.cluster;
 import java.util.List;
 
 import com.netflix.eureka2.model.Server;
-import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.server.config.WriteServerConfig;
@@ -32,7 +31,7 @@ public class EmbeddedWriteClusterTest {
 
     @Before
     public void setUp() throws Exception {
-        writeCluster = new EmbeddedWriteCluster(null, false, null, false, false, CodecType.Avro, null) {
+        writeCluster = new EmbeddedWriteCluster(null, false, null, false, false, null) {
             @Override
             protected EmbeddedWriteServer newServer(WriteServerConfig config) {
                 return writeServer;

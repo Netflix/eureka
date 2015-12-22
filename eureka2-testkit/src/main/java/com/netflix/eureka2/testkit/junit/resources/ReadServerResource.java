@@ -2,7 +2,6 @@ package com.netflix.eureka2.testkit.junit.resources;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
 import com.netflix.eureka2.server.transport.EurekaTransportServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
@@ -23,7 +22,6 @@ public class ReadServerResource extends EurekaExternalResource {
 
     private final String name;
     private final WriteServerResource writeServerResource;
-    private final CodecType codec;
 
     private EmbeddedReadServer server;
     private int interestPort;
@@ -33,13 +31,8 @@ public class ReadServerResource extends EurekaExternalResource {
     }
 
     public ReadServerResource(String name, WriteServerResource writeServerResource) {
-        this(name, writeServerResource, CodecType.Avro);
-    }
-
-    public ReadServerResource(String name, WriteServerResource writeServerResource, CodecType codec) {
         this.name = name;
         this.writeServerResource = writeServerResource;
-        this.codec = codec;
     }
 
     @Override
@@ -53,7 +46,6 @@ public class ReadServerResource extends EurekaExternalResource {
                 )
                 .withTransportConfig(
                         anEurekaServerTransportConfig()
-                                .withCodec(codec)
                                 .withHttpPort(0)
                                 .withInterestPort(0)
                                 .withShutDownPort(0)

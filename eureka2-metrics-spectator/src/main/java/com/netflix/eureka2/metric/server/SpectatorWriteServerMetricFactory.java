@@ -36,44 +36,4 @@ public class SpectatorWriteServerMetricFactory extends WriteServerMetricFactory 
         this.interestChannelMetrics = new SpectatorServerInterestChannelMetrics(registry);
         this.overrideServiceTaskInvokerMetrics = new SpectatorSerializedTaskInvokerMetrics(registry, "overrideService");
     }
-
-    @Override
-    public MessageConnectionMetrics getReplicationSenderConnectionMetrics() {
-        return replicationSenderConnectionMetrics;
-    }
-
-    @Override
-    public MessageConnectionMetrics getReplicationReceiverConnectionMetrics() {
-        return replicationReceiverConnectionMetrics;
-    }
-
-    @Override
-    public RegistrationChannelMetrics getRegistrationChannelMetrics() {
-        return registrationChannelMetrics;
-    }
-
-    @Override
-    public ReplicationChannelMetrics getReplicationChannelMetrics() {
-        return replicationChannelMetrics;
-    }
-
-    @Override
-    public MessageConnectionMetrics getRegistrationConnectionMetrics() {
-        return registrationConnectionMetrics;
-    }
-
-    @Override
-    public MessageConnectionMetrics getDiscoveryConnectionMetrics() {
-        return discoveryConnectionMetrics;
-    }
-
-    @Override
-    public ServerInterestChannelMetrics getInterestChannelMetrics() {
-        return interestChannelMetrics;
-    }
-
-    @Override
-    public SerializedTaskInvokerMetrics getOverrideServiceTaskInvokerMetrics() {
-        return overrideServiceTaskInvokerMetrics;
-    }
 }

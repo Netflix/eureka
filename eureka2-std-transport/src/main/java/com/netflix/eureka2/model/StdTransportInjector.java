@@ -19,9 +19,8 @@ package com.netflix.eureka2.model;
 import com.netflix.eureka2.codec.jackson.JacksonEurekaCodecFactory;
 import com.netflix.eureka2.protocol.StdProtocolModel;
 import com.netflix.eureka2.spi.codec.EurekaCodecFactory;
+import com.netflix.eureka2.spi.model.TransportModel;
 import com.netflix.eureka2.spi.protocol.ProtocolModel;
-import com.netflix.eureka2.transport.EurekaTransports;
-import com.netflix.eureka2.transport.StdEurekaTransportFactory;
 
 /**
  * Inject standard models in test.
@@ -34,10 +33,9 @@ public final class StdTransportInjector {
     public static void inject() {
         InterestModel.setDefaultModel(StdInterestModel.getStdModel());
         InstanceModel.setDefaultModel(StdInstanceModel.getStdModel());
-        InterestModel.setDefaultModel(StdInterestModel.getStdModel());
         ProtocolModel.setDefaultModel(StdProtocolModel.getStdModel());
+        TransportModel.setDefaultModel(StdTransportModel.getStdModel());
 
         EurekaCodecFactory.setDefaultFactory(new JacksonEurekaCodecFactory());
-        EurekaTransports.setTransportFactory(new StdEurekaTransportFactory());
     }
 }

@@ -93,7 +93,6 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
         bind(MetricEventsListenerFactory.class)
                 .annotatedWith(Names.named(com.netflix.eureka2.Names.REGISTRATION))
                 .toInstance(new SpectatorEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
-//        bind(TcpRegistrationServer.class).asEagerSingleton();
         bind(EurekaClientTransportFactory.class).toInstance(EurekaClientTransportFactory.getDefaultFactory());
         bind(EurekaServerTransportFactory.class).toInstance(EurekaServerTransportFactory.getDefaultFactory());
         bind(AuditServiceController.class).asEagerSingleton();
@@ -108,7 +107,6 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
         bind(MetricEventsListenerFactory.class)
                 .annotatedWith(Names.named(com.netflix.eureka2.Names.REPLICATION))
                 .toInstance(new SpectatorEventsListenerFactory("replication-rx-client-", "replication-rx-server-"));
-//        bind(TcpReplicationServer.class).asEagerSingleton();
         bind(ReplicationService.class).asEagerSingleton();
     }
 

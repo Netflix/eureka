@@ -206,12 +206,18 @@ message GrpcInterest {
         string pattern = 2;
     }
 
+    message GrpcInstanceInterest {
+        GrpcInterestOperator operator = 1;
+        string pattern = 2;
+    }
+
     oneof interest_oneof {
         GrpcNoneInterest none = 1;
         GrpcAllInterest all = 2;
         GrpcApplicationInterest application = 3;
         GrpcVipInterest vip = 4;
         GrpcSecureVipInterest secureVip = 5;
+        GrpcInstanceInterest instance = 6;
     }
 }
 

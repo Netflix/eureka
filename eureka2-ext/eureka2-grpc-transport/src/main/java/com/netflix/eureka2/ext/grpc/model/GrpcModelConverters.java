@@ -176,6 +176,7 @@ public final class GrpcModelConverters {
                 for (Delta<?> delta : deltas) {
                     newCopy = newCopy.applyDelta(delta);
                 }
+                instanceCache.put(modifyId, newCopy);
                 return new ModifyNotification<>(newCopy, deltas);
             case DELETE:
                 String id = grpcNotification.getDelete().getInstanceId();

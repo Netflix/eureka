@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.TreeMap;
 
-import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.testkit.cli.command.CloseCommand;
@@ -186,21 +185,7 @@ public class EurekaCLI {
     }
 
     public static void main(String[] args) throws IOException {
-        CodecType codec = null;
-        switch (args.length) {
-            case 0:
-                codec = CodecType.Avro;
-                break;
-            case 2:
-                if ("-c".equals(args[0])) {
-                    codec = CodecType.valueOf(args[1]);
-                    break;
-                }
-            default:
-                System.err.println("ERROR: invalid command line parameters; expected none or '-c <codec_name>");
-                System.exit(-1);
-        }
-        EurekaTransportConfig transportConfig = new BasicEurekaTransportConfig.Builder().withCodec(codec).build();
+        EurekaTransportConfig transportConfig = new BasicEurekaTransportConfig.Builder().build();
         new EurekaCLI(transportConfig).readExecutePrintLoop();
     }
 

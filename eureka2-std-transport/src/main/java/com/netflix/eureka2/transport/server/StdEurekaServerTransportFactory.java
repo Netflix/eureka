@@ -24,7 +24,7 @@ import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.spi.channel.ChannelPipelineFactory;
 import com.netflix.eureka2.spi.transport.EurekaServerTransportFactory;
 import com.netflix.eureka2.transport.client.EurekaPipelineConfigurator;
-import com.netflix.eureka2.transport.codec.ProtocolMessageEnvelope;
+import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ConnectionHandler;
 import io.reactivex.netty.channel.ObservableConnection;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.transport.codec;
+package com.netflix.eureka2.protocol;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;

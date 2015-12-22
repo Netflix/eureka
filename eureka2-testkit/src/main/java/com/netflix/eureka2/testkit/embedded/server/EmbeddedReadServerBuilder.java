@@ -134,7 +134,6 @@ public class EmbeddedReadServerBuilder extends EmbeddedServerBuilder<EurekaServe
         @Override
         protected void configure() {
             bind(NetworkRouter.class).toInstance(networkRouter);
-//            bind(TcpInterestServer.class).to(EmbeddedTcpInterestServer.class).in(Scopes.SINGLETON);
         }
 
         @Provides
