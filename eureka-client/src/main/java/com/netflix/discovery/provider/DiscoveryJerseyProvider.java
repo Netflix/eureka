@@ -70,8 +70,8 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter, MessageBodyRe
     }
 
     public DiscoveryJerseyProvider(EncoderWrapper encoder, DecoderWrapper decoder) {
-        this.encoder = encoder == null ? CodecWrappers.getEncoder(LegacyJacksonJson.class) : encoder;
-        this.decoder = decoder == null ? CodecWrappers.getDecoder(LegacyJacksonJson.class) : decoder;
+        this.encoder = encoder == null ? CodecWrappers.getEncoder(CodecWrappers.JacksonJson.class) : encoder;
+        this.decoder = decoder == null ? CodecWrappers.getDecoder(CodecWrappers.JacksonJson.class) : decoder;
 
         if (encoder instanceof CodecWrappers.JacksonJsonMini) {
             throw new UnsupportedOperationException("Encoder: " + encoder.codecName() + "is not supported for the client");
