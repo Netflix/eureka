@@ -56,7 +56,11 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
     };
 
     private DynamicBooleanProperty propValidateInstanceId;
-    private volatile AmazonInfo info;
+    /* Visible for testing */ volatile AmazonInfo info;
+
+    /* For testing */ CloudInstanceConfig(AmazonInfo info) {
+        this.info = info;
+    }
 
     public CloudInstanceConfig() {
         initCloudInstanceConfig(namespace);
@@ -107,25 +111,21 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
         return info;
     }
 
-    public String resolveDefaultAddress(DataCenterInfo dataCenterInfo) {
+    public String resolveDefaultAddress() {
+        // In this method invocation data center info will be refreshed.
         String result = getHostName(true);
 
-        if (dataCenterInfo instanceof AmazonInfo) {
-            AmazonInfo amazonInfo = (AmazonInfo) dataCenterInfo;
-            for (String name : getDefaultAddressResolutionOrder()) {
-                try {
-                    AmazonInfo.MetaDataKey key = AmazonInfo.MetaDataKey.valueOf(name);
-                    String address = amazonInfo.get(key);
-                    if (address != null && !address.isEmpty()) {
-                        result = address;
-                        break;
-                    }
-                } catch (Exception e) {
-                    logger.error("failed to resolve default address for key {}, skipping", name, e);
+        for (String name : getDefaultAddressResolutionOrder()) {
+            try {
+                AmazonInfo.MetaDataKey key = AmazonInfo.MetaDataKey.valueOf(name);
+                String address = info.get(key);
+                if (address != null && !address.isEmpty()) {
+                    result = address;
+                    break;
                 }
+            } catch (Exception e) {
+                logger.error("failed to resolve default address for key {}, skipping", name, e);
             }
-        } else {
-            logger.warn("DataCenterInfo is not of type AmazonInfo. Defaulting to default resolution");
         }
 
         return result;

@@ -10,9 +10,6 @@ import static com.netflix.appinfo.AmazonInfo.MetaDataKey.localIpv4;
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.publicHostname;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 /**
  * @author David Liu
@@ -35,25 +32,39 @@ public class CloudInstanceConfigTest {
 
     @Before
     public void setUp() {
-        config = spy(new CloudInstanceConfig());
-
         instanceInfo = InstanceInfoGenerator.takeOne();
-        when(config.getDefaultAddressResolutionOrder()).thenReturn(new String[] {
-                publicHostname.name(),
-                localIpv4.name()
-        });
-        when(config.getHostName(anyBoolean())).thenReturn(dummyDefault);
+
+        config = new CloudInstanceConfig((AmazonInfo) instanceInfo.getDataCenterInfo()) {
+            @Override
+            public synchronized void refreshAmazonInfo() {
+                // Do nothing
+            }
+
+            @Override
+            public String[] getDefaultAddressResolutionOrder() {
+                return new String[] {
+                        publicHostname.name(),
+                        localIpv4.name()
+                };
+            }
+
+            @Override
+            public String getHostName(boolean refresh) {
+                return dummyDefault;
+            }
+        };
     }
 
     @Test
     public void testResolveDefaultAddress() {
+        config.info = (AmazonInfo) instanceInfo.getDataCenterInfo();
         AmazonInfo info = (AmazonInfo) instanceInfo.getDataCenterInfo();
-        assertThat(config.resolveDefaultAddress(info), is(info.get(publicHostname)));
+        assertThat(config.resolveDefaultAddress(), is(info.get(publicHostname)));
 
-        info.getMetadata().remove(publicHostname.getName());
-        assertThat(config.resolveDefaultAddress(info), is(info.get(localIpv4)));
+        config.info.getMetadata().remove(publicHostname.getName());
+        assertThat(config.resolveDefaultAddress(), is(info.get(localIpv4)));
 
-        info.getMetadata().remove(localIpv4.getName());
-        assertThat(config.resolveDefaultAddress(info), is(dummyDefault));
+        config.info.getMetadata().remove(localIpv4.getName());
+        assertThat(config.resolveDefaultAddress(), is(dummyDefault));
     }
 }

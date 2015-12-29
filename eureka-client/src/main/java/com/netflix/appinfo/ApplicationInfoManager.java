@@ -151,11 +151,11 @@ public class ApplicationInfoManager {
      */
     public void refreshDataCenterInfoIfRequired() {
         String existingAddress = instanceInfo.getHostName();
-        DataCenterInfo dataCenterInfo = instanceInfo.getDataCenterInfo();
 
         String newAddress;
         if (config instanceof CloudInstanceConfig) {
-            newAddress = ((CloudInstanceConfig) config).resolveDefaultAddress(dataCenterInfo);
+            // Refresh data center info, and return up to date address
+            newAddress = ((CloudInstanceConfig) config).resolveDefaultAddress();
         } else {
             newAddress = config.getHostName(true);
         }
