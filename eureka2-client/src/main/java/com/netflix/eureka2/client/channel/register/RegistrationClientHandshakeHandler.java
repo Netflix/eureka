@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.client.channel2.register;
+package com.netflix.eureka2.client.channel.register;
 
-import com.netflix.eureka2.channel2.client.AbstractHandshakeHandler;
+import com.netflix.eureka2.channel.client.AbstractHandshakeHandler;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;

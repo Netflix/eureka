@@ -50,7 +50,7 @@ import static org.mockito.Mockito.when;
 
 /**
  */
-public class EurekaRegistrationClientImpl2Test {
+public class EurekaRegistrationClientImplTest {
 
     private static final InstanceInfo INSTANCE = SampleInstanceInfo.Backend.build();
 
@@ -66,7 +66,7 @@ public class EurekaRegistrationClientImpl2Test {
     private final EurekaTransportConfig transportConfig = mock(EurekaTransportConfig.class);
     private final RegistrationHandlerStub transportHandler = new RegistrationHandlerStub();
 
-    private EurekaRegistrationClientImpl2 client;
+    private EurekaRegistrationClientImpl client;
 
     @Before
     public void setUp() throws Exception {
@@ -78,7 +78,7 @@ public class EurekaRegistrationClientImpl2Test {
         when(transportFactory.newRegistrationClientTransport(any())).thenReturn(transportHandler);
 
         Source clientSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, "testClient");
-        client = new EurekaRegistrationClientImpl2(clientSource, serverResolver, transportFactory, transportConfig, RETRY_DELAY_MS, testScheduler);
+        client = new EurekaRegistrationClientImpl(clientSource, serverResolver, transportFactory, transportConfig, RETRY_DELAY_MS, testScheduler);
     }
 
     @Test

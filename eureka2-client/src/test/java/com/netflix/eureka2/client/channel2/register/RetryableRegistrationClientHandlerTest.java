@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.client.channel2.register;
 
+import com.netflix.eureka2.client.channel.register.RetryableRegistrationClientHandler;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.spi.channel.*;
 import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;

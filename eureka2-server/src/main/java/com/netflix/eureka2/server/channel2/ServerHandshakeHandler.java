@@ -18,8 +18,8 @@ package com.netflix.eureka2.server.channel2;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.eureka2.channel2.ChannelHandlers;
-import com.netflix.eureka2.channel2.SourceIdGenerator;
+import com.netflix.eureka2.channel.ChannelHandlers;
+import com.netflix.eureka2.channel.SourceIdGenerator;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelHandler;

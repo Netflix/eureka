@@ -17,7 +17,7 @@
 package com.netflix.eureka2.client;
 
 import com.netflix.eureka2.Names;
-import com.netflix.eureka2.client.registration.EurekaRegistrationClientImpl2;
+import com.netflix.eureka2.client.registration.EurekaRegistrationClientImpl;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import rx.schedulers.Schedulers;
@@ -48,6 +48,6 @@ public class EurekaRegistrationClientBuilder
         }
 
         Source clientSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, clientId);
-        return new EurekaRegistrationClientImpl2(clientSource, serverResolver, transportFactory, transportConfig, RETRY_INTERVAL_MS, Schedulers.computation());
+        return new EurekaRegistrationClientImpl(clientSource, serverResolver, transportFactory, transportConfig, RETRY_INTERVAL_MS, Schedulers.computation());
     }
 }

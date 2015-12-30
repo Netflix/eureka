@@ -16,11 +16,11 @@
 
 package com.netflix.eureka2.client.interest;
 
-import com.netflix.eureka2.channel2.LoggingChannelHandler;
-import com.netflix.eureka2.channel2.OutputChangeNotificationSourcingHandler;
-import com.netflix.eureka2.channel2.SourceIdGenerator;
+import com.netflix.eureka2.channel.LoggingChannelHandler;
+import com.netflix.eureka2.channel.OutputChangeNotificationSourcingHandler;
+import com.netflix.eureka2.channel.SourceIdGenerator;
 import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.client.channel2.interest.InterestClientHandshakeHandler;
+import com.netflix.eureka2.client.channel.interest.InterestClientHandshakeHandler;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;

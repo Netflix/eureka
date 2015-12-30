@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.client.channel2.interest;
+package com.netflix.eureka2.client.channel.interest;
 
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
@@ -29,7 +29,6 @@ import rx.Subscriber;
 import rx.Subscription;
 import rx.observers.SerializedSubscriber;
 import rx.subjects.BehaviorSubject;
-import rx.subjects.PublishSubject;
 
 import java.util.concurrent.atomic.AtomicReference;
 

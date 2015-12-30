@@ -4,6 +4,7 @@ package com.netflix.eureka2.server;
 import javax.inject.Provider;
 
 import com.google.inject.Inject;
+import com.netflix.eureka2.client.interest.FullFetchInterestClient;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
@@ -14,14 +15,13 @@ import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.client.interest.FullFetchInterestClient2;
 import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
 import rx.schedulers.Schedulers;
 
 /**
  * @author Tomasz Bak
  */
-public class FullFetchInterestClientProvider implements Provider<FullFetchInterestClient2> {
+public class FullFetchInterestClientProvider implements Provider<FullFetchInterestClient> {
 
     private static final String EUREKA_READ_CLIENT_ID = "eurekaReadClient";
 
@@ -32,7 +32,7 @@ public class FullFetchInterestClientProvider implements Provider<FullFetchIntere
     private final EurekaClientMetricFactory clientMetricFactory;
     private final EurekaRegistryMetricFactory registryMetricFactory;
 
-    private volatile FullFetchInterestClient2 client;
+    private volatile FullFetchInterestClient client;
 
     @Inject
     public FullFetchInterestClientProvider(EurekaServerConfig config,
@@ -46,7 +46,7 @@ public class FullFetchInterestClientProvider implements Provider<FullFetchIntere
     }
 
     @Override
-    public synchronized FullFetchInterestClient2 get() {
+    public synchronized FullFetchInterestClient get() {
         if (client == null) {
             EurekaRegistry<InstanceInfo> registry = new EurekaRegistryImpl(registryMetricFactory);
             BasicEurekaTransportConfig transportConfig = new BasicEurekaTransportConfig.Builder().build();
@@ -55,7 +55,7 @@ public class FullFetchInterestClientProvider implements Provider<FullFetchIntere
             // FIXME Use own instance id
             Source clientSource = InstanceModel.getDefaultModel().createSource(Source.Origin.INTERESTED, EUREKA_READ_CLIENT_ID);
 
-            client = new FullFetchInterestClient2(clientSource, discoveryResolver, transportFactory, transportConfig, registry, RETRY_DELAY_MS, Schedulers.computation());
+            client = new FullFetchInterestClient(clientSource, discoveryResolver, transportFactory, transportConfig, registry, RETRY_DELAY_MS, Schedulers.computation());
         }
 
         return client;

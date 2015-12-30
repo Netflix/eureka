@@ -21,7 +21,7 @@ import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.server.channel.InterestNotificationMultiplexer;
-import com.netflix.eureka2.channel2.ChannelHandlers;
+import com.netflix.eureka2.channel.ChannelHandlers;
 import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.InterestHandler;

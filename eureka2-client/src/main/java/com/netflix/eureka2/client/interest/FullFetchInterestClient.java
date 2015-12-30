@@ -16,8 +16,8 @@
 
 package com.netflix.eureka2.client.interest;
 
-import com.netflix.eureka2.client.channel2.interest.DisconnectingOnEmptyInterestHandler;
-import com.netflix.eureka2.client.channel2.interest.RetryableInterestClientHandler;
+import com.netflix.eureka2.client.channel.interest.DisconnectingOnEmptyInterestHandler;
+import com.netflix.eureka2.client.channel.interest.RetryableInterestClientHandler;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.health.AbstractHealthStatusProvider;
@@ -46,12 +46,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  */
-public class FullFetchInterestClient2 extends AbstractInterestClient2 implements HealthStatusProvider<FullFetchInterestClient2> {
+public class FullFetchInterestClient extends AbstractInterestClient implements HealthStatusProvider<FullFetchInterestClient> {
 
-    private static final Logger logger = LoggerFactory.getLogger(FullFetchInterestClient2.class);
+    private static final Logger logger = LoggerFactory.getLogger(FullFetchInterestClient.class);
 
-    private static final SubsystemDescriptor<FullFetchInterestClient2> DESCRIPTOR = new SubsystemDescriptor<>(
-            FullFetchInterestClient2.class,
+    private static final SubsystemDescriptor<FullFetchInterestClient> DESCRIPTOR = new SubsystemDescriptor<>(
+            FullFetchInterestClient.class,
             "Read Server full fetch InterestClient",
             "Source of registry data for Eureka read server clients."
     );
@@ -62,13 +62,13 @@ public class FullFetchInterestClient2 extends AbstractInterestClient2 implements
     private final Subscription registryUpdateSubscription;
     private final Subscription bootstrapSubscription;
 
-    public FullFetchInterestClient2(Source clientSource,
-                                    ServerResolver serverResolver,
-                                    EurekaClientTransportFactory transportFactory,
-                                    EurekaTransportConfig transportConfig,
-                                    EurekaRegistry<InstanceInfo> eurekaRegistry,
-                                    long retryDelayMs,
-                                    Scheduler scheduler) {
+    public FullFetchInterestClient(Source clientSource,
+                                   ServerResolver serverResolver,
+                                   EurekaClientTransportFactory transportFactory,
+                                   EurekaTransportConfig transportConfig,
+                                   EurekaRegistry<InstanceInfo> eurekaRegistry,
+                                   long retryDelayMs,
+                                   Scheduler scheduler) {
         this.healthProvider = new FullFetchInterestClientHealth2();
 
         this.eurekaRegistry = eurekaRegistry;
@@ -101,7 +101,7 @@ public class FullFetchInterestClient2 extends AbstractInterestClient2 implements
     }
 
     @Override
-    public Observable<HealthStatusUpdate<FullFetchInterestClient2>> healthStatus() {
+    public Observable<HealthStatusUpdate<FullFetchInterestClient>> healthStatus() {
         return healthProvider.healthStatus();
     }
 
@@ -125,7 +125,7 @@ public class FullFetchInterestClient2 extends AbstractInterestClient2 implements
         }).subscribe();
     }
 
-    public static class FullFetchInterestClientHealth2 extends AbstractHealthStatusProvider<FullFetchInterestClient2> {
+    public static class FullFetchInterestClientHealth2 extends AbstractHealthStatusProvider<FullFetchInterestClient> {
 
         protected FullFetchInterestClientHealth2() {
             super(InstanceInfo.Status.STARTING, DESCRIPTOR);

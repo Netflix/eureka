@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.channel2;
+package com.netflix.eureka2.channel;
 
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.spi.channel.ChannelNotification;

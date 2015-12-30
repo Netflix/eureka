@@ -19,7 +19,7 @@ package com.netflix.eureka2.server.channel2.registration;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.channel2.ChannelHandlers;
+import com.netflix.eureka2.channel.ChannelHandlers;
 import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelHandler;

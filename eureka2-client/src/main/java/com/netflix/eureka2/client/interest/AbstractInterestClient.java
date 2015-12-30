@@ -18,13 +18,13 @@ package com.netflix.eureka2.client.interest;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.eureka2.channel2.LoggingChannelHandler;
-import com.netflix.eureka2.channel2.OutputChangeNotificationSourcingHandler;
-import com.netflix.eureka2.channel2.SourceIdGenerator;
-import com.netflix.eureka2.channel2.client.ClientHeartbeatHandler;
+import com.netflix.eureka2.channel.LoggingChannelHandler;
+import com.netflix.eureka2.channel.OutputChangeNotificationSourcingHandler;
+import com.netflix.eureka2.channel.SourceIdGenerator;
+import com.netflix.eureka2.channel.client.ClientHeartbeatHandler;
 import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.client.channel2.interest.InterestClientHandshakeHandler;
-import com.netflix.eureka2.client.channel2.interest.InterestLoopDetectorHandler;
+import com.netflix.eureka2.client.channel.interest.InterestClientHandshakeHandler;
+import com.netflix.eureka2.client.channel.interest.InterestLoopDetectorHandler;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.model.Server;
@@ -45,7 +45,7 @@ import rx.subjects.PublishSubject;
 
 /**
  */
-public abstract class AbstractInterestClient2 implements EurekaInterestClient {
+public abstract class AbstractInterestClient implements EurekaInterestClient {
 
     /**
      * Create a pipeline factory for one-time, single server connection. This pipeline is discarded, and recreated

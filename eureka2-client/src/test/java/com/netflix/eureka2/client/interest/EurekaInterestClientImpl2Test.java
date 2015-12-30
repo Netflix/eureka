@@ -41,14 +41,14 @@ public class EurekaInterestClientImpl2Test extends AbstractInterestClientTest {
     private final EurekaRegistry<InstanceInfo> eurekaRegistry = mock(EurekaRegistry.class);
     private final PublishSubject<ChangeNotification<InstanceInfo>> registrySubject = PublishSubject.create();
 
-    private EurekaInterestClientImpl2 client;
+    private EurekaInterestClientImpl client;
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
 
         setupEurekaRegistryConnect(eurekaRegistry, registrySubject);
-        client = new EurekaInterestClientImpl2(clientSource, serverResolver, transportFactory, transportConfig, eurekaRegistry, RETRY_DELAY_MS, testScheduler);
+        client = new EurekaInterestClientImpl(clientSource, serverResolver, transportFactory, transportConfig, eurekaRegistry, RETRY_DELAY_MS, testScheduler);
     }
 
     @Test

@@ -16,8 +16,8 @@
 
 package com.netflix.eureka2.server.channel2.replication;
 
-import com.netflix.eureka2.channel2.SourceIdGenerator;
-import com.netflix.eureka2.channel2.client.ClientHandshakeHandler;
+import com.netflix.eureka2.channel.SourceIdGenerator;
+import com.netflix.eureka2.channel.client.ClientHandshakeHandler;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;

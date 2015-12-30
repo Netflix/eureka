@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.client.channel2.interest;
 
+import com.netflix.eureka2.client.channel.interest.RetryableInterestClientHandler;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;

@@ -19,7 +19,7 @@ package com.netflix.eureka2.server.channel2.replication;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.netflix.eureka2.channel2.ChannelHandlers;
+import com.netflix.eureka2.channel.ChannelHandlers;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;

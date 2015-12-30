@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.client.channel2.register;
+package com.netflix.eureka2.client.channel.register;
 
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.spi.channel.ChannelContext;

@@ -4,7 +4,7 @@ import com.netflix.eureka2.Names;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaInterestClientBuilder;
 import com.netflix.eureka2.client.functions.InterestFunctions;
-import com.netflix.eureka2.client.interest.EurekaInterestClientImpl2;
+import com.netflix.eureka2.client.interest.EurekaInterestClientImpl;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -102,7 +102,7 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
             EurekaRegistry<InstanceInfo> registry = new PassThroughRegistry();
 
             Source clientSource = InstanceModel.getDefaultModel().createSource(Source.Origin.INTERESTED, RESOLVER_CLIENT_ID);
-            return new EurekaInterestClientImpl2(clientSource, serverResolver, transportFactory, transportConfig, registry, RETRY_DELAY_MS, Schedulers.computation());
+            return new EurekaInterestClientImpl(clientSource, serverResolver, transportFactory, transportConfig, registry, RETRY_DELAY_MS, Schedulers.computation());
         }
     }
 

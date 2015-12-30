@@ -11,7 +11,7 @@ import com.google.inject.util.Modules;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.Eurekas;
-import com.netflix.eureka2.client.interest.FullFetchInterestClient2;
+import com.netflix.eureka2.client.interest.FullFetchInterestClient;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.BasicEurekaTransportConfig;
 import com.netflix.eureka2.model.InstanceModel;
@@ -78,7 +78,7 @@ public class EmbeddedReadServerBuilder extends EmbeddedServerBuilder<EurekaServe
 
         Source clientSource = InstanceModel.getDefaultModel().createSource(Source.Origin.INTERESTED, serverId);
         EurekaClientTransportFactory transportFactory = EurekaClientTransportFactory.getDefaultFactory();
-        EurekaInterestClient interestClient = new FullFetchInterestClient2(
+        EurekaInterestClient interestClient = new FullFetchInterestClient(
                 clientSource, registrationResolver, transportFactory, transportConfig, registry, RETRY_DELAYS_MS, Schedulers.computation()
         );
 

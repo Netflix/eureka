@@ -22,10 +22,10 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.inject.Provider;
 import com.netflix.eureka2.Names;
-import com.netflix.eureka2.channel2.InputChangeNotificationSourcingHandler;
-import com.netflix.eureka2.channel2.LoggingChannelHandler;
-import com.netflix.eureka2.channel2.LoggingChannelHandler.LogLevel;
-import com.netflix.eureka2.channel2.SourceIdGenerator;
+import com.netflix.eureka2.channel.InputChangeNotificationSourcingHandler;
+import com.netflix.eureka2.channel.LoggingChannelHandler;
+import com.netflix.eureka2.channel.LoggingChannelHandler.LogLevel;
+import com.netflix.eureka2.channel.SourceIdGenerator;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;

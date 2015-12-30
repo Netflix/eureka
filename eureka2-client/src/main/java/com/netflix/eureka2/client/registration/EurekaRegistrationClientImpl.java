@@ -16,12 +16,12 @@
 
 package com.netflix.eureka2.client.registration;
 
-import com.netflix.eureka2.channel2.LoggingChannelHandler;
-import com.netflix.eureka2.channel2.LoggingChannelHandler.LogLevel;
-import com.netflix.eureka2.channel2.client.ClientHeartbeatHandler;
+import com.netflix.eureka2.channel.LoggingChannelHandler;
+import com.netflix.eureka2.channel.LoggingChannelHandler.LogLevel;
+import com.netflix.eureka2.channel.client.ClientHeartbeatHandler;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.client.channel2.register.RegistrationClientHandshakeHandler;
-import com.netflix.eureka2.client.channel2.register.RetryableRegistrationClientHandler;
+import com.netflix.eureka2.client.channel.register.RegistrationClientHandshakeHandler;
+import com.netflix.eureka2.client.channel.register.RetryableRegistrationClientHandler;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.model.Server;
@@ -39,20 +39,20 @@ import rx.Subscription;
 
 /**
  */
-public class EurekaRegistrationClientImpl2 implements EurekaRegistrationClient {
+public class EurekaRegistrationClientImpl implements EurekaRegistrationClient {
 
-    private static final Logger logger = LoggerFactory.getLogger(EurekaRegistrationClientImpl2.class);
+    private static final Logger logger = LoggerFactory.getLogger(EurekaRegistrationClientImpl.class);
 
     private final ChannelPipelineFactory<InstanceInfo, InstanceInfo> transportPipelineFactory;
     private final long retryDelayMs;
     private final Scheduler scheduler;
 
-    public EurekaRegistrationClientImpl2(Source clientSource,
-                                         ServerResolver serverResolver,
-                                         EurekaClientTransportFactory transportFactory,
-                                         EurekaTransportConfig transportConfig,
-                                         long retryDelayMs,
-                                         Scheduler scheduler) {
+    public EurekaRegistrationClientImpl(Source clientSource,
+                                        ServerResolver serverResolver,
+                                        EurekaClientTransportFactory transportFactory,
+                                        EurekaTransportConfig transportConfig,
+                                        long retryDelayMs,
+                                        Scheduler scheduler) {
         this.retryDelayMs = retryDelayMs;
         this.scheduler = scheduler;
         this.transportPipelineFactory = new ChannelPipelineFactory<InstanceInfo, InstanceInfo>() {

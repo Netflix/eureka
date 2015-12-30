@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.client.channel2;
 
-import com.netflix.eureka2.channel2.client.ClientHeartbeatHandler;
+import com.netflix.eureka2.channel.client.ClientHeartbeatHandler;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelHandler;

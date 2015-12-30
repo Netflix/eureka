@@ -37,14 +37,14 @@ public class FullFetchInterestClient2Test extends AbstractInterestClientTest {
     private final EurekaRegistry<InstanceInfo> eurekaRegistry = mock(EurekaRegistry.class);
     private final PublishSubject<ChangeNotification<InstanceInfo>> registrySubject = PublishSubject.create();
 
-    private FullFetchInterestClient2 client;
+    private FullFetchInterestClient client;
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
 
         setupEurekaRegistryConnect(eurekaRegistry, registrySubject);
-        client = new FullFetchInterestClient2(clientSource, serverResolver, transportFactory, transportConfig, eurekaRegistry, RETRY_DELAY_MS, testScheduler);
+        client = new FullFetchInterestClient(clientSource, serverResolver, transportFactory, transportConfig, eurekaRegistry, RETRY_DELAY_MS, testScheduler);
     }
 
     @Test

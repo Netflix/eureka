@@ -17,7 +17,7 @@
 package com.netflix.eureka2.client;
 
 import com.netflix.eureka2.Names;
-import com.netflix.eureka2.client.interest.EurekaInterestClientImpl2;
+import com.netflix.eureka2.client.interest.EurekaInterestClientImpl;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -53,6 +53,6 @@ public class EurekaInterestClientBuilder extends AbstractClientBuilder<EurekaInt
 
         Source clientSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, clientId);
 
-        return new EurekaInterestClientImpl2(clientSource, serverResolver, transportFactory, transportConfig, registry, RETRY_INTERVAL_MS, Schedulers.computation());
+        return new EurekaInterestClientImpl(clientSource, serverResolver, transportFactory, transportConfig, registry, RETRY_INTERVAL_MS, Schedulers.computation());
     }
 }

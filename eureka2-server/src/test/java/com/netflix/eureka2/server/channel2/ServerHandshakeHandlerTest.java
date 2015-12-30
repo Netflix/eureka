@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.server.channel2;
 
-import com.netflix.eureka2.channel2.SourceIdGenerator;
+import com.netflix.eureka2.channel.SourceIdGenerator;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;

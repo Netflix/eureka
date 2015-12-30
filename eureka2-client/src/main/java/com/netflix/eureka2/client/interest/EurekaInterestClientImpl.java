@@ -16,8 +16,8 @@
 
 package com.netflix.eureka2.client.interest;
 
-import com.netflix.eureka2.client.channel2.interest.DisconnectingOnEmptyInterestHandler;
-import com.netflix.eureka2.client.channel2.interest.RetryableInterestClientHandler;
+import com.netflix.eureka2.client.channel.interest.DisconnectingOnEmptyInterestHandler;
+import com.netflix.eureka2.client.channel.interest.RetryableInterestClientHandler;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.model.Source;
@@ -43,7 +43,7 @@ import static com.netflix.eureka2.client.util.InterestUtil.isEmptyInterest;
 
 /**
  */
-public class EurekaInterestClientImpl2 extends AbstractInterestClient2 {
+public class EurekaInterestClientImpl extends AbstractInterestClient {
 
     private final ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> transportPipelineFactory;
     private final EurekaRegistry<InstanceInfo> eurekaRegistry;
@@ -53,13 +53,13 @@ public class EurekaInterestClientImpl2 extends AbstractInterestClient2 {
 
     private final Subscription registryUpdateSubscription;
 
-    public EurekaInterestClientImpl2(Source clientSource,
-                                     ServerResolver serverResolver,
-                                     EurekaClientTransportFactory transportFactory,
-                                     EurekaTransportConfig transportConfig,
-                                     EurekaRegistry eurekaRegistry,
-                                     long retryDelayMs,
-                                     Scheduler scheduler) {
+    public EurekaInterestClientImpl(Source clientSource,
+                                    ServerResolver serverResolver,
+                                    EurekaClientTransportFactory transportFactory,
+                                    EurekaTransportConfig transportConfig,
+                                    EurekaRegistry eurekaRegistry,
+                                    long retryDelayMs,
+                                    Scheduler scheduler) {
         this.eurekaRegistry = eurekaRegistry;
         this.transportPipelineFactory = createPipelineFactory(clientSource, serverResolver, transportFactory, transportConfig, scheduler);
 

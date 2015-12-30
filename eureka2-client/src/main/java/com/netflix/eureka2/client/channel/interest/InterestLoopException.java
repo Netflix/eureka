@@ -14,24 +14,16 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.channel2;
-
-import com.netflix.eureka2.model.InstanceModel;
-import com.netflix.eureka2.model.Source;
-
-import java.util.concurrent.atomic.AtomicLong;
+package com.netflix.eureka2.client.channel.interest;
 
 /**
  */
-public class SourceIdGenerator {
+public class InterestLoopException extends Exception {
 
-    private final AtomicLong idRef = new AtomicLong(0);
+    public static final InterestLoopException INSTANCE = new InterestLoopException("Interest loop detected");
 
-    public Source nextOf(Source current) {
-        return InstanceModel.getDefaultModel().createSource(
-                current.getOrigin(),
-                current.getName(),
-                idRef.getAndIncrement()
-        );
+    public InterestLoopException(String message) {
+        super(message);
     }
+
 }
