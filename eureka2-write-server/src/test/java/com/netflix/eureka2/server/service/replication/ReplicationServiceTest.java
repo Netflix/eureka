@@ -26,7 +26,7 @@ import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
-import com.netflix.eureka2.server.channel2.replication.ReplicationHandlerStub;
+import com.netflix.eureka2.channel.ReplicationHandlerStub;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;

@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.transport.server;
-
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
+package com.netflix.eureka2.spi.protocol.common;
 
 /**
+ * A message that may be send by both ends to gracefully disconnect.
  */
-interface TransportService {
-    void handleInput(ProtocolMessageEnvelope envelope);
-
-    void terminateInput();
+public interface GoAway {
 }

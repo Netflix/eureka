@@ -1,5 +1,6 @@
 package com.netflix.eureka2.server.service.bootstrap;
 
+import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Server;
@@ -16,6 +17,7 @@ import com.netflix.eureka2.registry.EurekaRegistryImpl;
 import com.netflix.eureka2.registry.index.IndexRegistryImpl;
 import com.netflix.eureka2.server.resolver.ClusterAddress;
 import com.netflix.eureka2.server.resolver.EurekaClusterResolver;
+import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,13 +49,15 @@ public class BackupClusterBootstrapServiceTest {
 
     private final TestScheduler testScheduler = Schedulers.test();
 
-    private final LightEurekaInterestClient lightEurekaInterestClient = mock(LightEurekaInterestClient.class);
+    private final EurekaInterestClient snapshotInterestClient = mock(EurekaInterestClient.class);
     private final EurekaClusterResolver resolver = mock(EurekaClusterResolver.class);
 
     private RegistryBootstrapService bootstrapService;
 
     private final EurekaRegistry<InstanceInfo> registry = new EurekaRegistryImpl(
             new IndexRegistryImpl<InstanceInfo>(), EurekaRegistryMetricFactory.registryMetrics(), testScheduler);
+
+    private final EurekaClientTransportFactory transportFactory = mock(EurekaClientTransportFactory.class);
 
     @Before
     public void setUp() throws Exception {
@@ -67,17 +71,17 @@ public class BackupClusterBootstrapServiceTest {
                 )
         );
 
-        bootstrapService = new BackupClusterBootstrapService(resolver, Schedulers.computation()) {
+        bootstrapService = new BackupClusterBootstrapService(resolver, transportFactory) {
             @Override
-            protected LightEurekaInterestClient createLightEurekaInterestClient(Server server) {
-                return lightEurekaInterestClient;
+            protected EurekaInterestClient createSnapshotInterestClient(Server server) {
+                return snapshotInterestClient;
             }
         };
     }
 
     @Test(timeout = 30000)
     public void testBootstrapFromPeer() throws Exception {
-        when(lightEurekaInterestClient.forInterest(any(Interest.class))).thenReturn(FOR_INTEREST_REPLY);
+        when(snapshotInterestClient.forInterest(any(Interest.class))).thenReturn(FOR_INTEREST_REPLY);
 
         bootstrapService.loadIntoRegistry(registry, SOURCE).toBlocking().firstOrDefault(null);
         testScheduler.triggerActions();
@@ -87,7 +91,7 @@ public class BackupClusterBootstrapServiceTest {
 
     @Test
     public void testRetryWithSubsequentPeerOnError() throws Exception {
-        when(lightEurekaInterestClient.forInterest(any(Interest.class))).thenReturn(
+        when(snapshotInterestClient.forInterest(any(Interest.class))).thenReturn(
                 Observable.<ChangeNotification<InstanceInfo>>error(new Exception("Subscription error")),
                 FOR_INTEREST_REPLY
         );
@@ -100,7 +104,7 @@ public class BackupClusterBootstrapServiceTest {
 
     @Test
     public void testRetryWithSubsequentPeerIfZeroItemsLoaded() throws Exception {
-        when(lightEurekaInterestClient.forInterest(any(Interest.class))).thenReturn(
+        when(snapshotInterestClient.forInterest(any(Interest.class))).thenReturn(
                 Observable.<ChangeNotification<InstanceInfo>>empty(),
                 FOR_INTEREST_REPLY
         );

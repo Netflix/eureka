@@ -77,7 +77,8 @@ public class EurekaRegistrationClientImpl2Test {
         when(transportConfig.getHeartbeatIntervalMs()).thenReturn(30000L);
         when(transportFactory.newRegistrationClientTransport(any())).thenReturn(transportHandler);
 
-        client = new EurekaRegistrationClientImpl2(serverResolver, transportFactory, transportConfig, RETRY_DELAY_MS, testScheduler);
+        Source clientSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, "testClient");
+        client = new EurekaRegistrationClientImpl2(clientSource, serverResolver, transportFactory, transportConfig, RETRY_DELAY_MS, testScheduler);
     }
 
     @Test

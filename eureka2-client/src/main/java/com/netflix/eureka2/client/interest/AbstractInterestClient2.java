@@ -16,16 +16,18 @@
 
 package com.netflix.eureka2.client.interest;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.netflix.eureka2.channel2.LoggingChannelHandler;
 import com.netflix.eureka2.channel2.OutputChangeNotificationSourcingHandler;
 import com.netflix.eureka2.channel2.SourceIdGenerator;
-import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.channel2.client.ClientHeartbeatHandler;
-import com.netflix.eureka2.client.channel2.interest.DeltaMergingInterestClientHandler;
+import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.channel2.interest.InterestClientHandshakeHandler;
 import com.netflix.eureka2.client.channel2.interest.InterestLoopDetectorHandler;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.EurekaTransportConfig;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Sourced;
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -40,8 +42,6 @@ import rx.Observable;
 import rx.Scheduler;
 import rx.Subscription;
 import rx.subjects.PublishSubject;
-
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  */
@@ -62,10 +62,9 @@ public abstract class AbstractInterestClient2 implements EurekaInterestClient {
             @Override
             public Observable<ChannelPipeline<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>> createPipeline() {
                 return serverResolver.resolve().map(server -> {
-                            String pipelineId = "interest[client=" + clientSource.getName() + ",server=" + server;
+                            String pipelineId = createPipelineId(clientSource, server);
                             return new ChannelPipeline<>(pipelineId,
                                     new OutputChangeNotificationSourcingHandler(),
-                                    new DeltaMergingInterestClientHandler(),
                                     new InterestClientHandshakeHandler(clientSource, idGenerator),
                                     new ClientHeartbeatHandler(transportConfig.getHeartbeatIntervalMs(), scheduler),
                                     new LoggingChannelHandler<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>(LoggingChannelHandler.LogLevel.INFO),
@@ -74,6 +73,7 @@ public abstract class AbstractInterestClient2 implements EurekaInterestClient {
                         }
                 );
             }
+
         };
     }
 
@@ -92,10 +92,9 @@ public abstract class AbstractInterestClient2 implements EurekaInterestClient {
             @Override
             public Observable<ChannelPipeline<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>> createPipeline() {
                 return serverResolver.resolve().map(server -> {
-                            String pipelineId = "interest[client=" + clientSource.getName() + ",server=" + server;
+                            String pipelineId = createPipelineId(clientSource, server);
                             return new ChannelPipeline<>(pipelineId,
                                     new OutputChangeNotificationSourcingHandler(),
-                                    new DeltaMergingInterestClientHandler(),
                                     new InterestClientHandshakeHandler(clientSource, idGenerator),
                                     new InterestLoopDetectorHandler(clientSource),
                                     new ClientHeartbeatHandler(transportConfig.getHeartbeatIntervalMs(), scheduler),
@@ -142,5 +141,9 @@ public abstract class AbstractInterestClient2 implements EurekaInterestClient {
                             }
                         }
                 );
+    }
+
+    private static String createPipelineId(Source clientSource, Server server) {
+        return "interest[client=" + clientSource.getName() + ",server=" + server.getHost() + ':' + server.getPort() + ']';
     }
 }

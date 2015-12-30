@@ -24,14 +24,16 @@ import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
+import com.netflix.eureka2.protocol.ProtocolMessageEnvelope.ProtocolType;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.InterestHandler;
 import com.netflix.eureka2.spi.model.Heartbeat;
 import com.netflix.eureka2.spi.model.ServerHello;
 import com.netflix.eureka2.spi.protocol.ProtocolModel;
 import com.netflix.eureka2.transport.ProtocolConverters;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope.ProtocolType;
+import com.netflix.eureka2.transport.TransportDisconnected;
+import com.netflix.eureka2.utils.rx.ExtObservable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -42,6 +44,8 @@ import static com.netflix.eureka2.protocol.ProtocolMessageEnvelope.interestEnvel
  */
 public class StdInterestClientTransportHandler extends AbstractStdClientTransportHandler<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> implements InterestHandler {
 
+    private static final TransportDisconnected CONNECTION_CLOSED = new TransportDisconnected("Interest client connection closed");
+
     private static final Logger logger = LoggerFactory.getLogger(StdInterestClientTransportHandler.class);
 
     public StdInterestClientTransportHandler(Server server) {
@@ -50,21 +54,27 @@ public class StdInterestClientTransportHandler extends AbstractStdClientTranspor
 
     @Override
     public Observable<ChannelNotification<ChangeNotification<InstanceInfo>>> handle(Observable<ChannelNotification<Interest<InstanceInfo>>> inputStream) {
-        return connect().take(1).flatMap(connection -> {
-            logger.debug("Subscribed to StdInterestClientTransportHandler handler");
+
+        return connect().take(1).<ChannelNotification<ChangeNotification<InstanceInfo>>>flatMap(connection -> {
+            logger.debug("{} Subscribed to StdInterestClientTransportHandler handler", channelContext.getPipeline().getPipelineId());
 
             Map<String, InstanceInfo> instanceCache = new HashMap<>();
 
-            Observable output = inputStream.flatMap(notification -> {
-                return connection.writeAndFlush(asProtocolMessage(notification));
-            });
+            Observable output = inputStream
+                    .flatMap(notification -> {
+                        return connection.writeAndFlush(asProtocolMessage(notification));
+                    })
+                    .doOnUnsubscribe(() -> {
+                        connection.close().subscribe();
+                        logger.debug("{} Closing client interest connection", channelContext.getPipeline().getPipelineId());
+                    });
 
             Observable<ChannelNotification<ChangeNotification<InstanceInfo>>> input = connection.getInput().flatMap(next -> {
                 ProtocolMessageEnvelope envelope = (ProtocolMessageEnvelope) next;
                 return asChannelNotification(envelope, instanceCache);
-            });
+            }).concatWith(Observable.error(CONNECTION_CLOSED));
 
-            return Observable.merge(output, input);
+            return ExtObservable.mergeWhenAllActive(output, input);
         });
     }
 
@@ -73,7 +83,7 @@ public class StdInterestClientTransportHandler extends AbstractStdClientTranspor
         Object message = envelope.getMessage();
 
         if (envelope.getProtocolType() != ProtocolType.Interest) {
-            String error = "Non-interest protocol message received " + message.getClass().getName();
+            String error = channelContext.getPipeline().getPipelineId() + " Non-interest protocol message received " + message.getClass().getName();
             logger.error(error);
             return Observable.error(new IOException(error));
         }

@@ -94,4 +94,9 @@ public class InterestTransportService implements TransportService {
             inputSubject.onError(new IOException("Unexpected message of type " + message.getClass().getName()));
         }
     }
+
+    @Override
+    public void terminateInput() {
+        inputSubject.onCompleted();
+    }
 }

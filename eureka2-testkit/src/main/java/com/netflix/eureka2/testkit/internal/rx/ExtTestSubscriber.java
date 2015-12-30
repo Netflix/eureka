@@ -167,18 +167,7 @@ public class ExtTestSubscriber<T> extends Subscriber<T> {
     }
 
     public void assertOnCompleted(int timeout, TimeUnit timeUnit) throws Exception {
-        long waitTimeInMs = timeUnit.toMillis(timeout);
-        long minWait = Math.max(waitTimeInMs, 10);
-
-        for (int i = 0; i < minWait; i += 10) {
-            if (state.get() == State.OnCompleted) {
-                assertTrue(true);
-                return;
-            }
-            Thread.sleep(10);
-        }
-
-        assertTrue(false);
+        assertInState(State.OnCompleted, timeout, timeUnit);
     }
 
     public void assertOnError() {
@@ -190,9 +179,33 @@ public class ExtTestSubscriber<T> extends Subscriber<T> {
         assertThat(onErrorResult.get(), is(equalTo(expected)));
     }
 
+    public void assertOnError(int timeout, TimeUnit timeUnit) throws Exception {
+        assertInState(State.OnError, timeout, timeUnit);
+    }
+
     public void assertOnError(Class<? extends Throwable> expected) {
         assertThat(state.get(), is(equalTo(State.OnError)));
         assertThat(onErrorResult.get().getClass(), is(equalTo(expected)));
+    }
+
+    public void assertOnError(Class<? extends Throwable> expected, int timeout, TimeUnit timeUnit) throws Exception {
+        assertInState(State.OnError, timeout, timeUnit);
+        assertThat(onErrorResult.get().getClass(), is(equalTo(expected)));
+    }
+
+    public void assertInState(State expectedState, int timeout, TimeUnit timeUnit) throws Exception {
+        long waitTimeInMs = timeUnit.toMillis(timeout);
+        long minWait = Math.max(waitTimeInMs, 10);
+
+        for (int i = 0; i < minWait; i += 10) {
+            if (state.get() == expectedState) {
+                assertTrue(true);
+                return;
+            }
+            Thread.sleep(10);
+        }
+
+        assertTrue(false);
     }
 
     public void assertContainsInAnyOrder(Collection<T> expected) {

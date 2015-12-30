@@ -77,4 +77,15 @@ public class InterestMultiplexerBridgeHandlerTest {
         subscription.unsubscribe();
         assertThat(interestNotifications.hasObservers(), is(false));
     }
+
+    @Test
+    public void testInterestRegistrationOnCompleteClosesOutputSubscription() throws Exception {
+        PublishSubject<ChannelNotification<Interest<InstanceInfo>>> interestNotifications = PublishSubject.create();
+        Subscription subscription = handler.handle(interestNotifications).subscribe(testSubscriber);
+
+        assertThat(subscription.isUnsubscribed(), is(false));
+
+        interestNotifications.onCompleted();
+        assertThat(subscription.isUnsubscribed(), is(true));
+    }
 }

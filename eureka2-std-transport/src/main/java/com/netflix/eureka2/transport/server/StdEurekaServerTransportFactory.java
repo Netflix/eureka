@@ -21,10 +21,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
 import com.netflix.eureka2.spi.channel.ChannelPipelineFactory;
 import com.netflix.eureka2.spi.transport.EurekaServerTransportFactory;
 import com.netflix.eureka2.transport.client.EurekaPipelineConfigurator;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ConnectionHandler;
 import io.reactivex.netty.channel.ObservableConnection;
@@ -46,10 +46,15 @@ public class StdEurekaServerTransportFactory extends EurekaServerTransportFactor
                                              ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> interestPipelineFactory,
                                              ChannelPipelineFactory<ChangeNotification<InstanceInfo>, Void> replicationPipelineFactory) {
         return Observable.create(subscriber -> {
+
+            // Shutting down server port, does not enforce pending connection shutdown. To force it, each connection
+            // is watching shutdownHook observable, and closes itself when this observable terminates.
+            PublishSubject<Void> shutdownHook = PublishSubject.create();
+
             RxServer<Object, Object> rxServer = RxNetty.createTcpServer(
                     port,
                     new EurekaPipelineConfigurator(),
-                    new EurekaConnectionHandler(registrationPipelineFactory, interestPipelineFactory, replicationPipelineFactory)
+                    new EurekaConnectionHandler(registrationPipelineFactory, interestPipelineFactory, replicationPipelineFactory, shutdownHook)
             ).start();
 
             PublishSubject<ServerContext> responseSubject = PublishSubject.create();
@@ -58,6 +63,7 @@ public class StdEurekaServerTransportFactory extends EurekaServerTransportFactor
                 logger.info("Connection unsubscribed; shutting down RxServer on port {}", rxServer.getServerPort());
                 try {
                     rxServer.shutdown();
+                    shutdownHook.onCompleted();
                 } catch (InterruptedException e) {
                     logger.error("Server shutdown interrupted");
                 }
@@ -77,13 +83,16 @@ public class StdEurekaServerTransportFactory extends EurekaServerTransportFactor
         private final ChannelPipelineFactory<InstanceInfo, InstanceInfo> registrationPipelineFactory;
         private final ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> interestPipelineFactory;
         private final ChannelPipelineFactory<ChangeNotification<InstanceInfo>, Void> replicationPipelineFactory;
+        private final Observable<Void> shutdownHook;
 
         EurekaConnectionHandler(ChannelPipelineFactory<InstanceInfo, InstanceInfo> registrationPipelineFactory,
                                 ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> interestPipelineFactory,
-                                ChannelPipelineFactory<ChangeNotification<InstanceInfo>, Void> replicationPipelineFactory) {
+                                ChannelPipelineFactory<ChangeNotification<InstanceInfo>, Void> replicationPipelineFactory,
+                                Observable<Void> shutdownHook) {
             this.registrationPipelineFactory = registrationPipelineFactory;
             this.interestPipelineFactory = interestPipelineFactory;
             this.replicationPipelineFactory = replicationPipelineFactory;
+            this.shutdownHook = shutdownHook;
         }
 
         @Override
@@ -95,24 +104,34 @@ public class StdEurekaServerTransportFactory extends EurekaServerTransportFactor
 
             AtomicReference<TransportService> session = new AtomicReference<>();
 
+            shutdownHook.doOnTerminate(() -> connection.close()).subscribe();
+
             // Connect input
-            Observable<Void> input = connection.getInput().doOnNext(next -> {
-                ProtocolMessageEnvelope envelope = (ProtocolMessageEnvelope) next;
-                if (session.get() == null) {
-                    switch (envelope.getProtocolType()) {
-                        case Registration:
-                            session.set(new RegistrationTransportService(registrationPipelineFactory, outputSubject));
-                            break;
-                        case Interest:
-                            session.set(new InterestTransportService(interestPipelineFactory, outputSubject));
-                            break;
-                        case Replication:
-                            session.set(new ReplicationTransportService(replicationPipelineFactory, outputSubject));
-                            break;
-                    }
-                }
-                session.get().handleInput(envelope);
-            }).ignoreElements().cast(Void.class);
+            Observable<Void> input = connection.getInput()
+                    .doOnNext(next -> {
+                        ProtocolMessageEnvelope envelope = (ProtocolMessageEnvelope) next;
+                        if (session.get() == null) {
+                            switch (envelope.getProtocolType()) {
+                                case Registration:
+                                    session.set(new RegistrationTransportService(registrationPipelineFactory, outputSubject));
+                                    break;
+                                case Interest:
+                                    session.set(new InterestTransportService(interestPipelineFactory, outputSubject));
+                                    break;
+                                case Replication:
+                                    session.set(new ReplicationTransportService(replicationPipelineFactory, outputSubject));
+                                    break;
+                            }
+                        }
+                        session.get().handleInput(envelope);
+                    })
+                    .ignoreElements()
+                    .cast(Void.class)
+                    .doOnUnsubscribe(() -> {
+                        if (session.get() != null) {
+                            session.get().terminateInput();
+                        }
+                    });
 
             return Observable.merge(output, input);
         }

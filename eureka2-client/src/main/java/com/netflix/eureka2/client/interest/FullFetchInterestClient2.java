@@ -75,7 +75,7 @@ public class FullFetchInterestClient2 extends AbstractInterestClient2 implements
         ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> transportPipelineFactory =
                 createPipelineWithLoopDetectorFactory(clientSource, serverResolver, transportFactory, transportConfig, scheduler);
 
-        ChannelPipeline<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> retryablePipeline = new ChannelPipeline<>("interest",
+        ChannelPipeline<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> retryablePipeline = new ChannelPipeline<>("readServerInterestClient@" + clientSource.getName(),
                 new DisconnectingOnEmptyInterestHandler(),
                 new RetryableInterestClientHandler(transportPipelineFactory, retryDelayMs, scheduler)
         );

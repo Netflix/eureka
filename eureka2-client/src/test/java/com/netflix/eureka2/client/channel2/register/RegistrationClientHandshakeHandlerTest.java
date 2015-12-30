@@ -27,8 +27,8 @@ import org.junit.Test;
 import rx.Observable;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.client.channel2.ChannelTestkit.CHANNEL_INSTANCE_NOTIFICATION;
-import static com.netflix.eureka2.client.channel2.ChannelTestkit.SERVER_SOURCE;
+import static com.netflix.eureka2.channel.ChannelTestkit.CHANNEL_INSTANCE_NOTIFICATION;
+import static com.netflix.eureka2.channel.ChannelTestkit.SERVER_SOURCE;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;

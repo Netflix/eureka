@@ -89,4 +89,9 @@ public class ReplicationTransportService implements TransportService {
             }
         }
     }
+
+    @Override
+    public void terminateInput() {
+        inputSubject.onCompleted();
+    }
 }

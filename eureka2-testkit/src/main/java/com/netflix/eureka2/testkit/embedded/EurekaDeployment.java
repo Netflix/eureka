@@ -168,12 +168,17 @@ public class EurekaDeployment {
         return interestClient;
     }
 
+    public EurekaInterestClient cannonicalInterestClient() {
+        return cannonicalInterestClient(null);
+    }
+
     /**
      * Create a {@link EurekaInterestClient} instance to do interest discovery with any instance in a read cluster,
      * using the canonical method to first discover the read cluster from the write cluster
      */
-    public EurekaInterestClient cannonicalInterestClient() {
+    public EurekaInterestClient cannonicalInterestClient(String clientId) {
         EurekaInterestClient interestClient = Eurekas.newInterestClientBuilder()
+                .withClientId(clientId)
                 .withTransportConfig(transportConfig)
                 .withServerResolver(ServerResolvers.fromEureka(getWriteCluster().interestResolver())
                         .forInterest(forVips(getReadCluster().getVip())))

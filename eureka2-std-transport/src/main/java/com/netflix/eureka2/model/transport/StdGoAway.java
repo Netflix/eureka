@@ -14,14 +14,26 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.transport.server;
+package com.netflix.eureka2.model.transport;
 
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
+import com.netflix.eureka2.spi.protocol.common.GoAway;
 
 /**
  */
-interface TransportService {
-    void handleInput(ProtocolMessageEnvelope envelope);
+public class StdGoAway implements GoAway {
 
-    void terminateInput();
+    public static final StdGoAway INSTANCE = new StdGoAway();
+
+    private static final int HASH = 123123414;
+
+    @Override
+    public int hashCode() {
+        return HASH;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof StdGoAway;
+    }
+
 }

@@ -28,6 +28,7 @@ import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.model.transport.StdAcknowledgement;
+import com.netflix.eureka2.model.transport.StdGoAway;
 import com.netflix.eureka2.protocol.common.StdAddInstance;
 import com.netflix.eureka2.protocol.common.StdDeleteInstance;
 import com.netflix.eureka2.protocol.common.StdHeartbeat;
@@ -42,6 +43,7 @@ import com.netflix.eureka2.spi.model.Heartbeat;
 import com.netflix.eureka2.spi.protocol.ProtocolModel;
 import com.netflix.eureka2.spi.protocol.common.AddInstance;
 import com.netflix.eureka2.spi.protocol.common.DeleteInstance;
+import com.netflix.eureka2.spi.protocol.common.GoAway;
 import com.netflix.eureka2.spi.protocol.common.StreamStateUpdate;
 import com.netflix.eureka2.spi.protocol.interest.InterestRegistration;
 import com.netflix.eureka2.spi.protocol.interest.UpdateInstanceInfo;
@@ -62,6 +64,11 @@ public class StdProtocolModel extends ProtocolModel {
     @Override
     public Heartbeat newHeartbeat() {
         return StdHeartbeat.INSTANCE;
+    }
+
+    @Override
+    public GoAway newGoAway() {
+        return StdGoAway.INSTANCE;
     }
 
     @Override

@@ -47,7 +47,7 @@ public class ReadServerResource extends EurekaExternalResource {
                 .withTransportConfig(
                         anEurekaServerTransportConfig()
                                 .withHttpPort(0)
-                                .withInterestPort(0)
+                                .withRegistrationPort(0)
                                 .withShutDownPort(0)
                                 .withWebAdminPort(0)
                                 .build()

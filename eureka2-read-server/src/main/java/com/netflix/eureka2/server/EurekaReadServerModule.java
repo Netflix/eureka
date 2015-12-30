@@ -72,6 +72,7 @@ public class EurekaReadServerModule extends AbstractEurekaServerModule {
     }
 
     @Provides
+    @Singleton
     public EurekaTransportServer getTransportServer(EurekaServerTransportFactory transportFactory,
                                                     EurekaServerTransportConfig config,
                                                     EurekaInstanceInfoConfig instanceInfoConfig,

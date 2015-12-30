@@ -24,6 +24,8 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Action3;
 
+import static com.netflix.eureka2.utils.EurekaTextFormatters.toShortString;
+
 /**
  */
 public class LoggingChannelHandler<I, O> implements ChannelHandler<I, O> {
@@ -85,7 +87,6 @@ public class LoggingChannelHandler<I, O> implements ChannelHandler<I, O> {
                     break;
             }
         };
-
     }
 
     @Override
@@ -95,7 +96,19 @@ public class LoggingChannelHandler<I, O> implements ChannelHandler<I, O> {
                         inputStream
                                 .doOnSubscribe(() -> logFun.call("Subscribed to input stream", null, null))
                                 .doOnUnsubscribe(() -> logFun.call("Unsubscribed from input stream", null, null))
-                                .doOnNext(next -> logFun.call("Sending {}", new Object[]{next.getKind()}, null))
+                                .doOnNext(next -> {
+                                    switch (next.getKind()) {
+                                        case Heartbeat:
+                                            logFun.call("Sending Heartbeat", null, null);
+                                            break;
+                                        case Hello:
+                                            logFun.call("Sending Hello={}", new Object[]{next.getHello()}, null);
+                                            break;
+                                        case Data:
+                                            logFun.call("Sending Data={}", new Object[]{toShortString(next.getData())}, null);
+                                            break;
+                                    }
+                                })
                                 .doOnError(e -> logFun.call("Input terminated with an error", null, e))
                                 .doOnCompleted(() -> logFun.call("Input onCompleted", null, null))
                 )
@@ -107,10 +120,10 @@ public class LoggingChannelHandler<I, O> implements ChannelHandler<I, O> {
                             logFun.call("Received Heartbeat", null, null);
                             break;
                         case Hello:
-                            logFun.call("Received Hello {}", new Object[]{next.getHello()}, null);
+                            logFun.call("Received Hello={}", new Object[]{next.getHello()}, null);
                             break;
                         case Data:
-                            logFun.call("Received Data {}", new Object[]{next.getData()}, null);
+                            logFun.call("Received Data={}", new Object[]{toShortString(next.getData())}, null);
                             break;
                     }
                 })

@@ -21,7 +21,6 @@ import com.netflix.eureka2.client.channel2.interest.RetryableInterestClientHandl
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.model.Sourced;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
@@ -39,9 +38,6 @@ import rx.Subscriber;
 import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Func1;
-import rx.subjects.PublishSubject;
-
-import java.util.concurrent.atomic.AtomicReference;
 
 import static com.netflix.eureka2.client.util.InterestUtil.isEmptyInterest;
 

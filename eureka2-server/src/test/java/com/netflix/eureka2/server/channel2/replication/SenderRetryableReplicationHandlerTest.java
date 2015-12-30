@@ -34,7 +34,7 @@ import rx.subjects.PublishSubject;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import static com.netflix.eureka2.client.channel2.ChannelTestkit.unbound;
+import static com.netflix.eureka2.channel.ChannelTestkit.unbound;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;

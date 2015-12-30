@@ -18,12 +18,14 @@ package com.netflix.eureka2.client.registration;
 
 import com.netflix.eureka2.channel2.LoggingChannelHandler;
 import com.netflix.eureka2.channel2.LoggingChannelHandler.LogLevel;
-import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.channel2.client.ClientHeartbeatHandler;
+import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.channel2.register.RegistrationClientHandshakeHandler;
 import com.netflix.eureka2.client.channel2.register.RetryableRegistrationClientHandler;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.config.EurekaTransportConfig;
+import com.netflix.eureka2.model.Server;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.ChannelPipeline;
@@ -45,7 +47,8 @@ public class EurekaRegistrationClientImpl2 implements EurekaRegistrationClient {
     private final long retryDelayMs;
     private final Scheduler scheduler;
 
-    public EurekaRegistrationClientImpl2(ServerResolver serverResolver,
+    public EurekaRegistrationClientImpl2(Source clientSource,
+                                         ServerResolver serverResolver,
                                          EurekaClientTransportFactory transportFactory,
                                          EurekaTransportConfig transportConfig,
                                          long retryDelayMs,
@@ -56,7 +59,7 @@ public class EurekaRegistrationClientImpl2 implements EurekaRegistrationClient {
             @Override
             public Observable<ChannelPipeline<InstanceInfo, InstanceInfo>> createPipeline() {
                 return serverResolver.resolve().map(server -> {
-                            String pipelineId = "registration[server=" + server.getHost() + ']';
+                            String pipelineId = createPipelineId(clientSource, server);
                             return new ChannelPipeline<>(pipelineId,
                                     new RegistrationClientHandshakeHandler(),
                                     new ClientHeartbeatHandler<InstanceInfo, InstanceInfo>(transportConfig.getHeartbeatIntervalMs(), scheduler),
@@ -94,5 +97,10 @@ public class EurekaRegistrationClientImpl2 implements EurekaRegistrationClient {
 
     @Override
     public void shutdown() {
+    }
+
+
+    private static String createPipelineId(Source clientSource, Server server) {
+        return "registration[client=" + clientSource.getName() + ",server=" + server.getHost() + ':' + server.getPort() + ']';
     }
 }

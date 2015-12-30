@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.transport.server;
+package com.netflix.eureka2.transport;
 
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
+import java.io.IOException;
 
 /**
+ * This exception is used as a notification that another side closed the connection.
  */
-interface TransportService {
-    void handleInput(ProtocolMessageEnvelope envelope);
+public class TransportDisconnected extends IOException {
 
-    void terminateInput();
+    public TransportDisconnected(String message) {
+        super(message);
+    }
 }

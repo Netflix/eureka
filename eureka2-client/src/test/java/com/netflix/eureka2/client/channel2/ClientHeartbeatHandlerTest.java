@@ -32,7 +32,7 @@ import rx.subjects.PublishSubject;
 
 import java.util.concurrent.TimeUnit;
 
-import static com.netflix.eureka2.client.channel2.ChannelTestkit.CHANNEL_INSTANCE_NOTIFICATION;
+import static com.netflix.eureka2.channel.ChannelTestkit.CHANNEL_INSTANCE_NOTIFICATION;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;

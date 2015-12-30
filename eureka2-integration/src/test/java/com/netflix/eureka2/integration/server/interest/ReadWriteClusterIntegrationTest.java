@@ -47,7 +47,7 @@ public class ReadWriteClusterIntegrationTest {
     public void setup() {
         eurekaDeployment = eurekaDeploymentResource.getEurekaDeployment();
         registrationClient = eurekaDeploymentResource.registrationClientToWriteCluster();
-        interestClient = eurekaDeploymentResource.cannonicalInterestClient();
+        interestClient = eurekaDeploymentResource.cannonicalInterestClient("testClient");
         registeringInfo = SampleInstanceInfo.CliServer.build();
     }
 
@@ -66,7 +66,7 @@ public class ReadWriteClusterIntegrationTest {
                 .subscribe(notificationSubscriber);
 
         // Register
-        Subscription subscription = registrationClient.register(Observable.just(registeringInfo)).subscribe();
+        Subscription subscription = registrationClient.register(Observable.just(registeringInfo).concatWith(Observable.never())).subscribe();
         assertThat(notificationSubscriber.takeNextOrWait(), is(addChangeNotificationOf(registeringInfo)));
 
         // Unregister
@@ -74,7 +74,7 @@ public class ReadWriteClusterIntegrationTest {
         assertThat(notificationSubscriber.takeNextOrWait(), is(deleteChangeNotificationOf(registeringInfo)));
     }
 
-    @Test(timeout = 30000)
+    @Test(timeout = 60000)
     public void testReadServerFailoversToAnotherWriteServerIfFirstOneCrashes() throws Exception {
         // Listen to interest stream updates
         ExtTestSubscriber<ChangeNotification<InstanceInfo>> notificationSubscriber = new ExtTestSubscriber<>();
@@ -91,7 +91,7 @@ public class ReadWriteClusterIntegrationTest {
         networkLink.disconnect(1, TimeUnit.SECONDS);
 
         // Register
-        registrationClient.register(Observable.just(registeringInfo)).subscribe();
+        registrationClient.register(Observable.just(registeringInfo).concatWith(Observable.never())).subscribe();
         assertThat(notificationSubscriber.takeNextOrWait(), is(addChangeNotificationOf(registeringInfo)));
     }
 }

@@ -50,7 +50,7 @@ public class JacksonEurekaCodec extends EurekaCodec {
     private static final Logger logger = LoggerFactory.getLogger(JacksonEurekaCodec.class);
 
     static final Class<?>[] REGISTRATION_PROTOCOL_MODEL = {
-            StdInstanceInfo.class, StdHeartbeat.class, StdAcknowledgement.class, StdClientHello.class, StdServerHello.class
+            StdInstanceInfo.class, StdHeartbeat.class, StdAcknowledgement.class, StdGoAway.class, StdClientHello.class, StdServerHello.class
     };
 
     static final Class<?>[] REPLICATION_PROTOCOL_MODEL = {

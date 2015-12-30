@@ -19,6 +19,7 @@ package com.netflix.eureka2.server.channel2;
 import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelHandler;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
+import com.netflix.eureka2.utils.rx.ExtObservable;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscription;
@@ -64,7 +65,7 @@ public class ServerHeartbeatHandler<I, O> implements ChannelHandler<I, O> {
                     return Observable.empty();
                 }
                 return Observable.just(inputNotification);
-            });
+            }).doOnUnsubscribe(() -> heartbeatReplies.onCompleted());
 
             // Create heartbeat timeout trigger
             Observable<ChannelNotification<O>> timeoutTrigger = Observable.interval(heartbeatTimeoutMs, heartbeatTimeoutMs, TimeUnit.MILLISECONDS, scheduler)
@@ -76,10 +77,10 @@ public class ServerHeartbeatHandler<I, O> implements ChannelHandler<I, O> {
                         return Observable.empty();
                     });
 
-            Subscription subscription = channelContext.next().handle(interceptedInput)
-                    .mergeWith(heartbeatReplies)
-                    .mergeWith(timeoutTrigger)
-                    .subscribe(subscriber);
+            Subscription subscription = ExtObservable.mergeWhenAllActive(
+                    channelContext.next().handle(interceptedInput).mergeWith(heartbeatReplies),
+                    timeoutTrigger
+            ).subscribe(subscriber);
             subscriber.add(subscription);
         });
     }

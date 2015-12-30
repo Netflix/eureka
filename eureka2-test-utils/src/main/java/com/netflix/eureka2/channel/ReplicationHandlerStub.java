@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.channel2.replication;
+package com.netflix.eureka2.channel;
 
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -43,7 +43,7 @@ public class ReplicationHandlerStub implements ReplicationHandler {
     public void init(ChannelContext<ChangeNotification<InstanceInfo>, Void> channelContext) {
     }
 
-    boolean isHandshakeCompleted() {
+    public boolean isHandshakeCompleted() {
         return handshakeCompleted;
     }
 

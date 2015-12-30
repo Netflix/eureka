@@ -26,6 +26,7 @@ import com.netflix.eureka2.spi.model.Acknowledgement;
 import com.netflix.eureka2.spi.model.Heartbeat;
 import com.netflix.eureka2.spi.protocol.common.AddInstance;
 import com.netflix.eureka2.spi.protocol.common.DeleteInstance;
+import com.netflix.eureka2.spi.protocol.common.GoAway;
 import com.netflix.eureka2.spi.protocol.common.StreamStateUpdate;
 import com.netflix.eureka2.spi.protocol.interest.InterestRegistration;
 import com.netflix.eureka2.spi.protocol.interest.UpdateInstanceInfo;
@@ -42,6 +43,8 @@ public abstract class ProtocolModel {
     public abstract Register newRegister(InstanceInfo instanceInfo);
 
     public abstract Heartbeat newHeartbeat();
+
+    public abstract GoAway newGoAway();
 
     public abstract Acknowledgement newAcknowledgement();
 

@@ -63,4 +63,9 @@ public class StdFullRegistryInterest<T> implements Interest<T> {
     public boolean equals(Object o) {
         return o instanceof StdFullRegistryInterest;
     }
+
+    @Override
+    public String toString() {
+        return "StdFullRegistryInterest{}";
+    }
 }

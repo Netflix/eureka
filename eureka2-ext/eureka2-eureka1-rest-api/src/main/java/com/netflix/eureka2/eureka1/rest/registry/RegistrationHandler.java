@@ -38,6 +38,7 @@ class RegistrationHandler {
             subscription = registrationClient.register(registrationSubject)
                     .ignoreElements()
                     .cast(Void.class)
+                    .doOnUnsubscribe(() -> registrationSubject.onCompleted())
                     .subscribe(new Subscriber<Void>() {
                         @Override
                         public void onCompleted() {

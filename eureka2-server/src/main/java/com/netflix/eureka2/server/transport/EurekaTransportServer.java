@@ -68,6 +68,7 @@ public class EurekaTransportServer {
     private final EurekaServerTransportFactory transportFactory;
     protected final EurekaServerTransportConfig config;
     protected final Scheduler scheduler;
+    protected final String serverName;
     protected final Source serverSource;
 
     public EurekaTransportServer(EurekaServerTransportFactory transportFactory,
@@ -86,7 +87,7 @@ public class EurekaTransportServer {
         this.scheduler = scheduler;
 
         // FIXME This is very akward way to get own id, to be able to initialize transport
-        String serverName = ConfigSelfInfoResolver.getFixedSelfInfo(instanceInfoConfig).toBlocking().first().build().getId();
+        this.serverName = ConfigSelfInfoResolver.getFixedSelfInfo(instanceInfoConfig).toBlocking().first().build().getId();
         this.serverSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, serverName);
 
         if (registrationProcessor != null) {
@@ -129,7 +130,7 @@ public class EurekaTransportServer {
             @Override
             public Observable<ChannelPipeline<ChangeNotification<InstanceInfo>, Void>> createPipeline() {
                 return Observable.create(subscriber -> {
-                    subscriber.onNext(new ChannelPipeline<>("replicationServer",
+                    subscriber.onNext(new ChannelPipeline<>("replicationServer@" + serverName,
                             new LoggingChannelHandler<ChangeNotification<InstanceInfo>, Void>(LoggingChannelHandler.LogLevel.INFO),
                             new ServerHeartbeatHandler<ChangeNotification<InstanceInfo>, Void>(config.getHeartbeatIntervalMs() * 3, scheduler),
                             new ServerHandshakeHandler<ChangeNotification<InstanceInfo>, Void>(TransportModel.getDefaultModel().newReplicationServerHello(serverSource), idGenerator),
@@ -148,7 +149,7 @@ public class EurekaTransportServer {
             @Override
             public Observable<ChannelPipeline<InstanceInfo, InstanceInfo>> createPipeline() {
                 return Observable.create(subscriber -> {
-                    subscriber.onNext(new ChannelPipeline<>("registrationServer",
+                    subscriber.onNext(new ChannelPipeline<>("registrationServer@" + serverName,
                             new LoggingChannelHandler<InstanceInfo, InstanceInfo>(LoggingChannelHandler.LogLevel.INFO),
                             new ServerHeartbeatHandler<InstanceInfo, InstanceInfo>(config.getHeartbeatIntervalMs() * 3, scheduler),
                             new ServerHandshakeHandler<InstanceInfo, InstanceInfo>(TransportModel.getDefaultModel().newServerHello(serverSource), idGenerator),
@@ -166,7 +167,7 @@ public class EurekaTransportServer {
             @Override
             public Observable<ChannelPipeline<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>> createPipeline() {
                 return Observable.create(subscriber -> {
-                    subscriber.onNext(new ChannelPipeline<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>("interestServer",
+                    subscriber.onNext(new ChannelPipeline<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>("interestServer@" + serverName,
                             new LoggingChannelHandler(LogLevel.INFO),
                             new ServerHeartbeatHandler<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>(config.getHeartbeatIntervalMs() * 3, scheduler),
                             new ServerHandshakeHandler<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>(TransportModel.getDefaultModel().newServerHello(serverSource), idGenerator),

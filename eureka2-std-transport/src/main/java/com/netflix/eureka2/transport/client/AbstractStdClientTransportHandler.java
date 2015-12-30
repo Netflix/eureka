@@ -17,12 +17,12 @@
 package com.netflix.eureka2.transport.client;
 
 import com.netflix.eureka2.model.Server;
+import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
+import com.netflix.eureka2.protocol.ProtocolMessageEnvelope.ProtocolType;
 import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelHandler;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.transport.ProtocolConverters;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope.ProtocolType;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ObservableConnection;
 import io.reactivex.netty.pipeline.PipelineConfigurator;
@@ -36,6 +36,8 @@ public abstract class AbstractStdClientTransportHandler<I, O> implements Channel
     private final ProtocolType protocolType;
     private final PipelineConfigurator<Object, Object> pipelineConfigurator = new EurekaPipelineConfigurator();
 
+    protected ChannelContext<I, O> channelContext;
+
     protected AbstractStdClientTransportHandler(Server server, ProtocolType protocolType) {
         this.server = server;
         this.protocolType = protocolType;
@@ -46,6 +48,7 @@ public abstract class AbstractStdClientTransportHandler<I, O> implements Channel
         if (channelContext.hasNext()) {
             throw new IllegalStateException("No more handlers expected in the pipeline");
         }
+        this.channelContext = channelContext;
     }
 
     protected Observable<ObservableConnection<Object, Object>> connect() {

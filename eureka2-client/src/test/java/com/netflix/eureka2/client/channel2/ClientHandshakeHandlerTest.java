@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.client.channel2;
 
+import com.netflix.eureka2.channel.ChannelTestkit;
 import com.netflix.eureka2.channel2.SourceIdGenerator;
 import com.netflix.eureka2.channel2.client.ClientHandshakeHandler;
 import com.netflix.eureka2.client.channel2.interest.InterestClientHandshakeHandler;
@@ -33,8 +34,8 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 
-import static com.netflix.eureka2.client.channel2.ChannelTestkit.CHANNEL_INTEREST_NOTIFICATION_STREAM;
-import static com.netflix.eureka2.client.channel2.ChannelTestkit.SERVER_SOURCE;
+import static com.netflix.eureka2.channel.ChannelTestkit.CHANNEL_INTEREST_NOTIFICATION_STREAM;
+import static com.netflix.eureka2.channel.ChannelTestkit.SERVER_SOURCE;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;

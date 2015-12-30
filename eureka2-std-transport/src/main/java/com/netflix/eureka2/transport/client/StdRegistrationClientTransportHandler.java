@@ -22,13 +22,17 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
+import com.netflix.eureka2.protocol.ProtocolMessageEnvelope.ProtocolType;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.RegistrationHandler;
 import com.netflix.eureka2.spi.model.Acknowledgement;
 import com.netflix.eureka2.spi.model.Heartbeat;
 import com.netflix.eureka2.spi.model.ServerHello;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope.ProtocolType;
+import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.transport.TransportDisconnected;
+import com.netflix.eureka2.utils.rx.ExtObservable;
+import io.reactivex.netty.channel.ObservableConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -38,6 +42,8 @@ import rx.Observable;
 public class StdRegistrationClientTransportHandler extends AbstractStdClientTransportHandler<InstanceInfo, InstanceInfo> implements RegistrationHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(StdRegistrationClientTransportHandler.class);
+
+    private static final TransportDisconnected CONNECTION_CLOSED = new TransportDisconnected("Registration client connection closed");
 
     public StdRegistrationClientTransportHandler(Server server) {
         super(server, ProtocolType.Registration);
@@ -56,15 +62,26 @@ public class StdRegistrationClientTransportHandler extends AbstractStdClientTran
                     updatesQueue.add(update.getData());
                 }
                 return connection.writeAndFlush(asProtocolMessage(update));
-            });
+            }).doOnUnsubscribe(() -> doGracefulShutdown(connection));
 
             Observable<ChannelNotification<InstanceInfo>> input = connection.getInput().flatMap(next -> {
                 ProtocolMessageEnvelope envelope = (ProtocolMessageEnvelope) next;
                 return asChannelNotification(envelope, updatesQueue);
-            });
+            }).concatWith(Observable.error(CONNECTION_CLOSED));
 
-            return Observable.merge(output, input);
+            return ExtObservable.mergeWhenAllActive(output, input);
         });
+    }
+
+    private void doGracefulShutdown(ObservableConnection<Object, Object> connection) {
+        connection.writeAndFlush(new ProtocolMessageEnvelope(ProtocolType.Registration, ProtocolModel.getDefaultModel().newGoAway()))
+                .subscribe(
+                        next -> {
+                            // Void
+                        },
+                        e -> logger.debug("Graceful shutdown completed with an error: {}", e.getMessage() == null ? e.getClass().getName() : e.getMessage())
+                );
+        connection.close();
     }
 
     private static Observable<ChannelNotification<InstanceInfo>> asChannelNotification(ProtocolMessageEnvelope envelope,

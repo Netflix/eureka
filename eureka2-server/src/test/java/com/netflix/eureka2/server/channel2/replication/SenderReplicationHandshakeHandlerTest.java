@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.server.channel2.replication;
 
+import com.netflix.eureka2.channel.ReplicationHandlerStub;
 import com.netflix.eureka2.channel2.SourceIdGenerator;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
@@ -28,8 +29,8 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.client.channel2.ChannelTestkit.CLIENT_SOURCE;
-import static com.netflix.eureka2.client.channel2.ChannelTestkit.SERVER_SOURCE;
+import static com.netflix.eureka2.channel.ChannelTestkit.CLIENT_SOURCE;
+import static com.netflix.eureka2.channel.ChannelTestkit.SERVER_SOURCE;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;

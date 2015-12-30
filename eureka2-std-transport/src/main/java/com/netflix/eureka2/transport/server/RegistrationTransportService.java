@@ -22,6 +22,7 @@ import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.ChannelPipelineFactory;
 import com.netflix.eureka2.spi.model.ClientHello;
+import com.netflix.eureka2.spi.protocol.common.GoAway;
 import com.netflix.eureka2.spi.model.Heartbeat;
 import com.netflix.eureka2.spi.model.TransportModel;
 import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
@@ -71,7 +72,9 @@ class RegistrationTransportService implements TransportService {
         }
 
         Object message = envelope.getMessage();
-        if (message instanceof Heartbeat) {
+        if (message instanceof GoAway) {
+            terminateInput();
+        } else if (message instanceof Heartbeat) {
             inputSubject.onNext(ChannelNotification.newHeartbeat());
         } else if (message instanceof ClientHello) {
             inputSubject.onNext(ChannelNotification.newHello(message));
@@ -80,5 +83,10 @@ class RegistrationTransportService implements TransportService {
         } else {
             inputSubject.onError(new IOException("Unexpected message of type " + message.getClass().getName()));
         }
+    }
+
+    @Override
+    public void terminateInput() {
+        inputSubject.onCompleted();
     }
 }

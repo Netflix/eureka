@@ -64,14 +64,8 @@ public final class InstanceUtil {
                         .withId(newInstanceInfo.getId())
                         .withDelta(field, newValue)
                         .build();
-                if(deltas.contains(delta)) {
-                    System.out.println("Duplicate!");
-                }
                 deltas.add(delta);
-            } else {
-                System.out.println("Matching");
             }
-
         }
 
         return deltas;

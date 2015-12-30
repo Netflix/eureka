@@ -91,6 +91,13 @@ public class ServerHeartbeatHandlerTest {
         assertThat(inputStream.hasObservers(), is(false));
     }
 
+    @Test
+    public void testInputUnsubscribeCompletesOutput() throws Exception {
+        inputStream.onCompleted();
+
+        assertThat(subscription.isUnsubscribed(), is(true));
+    }
+
     static class ChannelHandlerStub implements ChannelHandler<InstanceInfo, InstanceInfo> {
 
         @Override

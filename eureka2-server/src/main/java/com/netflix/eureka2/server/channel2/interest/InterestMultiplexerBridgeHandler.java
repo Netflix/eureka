@@ -25,6 +25,7 @@ import com.netflix.eureka2.channel2.ChannelHandlers;
 import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.InterestHandler;
+import com.netflix.eureka2.utils.rx.ExtObservable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -66,6 +67,6 @@ public class InterestMultiplexerBridgeHandler implements InterestHandler {
         Observable<ChannelNotification<ChangeNotification<InstanceInfo>>> changeNotifications = notificationMultiplexer
                 .changeNotifications()
                 .map(change -> ChannelNotification.newData(change));
-        return Observable.merge(voidInput, changeNotifications);
+        return ExtObservable.mergeWhenAllActive(voidInput, changeNotifications);
     }
 }

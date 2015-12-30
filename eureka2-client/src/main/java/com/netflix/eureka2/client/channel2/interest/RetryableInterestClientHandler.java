@@ -50,7 +50,6 @@ public class RetryableInterestClientHandler implements InterestHandler {
         this.scheduler = scheduler;
     }
 
-
     @Override
     public void init(ChannelContext<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> channelContext) {
         if (channelContext.hasNext()) {
