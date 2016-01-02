@@ -16,6 +16,8 @@
 
 package com.netflix.eureka.registry;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,13 +38,13 @@ import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.eureka.resources.CurrentRequestVersion;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.Version;
 import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.eureka.cluster.PeerEurekaNodes;
 import com.netflix.eureka.lease.Lease;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
+import com.netflix.eureka.resources.CurrentRequestVersion;
 import com.netflix.eureka.resources.ServerCodecs;
 import com.netflix.eureka.util.MeasuredRate;
 import com.netflix.servo.DefaultMonitorRegistry;
@@ -51,9 +53,6 @@ import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Handles replication of all operations to {@link AbstractInstanceRegistry} to peer
@@ -122,9 +121,10 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             EurekaServerConfig serverConfig,
             EurekaClientConfig clientConfig,
             ServerCodecs serverCodecs,
-            EurekaClient eurekaClient
+            EurekaClient eurekaClient,
+            ApplicationInfoManager applicationInfoManager
     ) {
-        super(serverConfig, clientConfig, serverCodecs);
+        super(serverConfig, clientConfig, serverCodecs, applicationInfoManager);
         this.eurekaClient = eurekaClient;
     }
 
@@ -153,7 +153,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             logger.error("Cannot shutdown monitor registry", t);
         }
         try {
-        peerEurekaNodes.shutdown();
+            peerEurekaNodes.shutdown();
         } catch (Throwable t) {
             logger.error("Cannot shutdown ReplicaAwareInstanceRegistry", t);
         }

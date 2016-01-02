@@ -41,11 +41,11 @@
     <!-- GZIP content encoding/decoding -->
     <init-param>
       <param-name>com.sun.jersey.spi.container.ContainerRequestFilters</param-name>
-      <param-value>com.sun.jersey.api.container.filter.GZIPContentEncodingFilter</param-value>
+      <param-value>com.netflix.eureka.resources.filter.EurekaGZIPContentEncodingFilter</param-value>
     </init-param>
     <init-param>
       <param-name>com.sun.jersey.spi.container.ContainerResponseFilters</param-name>
-      <param-value>com.sun.jersey.api.container.filter.GZIPContentEncodingFilter</param-value>
+      <param-value>com.netflix.eureka.resources.filter.EurekaGZIPContentEncodingFilter</param-value>
     </init-param>
   </filter>
 

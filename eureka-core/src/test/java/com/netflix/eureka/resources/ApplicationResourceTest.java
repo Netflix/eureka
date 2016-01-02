@@ -15,6 +15,8 @@ import org.junit.Test;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import java.io.ByteArrayInputStream;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.spy;
@@ -46,13 +48,14 @@ public class ApplicationResourceTest extends AbstractTester {
         Response response = applicationResource.getApplication(
                 Version.V2.name(),
                 MediaType.APPLICATION_JSON,
+                null,
                 EurekaAccept.full.name()
         );
 
-        String json = String.valueOf(response.getEntity());
+        byte[] json = (byte[]) response.getEntity();
         DecoderWrapper decoder = CodecWrappers.getDecoder(CodecWrappers.LegacyJacksonJson.class);
 
-        Application decodedApp = decoder.decode(json, Application.class);
+        Application decodedApp = decoder.decode(new ByteArrayInputStream(json), Application.class);
         assertThat(EurekaEntityComparators.equal(testApplication, decodedApp), is(true));
     }
 
@@ -61,13 +64,14 @@ public class ApplicationResourceTest extends AbstractTester {
         Response response = applicationResource.getApplication(
                 Version.V2.name(),
                 MediaType.APPLICATION_JSON,
+                null,
                 EurekaAccept.compact.name()
         );
 
-        String json = String.valueOf(response.getEntity());
+        byte[] json = (byte[]) response.getEntity();
         DecoderWrapper decoder = CodecWrappers.getDecoder(CodecWrappers.LegacyJacksonJson.class);
 
-        Application decodedApp = decoder.decode(json, Application.class);
+        Application decodedApp = decoder.decode(new ByteArrayInputStream(json), Application.class);
         // assert false as one is mini, so should NOT equal
         assertThat(EurekaEntityComparators.equal(testApplication, decodedApp), is(false));
 

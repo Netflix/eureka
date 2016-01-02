@@ -31,8 +31,8 @@ public class JerseyApplicationClient extends AbstractJerseyEurekaHttpClient {
 
     private final boolean allowRedirect;
 
-    public JerseyApplicationClient(Client jerseyClient, String serviceUrl, boolean allowRedirect) {
-        super(jerseyClient, serviceUrl);
+    public JerseyApplicationClient(Client jerseyClient, String serviceUrl, boolean allowRedirect, boolean useETag) {
+        super(jerseyClient, serviceUrl, useETag);
         this.allowRedirect = allowRedirect;
     }
 

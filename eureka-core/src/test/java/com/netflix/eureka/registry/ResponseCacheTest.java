@@ -1,17 +1,20 @@
 package com.netflix.eureka.registry;
 
+import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.eureka.AbstractTester;
 import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.Version;
+import com.netflix.eureka.registry.ResponseCache.CacheValue;
 import com.netflix.eureka.resources.DefaultServerCodecs;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
 /**
@@ -20,6 +23,8 @@ import static org.mockito.Mockito.spy;
 public class ResponseCacheTest extends AbstractTester {
 
     private static final String REMOTE_REGION = "myremote";
+
+    private final ApplicationInfoManager applicationInfoManager = mock(ApplicationInfoManager.class);
 
     private PeerAwareInstanceRegistry testRegistry;
 
@@ -36,7 +41,8 @@ public class ResponseCacheTest extends AbstractTester {
                 serverConfig,
                 new DefaultEurekaClientConfig(),
                 new DefaultServerCodecs(serverConfig),
-                client
+                client,
+                applicationInfoManager
         );
         testRegistry.init(serverContext.getPeerEurekaNodes());
         testRegistry.syncUp();
@@ -47,7 +53,7 @@ public class ResponseCacheTest extends AbstractTester {
         ResponseCacheImpl cache = (ResponseCacheImpl) testRegistry.getResponseCache();
         Key key = new Key(Key.EntityType.Application, REMOTE_REGION_APP_NAME,
                 Key.KeyType.JSON, Version.V1, EurekaAccept.full);
-        String response = cache.get(key, false);
+        CacheValue response = cache.get(key, false);
         Assert.assertNotNull("Cache get returned null.", response);
 
         testRegistry.cancel(REMOTE_REGION_APP_NAME, REMOTE_REGION_INSTANCE_1_HOSTNAME, true);

@@ -1,10 +1,13 @@
 package com.netflix.eureka.registry;
 
-import com.netflix.appinfo.EurekaAccept;
-import com.netflix.eureka.Version;
-
 import javax.annotation.Nullable;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+
+import com.netflix.appinfo.EurekaAccept;
+import com.netflix.eureka.Version;
 
 public class Key {
 
@@ -18,6 +21,9 @@ public class Key {
     public enum EntityType {
         Application, VIP, SVIP
     }
+
+    // Monotonically increasing ids for entity identification purposes (ETag)
+    private static final Map<String, AtomicLong> idProvider = new ConcurrentHashMap<>();
 
     private final String entityName;
     private final String[] regions;
@@ -96,10 +102,22 @@ public class Key {
     public String toStringCompact() {
         StringBuilder sb = new StringBuilder();
         sb.append("{name=").append(entityName).append(", type=").append(entityType).append(", format=").append(requestType);
-        if(regions != null) {
+        if (regions != null) {
             sb.append(", regions=").append(Arrays.toString(regions));
         }
         sb.append('}');
         return sb.toString();
+    }
+
+    /**
+     * Return next id value for this key.
+     */
+    public long nextId() {
+        AtomicLong counter = idProvider.get(hashKey);
+        if (counter == null) {
+            idProvider.putIfAbsent(hashKey, new AtomicLong());
+            counter = idProvider.get(hashKey);
+        }
+        return counter.incrementAndGet();
     }
 }

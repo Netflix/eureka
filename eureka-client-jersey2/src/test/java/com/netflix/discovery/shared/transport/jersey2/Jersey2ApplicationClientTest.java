@@ -34,7 +34,9 @@ public class Jersey2ApplicationClientTest extends EurekaHttpClientCompatibilityT
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        TransportClientFactory clientFactory = Jersey2ApplicationClientFactory.newBuilder().build();
+        TransportClientFactory clientFactory = Jersey2ApplicationClientFactory.newBuilder()
+                .withETag(true)
+                .build();
         jersey2HttpClient = (Jersey2ApplicationClient) clientFactory.newClient(new DefaultEndpoint(getHttpServer().getServiceURI().toString()));
     }
 

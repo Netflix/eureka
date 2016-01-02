@@ -25,24 +25,30 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.EntityTag;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 import java.util.Arrays;
 
 import com.netflix.appinfo.EurekaAccept;
+import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerContext;
 import com.netflix.eureka.EurekaServerContextHolder;
-import com.netflix.eureka.registry.AbstractInstanceRegistry;
-import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.Version;
-import com.netflix.eureka.registry.ResponseCache;
-import com.netflix.eureka.registry.Key.KeyType;
-import com.netflix.eureka.registry.ResponseCacheImpl;
+import com.netflix.eureka.registry.AbstractInstanceRegistry;
 import com.netflix.eureka.registry.Key;
+import com.netflix.eureka.registry.Key.KeyType;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
+import com.netflix.eureka.registry.ResponseCache;
+import com.netflix.eureka.registry.ResponseCache.CacheValue;
+import com.netflix.eureka.registry.ResponseCacheImpl;
 import com.netflix.eureka.util.EurekaMonitors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A <em>jersey</em> resource that handles request related to all
@@ -54,6 +60,9 @@ import com.netflix.eureka.util.EurekaMonitors;
 @Path("/{version}/apps")
 @Produces({"application/xml", "application/json"})
 public class ApplicationsResource {
+
+    private static final Logger logger = LoggerFactory.getLogger(ApplicationsResource.class);
+
     private static final String HEADER_ACCEPT = "Accept";
     private static final String HEADER_ACCEPT_ENCODING = "Accept-Encoding";
     private static final String HEADER_CONTENT_ENCODING = "Content-Encoding";
@@ -113,6 +122,7 @@ public class ApplicationsResource {
     public Response getContainers(@PathParam("version") String version,
                                   @HeaderParam(HEADER_ACCEPT) String acceptHeader,
                                   @HeaderParam(HEADER_ACCEPT_ENCODING) String acceptEncoding,
+                                  @HeaderParam(HttpHeaders.IF_NONE_MATCH) String ifNonMatchHeader,
                                   @HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept,
                                   @Context UriInfo uriInfo,
                                   @Nullable @QueryParam("regions") String regionsStr) {
@@ -146,17 +156,14 @@ public class ApplicationsResource {
                 keyType, CurrentRequestVersion.get(), EurekaAccept.fromString(eurekaAccept), regions
         );
 
-        Response response;
-        if (acceptEncoding != null && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
-            response = Response.ok(responseCache.getGZIP(cacheKey))
-                    .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE)
-                    .header(HEADER_CONTENT_TYPE, returnMediaType)
-                    .build();
-        } else {
-            response = Response.ok(responseCache.get(cacheKey))
-                    .build();
+        CacheValue cachedValue = responseCache.get(cacheKey);
+        // This should never happen under normal circumstances
+        if (cachedValue == null) {
+            logger.error("Registry not found in cache");
+            return Response.status(Status.NOT_FOUND).build();
         }
-        return response;
+
+        return buildResponse(acceptEncoding, ifNonMatchHeader, returnMediaType, cachedValue);
     }
 
     /**
@@ -193,6 +200,7 @@ public class ApplicationsResource {
             @PathParam("version") String version,
             @HeaderParam(HEADER_ACCEPT) String acceptHeader,
             @HeaderParam(HEADER_ACCEPT_ENCODING) String acceptEncoding,
+            @HeaderParam(HttpHeaders.IF_NONE_MATCH) String ifNonMatchHeader,
             @HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept,
             @Context UriInfo uriInfo, @Nullable @QueryParam("regions") String regionsStr) {
 
@@ -226,15 +234,30 @@ public class ApplicationsResource {
                 keyType, CurrentRequestVersion.get(), EurekaAccept.fromString(eurekaAccept), regions
         );
 
-        if (acceptEncoding != null
-                && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
-            return Response.ok(responseCache.getGZIP(cacheKey))
-                    .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE)
-                    .header(HEADER_CONTENT_TYPE, returnMediaType)
-                    .build();
-        } else {
-            return Response.ok(responseCache.get(cacheKey))
-                    .build();
+        CacheValue cachedValue = responseCache.get(cacheKey);
+        // This should never happen under normal circumstances
+        if (cachedValue == null) {
+            logger.error("Registry delta not found in cache");
+            return Response.status(Status.NOT_FOUND).build();
         }
+
+        return buildResponse(acceptEncoding, ifNonMatchHeader, returnMediaType, cachedValue);
+    }
+
+    private Response buildResponse(String acceptEncoding, String ifNonMatchHeader, String returnMediaType, CacheValue cachedValue) {
+        if (ifNonMatchHeader != null && ifNonMatchHeader.contains(cachedValue.getETag())) {
+            return Response.status(304).build();
+        }
+
+        ResponseBuilder responseBuilder;
+        if (acceptEncoding != null && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
+            responseBuilder = Response.ok(cachedValue.getGzipped()).header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE);
+        } else {
+            responseBuilder = Response.ok(cachedValue.getPayload());
+        }
+        responseBuilder.header(HEADER_CONTENT_TYPE, returnMediaType);
+        responseBuilder.header(HttpHeaders.ETAG, new EntityTag(cachedValue.getETag()));
+
+        return responseBuilder.build();
     }
 }

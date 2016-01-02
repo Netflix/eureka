@@ -23,18 +23,21 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.EntityTag;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.Version;
 import com.netflix.eureka.cluster.PeerEurekaNode;
-import com.netflix.eureka.registry.ResponseCache;
-import com.netflix.eureka.registry.Key.KeyType;
 import com.netflix.eureka.registry.Key;
+import com.netflix.eureka.registry.Key.KeyType;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
+import com.netflix.eureka.registry.ResponseCache;
+import com.netflix.eureka.registry.ResponseCache.CacheValue;
 import com.netflix.eureka.util.EurekaMonitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,6 +85,7 @@ public class ApplicationResource {
     @GET
     public Response getApplication(@PathParam("version") String version,
                                    @HeaderParam("Accept") final String acceptHeader,
+                                   @HeaderParam(HttpHeaders.IF_NONE_MATCH) String ifNonMatchHeader,
                                    @HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept) {
         if (!registry.shouldAllowAccess(false)) {
             return Response.status(Status.FORBIDDEN).build();
@@ -103,11 +107,18 @@ public class ApplicationResource {
                 EurekaAccept.fromString(eurekaAccept)
         );
 
-        String payLoad = responseCache.get(cacheKey);
+        CacheValue payLoad = responseCache.get(cacheKey);
 
         if (payLoad != null) {
             logger.debug("Found: {}", appName);
-            return Response.ok(payLoad).build();
+
+            if (ifNonMatchHeader != null && ifNonMatchHeader.contains(payLoad.getETag())) {
+                return Response.status(304).build();
+            }
+
+            return Response.ok(payLoad.getPayload())
+                    .header(HttpHeaders.ETAG, new EntityTag(payLoad.getETag()))
+                    .build();
         } else {
             logger.debug("Not Found: {}", appName);
             return Response.status(Status.NOT_FOUND).build();

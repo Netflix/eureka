@@ -42,6 +42,7 @@ public class SimpleEurekaHttpServerTest extends EurekaHttpClientCompatibilityTes
                 .withMaxTotalConnections(10)
                 .withDecoder(JacksonJson.class.getSimpleName(), EurekaAccept.full.name())
                 .withEncoder(JacksonJson.class.getSimpleName())
+                .withETag(true)
                 .build();
         int port = getHttpServer().getServerPort();
         this.eurekaHttpClient = httpClientFactory.newClient(new DefaultEndpoint("http://localhost:" + port + "/v2"));

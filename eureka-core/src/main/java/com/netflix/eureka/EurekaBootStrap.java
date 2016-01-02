@@ -152,7 +152,8 @@ public class EurekaBootStrap implements ServletContextListener {
                     eurekaServerConfig,
                     eurekaClientConfig,
                     serverCodecs,
-                    eurekaClient
+                    eurekaClient,
+                    applicationInfoManager
             );
             awsBinder = new AwsBinderDelegate(eurekaServerConfig, eurekaClientConfig, registry, applicationInfoManager);
             awsBinder.start();
@@ -161,7 +162,8 @@ public class EurekaBootStrap implements ServletContextListener {
                     eurekaServerConfig,
                     eurekaClientConfig,
                     serverCodecs,
-                    eurekaClient
+                    eurekaClient,
+                    applicationInfoManager
             );
         }
 
