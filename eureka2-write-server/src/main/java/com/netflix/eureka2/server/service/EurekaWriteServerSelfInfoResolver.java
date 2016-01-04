@@ -43,9 +43,7 @@ public class EurekaWriteServerSelfInfoResolver implements SelfInfoResolver {
                             @Override
                             public InstanceInfoBuilder call(HashSet<ServicePort> ports) {
                                 ports.add(InstanceModel.getDefaultModel().newServicePort(Names.EUREKA_HTTP, httpServer.serverPort(), false));
-                                ports.add(InstanceModel.getDefaultModel().newServicePort(Names.REGISTRATION, registrationServer.get().getServerPort(), false));
-                                ports.add(InstanceModel.getDefaultModel().newServicePort(Names.REPLICATION, registrationServer.get().getServerPort(), false));
-                                ports.add(InstanceModel.getDefaultModel().newServicePort(Names.INTEREST, registrationServer.get().getServerPort(), false));
+                                ports.add(InstanceModel.getDefaultModel().newServicePort(Names.EUREKA_SERVICE, registrationServer.get().getServerPort(), false));
 
                                 return InstanceModel.getDefaultModel().newInstanceInfo().withPorts(ports);
                             }

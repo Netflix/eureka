@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.channel2.replication;
+package com.netflix.eureka2.server.channel.replication;
 
 import com.netflix.eureka2.channel.SourceIdGenerator;
 import com.netflix.eureka2.channel.client.ClientHandshakeHandler;

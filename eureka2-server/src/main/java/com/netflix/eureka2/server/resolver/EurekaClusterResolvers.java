@@ -3,8 +3,7 @@ package com.netflix.eureka2.server.resolver;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.netflix.eureka2.server.resolver.DnsEurekaClusterResolver.DnsReadServerClusterResolver;
-import com.netflix.eureka2.server.resolver.DnsEurekaClusterResolver.DnsWriteServerClusterResolver;
+import com.netflix.eureka2.server.resolver.DnsEurekaClusterResolver.DnsEurekaServerClusterResolver;
 import rx.Scheduler;
 
 /**
@@ -29,19 +28,15 @@ public final class EurekaClusterResolvers {
     private EurekaClusterResolvers() {
     }
 
-    public static EurekaClusterResolver writeClusterResolverFromDns(String domainName,
-                                                                    int registrationPort,
-                                                                    int interestPort,
-                                                                    int replicationPort,
-                                                                    Scheduler scheduler) {
-        return new DnsWriteServerClusterResolver(domainName, registrationPort, interestPort, replicationPort, scheduler);
+    public static EurekaClusterResolver writeClusterResolverFromDns(String domainName, int serverPort, Scheduler scheduler) {
+        return new DnsEurekaServerClusterResolver(domainName, serverPort, scheduler);
     }
 
     public static EurekaClusterResolver writeClusterResolverFromConfiguration(ClusterAddress address, boolean attemptDnsResolve, Scheduler scheduler) {
         if (!attemptDnsResolve) {
             return new StaticEurekaClusterResolver(address);
         }
-        return writeClusterResolverFromDns(address.getHostName(), address.getRegistrationPort(), address.getInterestPort(), address.getReplicationPort(), scheduler);
+        return writeClusterResolverFromDns(address.getHostName(), address.getPort(), scheduler);
     }
 
     public static EurekaClusterResolver writeClusterResolverFromConfiguration(List<ClusterAddress> clusterAddresses, boolean attemptDnsResolve, Scheduler scheduler) {
@@ -56,7 +51,7 @@ public final class EurekaClusterResolvers {
         }
         List<EurekaClusterResolver> resolvers = new ArrayList<>(clusterAddresses.size());
         for (ClusterAddress address : clusterAddresses) {
-            resolvers.add(writeClusterResolverFromDns(address.getHostName(), address.getRegistrationPort(), address.getInterestPort(), address.getReplicationPort(), scheduler));
+            resolvers.add(writeClusterResolverFromDns(address.getHostName(), address.getPort(), scheduler));
         }
         return new CompositeEurekaClusterResolver(resolvers);
     }
@@ -65,15 +60,15 @@ public final class EurekaClusterResolvers {
         return writeClusterResolverFromConfiguration(clusterAddresses, type == ResolverType.Dns, scheduler);
     }
 
-    public static EurekaClusterResolver readClusterResolverFromDns(String domainName, int interestPort, Scheduler scheduler) {
-        return new DnsReadServerClusterResolver(domainName, interestPort, scheduler);
+    public static EurekaClusterResolver readClusterResolverFromDns(String domainName, int serverPort, Scheduler scheduler) {
+        return new DnsEurekaServerClusterResolver(domainName, serverPort, scheduler);
     }
 
     public static EurekaClusterResolver readClusterResolverFromConfiguration(ClusterAddress address, boolean attemptDnsResolve, Scheduler scheduler) {
         if (!attemptDnsResolve) {
             return new StaticEurekaClusterResolver(address);
         }
-        return readClusterResolverFromDns(address.getHostName(), address.getInterestPort(), scheduler);
+        return readClusterResolverFromDns(address.getHostName(), address.getPort(), scheduler);
     }
 
     public static EurekaClusterResolver readClusterResolverFromConfiguration(List<ClusterAddress> clusterAddresses, boolean attemptDnsResolve, Scheduler scheduler) {
@@ -88,7 +83,7 @@ public final class EurekaClusterResolvers {
         }
         List<EurekaClusterResolver> resolvers = new ArrayList<>(clusterAddresses.size());
         for (ClusterAddress address : clusterAddresses) {
-            resolvers.add(readClusterResolverFromDns(address.getHostName(), address.getInterestPort(), scheduler));
+            resolvers.add(readClusterResolverFromDns(address.getHostName(), address.getPort(), scheduler));
         }
         return new CompositeEurekaClusterResolver(resolvers);
     }

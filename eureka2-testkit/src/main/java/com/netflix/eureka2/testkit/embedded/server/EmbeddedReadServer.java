@@ -26,11 +26,11 @@ public class EmbeddedReadServer extends EurekaReadServer {
 
     public ServerResolver getInterestResolver() {
         return ServerResolvers.fromHostname("localhost")
-                .withPort(injector.getInstance(EurekaWriteServer.class).getInterestPort());
+                .withPort(injector.getInstance(EurekaWriteServer.class).getServerPort());
     }
 
     public ReadServerReport serverReport() {
-        return new ReadServerReport(getInterestPort(), getHttpServerPort(), getWebAdminPort());
+        return new ReadServerReport(getServerPort(), getHttpServerPort(), getWebAdminPort());
     }
 
     public boolean waitForUpStatus(int timeout, TimeUnit timeUnit) {
@@ -57,15 +57,15 @@ public class EmbeddedReadServer extends EurekaReadServer {
     }
 
     public static class ReadServerReport extends AbstractServerReport {
-        private final int interestPort;
+        private final int serverPort;
 
-        public ReadServerReport(int interestPort, int httpServerPort, int adminPort) {
+        public ReadServerReport(int serverPort, int httpServerPort, int adminPort) {
             super(httpServerPort, adminPort);
-            this.interestPort = interestPort;
+            this.serverPort = serverPort;
         }
 
-        public int getInterestPort() {
-            return interestPort;
+        public int getServerPort() {
+            return serverPort;
         }
     }
 }

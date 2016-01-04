@@ -9,7 +9,6 @@ import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.server.config.EurekaClusterDiscoveryConfig;
 import com.netflix.eureka2.server.resolver.ClusterAddress;
-import com.netflix.eureka2.server.resolver.ClusterAddress.ServiceType;
 import com.netflix.eureka2.server.resolver.EurekaClusterResolver;
 import com.netflix.eureka2.server.resolver.EurekaClusterResolvers;
 import rx.Observable;
@@ -21,12 +20,11 @@ import rx.schedulers.Schedulers;
  */
 public class WriteClusterResolver extends RoundRobinServerResolver {
 
-    private WriteClusterResolver(EurekaClusterResolver endpointResolver, final ServiceType serviceType) {
-        super(toServerResolver(endpointResolver, serviceType));
+    private WriteClusterResolver(EurekaClusterResolver endpointResolver) {
+        super(toServerResolver(endpointResolver));
     }
 
-    private static Observable<ChangeNotification<Server>> toServerResolver(EurekaClusterResolver endpointResolver,
-                                                                           final ServiceType serviceType) {
+    private static Observable<ChangeNotification<Server>> toServerResolver(EurekaClusterResolver endpointResolver) {
         return endpointResolver
                 .clusterTopologyChanges()
                 .map(new Func1<ChangeNotification<ClusterAddress>, ChangeNotification<Server>>() {
@@ -39,7 +37,7 @@ public class WriteClusterResolver extends RoundRobinServerResolver {
                                 notification.getKind(),
                                 new Server(
                                         notification.getData().getHostName(),
-                                        notification.getData().getPortFor(serviceType)
+                                        notification.getData().getPort()
                                 )
                         );
                     }
@@ -47,11 +45,11 @@ public class WriteClusterResolver extends RoundRobinServerResolver {
     }
 
     public static ServerResolver createRegistrationResolver(EurekaClusterDiscoveryConfig config) {
-        return new WriteClusterResolver(createEurekaEndpointResolver(config), ServiceType.Registration);
+        return new WriteClusterResolver(createEurekaEndpointResolver(config));
     }
 
     public static ServerResolver createInterestResolver(EurekaClusterDiscoveryConfig config) {
-        return new WriteClusterResolver(createEurekaEndpointResolver(config), ServiceType.Interest);
+        return new WriteClusterResolver(createEurekaEndpointResolver(config));
     }
 
     private static EurekaClusterResolver createEurekaEndpointResolver(EurekaClusterDiscoveryConfig config) {

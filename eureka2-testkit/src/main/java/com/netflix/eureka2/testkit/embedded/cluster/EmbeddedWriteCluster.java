@@ -13,7 +13,6 @@ import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.resolver.ClusterAddress;
-import com.netflix.eureka2.server.resolver.ClusterAddress.ServiceType;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteClusterReport;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer.WriteServerReport;
@@ -61,8 +60,8 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
     @Override
     public int scaleUpByOne() {
         ClusterAddress writeServerAddress = ephemeralPorts ?
-                ClusterAddress.valueOf("localhost", 0, 0, 0) :
-                ClusterAddress.valueOf("localhost", nextAvailablePort, nextAvailablePort + 1, nextAvailablePort + 2);
+                ClusterAddress.valueOf("localhost", 0) :
+                ClusterAddress.valueOf("localhost", nextAvailablePort);
 
         int httpPort = ephemeralPorts ? 0 : nextAvailablePort + 3;
         int adminPort = ephemeralPorts ? 0 : nextAvailablePort + 4;
@@ -78,9 +77,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                 .withTransportConfig(
                         anEurekaServerTransportConfig()
                                 .withHttpPort(httpPort)
-                                .withInterestPort(writeServerAddress.getInterestPort())
-                                .withRegistrationPort(writeServerAddress.getRegistrationPort())
-                                .withReplicationPort(writeServerAddress.getReplicationPort())
+                                .withServerPort(writeServerAddress.getPort())
                                 .withShutDownPort(0)
                                 .withWebAdminPort(adminPort)
                                 .build()
@@ -93,8 +90,8 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
         nextAvailablePort += 10;
 
         if (ephemeralPorts) {
-            writeServerAddress = ClusterAddress.valueOf("localhost", writeServer.getRegistrationPort(),
-                    writeServer.getInterestPort(), writeServer.getReplicationPort());
+            writeServerAddress = ClusterAddress.valueOf("localhost", writeServer.getServerPort()
+            );
         }
 
         return scaleUpByOne(writeServer, writeServerAddress);
@@ -103,7 +100,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
     protected EmbeddedWriteServer newServer(WriteServerConfig config) {
         return new EmbeddedWriteServerBuilder()
                 .withConfiguration(config)
-                .withReplicationPeers(resolvePeers(ServiceType.Replication))
+                .withReplicationPeers(resolvePeers())
                 .withNetworkRouter(networkRouter)
                 .withAdminUI(withAdminUI)
                 .withExt(withExt)
@@ -130,7 +127,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
         return getServerResolver(new Func1<ClusterAddress, Integer>() {
             @Override
             public Integer call(ClusterAddress writeServerAddress) {
-                return writeServerAddress.getRegistrationPort();
+                return writeServerAddress.getPort();
             }
         });
     }
@@ -139,12 +136,12 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
         return getServerResolver(new Func1<ClusterAddress, Integer>() {
             @Override
             public Integer call(ClusterAddress writeServerAddress) {
-                return writeServerAddress.getInterestPort();
+                return writeServerAddress.getPort();
             }
         });
     }
 
-    public Observable<ChangeNotification<Server>> resolvePeers(final ServiceType serviceType) {
+    public Observable<ChangeNotification<Server>> resolvePeers() {
         return clusterChangeObservable().map(
                 new Func1<ChangeNotification<ClusterAddress>, ChangeNotification<Server>>() {
                     @Override
@@ -154,20 +151,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                         }
 
                         ClusterAddress data = notification.getData();
-                        int port;
-                        switch (serviceType) {
-                            case Registration:
-                                port = data.getRegistrationPort();
-                                break;
-                            case Interest:
-                                port = data.getInterestPort();
-                                break;
-                            case Replication:
-                                port = data.getReplicationPort();
-                                break;
-                            default:
-                                throw new IllegalStateException("Unexpected enum value " + serviceType);
-                        }
+                        int port = data.getPort();
                         Server serverAddress = new Server(data.getHostName(), port);
                         switch (notification.getKind()) {
                             case Add:

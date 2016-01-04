@@ -52,13 +52,13 @@ public final class SimpleApp {
 
     private final String writeServerDns;
     private final int writeRegistrationPort;
-    private final int writeInterestPort;
+    private final int serverPort;
     private final String readServerVip;
 
-    public SimpleApp(String writeServerDns, int writeRegistrationPort, int writeInterestPort, String readServerVip) {
+    public SimpleApp(String writeServerDns, int writeRegistrationPort, int serverPort, String readServerVip) {
         this.writeServerDns = writeServerDns;
         this.writeRegistrationPort = writeRegistrationPort;
-        this.writeInterestPort = writeInterestPort;
+        this.serverPort = serverPort;
         this.readServerVip = readServerVip;
     }
 
@@ -70,7 +70,7 @@ public final class SimpleApp {
 
         ServerResolver interestClientResolver =
                 fromEureka(
-                        fromDnsName(writeServerDns).withPort(writeInterestPort)
+                        fromDnsName(writeServerDns).withPort(serverPort)
                 ).forInterest(forVips(readServerVip));
 
         EurekaInterestClient interestClient = Eurekas.newInterestClientBuilder()

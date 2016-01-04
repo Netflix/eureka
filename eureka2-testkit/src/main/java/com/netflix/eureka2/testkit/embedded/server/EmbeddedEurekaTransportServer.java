@@ -47,8 +47,8 @@ public class EmbeddedEurekaTransportServer extends EurekaTransportServer {
     @Inject
     public EmbeddedEurekaTransportServer(EurekaServerTransportFactory transportFactory,
                                          EurekaServerTransportConfig config,
-                                         @Named(Names.REGISTRATION) Provider<EurekaRegistrationProcessor> registrationProcessor,
-                                         @Named(Names.REGISTRATION) MetricEventsListenerFactory servoEventsListenerFactory,
+                                         @Named(Names.EUREKA_SERVICE) Provider<EurekaRegistrationProcessor> registrationProcessor,
+                                         @Named(Names.EUREKA_SERVICE) MetricEventsListenerFactory servoEventsListenerFactory,
                                          EurekaRegistry registry,
                                          EurekaRegistryView registryView,
                                          EurekaInstanceInfoConfig instanceInfoConfig,

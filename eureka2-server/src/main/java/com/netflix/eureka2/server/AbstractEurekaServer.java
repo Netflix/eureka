@@ -26,7 +26,7 @@ public abstract class AbstractEurekaServer {
         return injector;
     }
 
-    public int getInterestPort() {
+    public int getServerPort() {
         return injector.getInstance(EurekaTransportServer.class).getServerPort();
     }
 

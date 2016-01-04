@@ -4,8 +4,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import com.netflix.eureka2.Names;
-import com.netflix.eureka2.metric.MessageConnectionMetrics;
-import com.netflix.eureka2.metric.RegistrationChannelMetrics;
 import com.netflix.eureka2.metric.SerializedTaskInvokerMetrics;
 import com.netflix.eureka2.metric.SpectatorMessageConnectionMetrics;
 import com.netflix.eureka2.metric.SpectatorRegistrationChannelMetrics;
@@ -22,9 +20,7 @@ public class SpectatorBridgeServerMetricFactory extends BridgeServerMetricFactor
     private final SpectatorMessageConnectionMetrics replicationSenderConnectionMetrics;
     private final SpectatorMessageConnectionMetrics replicationReceiverConnectionMetrics;
     private final SpectatorMessageConnectionMetrics registrationConnectionMetrics;
-    private final SpectatorMessageConnectionMetrics discoveryConnectionMetrics;
     private final SpectatorRegistrationChannelMetrics registrationChannelMetrics;
-    private final SpectatorReplicationChannelMetrics replicationChannelMetrics;
     private final SpectatorServerInterestChannelMetrics interestChannelMetrics;
     private final SerializedTaskInvokerMetrics overrideServiceTaskInvokerMetrics;
 
@@ -34,9 +30,7 @@ public class SpectatorBridgeServerMetricFactory extends BridgeServerMetricFactor
         this.replicationSenderConnectionMetrics = new SpectatorMessageConnectionMetrics(registry, "replicationSender");
         this.replicationReceiverConnectionMetrics = new SpectatorMessageConnectionMetrics(registry, "replicationReceiver");
         this.registrationConnectionMetrics = new SpectatorMessageConnectionMetrics(registry, "registration");
-        this.discoveryConnectionMetrics = new SpectatorMessageConnectionMetrics(registry, Names.INTEREST);
-        this.registrationChannelMetrics = new SpectatorRegistrationChannelMetrics(registry, Names.REGISTRATION);
-        this.replicationChannelMetrics = new SpectatorReplicationChannelMetrics(registry, Names.REPLICATION);
+        this.registrationChannelMetrics = new SpectatorRegistrationChannelMetrics(registry, Names.EUREKA_SERVICE);
         this.interestChannelMetrics = new SpectatorServerInterestChannelMetrics(registry);
         this.overrideServiceTaskInvokerMetrics = new SpectatorSerializedTaskInvokerMetrics(registry, "overrideService");
     }

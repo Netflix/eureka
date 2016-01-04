@@ -51,7 +51,7 @@ public class EvictionInReplicationChannelTest {
 
         // Now simulate network failure
         NetworkLink replicationLink = eurekaDeployment.getNetworkRouter()
-                .getLinkTo(eurekaDeployment.getWriteCluster().getServer(1).getReplicationPort());
+                .getLinkTo(eurekaDeployment.getWriteCluster().getServer(1).getServerPort());
         replicationLink.disconnect(1, TimeUnit.SECONDS);
 
         InstanceInfo secondTemplate = SampleInstanceInfo.Backend.build();

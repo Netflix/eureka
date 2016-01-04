@@ -21,6 +21,7 @@ import com.netflix.eureka2.channel.SourceIdGenerator;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.server.channel.replication.SenderReplicationHandshakeHandler;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.ChannelPipeline;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;

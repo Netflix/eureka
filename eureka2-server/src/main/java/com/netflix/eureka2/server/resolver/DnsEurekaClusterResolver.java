@@ -2,9 +2,9 @@ package com.netflix.eureka2.server.resolver;
 
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.eureka2.interests.host.DnsChangeNotificationSource;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.interests.host.DnsChangeNotificationSource;
 import rx.Observable;
 import rx.Scheduler;
 import rx.functions.Func1;
@@ -49,43 +49,20 @@ abstract class DnsEurekaClusterResolver implements EurekaClusterResolver {
 
     protected abstract ClusterAddress createClusterAddress(String hostName);
 
-    static class DnsWriteServerClusterResolver extends DnsEurekaClusterResolver {
+    static class DnsEurekaServerClusterResolver extends DnsEurekaClusterResolver {
 
-        private final int registrationPort;
-        private final int interestPort;
-        private final int replicationPort;
+        private final int serverPort;
 
-        DnsWriteServerClusterResolver(String domainName,
-                                      int registrationPort,
-                                      int interestPort,
-                                      int replicationPort,
-                                      Scheduler scheduler) {
+        DnsEurekaServerClusterResolver(String domainName,
+                                       int serverPort,
+                                       Scheduler scheduler) {
             super(domainName, scheduler);
-            this.registrationPort = registrationPort;
-            this.interestPort = registrationPort;
-            this.replicationPort = registrationPort;
+            this.serverPort = serverPort;
         }
 
         @Override
         protected ClusterAddress createClusterAddress(String hostName) {
-            return ClusterAddress.valueOf(hostName, registrationPort, interestPort, replicationPort);
-        }
-    }
-
-    static class DnsReadServerClusterResolver extends DnsEurekaClusterResolver {
-
-        private final int interestPort;
-
-        DnsReadServerClusterResolver(String domainName,
-                                     int interestPort,
-                                     Scheduler scheduler) {
-            super(domainName, scheduler);
-            this.interestPort = interestPort;
-        }
-
-        @Override
-        protected ClusterAddress createClusterAddress(String hostName) {
-            return ClusterAddress.readClusterAddressFrom(hostName, interestPort);
+            return ClusterAddress.valueOf(hostName, serverPort);
         }
     }
 }

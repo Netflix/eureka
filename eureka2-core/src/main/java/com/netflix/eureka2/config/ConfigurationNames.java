@@ -13,15 +13,11 @@ public final class ConfigurationNames {
 
         public static final String heartbeatIntervalMsName = EUREKA_PREFIX + PREFIX + "heartbeatIntervalMs";
         public static final String connectionAutoTimeoutMsName = EUREKA_PREFIX + PREFIX + "connectionAutoTimeoutMs";
-        public static final String codecName = EUREKA_PREFIX + PREFIX + "codec";
     }
 
     public final class RegistryNames {
         private static final String PREFIX = "registry.";
 
-        public static final String evictionTimeoutMsName = EUREKA_PREFIX + PREFIX + "evictionTimeoutMs";
-        public static final String evictionStrategyTypeName = EUREKA_PREFIX + PREFIX + "evictionStrategy.type";
-        public static final String evictionStrategyValueName = EUREKA_PREFIX + PREFIX + "evictionStrategy.value";
         public static final String evictionAllowedPercentageDropName = EUREKA_PREFIX + PREFIX + "evictionAllowedPercentageDrop";
     }
 }

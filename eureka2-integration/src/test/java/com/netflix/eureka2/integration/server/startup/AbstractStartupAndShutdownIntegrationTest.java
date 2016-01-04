@@ -54,7 +54,7 @@ public abstract class AbstractStartupAndShutdownIntegrationTest<RUNNER extends E
     @Before
     public void setUp() throws Exception {
         EmbeddedWriteServer server = eurekaDeploymentResource.getEurekaDeployment().getWriteCluster().getServer(0);
-        writeServerList = "localhost:" + server.getRegistrationPort() + ':' + server.getInterestPort() + ':' + server.getReplicationPort();
+        writeServerList = "localhost:" + server.getServerPort() + ':' + server.getServerPort() + ':' + server.getServerPort();
         clusterAddresses = new ClusterAddress[]{ClusterAddress.valueOf(writeServerList)};
     }
 

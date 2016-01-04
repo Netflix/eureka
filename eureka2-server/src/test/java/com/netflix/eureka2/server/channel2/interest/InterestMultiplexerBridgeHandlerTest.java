@@ -21,6 +21,7 @@ import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.registry.EurekaRegistryView;
+import com.netflix.eureka2.server.channel.interest.InterestMultiplexerBridgeHandler;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.testkit.data.builder.SampleChangeNotification;
 import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;

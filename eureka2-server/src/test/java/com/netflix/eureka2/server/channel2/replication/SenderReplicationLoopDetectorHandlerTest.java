@@ -19,6 +19,8 @@ package com.netflix.eureka2.server.channel2.replication;
 import com.netflix.eureka2.channel.ReplicationHandlerStub;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.server.channel.replication.ReplicationLoopException;
+import com.netflix.eureka2.server.channel.replication.SenderReplicationLoopDetectorHandler;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.ChannelPipeline;
 import com.netflix.eureka2.spi.model.ReplicationClientHello;

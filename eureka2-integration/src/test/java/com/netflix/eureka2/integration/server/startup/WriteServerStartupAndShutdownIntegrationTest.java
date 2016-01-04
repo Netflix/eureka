@@ -37,9 +37,7 @@ public class WriteServerStartupAndShutdownIntegrationTest extends AbstractStartu
                 .withTransportConfig(
                         anEurekaServerTransportConfig()
                                 .withHttpPort(0)
-                                .withInterestPort(0)
-                                .withRegistrationPort(0)
-                                .withReplicationPort(0)
+                                .withServerPort(0)
                                 .withShutDownPort(0)
                                 .withWebAdminPort(0)
                                 .build()

@@ -24,7 +24,7 @@ public class ReadServerResource extends EurekaExternalResource {
     private final WriteServerResource writeServerResource;
 
     private EmbeddedReadServer server;
-    private int interestPort;
+    private int serverPort;
 
     public ReadServerResource(WriteServerResource writeServerResource) {
         this(DEFAULT_READ_CLUSTER_NAME, writeServerResource);
@@ -47,23 +47,22 @@ public class ReadServerResource extends EurekaExternalResource {
                 .withTransportConfig(
                         anEurekaServerTransportConfig()
                                 .withHttpPort(0)
-                                .withRegistrationPort(0)
+                                .withServerPort(0)
                                 .withShutDownPort(0)
                                 .withWebAdminPort(0)
                                 .build()
                 )
                 .build();
 
-        ServerResolver registrationResolver = ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getRegistrationPort());
-        ServerResolver interestResolver = ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getDiscoveryPort());
+        ServerResolver serverResolver = ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getServerPort());
         server = new EmbeddedReadServerBuilder(EMBEDDED_READ_CLIENT_ID)
                 .withConfiguration(config)
-                .withRegistrationResolver(registrationResolver)
-                .withInterestResolver(interestResolver)
+                .withRegistrationResolver(serverResolver)
+                .withInterestResolver(serverResolver)
                 .build();
 
         // Find ephemeral port numbers
-        interestPort = server.getInjector().getInstance(EurekaTransportServer.class).getServerPort();
+        serverPort = server.getInjector().getInstance(EurekaTransportServer.class).getServerPort();
     }
 
     @Override
@@ -77,11 +76,11 @@ public class ReadServerResource extends EurekaExternalResource {
         return name;
     }
 
-    public int getInterestPort() {
-        return interestPort;
+    public int getServerPort() {
+        return serverPort;
     }
 
     public ServerResolver getInterestResolver() {
-        return ServerResolvers.fromHostname("localhost").withPort(interestPort);
+        return ServerResolvers.fromHostname("localhost").withPort(serverPort);
     }
 }

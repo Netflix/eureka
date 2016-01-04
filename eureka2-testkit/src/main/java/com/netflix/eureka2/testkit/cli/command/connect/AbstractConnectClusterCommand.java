@@ -56,7 +56,7 @@ public abstract class AbstractConnectClusterCommand extends Command {
         Server[] servers = new Server[writeServers.size()];
         for (int i = 0; i < servers.length; i++) {
             ClusterAddress clusterAddress = writeServers.get(i);
-            servers[i] = new Server(clusterAddress.getHostName(), clusterAddress.getRegistrationPort());
+            servers[i] = new Server(clusterAddress.getHostName(), clusterAddress.getPort());
         }
         return ServerResolvers.from(servers);
     }
@@ -65,7 +65,7 @@ public abstract class AbstractConnectClusterCommand extends Command {
         Server[] servers = new Server[eurekaServers.size()];
         for (int i = 0; i < servers.length; i++) {
             ClusterAddress clusterAddress = eurekaServers.get(i);
-            servers[i] = new Server(clusterAddress.getHostName(), clusterAddress.getInterestPort());
+            servers[i] = new Server(clusterAddress.getHostName(), clusterAddress.getPort());
         }
         return ServerResolvers.from(servers);
     }

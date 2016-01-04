@@ -36,7 +36,6 @@ public class ReadServerStartupAndShutdownIntegrationTest extends AbstractStartup
                 .withTransportConfig(
                         anEurekaServerTransportConfig()
                                 .withHttpPort(0)
-                                .withInterestPort(0)
                                 .withShutDownPort(0)
                                 .withWebAdminPort(0)
                                 .build()

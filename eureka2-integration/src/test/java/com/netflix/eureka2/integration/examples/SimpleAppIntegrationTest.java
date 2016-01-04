@@ -35,8 +35,8 @@ public class SimpleAppIntegrationTest {
     public void testExampleRunsSuccessfully() throws Exception {
         SimpleApp sampleApp = new SimpleApp(
                 "localhost",
-                writeCluster.getServer(0).getRegistrationPort(),
-                readCluster.getServer(0).getInterestPort(),
+                writeCluster.getServer(0).getServerPort(),
+                readCluster.getServer(0).getServerPort(),
                 readCluster.getVip()
         );
         sampleApp.run();

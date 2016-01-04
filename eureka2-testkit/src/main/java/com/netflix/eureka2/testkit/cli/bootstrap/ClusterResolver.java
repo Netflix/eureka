@@ -1,12 +1,7 @@
 package com.netflix.eureka2.testkit.cli.bootstrap;
 
 import javax.naming.NamingException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
@@ -18,8 +13,6 @@ import com.netflix.eureka2.client.functions.InterestFunctions;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.config.EurekaTransportConfig;
-import com.netflix.eureka2.model.interest.Interest.Operator;
-import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.interests.host.DnsResolver;
 import com.netflix.eureka2.internal.util.SystemUtil;
 import com.netflix.eureka2.model.instance.InstanceInfo;
@@ -27,6 +20,8 @@ import com.netflix.eureka2.model.instance.NetworkAddress;
 import com.netflix.eureka2.model.instance.NetworkAddress.ProtocolType;
 import com.netflix.eureka2.model.instance.ServiceEndpoint;
 import com.netflix.eureka2.model.instance.ServicePort;
+import com.netflix.eureka2.model.interest.Interest.Operator;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.model.selector.ServiceSelector;
@@ -54,23 +49,11 @@ import static com.netflix.eureka2.server.resolver.EurekaClusterResolvers.writeCl
  */
 public class ClusterResolver {
 
-    private static final ServiceSelector REGISTRATION_SERVICE_SELECTOR = ServiceSelector
+    private static final ServiceSelector EUREKA_SERVICE_SELECTOR = ServiceSelector
             .selectBy()
-            .serviceLabel(Names.REGISTRATION).publicIp(true).protocolType(ProtocolType.IPv4)
+            .serviceLabel(Names.EUREKA_SERVICE).publicIp(true).protocolType(ProtocolType.IPv4)
             .or()
-            .serviceLabel(Names.REGISTRATION);
-
-    private static final ServiceSelector REPLICATION_SERVICE_SELECTOR = ServiceSelector
-            .selectBy()
-            .serviceLabel(Names.REPLICATION).publicIp(true).protocolType(ProtocolType.IPv4)
-            .or()
-            .serviceLabel(Names.REPLICATION);
-
-    private static final ServiceSelector INTEREST_SERVICE_SELECTOR = ServiceSelector
-            .selectBy()
-            .serviceLabel(Names.INTEREST).publicIp(true).protocolType(ProtocolType.IPv4)
-            .or()
-            .serviceLabel(Names.INTEREST);
+            .serviceLabel(Names.EUREKA_SERVICE);
 
     private static final String EUREKA_VIP_PATTERN = "(?i)eureka.*(write|read).*";
     // TODO We should not need this, but as Eureka read registration is broken, we cannot depend on the service label.
@@ -78,7 +61,7 @@ public class ClusterResolver {
 
     private final String bootstrapAddress;
     private final List<String> resolvedBootstrapServers;
-    private int interestPort;
+    private int bootstrapPort;
     private ClusterAddress resolvedClusterAddress;
     private String bootstrapVip;
     private String readClusterVip;
@@ -88,14 +71,14 @@ public class ClusterResolver {
     private ServerType serverType;
 
     public ClusterResolver(String bootstrapAddress,
-                           int interestPort,
+                           int bootstrapPort,
                            String bootstrapVip,
                            String readClusterVip,
                            EurekaTransportConfig transportConfig,
                            Scheduler scheduler) {
         this.bootstrapAddress = bootstrapAddress;
         this.resolvedBootstrapServers = new ArrayList<>(resolveBootstrapServers(bootstrapAddress));
-        this.interestPort = interestPort;
+        this.bootstrapPort = bootstrapPort;
         this.bootstrapVip = bootstrapVip == null ? EUREKA_VIP_PATTERN : bootstrapVip;
         this.readClusterVip = readClusterVip;
         this.transportConfig = transportConfig;
@@ -220,14 +203,14 @@ public class ClusterResolver {
      */
     private Observable<ServerType> resolveServerType() {
         int effectivePort;
-        if (interestPort > 0) {
-            effectivePort = interestPort;
+        if (bootstrapPort > 0) {
+            effectivePort = bootstrapPort;
         } else {
-            effectivePort = detectOpenPort(12103, 12203);
+            effectivePort = detectOpenPort(12103);
             if (effectivePort <= 0) {
                 return Observable.error(new IllegalArgumentException("Interest port not defined, and defaults are not open"));
             }
-            interestPort = effectivePort;
+            bootstrapPort = effectivePort;
         }
         return resolveServerType(effectivePort);
     }
@@ -271,16 +254,13 @@ public class ClusterResolver {
                     public Observable<ServerType> call(LinkedHashSet<InstanceInfo> instanceInfos) {
                         for (InstanceInfo instanceInfo : instanceInfos) {
                             if (isBootstrapServerInstance(instanceInfo, interestPort)) {
-                                ServiceEndpoint registerEndpoint = REGISTRATION_SERVICE_SELECTOR.returnServiceEndpoint(instanceInfo);
+                                ServiceEndpoint registerEndpoint = EUREKA_SERVICE_SELECTOR.returnServiceEndpoint(instanceInfo);
                                 serverType = registerEndpoint != null ? ServerType.Write : ServerType.Read;
                                 bootstrapVip = instanceInfo.getVipAddress();
                                 if (serverType == ServerType.Write) {
-                                    ServiceEndpoint replicationEndpoint = REPLICATION_SERVICE_SELECTOR.returnServiceEndpoint(instanceInfo);
                                     resolvedClusterAddress = ClusterAddress.valueOf(
                                             bootstrapAddress,
-                                            registerEndpoint.getServicePort().getPort(),
-                                            interestPort,
-                                            replicationEndpoint.getServicePort().getPort()
+                                            registerEndpoint.getServicePort().getPort()
                                     );
                                 } else {
                                     resolvedClusterAddress = ClusterAddress.readClusterAddressFrom(
@@ -372,7 +352,7 @@ public class ClusterResolver {
     private Observable<ChangeNotification<ClusterAddress>> resolveReadClusterFromEureka() {
         final EurekaInterestClient interestClient = Eurekas.newInterestClientBuilder()
                 .withClientId("readClusterInterestClient")
-                .withServerResolver(bootstrapResolver(interestPort))
+                .withServerResolver(bootstrapResolver(bootstrapPort))
                 .withTransportConfig(transportConfig)
                 .build();
         return interestClient.forInterest(Interests.forVips(readClusterVip))
@@ -383,7 +363,7 @@ public class ClusterResolver {
                             return Observable.empty();
                         }
                         ClusterAddress clusterAddress;
-                        ServiceEndpoint interestEndpoint = INTEREST_SERVICE_SELECTOR.returnServiceEndpoint(notification.getData());
+                        ServiceEndpoint interestEndpoint = EUREKA_SERVICE_SELECTOR.returnServiceEndpoint(notification.getData());
                         if (interestEndpoint != null) {
                             clusterAddress = ClusterAddress.readClusterAddressFrom(interestEndpoint.getAddress().getHostName(), interestEndpoint.getServicePort().getPort());
                         } else {

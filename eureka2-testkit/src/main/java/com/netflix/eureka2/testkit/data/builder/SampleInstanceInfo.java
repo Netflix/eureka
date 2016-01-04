@@ -34,7 +34,7 @@ public enum SampleInstanceInfo {
         public InstanceInfoBuilder builder() {
             InstanceInfoBuilder builder = templateFor(this.name());
             builder.withPorts(ExtCollections.asSet(
-                    SampleServicePort.EurekaDiscoveryPort.build()
+                    SampleServicePort.EurekaServerPort.build()
             ));
             return builder;
         }
@@ -94,9 +94,7 @@ public enum SampleInstanceInfo {
     protected InstanceInfoBuilder eurekaWriteTemplate(int idx) {
         InstanceInfoBuilder builder = templateFor(this.name() + '#' + idx);
         builder.withPorts(ExtCollections.asSet(
-                SampleServicePort.EurekaRegistrationPort.build(),
-                SampleServicePort.EurekaDiscoveryPort.build(),
-                SampleServicePort.EurekaReplicationPort.build()
+                SampleServicePort.EurekaServerPort.build()
         ));
 
         return builder;

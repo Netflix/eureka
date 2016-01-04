@@ -84,9 +84,9 @@ public class EurekaClientFailoverTest {
 
                 logger.info("===== breaking the network links ... =====");
 
-                NetworkLink registrationLink = networkRouter.getLinkTo(writeCluster.getServer(0).getRegistrationPort());
-                NetworkLink interestLink = networkRouter.getLinkTo(writeCluster.getServer(0).getInterestPort());
-                NetworkLink replicationLink = networkRouter.getLinkTo(writeCluster.getServer(1).getReplicationPort());
+                NetworkLink registrationLink = networkRouter.getLinkTo(writeCluster.getServer(0).getServerPort());
+                NetworkLink interestLink = networkRouter.getLinkTo(writeCluster.getServer(0).getServerPort());
+                NetworkLink replicationLink = networkRouter.getLinkTo(writeCluster.getServer(1).getServerPort());
                 interestLink.disconnect(1, TimeUnit.SECONDS);
                 replicationLink.disconnect(1, TimeUnit.SECONDS);
                 registrationLink.disconnect(1, TimeUnit.SECONDS);
@@ -103,7 +103,7 @@ public class EurekaClientFailoverTest {
             public void run() {
                 // Scale the read cluster up, and break the network connection to the first read server
                 readCluster.scaleUpByOne();
-                NetworkLink networkLink = networkRouter.getLinkTo(readCluster.getServer(0).getInterestPort());
+                NetworkLink networkLink = networkRouter.getLinkTo(readCluster.getServer(0).getServerPort());
                 networkLink.disconnect(1, TimeUnit.SECONDS);
             }
         });

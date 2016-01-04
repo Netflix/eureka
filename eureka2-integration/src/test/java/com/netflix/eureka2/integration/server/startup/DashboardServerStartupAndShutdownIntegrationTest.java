@@ -44,7 +44,6 @@ public class DashboardServerStartupAndShutdownIntegrationTest extends AbstractSt
                                 .withConnectionAutoTimeoutMs(30 * 60 * 1000)
                                 .withHeartbeatIntervalMs(30000)
                                 .withHttpPort(0)
-                                .withInterestPort(0)
                                 .withShutDownPort(0)
                                 .withWebAdminPort(0)
                                 .build()

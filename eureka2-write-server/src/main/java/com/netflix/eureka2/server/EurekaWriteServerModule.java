@@ -52,7 +52,7 @@ import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import io.reactivex.netty.spectator.SpectatorEventsListenerFactory;
 import rx.schedulers.Schedulers;
 
-import static com.netflix.eureka2.Names.REGISTRATION;
+import static com.netflix.eureka2.Names.EUREKA_SERVICE;
 
 /**
  * @author Tomasz Bak
@@ -91,7 +91,7 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
 
     protected void bindRegistrationComponents() {
         bind(MetricEventsListenerFactory.class)
-                .annotatedWith(Names.named(com.netflix.eureka2.Names.REGISTRATION))
+                .annotatedWith(Names.named(com.netflix.eureka2.Names.EUREKA_SERVICE))
                 .toInstance(new SpectatorEventsListenerFactory("registration-rx-client-", "registration-rx-server-"));
         bind(EurekaClientTransportFactory.class).toInstance(EurekaClientTransportFactory.getDefaultFactory());
         bind(EurekaServerTransportFactory.class).toInstance(EurekaServerTransportFactory.getDefaultFactory());
@@ -99,7 +99,7 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
 
         bind(EurekaRegistrationProcessor.class).to(PreservableRegistrationProcessor.class).in(Scopes.SINGLETON);
         bind(EurekaRegistrationProcessor.class)
-                .annotatedWith(Names.named(REGISTRATION))
+                .annotatedWith(Names.named(EUREKA_SERVICE))
                 .toProvider(RegistrationChannelProcessorProvider.class);
     }
 
@@ -133,8 +133,8 @@ public class EurekaWriteServerModule extends AbstractEurekaServerModule {
         @Inject
         WriteServerTransportProvider(EurekaServerTransportFactory transportFactory,
                                      EurekaServerTransportConfig config,
-                                     @Named(REGISTRATION) Provider<EurekaRegistrationProcessor> registrationProcessor,
-                                     @Named(REGISTRATION) MetricEventsListenerFactory servoEventsListenerFactory,
+                                     @Named(EUREKA_SERVICE) Provider<EurekaRegistrationProcessor> registrationProcessor,
+                                     @Named(EUREKA_SERVICE) MetricEventsListenerFactory servoEventsListenerFactory,
                                      EurekaRegistry registry,
                                      EurekaRegistryView registryView,
                                      EurekaInstanceInfoConfig instanceInfoConfig) {

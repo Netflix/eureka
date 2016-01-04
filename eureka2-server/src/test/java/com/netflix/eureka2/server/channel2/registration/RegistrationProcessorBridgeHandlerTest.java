@@ -21,6 +21,7 @@ import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.channel.ChannelHandlers;
+import com.netflix.eureka2.server.channel.registration.RegistrationProcessorBridgeHandler;
 import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;

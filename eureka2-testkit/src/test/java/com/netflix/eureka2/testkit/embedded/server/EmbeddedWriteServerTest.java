@@ -35,11 +35,11 @@ public class EmbeddedWriteServerTest {
     public void testRegistrationAndInterestServices() throws Exception {
         EmbeddedWriteServer writeServer = eurekaDeploymentResource.getEurekaDeployment().getWriteCluster().getServer(0);
         EurekaRegistrationClient registrationClient = Eurekas.newRegistrationClientBuilder()
-                .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(writeServer.getRegistrationPort()))
+                .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(writeServer.getServerPort()))
                 .build();
 
         EurekaInterestClient interestClient = Eurekas.newInterestClientBuilder()
-                .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(writeServer.getInterestPort()))
+                .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(writeServer.getServerPort()))
                 .build();
 
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();

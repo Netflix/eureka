@@ -75,7 +75,7 @@ public class BackupClusterBootstrapService implements RegistryBootstrapService {
      */
     private Observable<Void> loadRegistryFromAnyAvailableServer(final List<ClusterAddress> clusterAddresses, final EurekaRegistry<InstanceInfo> registry, final Source source) {
         ClusterAddress firstEndpoint = clusterAddresses.get(0);
-        Server firstServer = new Server(firstEndpoint.getHostName(), firstEndpoint.getInterestPort());
+        Server firstServer = new Server(firstEndpoint.getHostName(), firstEndpoint.getPort());
 
         return loadRegistryFromServer(firstServer, registry, source).onErrorResumeNext(new Func1<Throwable, Observable<Void>>() {
             @Override

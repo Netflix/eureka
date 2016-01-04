@@ -61,7 +61,7 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
 
     @Override
     public int scaleUpByOne() {
-        int discoveryPort = ephemeralPorts ? 0 : nextAvailablePort;
+        int serverPort = ephemeralPorts ? 0 : nextAvailablePort;
         int httpPort = ephemeralPorts ? 0 : nextAvailablePort + 1;
         int adminPort = ephemeralPorts ? 0 : nextAvailablePort + 2;
 
@@ -76,8 +76,7 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
                 .withTransportConfig(
                         anEurekaServerTransportConfig()
                                 .withHttpPort(httpPort)
-                                .withRegistrationPort(discoveryPort)
-                                .withInterestPort(discoveryPort)
+                                .withServerPort(serverPort)
                                 .withShutDownPort(0)
                                 .withWebAdminPort(adminPort)
                                 .build()
@@ -88,10 +87,10 @@ public class EmbeddedReadCluster extends EmbeddedEurekaCluster<EmbeddedReadServe
         nextAvailablePort += 10;
 
         if (ephemeralPorts) {
-            discoveryPort = newServer.getInterestPort();
+            serverPort = newServer.getServerPort();
         }
 
-        return scaleUpByOne(newServer, new Server("localhost", discoveryPort));
+        return scaleUpByOne(newServer, new Server("localhost", serverPort));
     }
 
     protected EmbeddedReadServer newServer(EurekaServerConfig config) {

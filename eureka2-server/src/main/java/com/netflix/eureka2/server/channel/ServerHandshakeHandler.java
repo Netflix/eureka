@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.eureka2.server.channel2;
+package com.netflix.eureka2.server.channel;
 
 import java.util.concurrent.atomic.AtomicReference;
 

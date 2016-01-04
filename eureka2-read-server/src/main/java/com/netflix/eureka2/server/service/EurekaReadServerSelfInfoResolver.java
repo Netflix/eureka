@@ -41,7 +41,7 @@ public class EurekaReadServerSelfInfoResolver implements SelfInfoResolver {
                             @Override
                             public InstanceInfoBuilder call(HashSet<ServicePort> ports) {
                                 ports.add(InstanceModel.getDefaultModel().newServicePort(Names.EUREKA_HTTP, httpServer.serverPort(), false));
-                                ports.add(InstanceModel.getDefaultModel().newServicePort(Names.INTEREST, discoveryServer.getServerPort(), false));
+                                ports.add(InstanceModel.getDefaultModel().newServicePort(Names.EUREKA_SERVICE, discoveryServer.getServerPort(), false));
                                 return InstanceModel.getDefaultModel().newInstanceInfo().withPorts(ports);
                             }
                         })

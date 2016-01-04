@@ -39,9 +39,9 @@ class DefaultEurekaResolverStep implements EurekaRemoteResolverStep {
     public static final String RESOLVER_CLIENT_ID = "liteResolverClient";
 
     private final ServiceSelector serviceSelector = ServiceSelector.selectBy()
-            .serviceLabel(Names.INTEREST).protocolType(NetworkAddress.ProtocolType.IPv4).publicIp(true)
+            .serviceLabel(Names.EUREKA_SERVICE).protocolType(NetworkAddress.ProtocolType.IPv4).publicIp(true)
             .or()
-            .serviceLabel(Names.INTEREST).protocolType(NetworkAddress.ProtocolType.IPv4);
+            .serviceLabel(Names.EUREKA_SERVICE).protocolType(NetworkAddress.ProtocolType.IPv4);
 
     private final EurekaInterestClientBuilder interestClientBuilder;
 

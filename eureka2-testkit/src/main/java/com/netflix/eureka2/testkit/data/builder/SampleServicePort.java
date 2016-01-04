@@ -16,13 +16,13 @@
 
 package com.netflix.eureka2.testkit.data.builder;
 
+import java.util.HashSet;
+
 import com.netflix.eureka2.Names;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.instance.ServicePort;
-import com.netflix.eureka2.spi.transport.EurekaTransportFactory;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.utils.ExtCollections;
-
-import java.util.HashSet;
 
 /**
  * @author Tomasz Bak
@@ -41,22 +41,10 @@ public enum SampleServicePort {
             return InstanceModel.getDefaultModel().newServicePort("WebServer", 443, true);
         }
     },
-    EurekaRegistrationPort() {
+    EurekaServerPort() {
         @Override
         public ServicePort build() {
-            return InstanceModel.getDefaultModel().newServicePort(Names.REGISTRATION, EurekaTransportFactory.DEFAULT_REGISTRATION_PORT, false);
-        }
-    },
-    EurekaDiscoveryPort() {
-        @Override
-        public ServicePort build() {
-            return InstanceModel.getDefaultModel().newServicePort(Names.INTEREST, EurekaTransportFactory.DEFAULT_DISCOVERY_PORT, false);
-        }
-    },
-    EurekaReplicationPort() {
-        @Override
-        public ServicePort build() {
-            return InstanceModel.getDefaultModel().newServicePort(Names.REPLICATION, EurekaTransportFactory.DEFAULT_REPLICATION_PORT, false);
+            return InstanceModel.getDefaultModel().newServicePort(Names.EUREKA_SERVICE, EurekaServerTransportConfig.DEFAULT_SERVER_PORT, false);
         }
     };
 

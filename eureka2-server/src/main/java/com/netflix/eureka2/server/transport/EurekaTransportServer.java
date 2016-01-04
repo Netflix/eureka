@@ -33,11 +33,11 @@ import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.EurekaRegistryView;
-import com.netflix.eureka2.server.channel2.ServerHandshakeHandler;
-import com.netflix.eureka2.server.channel2.ServerHeartbeatHandler;
-import com.netflix.eureka2.server.channel2.interest.InterestMultiplexerBridgeHandler;
-import com.netflix.eureka2.server.channel2.registration.RegistrationProcessorBridgeHandler;
-import com.netflix.eureka2.server.channel2.replication.ReceiverReplicationHandler;
+import com.netflix.eureka2.server.channel.ServerHandshakeHandler;
+import com.netflix.eureka2.server.channel.ServerHeartbeatHandler;
+import com.netflix.eureka2.server.channel.interest.InterestMultiplexerBridgeHandler;
+import com.netflix.eureka2.server.channel.registration.RegistrationProcessorBridgeHandler;
+import com.netflix.eureka2.server.channel.replication.ReceiverReplicationHandler;
 import com.netflix.eureka2.server.config.EurekaInstanceInfoConfig;
 import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
@@ -73,8 +73,8 @@ public class EurekaTransportServer {
 
     public EurekaTransportServer(EurekaServerTransportFactory transportFactory,
                                  EurekaServerTransportConfig config,
-                                 @Named(Names.REGISTRATION) Provider<EurekaRegistrationProcessor> registrationProcessor,
-                                 @Named(Names.REGISTRATION) MetricEventsListenerFactory servoEventsListenerFactory,
+                                 @Named(Names.EUREKA_SERVICE) Provider<EurekaRegistrationProcessor> registrationProcessor,
+                                 @Named(Names.EUREKA_SERVICE) MetricEventsListenerFactory servoEventsListenerFactory,
                                  EurekaRegistry registry,
                                  EurekaRegistryView registryView,
                                  EurekaInstanceInfoConfig instanceInfoConfig,
@@ -99,7 +99,7 @@ public class EurekaTransportServer {
 
     private void connectWrite() {
         transportFactory.connect(
-                config.getRegistrationPort(),
+                config.getServerPort(),
                 createRegistrationPipelineFactory(),
                 createInterestPipelineFactory(),
                 createReplicationPipelineFactory()
@@ -111,7 +111,7 @@ public class EurekaTransportServer {
 
     private void connectRead() {
         transportFactory.connect(
-                config.getRegistrationPort(),
+                config.getServerPort(),
                 null,
                 createInterestPipelineFactory(),
                 null

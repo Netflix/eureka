@@ -6,7 +6,6 @@ import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.server.config.WriteServerConfig;
-import com.netflix.eureka2.server.resolver.ClusterAddress.ServiceType;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteClusterReport;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import org.junit.After;
@@ -52,7 +51,7 @@ public class EmbeddedWriteClusterTest {
 
         // Verify replication peers observable
         TestSubscriber<ChangeNotification<Server>> replicationPeerSubscriber = new TestSubscriber<>();
-        writeCluster.resolvePeers(ServiceType.Replication).subscribe(replicationPeerSubscriber);
+        writeCluster.resolvePeers().subscribe(replicationPeerSubscriber);
 
         replicationPeerSubscriber.assertNoErrors();
         assertThat(replicationPeerSubscriber.getOnNextEvents().size(), is(equalTo(1)));
@@ -78,7 +77,7 @@ public class EmbeddedWriteClusterTest {
 
         // Subscribe to replication peer before scale down to catch server remove update
         TestSubscriber<ChangeNotification<Server>> replicationPeerSubscriber = new TestSubscriber<>();
-        writeCluster.resolvePeers(ServiceType.Replication).subscribe(replicationPeerSubscriber);
+        writeCluster.resolvePeers().subscribe(replicationPeerSubscriber);
 
         // Now scale down
         writeCluster.scaleDownBy(1);

@@ -47,9 +47,7 @@ public class WriteServerResource extends EurekaExternalResource {
                 .withTransportConfig(
                         anEurekaServerTransportConfig()
                                 .withHttpPort(0)
-                                .withInterestPort(0)
-                                .withRegistrationPort(0)
-                                .withReplicationPort(0)
+                                .withServerPort(0)
                                 .withShutDownPort(0)
                                 .withWebAdminPort(0)
                                 .build()
@@ -75,20 +73,12 @@ public class WriteServerResource extends EurekaExternalResource {
         return name;
     }
 
-    public int getRegistrationPort() {
-        return server.getRegistrationPort();
-    }
-
-    public int getDiscoveryPort() {
-        return server.getInterestPort();
+    public int getServerPort() {
+        return server.getServerPort();
     }
 
     public ServerResolver getRegistrationResolver() {
         return server.getRegistrationResolver();
-    }
-
-    public ServerResolver getInterestResolver() {
-        return server.getInterestResolver();
     }
 
     public EmbeddedWriteServer getServer() {

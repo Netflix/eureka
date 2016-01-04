@@ -36,7 +36,7 @@ import com.netflix.governator.auto.ModuleListProviders;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import rx.Observable;
 
-import static com.netflix.eureka2.Names.REGISTRATION;
+import static com.netflix.eureka2.Names.EUREKA_SERVICE;
 import static com.netflix.eureka2.server.config.ServerConfigurationNames.DEFAULT_CONFIG_PREFIX;
 
 /**
@@ -124,8 +124,8 @@ public class EmbeddedWriteServerBuilder extends EmbeddedServerBuilder<WriteServe
             @Inject
             EmbeddedWriteServerTransportProvider(EurekaServerTransportFactory transportFactory,
                                                  EurekaServerTransportConfig config,
-                                                 @Named(REGISTRATION) Provider<EurekaRegistrationProcessor> registrationProcessor,
-                                                 @Named(REGISTRATION) MetricEventsListenerFactory servoEventsListenerFactory,
+                                                 @Named(EUREKA_SERVICE) Provider<EurekaRegistrationProcessor> registrationProcessor,
+                                                 @Named(EUREKA_SERVICE) MetricEventsListenerFactory servoEventsListenerFactory,
                                                  EurekaRegistry registry,
                                                  EurekaRegistryView registryView,
                                                  EurekaInstanceInfoConfig instanceInfoConfig,

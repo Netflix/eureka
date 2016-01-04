@@ -2,6 +2,8 @@ package com.netflix.eureka2.testkit.embedded.server;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import com.google.inject.Injector;
 import com.netflix.eureka2.client.resolver.ServerResolver;
@@ -11,9 +13,6 @@ import com.netflix.eureka2.health.HealthStatusUpdate;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.server.EurekaWriteServer;
 import rx.functions.Action1;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Tomasz Bak
@@ -28,20 +27,18 @@ public class EmbeddedWriteServer extends EurekaWriteServer {
 
     public ServerResolver getRegistrationResolver() {
         return ServerResolvers.fromHostname("localhost")
-                .withPort(injector.getInstance(EurekaWriteServer.class).getRegistrationPort());
+                .withPort(injector.getInstance(EurekaWriteServer.class).getServerPort());
     }
 
     public ServerResolver getInterestResolver() {
         return ServerResolvers.fromHostname("localhost")
-                .withPort(injector.getInstance(EurekaWriteServer.class).getInterestPort());
+                .withPort(injector.getInstance(EurekaWriteServer.class).getServerPort());
     }
 
     public WriteServerReport serverReport() {
         EurekaWriteServer eurekaWriteServer = injector.getInstance(EurekaWriteServer.class);
         return new WriteServerReport(
-                eurekaWriteServer.getRegistrationPort(),
-                eurekaWriteServer.getInterestPort(),
-                eurekaWriteServer.getReplicationPort(),
+                eurekaWriteServer.getServerPort(),
                 getEurekaServerRegistry().size(),
                 getHttpServerPort(),
                 getWebAdminPort()
@@ -73,29 +70,16 @@ public class EmbeddedWriteServer extends EurekaWriteServer {
 
     public static class WriteServerReport extends AbstractServerReport {
         private final int registrationPort;
-        private final int discoveryPort;
-        private final int replicationPort;
         private final int registrySize;
 
-        public WriteServerReport(int registrationPort, int discoveryPort, int replicationPort,
-                                 int registrySize, int httpServerPort, int adminPort) {
+        public WriteServerReport(int serverPort, int registrySize, int httpServerPort, int adminPort) {
             super(httpServerPort, adminPort);
-            this.registrationPort = registrationPort;
-            this.discoveryPort = discoveryPort;
-            this.replicationPort = replicationPort;
+            this.registrationPort = serverPort;
             this.registrySize = registrySize;
         }
 
         public int getRegistrationPort() {
             return registrationPort;
-        }
-
-        public int getDiscoveryPort() {
-            return discoveryPort;
-        }
-
-        public int getReplicationPort() {
-            return replicationPort;
         }
 
         public int getRegistrySize() {
