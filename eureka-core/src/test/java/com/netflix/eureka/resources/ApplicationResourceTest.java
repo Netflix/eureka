@@ -1,7 +1,11 @@
 package com.netflix.eureka.resources;
 
+import com.netflix.appinfo.AmazonInfo;
+import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.UniqueIdentifier;
+import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.converters.wrappers.CodecWrappers;
 import com.netflix.discovery.converters.wrappers.DecoderWrapper;
 import com.netflix.discovery.shared.Application;
@@ -15,6 +19,7 @@ import org.junit.Test;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.spy;
@@ -105,5 +110,41 @@ public class ApplicationResourceTest extends AbstractTester {
         when(instanceInfo.getAppName()).thenReturn(applicationResource.getName() + "extraExtra");
         response = applicationResource.addInstance(instanceInfo, false+"");
         assertThat(response.getStatus(), is(400));
+    }
+
+    @Test
+    public void testBadRegistrationOfDataCenterInfo() throws Exception {
+        try {
+            // test 400 when configured to return client error
+            ConfigurationManager.getConfigInstance().setProperty("eureka.experimental.registration.validation.dataCenterInfoId", "true");
+            InstanceInfo instanceInfo = spy(InstanceInfoGenerator.takeOne());
+            when(instanceInfo.getDataCenterInfo()).thenReturn(new TestDataCenterInfo());
+            Response response = applicationResource.addInstance(instanceInfo, false + "");
+            assertThat(response.getStatus(), is(400));
+
+            // test backfill of data for AmazonInfo
+            ConfigurationManager.getConfigInstance().setProperty("eureka.experimental.registration.validation.dataCenterInfoId", "false");
+            instanceInfo = spy(InstanceInfoGenerator.takeOne());
+            assertThat(instanceInfo.getDataCenterInfo(), instanceOf(AmazonInfo.class));
+            ((AmazonInfo) instanceInfo.getDataCenterInfo()).getMetadata().remove(AmazonInfo.MetaDataKey.instanceId.getName());  // clear the Id
+            response = applicationResource.addInstance(instanceInfo, false + "");
+            assertThat(response.getStatus(), is(204));
+
+        } finally {
+            ConfigurationManager.getConfigInstance().clearProperty("eureka.experimental.registration.validation.dataCenterInfoId");
+        }
+    }
+
+    private static class TestDataCenterInfo implements DataCenterInfo, UniqueIdentifier {
+
+        @Override
+        public Name getName() {
+            return Name.MyOwn;
+        }
+
+        @Override
+        public String getId() {
+            return null;  // return null to test
+        }
     }
 }
