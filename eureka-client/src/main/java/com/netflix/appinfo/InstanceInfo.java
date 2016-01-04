@@ -192,18 +192,6 @@ public class InstanceInfo {
         // ---------------------------------------------------------------
         // for compatibility
 
-        // Address the issue when new instanceId field is set, and Amazon metadata do not include instanceId.
-        // In this case legacy decoder will ignore instanceId value, and try to get the id from Amazon metadata.
-        // As it was not set, null will be returned which is returned further to the caller without check. This
-        // breaks registry deserialization process.
-        if (dataCenterInfo instanceof AmazonInfo && instanceId != null) {
-            AmazonInfo amazonInfo = (AmazonInfo) dataCenterInfo;
-            String effectiveId = amazonInfo.get(AmazonInfo.MetaDataKey.instanceId);
-            if (effectiveId == null) {
-                amazonInfo.getMetadata().put(AmazonInfo.MetaDataKey.instanceId.getName(), instanceId);
-            }
-        }
-
         if (metadata == null) {
             this.metadata = Collections.emptyMap();
         } else if (metadata.size() == 1) {
@@ -881,10 +869,12 @@ public class InstanceInfo {
         if (instanceId != null && !instanceId.isEmpty()) {
             return instanceId;
         } else if (dataCenterInfo instanceof UniqueIdentifier) {
-            return ((UniqueIdentifier) dataCenterInfo).getId();
-        } else {
-            return hostName;
+            String uniqueId = ((UniqueIdentifier) dataCenterInfo).getId();
+            if (uniqueId != null && !uniqueId.isEmpty()) {
+                return uniqueId;
+            }
         }
+        return hostName;
     }
 
     /**

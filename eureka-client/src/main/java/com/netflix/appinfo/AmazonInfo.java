@@ -193,7 +193,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
                     try {
                         String mac = null;
                         if (key == MetaDataKey.vpcId) {
-                            mac = result.metadata.get(MetaDataKey.mac.name());  // mac should be read before vpcId due to declaration order
+                            mac = result.metadata.get(MetaDataKey.mac.getName());  // mac should be read before vpcId due to declaration order
                         }
                         URL url = key.getURL(null, mac);
                         HttpURLConnection uc = (HttpURLConnection) url.openConnection();
