@@ -2,7 +2,7 @@ package com.netflix.eureka2.testkit.cli.command.connect;
 
 import java.util.List;
 
-import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
 import com.netflix.eureka2.server.resolver.ClusterAddress;
@@ -56,7 +56,7 @@ public abstract class AbstractConnectClusterCommand extends Command {
         Server[] servers = new Server[writeServers.size()];
         for (int i = 0; i < servers.length; i++) {
             ClusterAddress clusterAddress = writeServers.get(i);
-            servers[i] = new Server(clusterAddress.getHostName(), clusterAddress.getRegistrationPort());
+            servers[i] = new Server(clusterAddress.getHostName(), clusterAddress.getPort());
         }
         return ServerResolvers.from(servers);
     }
@@ -65,7 +65,7 @@ public abstract class AbstractConnectClusterCommand extends Command {
         Server[] servers = new Server[eurekaServers.size()];
         for (int i = 0; i < servers.length; i++) {
             ClusterAddress clusterAddress = eurekaServers.get(i);
-            servers[i] = new Server(clusterAddress.getHostName(), clusterAddress.getInterestPort());
+            servers[i] = new Server(clusterAddress.getHostName(), clusterAddress.getPort());
         }
         return ServerResolvers.from(servers);
     }

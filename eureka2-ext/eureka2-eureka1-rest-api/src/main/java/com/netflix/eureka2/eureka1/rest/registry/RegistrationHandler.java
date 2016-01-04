@@ -35,25 +35,29 @@ class RegistrationHandler {
 
     private void connect() {
         if (subscription == null) {
-            subscription = registrationClient.register(registrationSubject).subscribe(new Subscriber<Void>() {
-                @Override
-                public void onCompleted() {
-                    if (v1InstanceInfo != null) {
-                        logger.info("Closing registration channel for instance {}", v1InstanceInfo.getId());
-                    }
-                }
+            subscription = registrationClient.register(registrationSubject)
+                    .ignoreElements()
+                    .cast(Void.class)
+                    .doOnUnsubscribe(() -> registrationSubject.onCompleted())
+                    .subscribe(new Subscriber<Void>() {
+                        @Override
+                        public void onCompleted() {
+                            if (v1InstanceInfo != null) {
+                                logger.info("Closing registration channel for instance {}", v1InstanceInfo.getId());
+                            }
+                        }
 
-                @Override
-                public void onError(Throwable e) {
-                    if (v1InstanceInfo != null) {
-                        logger.error("Error in registration channel for instance " + v1InstanceInfo.getId(), e);
-                    }
-                }
+                        @Override
+                        public void onError(Throwable e) {
+                            if (v1InstanceInfo != null) {
+                                logger.error("Error in registration channel for instance " + v1InstanceInfo.getId(), e);
+                            }
+                        }
 
-                @Override
-                public void onNext(Void aVoid) {
-                }
-            });
+                        @Override
+                        public void onNext(Void aVoid) {
+                        }
+                    });
         }
     }
 

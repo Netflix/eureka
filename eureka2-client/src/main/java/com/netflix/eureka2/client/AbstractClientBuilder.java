@@ -23,6 +23,7 @@ import com.netflix.eureka2.config.EurekaRegistryConfig;
 import com.netflix.eureka2.config.EurekaTransportConfig;
 import com.netflix.eureka2.metric.EurekaRegistryMetricFactory;
 import com.netflix.eureka2.metric.client.EurekaClientMetricFactory;
+import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
 
 /**
  * The abstract client builder handles common components such as metrics and
@@ -35,6 +36,7 @@ abstract class AbstractClientBuilder<CLIENT, T extends AbstractClientBuilder<CLI
 
     // server tager
     protected ServerResolver serverResolver;
+    protected EurekaClientTransportFactory transportFactory;
 
     // configs
     protected EurekaTransportConfig transportConfig;
@@ -55,6 +57,11 @@ abstract class AbstractClientBuilder<CLIENT, T extends AbstractClientBuilder<CLI
      */
     public T withServerResolver(ServerResolver serverResolver) {
         this.serverResolver = serverResolver;
+        return self();
+    }
+
+    public T withTransport(EurekaClientTransportFactory transportFactory) {
+        this.transportFactory = transportFactory;
         return self();
     }
 
@@ -86,6 +93,10 @@ abstract class AbstractClientBuilder<CLIENT, T extends AbstractClientBuilder<CLI
     public CLIENT build() {
         if (transportConfig == null) {
             transportConfig = new BasicEurekaTransportConfig.Builder().build();
+        }
+
+        if (transportFactory == null) {
+            transportFactory = EurekaClientTransportFactory.getDefaultFactory();
         }
 
         if (registryConfig == null) {

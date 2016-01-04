@@ -1,14 +1,7 @@
 package com.netflix.eureka2.testkit.internal.rx;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 import rx.Subscriber;
@@ -16,16 +9,14 @@ import rx.functions.Func1;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
  * RxJava {@link rx.observers.TestSubscriber}, is useful in most cases, specially when
  * pared with {@link rx.schedulers.TestScheduler}. Sometimes however we want to examine asynchronous
  * stream while it still produces items. This requires blocking not on the terminal event, but while
  * waiting for onNext to happen.
- *
+ * <p>
  * Another difference of this class is a richer set of assertions.
  *
  * @author Tomasz Bak
@@ -42,11 +33,14 @@ public class ExtTestSubscriber<T> extends Subscriber<T> {
 
     private final List<Exception> contractErrors = new CopyOnWriteArrayList<>();
 
+    private final Set<Thread> blockedThreads = new ConcurrentSkipListSet<>((t1, t2) -> Long.compare(t1.getId(), t2.getId()));
+
     @Override
     public void onCompleted() {
         if (!state.compareAndSet(State.Open, State.OnCompleted)) {
             contractErrors.add(new Exception("onComplete called on subscriber in state " + state));
         }
+        awakeAllBlockedThreads();
     }
 
     @Override
@@ -55,6 +49,7 @@ public class ExtTestSubscriber<T> extends Subscriber<T> {
             contractErrors.add(new Exception("onError called on subscriber in state " + state));
         }
         onErrorResult.set(e);
+        awakeAllBlockedThreads();
     }
 
     @Override
@@ -101,11 +96,31 @@ public class ExtTestSubscriber<T> extends Subscriber<T> {
     }
 
     public T takeNext(long timeout, TimeUnit timeUnit) throws InterruptedException {
-        return available.poll(timeout, timeUnit);
+        blockedThreads.add(Thread.currentThread());
+        try {
+            return available.poll(timeout, timeUnit);
+        } catch (InterruptedException e) {
+            if (onErrorResult.get() != null) {
+                throw new RuntimeException(onErrorResult.get());
+            }
+            throw e;
+        } finally {
+            blockedThreads.remove(Thread.currentThread());
+        }
     }
 
     public T takeNextOrWait() throws InterruptedException {
-        return available.poll(24, TimeUnit.HOURS);
+        blockedThreads.add(Thread.currentThread());
+        try {
+            return available.poll(24, TimeUnit.HOURS);
+        } catch (InterruptedException e) {
+            if (onErrorResult.get() != null) {
+                throw new RuntimeException(onErrorResult.get());
+            }
+            throw e;
+        } finally {
+            blockedThreads.remove(Thread.currentThread());
+        }
     }
 
     public T getLatestItem() {
@@ -152,18 +167,7 @@ public class ExtTestSubscriber<T> extends Subscriber<T> {
     }
 
     public void assertOnCompleted(int timeout, TimeUnit timeUnit) throws Exception {
-        long waitTimeInMs = timeUnit.toMillis(timeout);
-        long minWait = Math.max(waitTimeInMs, 10);
-
-        for (int i = 0; i < minWait; i+=10) {
-            if (state.get() == State.OnCompleted) {
-                assertTrue(true);
-                return;
-            }
-            Thread.sleep(10);
-        }
-
-        assertTrue(false);
+        assertInState(State.OnCompleted, timeout, timeUnit);
     }
 
     public void assertOnError() {
@@ -173,6 +177,35 @@ public class ExtTestSubscriber<T> extends Subscriber<T> {
     public void assertOnError(Throwable expected) {
         assertThat(state.get(), is(equalTo(State.OnError)));
         assertThat(onErrorResult.get(), is(equalTo(expected)));
+    }
+
+    public void assertOnError(int timeout, TimeUnit timeUnit) throws Exception {
+        assertInState(State.OnError, timeout, timeUnit);
+    }
+
+    public void assertOnError(Class<? extends Throwable> expected) {
+        assertThat(state.get(), is(equalTo(State.OnError)));
+        assertThat(onErrorResult.get().getClass(), is(equalTo(expected)));
+    }
+
+    public void assertOnError(Class<? extends Throwable> expected, int timeout, TimeUnit timeUnit) throws Exception {
+        assertInState(State.OnError, timeout, timeUnit);
+        assertThat(onErrorResult.get().getClass(), is(equalTo(expected)));
+    }
+
+    public void assertInState(State expectedState, int timeout, TimeUnit timeUnit) throws Exception {
+        long waitTimeInMs = timeUnit.toMillis(timeout);
+        long minWait = Math.max(waitTimeInMs, 10);
+
+        for (int i = 0; i < minWait; i += 10) {
+            if (state.get() == expectedState) {
+                assertTrue(true);
+                return;
+            }
+            Thread.sleep(10);
+        }
+
+        assertTrue(false);
     }
 
     public void assertContainsInAnyOrder(Collection<T> expected) {
@@ -219,6 +252,10 @@ public class ExtTestSubscriber<T> extends Subscriber<T> {
                 fail(formatAnyOrderFailure(next, expected.size(), left));
             }
         }
+    }
+
+    private void awakeAllBlockedThreads() {
+        blockedThreads.forEach(Thread::interrupt);
     }
 
     private static <R> String formatAnyOrderFailure(R found, int total, Set<R> left) {

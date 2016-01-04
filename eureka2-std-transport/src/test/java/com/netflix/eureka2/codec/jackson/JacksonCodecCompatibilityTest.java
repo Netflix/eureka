@@ -19,7 +19,6 @@ package com.netflix.eureka2.codec.jackson;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.StdInstanceModel;
 import com.netflix.eureka2.testkit.compatibility.codec.EurekaCodecCompatibilityTest;
-import com.netflix.eureka2.transport.StdEurekaTransportFactory;
 import org.junit.BeforeClass;
 
 /**
@@ -27,7 +26,7 @@ import org.junit.BeforeClass;
 public class JacksonCodecCompatibilityTest extends EurekaCodecCompatibilityTest {
 
     public JacksonCodecCompatibilityTest() {
-        super(new JacksonEurekaCodecFactory(StdEurekaTransportFactory.REGISTRATION_PROTOCOL_MODEL_SET));
+        super(new JacksonEurekaCodecFactory());
     }
 
     @BeforeClass

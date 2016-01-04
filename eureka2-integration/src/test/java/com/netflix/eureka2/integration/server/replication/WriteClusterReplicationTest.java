@@ -7,17 +7,16 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.client.registration.RegistrationObservable;
-import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.client.EurekaRegistrationClient.RegistrationStatus;
+import com.netflix.eureka2.junit.categories.IntegrationTest;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
-import com.netflix.eureka2.junit.categories.IntegrationTest;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.StdInstanceInfo.Builder;
-import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,12 +26,12 @@ import rx.Subscription;
 import rx.subjects.BehaviorSubject;
 
 import static com.netflix.eureka2.testkit.internal.rx.RxBlocking.iteratorFrom;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.deleteChangeNotificationOf;
-import static com.netflix.eureka2.testkit.junit.EurekaMatchers.modifyChangeNotificationOf;
+import static com.netflix.eureka2.testkit.junit.EurekaMatchers.*;
+import static com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource.anEurekaDeploymentResource;
 import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * @author David Liu
@@ -40,12 +39,8 @@ import static org.hamcrest.Matchers.is;
 @Category(IntegrationTest.class)
 public class WriteClusterReplicationTest {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
     @Rule
-    public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(2, 0);
+    public final EurekaDeploymentResource eurekaDeploymentResource = anEurekaDeploymentResource(2, 0).build();
 
     /**
      * This test verifies that the data are replicated in both ways between the two cluster nodes.
@@ -77,9 +72,9 @@ public class WriteClusterReplicationTest {
                                                             EurekaInterestClient interestClient,
                                                             InstanceInfo clientInfo) throws Exception {
         // Register via first write server
-        RegistrationObservable request = registrationClient.register(Observable.just(clientInfo));
-        Subscription subscription = request.subscribe();
-        request.initialRegistrationResult().toBlocking().firstOrDefault(null);  // wait for initial registration
+        ExtTestSubscriber<RegistrationStatus> registrationSubscriber = new ExtTestSubscriber<>();
+        registrationClient.register(Observable.just(clientInfo).concatWith(Observable.never())).subscribe(registrationSubscriber);
+        assertThat(registrationSubscriber.takeNext(5, TimeUnit.SECONDS), is(notNullValue()));
 
         // Subscribe to second write server
         Interest<InstanceInfo> interest = Interests.forApplications(clientInfo.getApp());
@@ -89,7 +84,7 @@ public class WriteClusterReplicationTest {
         assertThat(notificationIterator.next(), is(addChangeNotificationOf(clientInfo)));
 
         // Now unregister
-        subscription.unsubscribe();
+        registrationSubscriber.unsubscribe();
         assertThat(notificationIterator.next(), is(deleteChangeNotificationOf(clientInfo)));
     }
 
@@ -98,7 +93,7 @@ public class WriteClusterReplicationTest {
         final EurekaRegistrationClient registrationClient = eurekaDeploymentResource.registrationClientToWriteServer(0);
         final EurekaInterestClient interestClient = eurekaDeploymentResource.interestClientToWriteServer(1);
 
-        InstanceInfoBuilder seedBuilder = new Builder().withId("id123").withApp("app");
+        InstanceInfoBuilder seedBuilder = InstanceModel.getDefaultModel().newInstanceInfo().withId("id123").withApp("app");
         List<InstanceInfo> infos = Arrays.asList(
                 seedBuilder.withAppGroup("AAA").build(),
                 seedBuilder.withAppGroup("BBB").build(),

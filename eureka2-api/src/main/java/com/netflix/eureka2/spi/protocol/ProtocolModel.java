@@ -16,20 +16,21 @@
 
 package com.netflix.eureka2.spi.protocol;
 
+import com.netflix.eureka2.internal.util.ExtLoader;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.Delta;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
+import com.netflix.eureka2.spi.model.Acknowledgement;
+import com.netflix.eureka2.spi.model.Heartbeat;
 import com.netflix.eureka2.spi.protocol.common.AddInstance;
 import com.netflix.eureka2.spi.protocol.common.DeleteInstance;
-import com.netflix.eureka2.spi.protocol.common.Heartbeat;
+import com.netflix.eureka2.spi.protocol.common.GoAway;
 import com.netflix.eureka2.spi.protocol.common.StreamStateUpdate;
 import com.netflix.eureka2.spi.protocol.interest.InterestRegistration;
-import com.netflix.eureka2.spi.protocol.interest.UnregisterInterestSet;
 import com.netflix.eureka2.spi.protocol.interest.UpdateInstanceInfo;
 import com.netflix.eureka2.spi.protocol.registration.Register;
-import com.netflix.eureka2.spi.protocol.registration.Unregister;
 import com.netflix.eureka2.spi.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.spi.protocol.replication.ReplicationHelloReply;
 
@@ -41,9 +42,9 @@ public abstract class ProtocolModel {
 
     public abstract Register newRegister(InstanceInfo instanceInfo);
 
-    public abstract Unregister newUnregister();
-
     public abstract Heartbeat newHeartbeat();
+
+    public abstract GoAway newGoAway();
 
     public abstract Acknowledgement newAcknowledgement();
 
@@ -51,7 +52,7 @@ public abstract class ProtocolModel {
 
     public abstract DeleteInstance newDeleteInstance(String instanceId);
 
-    public abstract UpdateInstanceInfo newUpdateInstanceInfo(Delta<?> delta);
+    public abstract UpdateInstanceInfo newUpdateInstanceInfo(Delta<?>... delta);
 
     public abstract StreamStateUpdate newStreamStateUpdate(StreamStateNotification<InstanceInfo> notification);
 
@@ -61,9 +62,10 @@ public abstract class ProtocolModel {
 
     public abstract InterestRegistration newInterestRegistration(Interest<InstanceInfo> interest);
 
-    public abstract UnregisterInterestSet newUnregisterInterestSet();
-
     public static ProtocolModel getDefaultModel() {
+        if (defaultModel == null) {
+            return ExtLoader.resolveDefaultModel().getProtocolModel();
+        }
         return defaultModel;
     }
 

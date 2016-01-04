@@ -7,24 +7,27 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.netflix.eureka2.Server;
-import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.client.EurekaInterestClient;
+import com.netflix.eureka2.client.interest.SnapshotInterestClient;
+import com.netflix.eureka2.client.resolver.ServerResolvers;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.server.resolver.ClusterAddress;
 import com.netflix.eureka2.server.resolver.EurekaClusterResolver;
+import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
 import com.netflix.eureka2.utils.functions.ChangeNotifications;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Notification;
 import rx.Observable;
-import rx.Scheduler;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 
 /**
  * @author Tomasz Bak
@@ -35,16 +38,18 @@ public class BackupClusterBootstrapService implements RegistryBootstrapService {
     private static final Logger logger = LoggerFactory.getLogger(BackupClusterBootstrapService.class);
 
     private final EurekaClusterResolver bootstrapResolver;
-    private final Scheduler scheduler;
+    private final EurekaClientTransportFactory transportFactory;
 
     @Inject
-    public BackupClusterBootstrapService(BackupClusterResolverProvider bootstrapResolverProvider) {
-        this(bootstrapResolverProvider.get(), Schedulers.computation());
+    public BackupClusterBootstrapService(BackupClusterResolverProvider bootstrapResolverProvider,
+                                         EurekaClientTransportFactory transportFactory) {
+        this(bootstrapResolverProvider.get(), transportFactory);
     }
 
-    public BackupClusterBootstrapService(EurekaClusterResolver bootstrapResolver, Scheduler scheduler) {
+    /* For testing */ BackupClusterBootstrapService(EurekaClusterResolver bootstrapResolver,
+                                                    EurekaClientTransportFactory transportFactory) {
         this.bootstrapResolver = bootstrapResolver;
-        this.scheduler = scheduler;
+        this.transportFactory = transportFactory;
     }
 
     @Override
@@ -70,7 +75,7 @@ public class BackupClusterBootstrapService implements RegistryBootstrapService {
      */
     private Observable<Void> loadRegistryFromAnyAvailableServer(final List<ClusterAddress> clusterAddresses, final EurekaRegistry<InstanceInfo> registry, final Source source) {
         ClusterAddress firstEndpoint = clusterAddresses.get(0);
-        Server firstServer = new Server(firstEndpoint.getHostName(), firstEndpoint.getInterestPort());
+        Server firstServer = new Server(firstEndpoint.getHostName(), firstEndpoint.getPort());
 
         return loadRegistryFromServer(firstServer, registry, source).onErrorResumeNext(new Func1<Throwable, Observable<Void>>() {
             @Override
@@ -87,7 +92,7 @@ public class BackupClusterBootstrapService implements RegistryBootstrapService {
         logger.info("Bootstrapping registry from server {}...", server);
 
         final AtomicLong loaded = new AtomicLong();
-        Observable<ChangeNotification<InstanceInfo>> notifications = createLightEurekaInterestClient(server)
+        Observable<ChangeNotification<InstanceInfo>> notifications = createSnapshotInterestClient(server)
                 .forInterest(Interests.forFullRegistry())
                 .doOnNext(new Action1<ChangeNotification<InstanceInfo>>() {
                     @Override
@@ -137,8 +142,12 @@ public class BackupClusterBootstrapService implements RegistryBootstrapService {
     /**
      * We override default implementation in test to inject mock.
      */
-    protected LightEurekaInterestClient createLightEurekaInterestClient(Server server) {
-        return new LightEurekaInterestClient(server, scheduler);
+    protected EurekaInterestClient createSnapshotInterestClient(Server server) {
+        return new SnapshotInterestClient(
+                InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, "bootstrap"),
+                ServerResolvers.from(server),
+                transportFactory
+        );
     }
 
     private static ChangeNotifications.Identity<ClusterAddress, String> CLUSTER_ADDRESS_IDENTITY =

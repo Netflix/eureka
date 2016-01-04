@@ -1,22 +1,16 @@
 package com.netflix.eureka2.eureka1.utils;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.datacenter.AwsDataCenterInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.ServicePort;
-import com.netflix.eureka2.model.instance.StdServicePort;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.selector.ServiceSelector;
@@ -29,11 +23,7 @@ import rx.subjects.ReplaySubject;
 
 import static com.netflix.eureka2.eureka1.utils.Eureka1ModelConverters.*;
 import static com.netflix.eureka2.utils.ExtCollections.asSet;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.equalToIgnoringCase;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -44,10 +34,6 @@ import static org.mockito.Mockito.when;
  */
 @SuppressWarnings("unchecked")
 public class Eureka1ModelConvertersTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private final EurekaRegistry<InstanceInfo> registry = mock(EurekaRegistry.class);
     private final ReplaySubject<ChangeNotification<InstanceInfo>> notificationSubject = ReplaySubject.create();
@@ -177,8 +163,8 @@ public class Eureka1ModelConvertersTest {
     public void testServicePortMappingToMetaData() throws Exception {
         InstanceInfo instanceInfo = SampleInstanceInfo.WebServer.builder()
                 .withPorts(
-                        new StdServicePort("http", 80, false, asSet("private")),
-                        new StdServicePort("https", 443, true, asSet("public", "private"))
+                        InstanceModel.getDefaultModel().newServicePort("http", 80, false, asSet("private")),
+                        InstanceModel.getDefaultModel().newServicePort("https", 443, true, asSet("public", "private"))
                 )
                 .build();
 

@@ -16,6 +16,8 @@
 
 package com.netflix.eureka2.spi.codec;
 
+import com.netflix.eureka2.internal.util.ExtLoader;
+
 /**
  */
 public abstract class EurekaCodecFactory {
@@ -27,6 +29,9 @@ public abstract class EurekaCodecFactory {
     public abstract EurekaCodec getCodec();
 
     public static EurekaCodecFactory getDefaultFactory() {
+        if (DEFAULT_FACTORY == null) {
+            return ExtLoader.resolveDefaultCodecFactory();
+        }
         return DEFAULT_FACTORY;
     }
 

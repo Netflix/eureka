@@ -1,19 +1,13 @@
 package com.netflix.eureka2.registry.index;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
-import com.netflix.eureka2.model.StdSource;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
-import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.SourcedChangeNotification;
 import com.netflix.eureka2.model.notification.SourcedModifyNotification;
@@ -25,23 +19,17 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 /**
  * @author David Liu
  */
 public class InstanceInfoInitStateHolderTest {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
-    private StdSource localSource = new StdSource(StdSource.Origin.LOCAL, "local");
-    private StdSource remoteSource1 = new StdSource(StdSource.Origin.REPLICATED, "remote1", 1);
-    private StdSource remoteSource1ng = new StdSource(StdSource.Origin.REPLICATED, "remote1", 2);
-    private StdSource remoteSource2 = new StdSource(StdSource.Origin.REPLICATED, "remote2", 10);
+    private final Source localSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, "local");
+    private final Source remoteSource1 = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "remote1", 1);
+    private final Source remoteSource1ng = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "remote1", 2);
+    private final Source remoteSource2 = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "remote2", 10);
 
     private Interest<InstanceInfo> interest = Interests.forFullRegistry();
 
@@ -72,7 +60,7 @@ public class InstanceInfoInitStateHolderTest {
 
         cn1 = new SourcedChangeNotification<>(ChangeNotification.Kind.Add, info1, localSource);
         cn2 = new SourcedChangeNotification<>(ChangeNotification.Kind.Add, info2, localSource);
-        cn3 = new SourcedModifyNotification<>(info3, ((StdInstanceInfo) info3).diffOlder((StdInstanceInfo) info2), localSource);
+        cn3 = new SourcedModifyNotification<>(info3, info3.diffOlder(info2), localSource);
 
         initialRegistry = Arrays.asList(
                 SampleChangeNotification.CliAdd.newNotification(localSource),

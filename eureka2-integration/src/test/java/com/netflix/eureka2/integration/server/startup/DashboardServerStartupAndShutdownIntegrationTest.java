@@ -1,7 +1,6 @@
 package com.netflix.eureka2.integration.server.startup;
 
 import com.netflix.eureka2.EurekaDashboardRunner;
-import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
@@ -42,11 +41,9 @@ public class DashboardServerStartupAndShutdownIntegrationTest extends AbstractSt
                 )
                 .withTransportConfig(
                         anEurekaServerTransportConfig()
-                                .withCodec(CodecType.Avro)
                                 .withConnectionAutoTimeoutMs(30 * 60 * 1000)
                                 .withHeartbeatIntervalMs(30000)
                                 .withHttpPort(0)
-                                .withInterestPort(0)
                                 .withShutDownPort(0)
                                 .withWebAdminPort(0)
                                 .build()

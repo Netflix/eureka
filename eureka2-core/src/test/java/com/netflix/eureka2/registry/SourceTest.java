@@ -2,7 +2,6 @@ package com.netflix.eureka2.registry;
 
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.model.StdModelsInjector;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
@@ -14,10 +13,6 @@ import static org.junit.Assert.assertTrue;
  * @author David Liu
  */
 public class SourceTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private final Source originOnly1 = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED);
     private final Source originOnly2 = InstanceModel.getDefaultModel().createSource(Source.Origin.INTERESTED);

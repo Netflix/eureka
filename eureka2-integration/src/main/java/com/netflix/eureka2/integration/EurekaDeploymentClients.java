@@ -6,10 +6,11 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.model.interest.Interests;
-import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.Source.Origin;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.registry.EurekaRegistry;
@@ -45,7 +46,7 @@ public class EurekaDeploymentClients {
 
     public void fillUpRegistryOfServer(int serverIdx, int count, InstanceInfo instanceTemplate) throws Exception {
         Iterator<InstanceInfo> instanceIt = collectionOf(instanceTemplate.getApp(), instanceTemplate);
-        StdSource source = new StdSource(Origin.LOCAL, "write" + serverIdx);
+        Source source = InstanceModel.getDefaultModel().createSource(Origin.LOCAL, "write" + serverIdx);
         EurekaRegistry<InstanceInfo> eurekaServerRegistry = eurekaDeployment.getWriteCluster().getServer(serverIdx).getEurekaServerRegistry();
 
         final Set<String> expectedInstances = new HashSet<>();

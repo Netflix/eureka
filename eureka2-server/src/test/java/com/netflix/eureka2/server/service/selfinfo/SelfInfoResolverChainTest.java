@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.model.InstanceModel;
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import org.junit.Assert;
 import org.junit.Test;
@@ -15,10 +14,6 @@ import rx.Observable;
  * @author David Liu
  */
 public class SelfInfoResolverChainTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     @Test(timeout = 30000)
     public void testChaining() throws Exception {

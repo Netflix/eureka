@@ -24,19 +24,4 @@ public class SpectatorEurekaServerMetricFactory extends EurekaServerMetricFactor
         this.discoveryServerConnectionMetrics = new SpectatorMessageConnectionMetrics(registry, "discovery");
         this.interestChannelMetrics = new SpectatorServerInterestChannelMetrics(registry);
     }
-
-    @Override
-    public MessageConnectionMetrics getRegistrationConnectionMetrics() {
-        return registrationServerConnectionMetrics;
-    }
-
-    @Override
-    public MessageConnectionMetrics getDiscoveryConnectionMetrics() {
-        return discoveryServerConnectionMetrics;
-    }
-
-    @Override
-    public ServerInterestChannelMetrics getInterestChannelMetrics() {
-        return interestChannelMetrics;
-    }
 }

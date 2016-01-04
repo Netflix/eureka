@@ -16,6 +16,7 @@
 
 package com.netflix.eureka2.model;
 
+import com.netflix.eureka2.internal.util.ExtLoader;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interest.Operator;
@@ -39,9 +40,12 @@ public abstract class InterestModel {
 
     public abstract Interest<InstanceInfo> newInstanceInterest(String instanceId, Operator operator);
 
-    public abstract <T> MultipleInterests<T> newMultipleInterests(Interest<T>... interests);
+    public abstract MultipleInterests<InstanceInfo> newMultipleInterests(Interest<InstanceInfo>... interests);
 
     public static InterestModel getDefaultModel() {
+        if(defaultModel == null) {
+            return ExtLoader.resolveDefaultModel().getInterestModel();
+        }
         return defaultModel;
     }
 

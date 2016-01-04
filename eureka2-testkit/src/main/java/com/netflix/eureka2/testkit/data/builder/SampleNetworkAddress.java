@@ -4,11 +4,10 @@ package com.netflix.eureka2.testkit.data.builder;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.instance.NetworkAddress;
-import com.netflix.eureka2.model.instance.NetworkAddressBuilder;
 import com.netflix.eureka2.model.instance.NetworkAddress.ProtocolType;
-
-import static com.netflix.eureka2.model.instance.StdNetworkAddress.NetworkAddressBuilderImpl.aNetworkAddress;
+import com.netflix.eureka2.model.instance.NetworkAddressBuilder;
 
 /**
  * @author Tomasz Bak
@@ -17,7 +16,7 @@ public enum SampleNetworkAddress {
     PublicIPv4() {
         @Override
         public NetworkAddressBuilder builder() {
-            return aNetworkAddress()
+            return InstanceModel.getDefaultModel().newNetworkAddress()
                     .withHostName("test.public.host")
                     .withIpAddress("11.11.0.1")
                     .withProtocolType(ProtocolType.IPv4);
@@ -26,7 +25,7 @@ public enum SampleNetworkAddress {
     PrivateIpV4() {
         @Override
         public NetworkAddressBuilder builder() {
-            return aNetworkAddress()
+            return InstanceModel.getDefaultModel().newNetworkAddress()
                     .withHostName("test.private.host")
                     .withIpAddress("192.168.0.1")
                     .withProtocolType(ProtocolType.IPv4);
@@ -78,7 +77,7 @@ public enum SampleNetworkAddress {
                 int hostPart = (int) (counter.incrementAndGet() % finalMask);
                 String nextIp = nextIpAddress(networkAddressPrefix, hostPart, finalParts);
                 String nextHostName = hostNameFrom(hostDomain, nextIp);
-                return aNetworkAddress()
+                return InstanceModel.getDefaultModel().newNetworkAddress()
                         .withHostName(nextHostName)
                         .withIpAddress(nextIp)
                         .withLabel(label)

@@ -1,23 +1,20 @@
 package com.netflix.eureka2.server.registry;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.interest.Interests;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
-import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import rx.subjects.PublishSubject;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -30,10 +27,6 @@ import static org.mockito.Mockito.when;
  */
 @Ignore
 public class EurekaReadServerRunnerRegistryViewTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private static final Interest<InstanceInfo> INTEREST = Interests.forVips("testVip");
     private static final ChangeNotification<InstanceInfo> BUFFER_START = StreamStateNotification.bufferStartNotification(INTEREST);

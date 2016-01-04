@@ -17,10 +17,10 @@
 package com.netflix.eureka2.client;
 
 import com.netflix.eureka2.Names;
-import com.netflix.eureka2.channel.RegistrationChannel;
-import com.netflix.eureka2.client.channel.ClientChannelFactory;
-import com.netflix.eureka2.client.channel.RegistrationChannelFactory;
 import com.netflix.eureka2.client.registration.EurekaRegistrationClientImpl;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Source;
+import rx.schedulers.Schedulers;
 
 /**
  * @author David Liu
@@ -28,10 +28,12 @@ import com.netflix.eureka2.client.registration.EurekaRegistrationClientImpl;
 public class EurekaRegistrationClientBuilder
         extends AbstractClientBuilder<EurekaRegistrationClient, EurekaRegistrationClientBuilder> {
 
+    private static final long RETRY_INTERVAL_MS = 5 * 1000;
+
     /**
      * @deprecated do not create explicitly, use {@link Eurekas#newRegistrationClientBuilder()}
      * In future releases access right to this constructor may narrow (after rc.3)
-     * */
+     */
     @Deprecated
     public EurekaRegistrationClientBuilder() {
     }
@@ -41,13 +43,11 @@ public class EurekaRegistrationClientBuilder
         if (serverResolver == null) {
             throw new IllegalArgumentException("Cannot build client for registration without write server resolver");
         }
-        if(clientId == null) {
+        if (clientId == null) {
             clientId = Names.REGISTRATION_CLIENT;
         }
 
-        ClientChannelFactory<RegistrationChannel> channelFactory
-                = new RegistrationChannelFactory(clientId, transportConfig, serverResolver, clientMetricFactory);
-
-        return new EurekaRegistrationClientImpl(channelFactory);
+        Source clientSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, clientId);
+        return new EurekaRegistrationClientImpl(clientSource, serverResolver, transportFactory, transportConfig, RETRY_INTERVAL_MS, Schedulers.computation());
     }
 }

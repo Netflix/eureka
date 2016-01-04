@@ -9,10 +9,10 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.client.registration.RegistrationObservable;
-import com.netflix.eureka2.model.interest.Interests;
+import com.netflix.eureka2.client.EurekaRegistrationClient.RegistrationStatus;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,7 +119,7 @@ public class IntegrationTestClient {
                 );
 
         final CountDownLatch registrantCountLatch = new CountDownLatch(expectedLifecycle.size());
-        RegistrationObservable registrationRequest = writeClient.register(registrant.doOnEach(new Action1<Notification<? super InstanceInfo>>() {
+        Observable<RegistrationStatus> registrationRequest = writeClient.register(registrant.doOnEach(new Action1<Notification<? super InstanceInfo>>() {
             @Override
             public void call(Notification<? super InstanceInfo> notification) {
                 registrantCountLatch.countDown();
@@ -155,7 +155,7 @@ public class IntegrationTestClient {
                 .map(new Func1<Integer, InstanceInfo>() {
                     @Override
                     public InstanceInfo call(Integer integer) {
-                        return new StdInstanceInfo.Builder()
+                        return InstanceModel.getDefaultModel().newInstanceInfo()
                                 .withId(appName)
                                 .withApp(appName)
                                 .withAsg("asg_" + integer)

@@ -12,7 +12,7 @@ public interface EurekaClusterDiscoveryConfig {
     @DefaultValue("Fixed")
     ResolverType getClusterResolverType();
 
-    @DefaultValue("localhost:12102:12103:12104")
+    @DefaultValue("localhost:12102")
     ClusterAddress[] getClusterAddresses();
 
     @DefaultValue("eureka2-read")

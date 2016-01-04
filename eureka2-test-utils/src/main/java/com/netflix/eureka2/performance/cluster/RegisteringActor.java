@@ -6,9 +6,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.client.registration.RegistrationObservable;
+import com.netflix.eureka2.client.EurekaRegistrationClient.RegistrationStatus;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.model.toplogy.TopologyFunctions;
@@ -64,7 +64,7 @@ public class RegisteringActor extends ClientActor {
     public void start() {
         final long startTime = scheduler.now();
 
-        final InstanceInfo taggedInstanceInfo = new StdInstanceInfo.Builder()
+        final InstanceInfo taggedInstanceInfo = InstanceModel.getDefaultModel().newInstanceInfo()
                 .withInstanceInfo(selfInfo)
                 .withMetaData(TopologyFunctions.TIME_STAMP_KEY, Long.toString(startTime))
                 .build();
@@ -76,27 +76,9 @@ public class RegisteringActor extends ClientActor {
 
         scoreBoard.registeringActorIncrement();
         registrationPublishSubject.onNext(new ChangeNotification<>(Kind.Add, taggedInstanceInfo));
-        RegistrationObservable registrationObservable = registrationClient.register(Observable.just(this.selfInfo));
-        firstRegistrationSubscription = registrationObservable.initialRegistrationResult()
-                .subscribe(new Subscriber<Void>() {
-                    @Override
-                    public void onCompleted() {
-                        logger.info("Registration of instance {} succeeded", id);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        disconnect(connectedFlag);
-                        logger.error("Registration of instance " + id + " failed", e);
-                    }
-
-                    @Override
-                    public void onNext(Void aVoid) {
-                        // No-op
-                    }
-                });
+        Observable<RegistrationStatus> registrationObservable = registrationClient.register(Observable.just(this.selfInfo));
         registrationSubscription = registrationObservable.subscribe(
-                new Subscriber<Void>() {
+                new Subscriber<RegistrationStatus>() {
                     @Override
                     public void onCompleted() {
                         logger.info("Unregistered instance {} after {}", id, scheduler.now() - startTime);
@@ -108,8 +90,8 @@ public class RegisteringActor extends ClientActor {
                     }
 
                     @Override
-                    public void onNext(Void aVoid) {
-                        // No-op
+                    public void onNext(RegistrationStatus status) {
+                        logger.info("Registration status changed to {}", status);
                     }
                 }
         );

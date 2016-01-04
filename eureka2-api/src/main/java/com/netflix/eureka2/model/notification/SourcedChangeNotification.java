@@ -57,4 +57,17 @@ public class SourcedChangeNotification<T> extends ChangeNotification<T> implemen
         result = 31 * result + (source != null ? source.hashCode() : 0);
         return result;
     }
+
+    public static <T> ChangeNotification<T> toSourced(ChangeNotification<T> change, Source source) {
+        switch (change.getKind()) {
+            case Add:
+            case Delete:
+                return new SourcedChangeNotification<>(change, source);
+            case Modify:
+                return new SourcedModifyNotification<T>((ModifyNotification<T>) change, source);
+            case BufferSentinel:
+                return new SourcedStreamStateNotification<T>((StreamStateNotification<T>) change, source);
+        }
+        throw new IllegalStateException("not support kind " + change.getKind());
+    }
 }

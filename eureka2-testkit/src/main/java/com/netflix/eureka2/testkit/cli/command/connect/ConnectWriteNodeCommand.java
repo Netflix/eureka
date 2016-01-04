@@ -40,11 +40,11 @@ public class ConnectWriteNodeCommand extends AbstractConnectClusterCommand {
         ClusterAddress writeNodeAddress = clusterTopology.getWriteServers().get(nodeIdx);
         EurekaRegistrationClient registrationClient = Eurekas.newRegistrationClientBuilder()
                 .withClientId("registrationWriteServerClient")
-                .withServerResolver(ServerResolvers.fromHostname(writeNodeAddress.getHostName()).withPort(writeNodeAddress.getRegistrationPort()))
+                .withServerResolver(ServerResolvers.fromHostname(writeNodeAddress.getHostName()).withPort(writeNodeAddress.getPort()))
                 .build();
         EurekaInterestClient interestClient = Eurekas.newInterestClientBuilder()
                 .withClientId("interestWriteServerClient")
-                .withServerResolver(ServerResolvers.fromHostname(writeNodeAddress.getHostName()).withPort(writeNodeAddress.getInterestPort()))
+                .withServerResolver(ServerResolvers.fromHostname(writeNodeAddress.getHostName()).withPort(writeNodeAddress.getPort()))
                 .build();
         return Observable.just(new Session(SessionDescriptor.writeNode(nodeIdx), registrationClient, interestClient));
     }

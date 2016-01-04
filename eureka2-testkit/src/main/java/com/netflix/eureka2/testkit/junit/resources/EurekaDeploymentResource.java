@@ -124,6 +124,14 @@ public class EurekaDeploymentResource extends EurekaExternalResource {
         return eurekaDeployment.cannonicalInterestClient();
     }
 
+    /**
+     * Create a {@link EurekaInterestClient} instance to do interest discovery with any instance in a read cluster,
+     * using the canonical method to first discover the read cluster from the write cluster
+     */
+    public EurekaInterestClient cannonicalInterestClient(String clientName) {
+        return eurekaDeployment.cannonicalInterestClient(clientName);
+    }
+
     @Override
     protected void before() throws Throwable {
         eurekaDeployment = new EurekaDeploymentBuilder()

@@ -1,8 +1,5 @@
 package com.netflix.eureka2.config;
 
-import com.netflix.eureka2.codec.CodecType;
-
-import static com.netflix.eureka2.config.ConfigurationNames.TransportNames.codecName;
 import static com.netflix.eureka2.config.ConfigurationNames.TransportNames.connectionAutoTimeoutMsName;
 import static com.netflix.eureka2.config.ConfigurationNames.TransportNames.heartbeatIntervalMsName;
 
@@ -15,18 +12,14 @@ public class BasicEurekaTransportConfig implements EurekaTransportConfig {
 
     public static final long HEARTBEAT_INTERVAL_MS = 30 * 1000;
     public static final long CONNECTION_AUTO_TIMEOUT_MS = 30 * 60 * 1000;
-    public static final CodecType DEFAULT_CODEC = CodecType.Avro;
 
     private final long heartbeatIntervalMs;
     private final long connectionAutoTimeoutMs;
-    private final CodecType codec;
 
     private BasicEurekaTransportConfig(long heartbeatIntervalMs,
-                                       long connectionAutoTimeoutMs,
-                                       CodecType codec) {
+                                       long connectionAutoTimeoutMs) {
         this.heartbeatIntervalMs = heartbeatIntervalMs;
         this.connectionAutoTimeoutMs = connectionAutoTimeoutMs;
-        this.codec = codec;
     }
 
     @Override
@@ -40,16 +33,10 @@ public class BasicEurekaTransportConfig implements EurekaTransportConfig {
     }
 
     @Override
-    public CodecType getCodec() {
-        return codec;
-    }
-
-    @Override
     public String toString() {
         return "BasicEurekaTransportConfig{" +
                 "heartbeatIntervalMs=" + heartbeatIntervalMs +
                 ", connectionAutoTimeoutMs=" + connectionAutoTimeoutMs +
-                ", codec=" + codec +
                 '}';
     }
 
@@ -58,8 +45,6 @@ public class BasicEurekaTransportConfig implements EurekaTransportConfig {
                 .getFromSystemPropertySafe(heartbeatIntervalMsName, HEARTBEAT_INTERVAL_MS);
         private long connectionAutoTimeoutMs = SystemConfigLoader
                 .getFromSystemPropertySafe(connectionAutoTimeoutMsName, CONNECTION_AUTO_TIMEOUT_MS);
-        private CodecType codec = SystemConfigLoader
-                .getFromSystemPropertySafe(codecName, DEFAULT_CODEC);
 
         public Builder withHeartbeatIntervalMs(long heartbeatIntervalMs) {
             this.heartbeatIntervalMs = heartbeatIntervalMs;
@@ -71,13 +56,8 @@ public class BasicEurekaTransportConfig implements EurekaTransportConfig {
             return this;
         }
 
-        public Builder withCodec(CodecType codec) {
-            this.codec = codec;
-            return this;
-        }
-
         public BasicEurekaTransportConfig build() {
-            return new BasicEurekaTransportConfig(heartbeatIntervalMs, connectionAutoTimeoutMs, codec);
+            return new BasicEurekaTransportConfig(heartbeatIntervalMs, connectionAutoTimeoutMs);
         }
     }
 }

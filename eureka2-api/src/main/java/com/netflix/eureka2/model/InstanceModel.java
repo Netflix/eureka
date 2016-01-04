@@ -16,8 +16,7 @@
 
 package com.netflix.eureka2.model;
 
-import java.util.Set;
-
+import com.netflix.eureka2.internal.util.ExtLoader;
 import com.netflix.eureka2.model.Source.Origin;
 import com.netflix.eureka2.model.datacenter.AwsDataCenterInfoBuilder;
 import com.netflix.eureka2.model.datacenter.BasicDataCenterInfoBuilder;
@@ -25,6 +24,8 @@ import com.netflix.eureka2.model.instance.DeltaBuilder;
 import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
 import com.netflix.eureka2.model.instance.NetworkAddressBuilder;
 import com.netflix.eureka2.model.instance.ServicePort;
+
+import java.util.Set;
 
 /**
  */
@@ -55,6 +56,9 @@ public abstract class InstanceModel {
     public abstract ServicePort newServicePort(String name, int port, boolean secure, Set<String> labels);
 
     public static InstanceModel getDefaultModel() {
+        if (defaultModel == null) {
+            return ExtLoader.resolveDefaultModel().getInstanceModel();
+        }
         return defaultModel;
     }
 

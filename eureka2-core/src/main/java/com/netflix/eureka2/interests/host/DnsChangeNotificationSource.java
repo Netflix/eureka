@@ -50,10 +50,6 @@ public class DnsChangeNotificationSource implements ChangeNotificationSource<Str
         this(domainName, DNS_LOOKUP_INTERVAL, IDLE_TIMEOUT, TimeUnit.SECONDS, Schedulers.io());
     }
 
-    public DnsChangeNotificationSource(String domainName, long reloadInterval, TimeUnit timeUnit) {
-        this(domainName, reloadInterval, -1, timeUnit, Schedulers.io());
-    }
-
     public DnsChangeNotificationSource(String domainName, long reloadInterval, long idleTimeout, TimeUnit reloadUnit,
                                        Scheduler scheduler) {
         this.domainName = domainName;

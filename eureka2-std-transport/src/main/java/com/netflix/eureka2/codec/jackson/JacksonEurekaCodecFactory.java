@@ -16,10 +16,6 @@
 
 package com.netflix.eureka2.codec.jackson;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
 import com.netflix.eureka2.spi.codec.EurekaCodec;
 import com.netflix.eureka2.spi.codec.EurekaCodecFactory;
 
@@ -27,21 +23,15 @@ import com.netflix.eureka2.spi.codec.EurekaCodecFactory;
  */
 public class JacksonEurekaCodecFactory extends EurekaCodecFactory {
 
-    private final Set<Class<?>> acceptTypes;
     private final JacksonEurekaCodec codec;
 
-    public JacksonEurekaCodecFactory(Class<?>... acceptTypes) {
-        this(new HashSet<>(Arrays.asList(acceptTypes)));
-    }
-
-    public JacksonEurekaCodecFactory(Set<Class<?>> acceptTypes) {
-        this.acceptTypes = acceptTypes;
-        this.codec = new JacksonEurekaCodec(acceptTypes);
+    public JacksonEurekaCodecFactory() {
+        this.codec = new JacksonEurekaCodec(JacksonEurekaCodec.SUPPORTED_TYPES);
     }
 
     @Override
     public <T> boolean accept(Class<T> type) {
-        return acceptTypes.contains(type);
+        return JacksonEurekaCodec.SUPPORTED_TYPES.contains(type);
     }
 
     @Override

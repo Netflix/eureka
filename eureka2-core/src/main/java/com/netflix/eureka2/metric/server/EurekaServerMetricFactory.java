@@ -16,7 +16,6 @@
 
 package com.netflix.eureka2.metric.server;
 
-import com.netflix.eureka2.metric.MessageConnectionMetrics;
 import com.netflix.eureka2.metric.noop.NoOpEurekaServerMetricFactory;
 
 /**
@@ -25,12 +24,6 @@ import com.netflix.eureka2.metric.noop.NoOpEurekaServerMetricFactory;
 public abstract class EurekaServerMetricFactory {
 
     private static volatile EurekaServerMetricFactory defaultFactory = new NoOpEurekaServerMetricFactory();
-
-    public abstract MessageConnectionMetrics getRegistrationConnectionMetrics();
-
-    public abstract MessageConnectionMetrics getDiscoveryConnectionMetrics();
-
-    public abstract ServerInterestChannelMetrics getInterestChannelMetrics();
 
     public static EurekaServerMetricFactory serverMetrics() {
         return defaultFactory;

@@ -2,8 +2,8 @@ package com.netflix.eureka2.model.toplogy;
 
 import java.util.Iterator;
 
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.model.notification.ModifyNotification;
@@ -20,7 +20,7 @@ public final class TopologyFunctions {
     }
 
     public static InstanceInfo addServerId(InstanceInfo instanceInfo, String serverId) {
-        return new StdInstanceInfo.Builder()
+        return InstanceModel.getDefaultModel().newInstanceInfo()
                 .withInstanceInfo(instanceInfo)
                 .withMetaData(SERVER_ID_KEY, serverId)
                 .build();
@@ -35,7 +35,7 @@ public final class TopologyFunctions {
     }
 
     public static InstanceInfo addTimeStamp(InstanceInfo instanceInfo, long timeStamp) {
-        return new StdInstanceInfo.Builder()
+        return InstanceModel.getDefaultModel().newInstanceInfo()
                 .withInstanceInfo(instanceInfo)
                 .withMetaData(TIME_STAMP_KEY, Long.toString(timeStamp))
                 .build();

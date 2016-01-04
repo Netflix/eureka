@@ -6,15 +6,13 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.inject.Module;
-import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.codec.CodecType;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.resolver.ClusterAddress;
-import com.netflix.eureka2.server.resolver.ClusterAddress.ServiceType;
 import com.netflix.eureka2.testkit.embedded.cluster.EmbeddedWriteCluster.WriteClusterReport;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer.WriteServerReport;
@@ -43,29 +41,27 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
     private final Map<Class<?>, Object> configurationOverrides;
     private final boolean withAdminUI;
     private final boolean ephemeralPorts;
-    private final CodecType codec;
     private final NetworkRouter networkRouter;
 
     private int nextAvailablePort = WRITE_SERVER_PORTS_FROM;
 
     public EmbeddedWriteCluster(List<Class<? extends Module>> extensionModules, boolean withExt,
                                 Map<Class<?>, Object> configurationOverrides, boolean withAdminUI,
-                                boolean ephemeralPorts, CodecType codec, NetworkRouter networkRouter) {
+                                boolean ephemeralPorts, NetworkRouter networkRouter) {
         super(WRITE_SERVER_NAME);
         this.extensionModules = extensionModules;
         this.withExt = withExt;
         this.configurationOverrides = configurationOverrides;
         this.withAdminUI = withAdminUI;
         this.ephemeralPorts = ephemeralPorts;
-        this.codec = codec;
         this.networkRouter = networkRouter;
     }
 
     @Override
     public int scaleUpByOne() {
         ClusterAddress writeServerAddress = ephemeralPorts ?
-                ClusterAddress.valueOf("localhost", 0, 0, 0) :
-                ClusterAddress.valueOf("localhost", nextAvailablePort, nextAvailablePort + 1, nextAvailablePort + 2);
+                ClusterAddress.valueOf("localhost", 0) :
+                ClusterAddress.valueOf("localhost", nextAvailablePort);
 
         int httpPort = ephemeralPorts ? 0 : nextAvailablePort + 3;
         int adminPort = ephemeralPorts ? 0 : nextAvailablePort + 4;
@@ -80,11 +76,8 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                 )
                 .withTransportConfig(
                         anEurekaServerTransportConfig()
-                                .withCodec(codec)
                                 .withHttpPort(httpPort)
-                                .withInterestPort(writeServerAddress.getInterestPort())
-                                .withRegistrationPort(writeServerAddress.getRegistrationPort())
-                                .withReplicationPort(writeServerAddress.getReplicationPort())
+                                .withServerPort(writeServerAddress.getPort())
                                 .withShutDownPort(0)
                                 .withWebAdminPort(adminPort)
                                 .build()
@@ -97,8 +90,8 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
         nextAvailablePort += 10;
 
         if (ephemeralPorts) {
-            writeServerAddress = ClusterAddress.valueOf("localhost", writeServer.getRegistrationPort(),
-                    writeServer.getInterestPort(), writeServer.getReplicationPort());
+            writeServerAddress = ClusterAddress.valueOf("localhost", writeServer.getServerPort()
+            );
         }
 
         return scaleUpByOne(writeServer, writeServerAddress);
@@ -107,7 +100,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
     protected EmbeddedWriteServer newServer(WriteServerConfig config) {
         return new EmbeddedWriteServerBuilder()
                 .withConfiguration(config)
-                .withReplicationPeers(resolvePeers(ServiceType.Replication))
+                .withReplicationPeers(resolvePeers())
                 .withNetworkRouter(networkRouter)
                 .withAdminUI(withAdminUI)
                 .withExt(withExt)
@@ -134,7 +127,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
         return getServerResolver(new Func1<ClusterAddress, Integer>() {
             @Override
             public Integer call(ClusterAddress writeServerAddress) {
-                return writeServerAddress.getRegistrationPort();
+                return writeServerAddress.getPort();
             }
         });
     }
@@ -143,12 +136,12 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
         return getServerResolver(new Func1<ClusterAddress, Integer>() {
             @Override
             public Integer call(ClusterAddress writeServerAddress) {
-                return writeServerAddress.getInterestPort();
+                return writeServerAddress.getPort();
             }
         });
     }
 
-    public Observable<ChangeNotification<Server>> resolvePeers(final ServiceType serviceType) {
+    public Observable<ChangeNotification<Server>> resolvePeers() {
         return clusterChangeObservable().map(
                 new Func1<ChangeNotification<ClusterAddress>, ChangeNotification<Server>>() {
                     @Override
@@ -158,20 +151,7 @@ public class EmbeddedWriteCluster extends EmbeddedEurekaCluster<EmbeddedWriteSer
                         }
 
                         ClusterAddress data = notification.getData();
-                        int port;
-                        switch (serviceType) {
-                            case Registration:
-                                port = data.getRegistrationPort();
-                                break;
-                            case Interest:
-                                port = data.getInterestPort();
-                                break;
-                            case Replication:
-                                port = data.getReplicationPort();
-                                break;
-                            default:
-                                throw new IllegalStateException("Unexpected enum value " + serviceType);
-                        }
+                        int port = data.getPort();
                         Server serverAddress = new Server(data.getHostName(), port);
                         switch (notification.getKind()) {
                             case Add:

@@ -19,9 +19,9 @@ package com.netflix.eureka2.testkit.data.builder;
 import java.util.HashSet;
 
 import com.netflix.eureka2.Names;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.instance.ServicePort;
-import com.netflix.eureka2.model.instance.StdServicePort;
-import com.netflix.eureka2.spi.transport.EurekaTransportFactory;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.utils.ExtCollections;
 
 /**
@@ -31,32 +31,20 @@ public enum SampleServicePort {
 
     HttpPort() {
         @Override
-        public StdServicePort build() {
-            return new StdServicePort("WebServer", 80, false);
+        public ServicePort build() {
+            return InstanceModel.getDefaultModel().newServicePort("WebServer", 80, false);
         }
     },
     HttpsPort() {
         @Override
-        public StdServicePort build() {
-            return new StdServicePort("WebServer", 443, true);
+        public ServicePort build() {
+            return InstanceModel.getDefaultModel().newServicePort("WebServer", 443, true);
         }
     },
-    EurekaRegistrationPort() {
+    EurekaServerPort() {
         @Override
-        public StdServicePort build() {
-            return new StdServicePort(Names.REGISTRATION, EurekaTransportFactory.DEFAULT_REGISTRATION_PORT, false);
-        }
-    },
-    EurekaDiscoveryPort() {
-        @Override
-        public StdServicePort build() {
-            return new StdServicePort(Names.INTEREST, EurekaTransportFactory.DEFAULT_DISCOVERY_PORT, false);
-        }
-    },
-    EurekaReplicationPort() {
-        @Override
-        public StdServicePort build() {
-            return new StdServicePort(Names.REPLICATION, EurekaTransportFactory.DEFAULT_REPLICATION_PORT, false);
+        public ServicePort build() {
+            return InstanceModel.getDefaultModel().newServicePort(Names.EUREKA_SERVICE, EurekaServerTransportConfig.DEFAULT_SERVER_PORT, false);
         }
     };
 

@@ -2,10 +2,9 @@ package com.netflix.eureka2.server.rest.system;
 
 import javax.ws.rs.core.MediaType;
 
-import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.registry.EurekaRegistry;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.rxnetty.HttpResponseUtils;
 import com.netflix.eureka2.server.http.EurekaHttpServer;
 import com.netflix.eureka2.server.service.EurekaWriteServerSelfInfoResolver;
@@ -29,10 +28,6 @@ import static org.mockito.Mockito.when;
  * @author Tomasz Bak
  */
 public class ClusterTopologyResourceTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private static final InstanceInfo WEB_INSTANCE = SampleInstanceInfo.WebServer.build();
     private static final InstanceInfo EUREKA_WRITE_INSTANCE = SampleInstanceInfo.EurekaWriteServer.build();

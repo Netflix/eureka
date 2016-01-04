@@ -16,16 +16,27 @@
 
 package com.netflix.eureka2.testkit.compatibility.codec;
 
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.datacenter.LocalDataCenterInfo;
+import com.netflix.eureka2.model.instance.Delta;
+import com.netflix.eureka2.model.instance.DeltaBuilder;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.instance.InstanceInfoField;
+import com.netflix.eureka2.spi.codec.EurekaCodec;
+import com.netflix.eureka2.spi.codec.EurekaCodecFactory;
+import com.netflix.eureka2.testkit.data.builder.SampleAwsDataCenterInfo;
+import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
+import com.netflix.eureka2.testkit.data.builder.SampleServicePort;
+import com.netflix.eureka2.utils.ExtCollections;
+import com.sun.org.apache.xpath.internal.operations.String;
+import org.junit.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-
-import com.netflix.eureka2.model.datacenter.LocalDataCenterInfo;
-import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.spi.codec.EurekaCodec;
-import com.netflix.eureka2.spi.codec.EurekaCodecFactory;
-import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
-import org.junit.Test;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -37,10 +48,10 @@ import static org.junit.Assert.assertThat;
  */
 public abstract class EurekaCodecCompatibilityTest {
 
-    private final EurekaCodecFactory codecFactory;
+    private final EurekaCodec codec;
 
     protected EurekaCodecCompatibilityTest(EurekaCodecFactory codecFactory) {
-        this.codecFactory = codecFactory;
+        this.codec = codecFactory.getCodec();
     }
 
     @Test
@@ -48,24 +59,48 @@ public abstract class EurekaCodecCompatibilityTest {
         InstanceInfo instance = SampleInstanceInfo.WebServer.builder()
                 .withDataCenterInfo(LocalDataCenterInfo.fromSystemData())
                 .build();
-        EurekaCodec codec = codecFactory.getCodec();
-
-        ByteArrayOutputStream bis = new ByteArrayOutputStream();
-        codec.encode(instance, bis);
-
-        InstanceInfo decoded = codec.decode(new ByteArrayInputStream(bis.toByteArray()), InstanceInfo.class);
+        InstanceInfo decoded = encodeDecode(instance);
         assertThat(decoded, is(equalTo(instance)));
     }
 
     @Test
     public void testInstanceInfoWithAwsDataCenterInfoEncoding() throws IOException {
         InstanceInfo instance = SampleInstanceInfo.WebServer.build();
-        EurekaCodec codec = codecFactory.getCodec();
-
-        ByteArrayOutputStream bis = new ByteArrayOutputStream();
-        codec.encode(instance, bis);
-
-        InstanceInfo decoded = codec.decode(new ByteArrayInputStream(bis.toByteArray()), InstanceInfo.class);
+        InstanceInfo decoded = encodeDecode(instance);
         assertThat(decoded, is(equalTo(instance)));
+    }
+
+    @Test
+    public void testDeltaEncoding() throws IOException {
+        DeltaBuilder builder = InstanceModel.getDefaultModel().newDelta().withId("id1");
+
+        verifyDelta(builder.withDelta(InstanceInfoField.APPLICATION, "newApp"));
+        verifyDelta(builder.withDelta(InstanceInfoField.APPLICATION_GROUP, "newAppGroup"));
+        verifyDelta(builder.withDelta(InstanceInfoField.ASG, "newAsg"));
+        verifyDelta(builder.withDelta(InstanceInfoField.DATA_CENTER_INFO, SampleAwsDataCenterInfo.UsEast1a.build()));
+        verifyDelta(builder.withDelta(InstanceInfoField.HEALTHCHECK_URLS, ExtCollections.asSet("http://newHealthCheck1", "http://newHealthCheck2")));
+        verifyDelta(builder.withDelta(InstanceInfoField.HOMEPAGE_URL, "http://homepage"));
+
+        Map<java.lang.String, java.lang.String> metaData = new HashMap<>();
+        metaData.put("key1", "value1");
+        verifyDelta(builder.withDelta(InstanceInfoField.META_DATA, metaData));
+
+        verifyDelta(builder.withDelta(InstanceInfoField.PORTS, SampleServicePort.httpPorts()));
+        verifyDelta(builder.withDelta(InstanceInfoField.SECURE_VIP_ADDRESS, "secureVip"));
+        verifyDelta(builder.withDelta(InstanceInfoField.STATUS, InstanceInfo.Status.DOWN));
+        verifyDelta(builder.withDelta(InstanceInfoField.STATUS_PAGE_URL, "http://statuspage"));
+        verifyDelta(builder.withDelta(InstanceInfoField.VIP_ADDRESS, "unsecureVip"));
+    }
+
+    private void verifyDelta(DeltaBuilder builder) throws IOException {
+        Delta<?> delta = builder.build();
+        Delta<?> decoded = encodeDecode(delta);
+        assertThat(decoded, is(equalTo(delta)));
+    }
+
+    private <T> T encodeDecode(T object) throws IOException {
+        ByteArrayOutputStream bis = new ByteArrayOutputStream();
+        codec.encode(object, bis);
+        return codec.decode(new ByteArrayInputStream(bis.toByteArray()), (Class<T>) object.getClass());
     }
 }

@@ -2,9 +2,8 @@ package com.netflix.eureka2.testkit.junit.resources;
 
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.server.config.EurekaServerConfig;
-import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
+import com.netflix.eureka2.server.transport.EurekaTransportServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServerBuilder;
 import com.netflix.eureka2.testkit.junit.resources.EurekaExternalResources.EurekaExternalResource;
@@ -23,23 +22,17 @@ public class ReadServerResource extends EurekaExternalResource {
 
     private final String name;
     private final WriteServerResource writeServerResource;
-    private final CodecType codec;
 
     private EmbeddedReadServer server;
-    private int interestPort;
+    private int serverPort;
 
     public ReadServerResource(WriteServerResource writeServerResource) {
         this(DEFAULT_READ_CLUSTER_NAME, writeServerResource);
     }
 
     public ReadServerResource(String name, WriteServerResource writeServerResource) {
-        this(name, writeServerResource, CodecType.Avro);
-    }
-
-    public ReadServerResource(String name, WriteServerResource writeServerResource, CodecType codec) {
         this.name = name;
         this.writeServerResource = writeServerResource;
-        this.codec = codec;
     }
 
     @Override
@@ -53,25 +46,23 @@ public class ReadServerResource extends EurekaExternalResource {
                 )
                 .withTransportConfig(
                         anEurekaServerTransportConfig()
-                                .withCodec(codec)
                                 .withHttpPort(0)
-                                .withInterestPort(0)
+                                .withServerPort(0)
                                 .withShutDownPort(0)
                                 .withWebAdminPort(0)
                                 .build()
                 )
                 .build();
 
-        ServerResolver registrationResolver = ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getRegistrationPort());
-        ServerResolver interestResolver = ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getDiscoveryPort());
+        ServerResolver serverResolver = ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getServerPort());
         server = new EmbeddedReadServerBuilder(EMBEDDED_READ_CLIENT_ID)
                 .withConfiguration(config)
-                .withRegistrationResolver(registrationResolver)
-                .withInterestResolver(interestResolver)
+                .withRegistrationResolver(serverResolver)
+                .withInterestResolver(serverResolver)
                 .build();
 
         // Find ephemeral port numbers
-        interestPort = server.getInjector().getInstance(TcpInterestServer.class).serverPort();
+        serverPort = server.getInjector().getInstance(EurekaTransportServer.class).getServerPort();
     }
 
     @Override
@@ -85,11 +76,11 @@ public class ReadServerResource extends EurekaExternalResource {
         return name;
     }
 
-    public int getInterestPort() {
-        return interestPort;
+    public int getServerPort() {
+        return serverPort;
     }
 
     public ServerResolver getInterestResolver() {
-        return ServerResolvers.fromHostname("localhost").withPort(interestPort);
+        return ServerResolvers.fromHostname("localhost").withPort(serverPort);
     }
 }

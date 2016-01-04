@@ -3,12 +3,11 @@ package com.netflix.eureka2.server;
 import javax.inject.Provider;
 import java.util.Arrays;
 
-import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.server.config.EurekaClusterDiscoveryConfig;
 import com.netflix.eureka2.server.resolver.ClusterAddress;
-import com.netflix.eureka2.server.resolver.ClusterAddress.ServiceType;
 import com.netflix.eureka2.server.resolver.EurekaClusterResolvers;
 import com.netflix.eureka2.server.resolver.EurekaClusterResolvers.ResolverType;
 import rx.Observable;
@@ -26,8 +25,8 @@ public class PeerAddressesProvider implements Provider<Observable<ChangeNotifica
         this.addressStream = addressStream;
     }
 
-    public PeerAddressesProvider(EurekaClusterDiscoveryConfig config, final ServiceType serviceType) {
-        this(addressStreamFromConfig(config, serviceType));
+    public PeerAddressesProvider(EurekaClusterDiscoveryConfig config) {
+        this(addressStreamFromConfig(config));
     }
 
     @Override
@@ -35,7 +34,7 @@ public class PeerAddressesProvider implements Provider<Observable<ChangeNotifica
         return addressStream;
     }
 
-    private static Observable<ChangeNotification<Server>> addressStreamFromConfig(EurekaClusterDiscoveryConfig config, final ServiceType serviceType) {
+    private static Observable<ChangeNotification<Server>> addressStreamFromConfig(EurekaClusterDiscoveryConfig config) {
         Observable<ChangeNotification<Server>> addressStream;
         ResolverType resolverType = config.getClusterResolverType();
         if (resolverType == null) {
@@ -53,7 +52,7 @@ public class PeerAddressesProvider implements Provider<Observable<ChangeNotifica
                 }
                 Server server = new Server(
                         notification.getData().getHostName(),
-                        notification.getData().getPortFor(serviceType)
+                        notification.getData().getPort() // We run all on single port now
                 );
                 return new ChangeNotification<Server>(notification.getKind(), server);
             }

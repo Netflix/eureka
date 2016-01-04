@@ -1,6 +1,5 @@
 package com.netflix.eureka2.metric.noop;
 
-import com.netflix.eureka2.channel.BridgeChannel.STATE;
 import com.netflix.eureka2.metric.server.BridgeChannelMetrics;
 
 /**

@@ -1,24 +1,19 @@
 package com.netflix.eureka2.testkit.junit.matchers;
 
-import com.netflix.eureka2.model.StdModelsInjector;
+import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Test;
 
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.*;
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * @author Tomasz Bak
  */
 public class ChangeNotificationMatcherTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private static final InstanceInfo INFO = SampleInstanceInfo.EurekaWriteServer.build();
     private static final InstanceInfo OTHER_INFO = SampleInstanceInfo.EurekaReadServer.build();

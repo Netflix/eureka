@@ -1,6 +1,5 @@
 package com.netflix.eureka2.server.config.bean;
 
-import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 
 /**
@@ -11,25 +10,19 @@ public class EurekaServerTransportConfigBean implements EurekaServerTransportCon
     private final int httpPort;
     private final int shutDownPort;
     private final int webAdminPort;
-    private final int interestPort;
     private final int registrationPort;
-    private final int replicationPort;
     private final long heartbeatIntervalMs;
     private final long connectionAutoTimeoutMs;
-    private final CodecType codec;
 
-    public EurekaServerTransportConfigBean(int httpPort, int shutDownPort, int webAdminPort, int interestPort,
-                                           int registrationPort, int replicationPort, long heartbeatIntervalMs,
-                                           long connectionAutoTimeoutMs, CodecType codec) {
+    public EurekaServerTransportConfigBean(int httpPort, int shutDownPort, int webAdminPort,
+                                           int registrationPort, long heartbeatIntervalMs,
+                                           long connectionAutoTimeoutMs) {
         this.httpPort = httpPort;
         this.shutDownPort = shutDownPort;
         this.webAdminPort = webAdminPort;
-        this.interestPort = interestPort;
         this.registrationPort = registrationPort;
-        this.replicationPort = replicationPort;
         this.heartbeatIntervalMs = heartbeatIntervalMs;
         this.connectionAutoTimeoutMs = connectionAutoTimeoutMs;
-        this.codec = codec;
     }
 
     @Override
@@ -48,18 +41,8 @@ public class EurekaServerTransportConfigBean implements EurekaServerTransportCon
     }
 
     @Override
-    public int getInterestPort() {
-        return interestPort;
-    }
-
-    @Override
-    public int getRegistrationPort() {
+    public int getServerPort() {
         return registrationPort;
-    }
-
-    @Override
-    public int getReplicationPort() {
-        return replicationPort;
     }
 
     @Override
@@ -72,11 +55,6 @@ public class EurekaServerTransportConfigBean implements EurekaServerTransportCon
         return connectionAutoTimeoutMs;
     }
 
-    @Override
-    public CodecType getCodec() {
-        return codec;
-    }
-
     public static Builder anEurekaServerTransportConfig() {
         return new Builder();
     }
@@ -86,24 +64,18 @@ public class EurekaServerTransportConfigBean implements EurekaServerTransportCon
                 .withHttpPort(original.getHttpPort())
                 .withShutDownPort(original.getShutDownPort())
                 .withWebAdminPort(original.getWebAdminPort())
-                .withInterestPort(original.getInterestPort())
-                .withRegistrationPort(original.getRegistrationPort())
-                .withReplicationPort(original.getReplicationPort())
+                .withServerPort(original.getServerPort())
                 .withHeartbeatIntervalMs(original.getHeartbeatIntervalMs())
-                .withConnectionAutoTimeoutMs(original.getConnectionAutoTimeoutMs())
-                .withCodec(original.getCodec());
+                .withConnectionAutoTimeoutMs(original.getConnectionAutoTimeoutMs());
     }
 
     public static class Builder {
         private int httpPort = DEFAULT_HTTP_PORT;
         private int shutDownPort = DEFAULT_SHUTDOWN_PORT;
         private int webAdminPort = DEFAULT_WEB_ADMIN_PORT;
-        private int interestPort = DEFAULT_INTEREST_PORT;
-        private int registrationPort = DEFAULT_REGISTRATION_PORT;
-        private int replicationPort = DEFAULT_REPLICATION_PORT;
+        private int serverPort = DEFAULT_SERVER_PORT;
         private long heartbeatIntervalMs = DEFAULT_HEARTBEAT_INTERVAL_MS;
         private long connectionAutoTimeoutMs = DEFAULT_CONNECTION_AUTO_TIMEOUT_MS;
-        private CodecType codec = CodecType.Avro;
 
         private Builder() {
         }
@@ -123,18 +95,8 @@ public class EurekaServerTransportConfigBean implements EurekaServerTransportCon
             return this;
         }
 
-        public Builder withInterestPort(int interestPort) {
-            this.interestPort = interestPort;
-            return this;
-        }
-
-        public Builder withRegistrationPort(int registrationPort) {
-            this.registrationPort = registrationPort;
-            return this;
-        }
-
-        public Builder withReplicationPort(int replicationPort) {
-            this.replicationPort = replicationPort;
+        public Builder withServerPort(int serverPort) {
+            this.serverPort = serverPort;
             return this;
         }
 
@@ -148,26 +110,18 @@ public class EurekaServerTransportConfigBean implements EurekaServerTransportCon
             return this;
         }
 
-        public Builder withCodec(CodecType codec) {
-            this.codec = codec;
-            return this;
-        }
-
         public Builder but() {
             return anEurekaServerTransportConfig()
                     .withHttpPort(httpPort)
                     .withShutDownPort(shutDownPort)
                     .withWebAdminPort(webAdminPort)
-                    .withInterestPort(interestPort)
-                    .withRegistrationPort(registrationPort)
-                    .withReplicationPort(replicationPort)
+                    .withServerPort(serverPort)
                     .withHeartbeatIntervalMs(heartbeatIntervalMs)
-                    .withConnectionAutoTimeoutMs(connectionAutoTimeoutMs)
-                    .withCodec(codec);
+                    .withConnectionAutoTimeoutMs(connectionAutoTimeoutMs);
         }
 
         public EurekaServerTransportConfigBean build() {
-            EurekaServerTransportConfigBean eurekaServerTransportConfigBean = new EurekaServerTransportConfigBean(httpPort, shutDownPort, webAdminPort, interestPort, registrationPort, replicationPort, heartbeatIntervalMs, connectionAutoTimeoutMs, codec);
+            EurekaServerTransportConfigBean eurekaServerTransportConfigBean = new EurekaServerTransportConfigBean(httpPort, shutDownPort, webAdminPort, serverPort, heartbeatIntervalMs, connectionAutoTimeoutMs);
             return eurekaServerTransportConfigBean;
         }
     }

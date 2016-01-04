@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.model.InstanceModel;
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.datacenter.AwsDataCenterInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interests;
@@ -19,10 +18,6 @@ import rx.Observable;
 import static org.mockito.Mockito.when;
 
 public class RegistryTestBase {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     public static final String ZUUL = "zuul";
 

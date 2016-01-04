@@ -2,9 +2,9 @@ package com.netflix.eureka2.server.resolver;
 
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
+import com.netflix.eureka2.server.resolver.DnsEurekaClusterResolver.DnsEurekaServerClusterResolver;
 import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
-import com.netflix.eureka2.server.resolver.DnsEurekaClusterResolver.DnsReadServerClusterResolver;
-import com.netflix.eureka2.server.resolver.DnsEurekaClusterResolver.DnsWriteServerClusterResolver;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
@@ -12,9 +12,6 @@ import rx.Scheduler;
 import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 
-import static com.netflix.eureka2.spi.transport.EurekaTransportFactory.DEFAULT_DISCOVERY_PORT;
-import static com.netflix.eureka2.spi.transport.EurekaTransportFactory.DEFAULT_REGISTRATION_PORT;
-import static com.netflix.eureka2.spi.transport.EurekaTransportFactory.DEFAULT_REPLICATION_PORT;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -35,21 +32,9 @@ public class DnsClusterAddressResolverTest {
     }
 
     @Test
-    public void testWriteClusterServerResolution() throws Exception {
-        DnsWriteServerClusterResolver resolver = new DnsWriteServerClusterResolver("eureka2.cluster.com",
-                DEFAULT_REGISTRATION_PORT, DEFAULT_DISCOVERY_PORT, DEFAULT_REPLICATION_PORT, Schedulers.computation()) {
-            @Override
-            protected Observable<ChangeNotification<String>> createDnsChangeNotificationSource(String domainName, Scheduler scheduler) {
-                return dnsChangeNotificationSubject;
-            }
-        };
-        serverResolutionTest(resolver);
-    }
-
-    @Test
-    public void testReadClusterServerResolution() throws Exception {
-        DnsReadServerClusterResolver resolver = new DnsReadServerClusterResolver("eureka2.cluster.com",
-                DEFAULT_DISCOVERY_PORT, Schedulers.computation()) {
+    public void testEurekaClusterServerResolution() throws Exception {
+        DnsEurekaServerClusterResolver resolver = new DnsEurekaServerClusterResolver("eureka2.cluster.com",
+                EurekaServerTransportConfig.DEFAULT_SERVER_PORT, Schedulers.computation()) {
             @Override
             protected Observable<ChangeNotification<String>> createDnsChangeNotificationSource(String domainName, Scheduler scheduler) {
                 return dnsChangeNotificationSubject;
@@ -68,6 +53,6 @@ public class DnsClusterAddressResolverTest {
         ChangeNotification<ClusterAddress> actual = testSubscriber.takeNextOrFail();
         assertThat(actual.getKind(), is(equalTo(Kind.Add)));
         assertThat(actual.getData().getHostName(), is(equalTo(server)));
-        assertThat(actual.getData().getInterestPort(), is(equalTo(DEFAULT_DISCOVERY_PORT)));
+        assertThat(actual.getData().getPort(), is(equalTo(EurekaServerTransportConfig.DEFAULT_SERVER_PORT)));
     }
 }

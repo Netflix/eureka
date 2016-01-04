@@ -1,95 +1,83 @@
+/*
+ * Copyright 2015 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.netflix.eureka2.client.interest;
 
-import javax.inject.Inject;
-
-import com.netflix.eureka2.channel.ChannelFactory;
-import com.netflix.eureka2.channel.InterestChannel;
-import com.netflix.eureka2.connection.RetryableConnection;
-import com.netflix.eureka2.connection.RetryableConnectionFactory;
+import com.netflix.eureka2.client.channel.interest.DisconnectingOnEmptyInterestHandler;
+import com.netflix.eureka2.client.channel.interest.RetryableInterestClientHandler;
+import com.netflix.eureka2.client.resolver.ServerResolver;
+import com.netflix.eureka2.config.EurekaTransportConfig;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
-import com.netflix.eureka2.model.interest.Interest.QueryType;
-import com.netflix.eureka2.model.interest.MultipleInterests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.SourcedChangeNotification;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.spi.channel.ChannelNotification;
+import com.netflix.eureka2.spi.channel.ChannelPipeline;
+import com.netflix.eureka2.spi.channel.ChannelPipelineFactory;
+import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
 import com.netflix.eureka2.utils.functions.RxFunctions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
+import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Func1;
-import rx.functions.Func2;
-import rx.schedulers.Schedulers;
+
+import static com.netflix.eureka2.client.util.InterestUtil.isEmptyInterest;
 
 /**
- * Each InterestClient class contains an interest channel and handles the lifecycle and reconnect of this channel.
- * At any point in time, this handler will have a single interest channel active, however this channel may not be
- * the same channel over time as it is refreshed. A retryableConnection is used for this purpose.
- *
- * When a client forInterest is invoked, this appends the interest to the stateful interestTracker.
- * The retryableChannel observable eagerly subscribes to the interest stream from the interestTracker and upgrades
- * the underlying interest channel when necessary.
- *
- * @author David Liu
  */
 public class EurekaInterestClientImpl extends AbstractInterestClient {
-    private static final Logger logger = LoggerFactory.getLogger(EurekaInterestClientImpl.class);
 
-    private final InterestTracker interestTracker;
-    private final RetryableConnection<InterestChannel> retryableConnection;
+    private final ChannelPipelineFactory<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> transportPipelineFactory;
+    private final EurekaRegistry<InstanceInfo> eurekaRegistry;
 
-    @Inject
-    public EurekaInterestClientImpl(EurekaRegistry<InstanceInfo> registry,
-                                    ChannelFactory<InterestChannel> channelFactory) {
-        this(registry, channelFactory, DEFAULT_RETRY_WAIT_MILLIS, Schedulers.computation());
+    private final InterestTracker interestTracker = new InterestTracker();
+    private final ChannelPipeline<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>> retryablePipeline;
+
+    private final Subscription registryUpdateSubscription;
+
+    public EurekaInterestClientImpl(Source clientSource,
+                                    ServerResolver serverResolver,
+                                    EurekaClientTransportFactory transportFactory,
+                                    EurekaTransportConfig transportConfig,
+                                    EurekaRegistry eurekaRegistry,
+                                    long retryDelayMs,
+                                    Scheduler scheduler) {
+        this.eurekaRegistry = eurekaRegistry;
+        this.transportPipelineFactory = createPipelineFactory(clientSource, serverResolver, transportFactory, transportConfig, scheduler);
+
+        retryablePipeline = new ChannelPipeline<>("interest",
+                new DisconnectingOnEmptyInterestHandler(),
+                new RetryableInterestClientHandler(transportPipelineFactory, retryDelayMs, scheduler)
+        );
+
+        Observable<ChannelNotification<Interest<InstanceInfo>>> interestNotifications = interestTracker.interestChangeStream()
+                .map(interest -> ChannelNotification.newData(interest));
+
+        this.registryUpdateSubscription = connectUpdatesToRegistry(retryablePipeline, eurekaRegistry, interestNotifications);
     }
 
-    /* visible for testing*/ EurekaInterestClientImpl(final EurekaRegistry<InstanceInfo> registry,
-                                                      ChannelFactory<InterestChannel> channelFactory,
-                                                      int retryWaitMillis,
-                                                      Scheduler scheduler) {
-        super(registry, retryWaitMillis, scheduler);
-        this.interestTracker = new InterestTracker();
-
-        RetryableConnectionFactory<InterestChannel> retryableConnectionFactory
-                = new RetryableConnectionFactory<>(channelFactory);
-
-        Observable<Interest<InstanceInfo>> opStream = interestTracker.interestChangeStream();
-        Func2<InterestChannel, Interest<InstanceInfo>, Observable<Void>> executeOnChannel = new Func2<InterestChannel, Interest<InstanceInfo>, Observable<Void>>() {
-            @Override
-            public Observable<Void> call(InterestChannel interestChannel, Interest<InstanceInfo> interest) {
-                return interestChannel.change(interest);
-            }
-        };
-
-        this.retryableConnection = retryableConnectionFactory.singleOpConnection(opStream, executeOnChannel);
-
-        lifecycleSubscribe(retryableConnection);
-    }
-
-    /**
-     * TODO: make a final decision on:
-     * if channelLifecycle retries enough times and does not succeed, do we indefinitely retry and/or propagate
-     * the error to all the subscribers of forInterests? We could also do this through the registry index.
-     */
     @Override
-    public Observable<ChangeNotification<InstanceInfo>> forInterest(final Interest<InstanceInfo> interest) {
-        if (isShutdown.get()) {
-            return Observable.error(new IllegalStateException("InterestHandler has shutdown"));
-        }
-
-        if (interest.getQueryType() == QueryType.None) {
+    public Observable<ChangeNotification<InstanceInfo>> forInterest(Interest<InstanceInfo> interest) {
+        if (isEmptyInterest(interest)) {
             return Observable.empty();
-        }
-        if (interest instanceof MultipleInterests) {
-            MultipleInterests<InstanceInfo> multiple = (MultipleInterests<InstanceInfo>) interest;
-            if (multiple.flatten().isEmpty()) {
-                return Observable.empty();
-            }
         }
 
         Observable<Void> appendInterest = Observable.create(new Observable.OnSubscribe<Void>() {
@@ -102,7 +90,7 @@ public class EurekaInterestClientImpl extends AbstractInterestClient {
 
         // strip source from the notifications
         // convert bufferstart/bufferends to just a single buffersentinel
-        Observable<ChangeNotification<InstanceInfo>> registrySteam = registry.forInterest(interest)
+        Observable<ChangeNotification<InstanceInfo>> registryStream = eurekaRegistry.forInterest(interest)
                 .map(new Func1<ChangeNotification<InstanceInfo>, ChangeNotification<InstanceInfo>>() {
                     @Override
                     public ChangeNotification<InstanceInfo> call(ChangeNotification<InstanceInfo> notification) {
@@ -126,7 +114,7 @@ public class EurekaInterestClientImpl extends AbstractInterestClient {
 
         Observable toReturn = appendInterest
                 .cast(ChangeNotification.class)
-                .mergeWith(registrySteam)
+                .mergeWith(registryStream)
                 .doOnUnsubscribe(new Action0() {
                     @Override
                     public void call() {
@@ -138,7 +126,7 @@ public class EurekaInterestClientImpl extends AbstractInterestClient {
     }
 
     @Override
-    protected RetryableConnection<InterestChannel> getRetryableConnection() {
-        return retryableConnection;
+    public void shutdown() {
+        registryUpdateSubscription.unsubscribe();
     }
 }

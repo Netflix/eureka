@@ -1,15 +1,14 @@
 package com.netflix.eureka2.server.service.selfinfo;
 
-import com.netflix.eureka2.model.StdModelsInjector;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Test;
 import rx.Observable;
 import rx.functions.Action0;
 import rx.observers.TestSubscriber;
-
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -19,10 +18,6 @@ import static org.mockito.Mockito.*;
  * @author David Liu
  */
 public class CachingSelfInfoResolverTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private final InstanceInfo info = SampleInstanceInfo.DiscoveryServer.build();
     private final AtomicInteger subscriberCount = new AtomicInteger();

@@ -19,12 +19,10 @@ package com.netflix.eureka2.server.registry;
 import javax.inject.Singleton;
 
 import com.google.inject.Inject;
-import com.netflix.eureka2.channel.InterestChannel;
-import com.netflix.eureka2.channel.ServiceChannel;
 import com.netflix.eureka2.client.EurekaInterestClient;
-import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.registry.EurekaRegistryView;
 import org.slf4j.Logger;
@@ -34,8 +32,6 @@ import rx.Observable;
 /**
  * Registry implemented on top of eureka-client. It does not story anything, just
  * provides an adapter from {@link EurekaInterestClient} to {@link com.netflix.eureka2.registry.EurekaRegistry} interface.
- * Server side {@link InterestChannel} is bound to real registry on write server,
- * and to proxy registry (this class) for read server.
  *
  * <p>
  * All the registration related methods throw an exception, as they are not
@@ -44,7 +40,7 @@ import rx.Observable;
  *
  * <h1>Why not the same registry as used internally by {@link EurekaInterestClient}?</h1>
  *
- * This registry is used by the {@link ServiceChannel}s on the server end of a read server which must always get its
+ * This registry is used on the server end of a read server which must always get its
  * data from a write server which in this case is fetched by the normal {@link EurekaInterestClient}
  *
  * @author Tomasz Bak

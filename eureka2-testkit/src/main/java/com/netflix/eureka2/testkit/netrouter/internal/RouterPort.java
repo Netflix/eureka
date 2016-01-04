@@ -32,11 +32,15 @@ public class RouterPort {
 
     private volatile RxServer<ByteBuf, ByteBuf> rxServer;
     private final Set<ObservableConnection<?, ?>> pendingConnections = Collections.newSetFromMap(new ConcurrentHashMap<ObservableConnection<?, ?>, Boolean>());
+    private final Set<ObservableConnection<?, ?>> pendingTargetConnections = Collections.newSetFromMap(new ConcurrentHashMap<ObservableConnection<?, ?>, Boolean>());
 
     public RouterPort(int targetPort) {
         this.targetPort = targetPort;
-        this.link = new NetworkLinkImpl(""+targetPort);
-        rxClient = RxNetty.<ByteBuf, ByteBuf>newTcpClientBuilder("localhost", targetPort).build();
+        this.rxClient = RxNetty.<ByteBuf, ByteBuf>newTcpClientBuilder("localhost", targetPort).build();
+        openPort(0);
+        this.localPort = rxServer.getServerPort();
+
+        this.link = new NetworkLinkImpl("{proxy=" + localPort + ", target=" + targetPort + '}');
         link.linkEvents().subscribe(
                 new Action1<LinkEvent>() {
                     @Override
@@ -45,8 +49,6 @@ public class RouterPort {
                     }
                 }
         );
-        openPort(0);
-        this.localPort = rxServer.getServerPort();
     }
 
     private void handleLinkUpdates(LinkEvent linkEvent) {
@@ -93,11 +95,16 @@ public class RouterPort {
             } catch (InterruptedException ignore) {
             }
             rxServer = null;
-            for (ObservableConnection<?, ?> connection : pendingConnections) {
-                connection.close();
-            }
-            pendingConnections.clear();
+            closeConnections(pendingConnections);
+            closeConnections(pendingTargetConnections);
         }
+    }
+
+    private void closeConnections(Set<ObservableConnection<?, ?>> connections) {
+        for (ObservableConnection<?, ?> connection : connections) {
+            connection.close();
+        }
+        connections.clear();
     }
 
     private Observable<Void> bridgeConnection(final ObservableConnection<ByteBuf, ByteBuf> clientConnection) {
@@ -119,6 +126,7 @@ public class RouterPort {
                 new Func1<ObservableConnection<ByteBuf, ByteBuf>, Observable<Void>>() {
                     @Override
                     public Observable<Void> call(final ObservableConnection<ByteBuf, ByteBuf> targetConnection) {
+                        pendingTargetConnections.add(targetConnection);
                         forwardingSubject.subscribe(new Subscriber<ByteBuf>() {
                             @Override
                             public void onCompleted() {
@@ -147,11 +155,11 @@ public class RouterPort {
                             public void call(Throwable e) {
                                 clientConnection.close();
                             }
-                        });
+                        }).doOnUnsubscribe(() -> pendingTargetConnections.remove(targetConnection));
                     }
                 });
         return Observable.merge(clientToServerForwarder, serverToClient)
-                .doOnTerminate(new Action0() {
+                .doOnUnsubscribe(new Action0() {
                     @Override
                     public void call() {
                         forwardingSubject.onCompleted();

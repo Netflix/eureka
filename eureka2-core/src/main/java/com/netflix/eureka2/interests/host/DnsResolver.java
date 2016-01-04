@@ -62,21 +62,6 @@ public class DnsResolver {
     }
 
     // will never return null
-    private static Set<String> toSetOfString(Attributes attrs, String attrName) throws NamingException {
-        Attribute attr = attrs.get(attrName);
-        if (attr == null) {
-            return Collections.emptySet();
-        }
-        Set<String> resultSet = new HashSet<>();
-        NamingEnumeration<?> it = attr.getAll();
-        while (it.hasMore()) {
-            Object value = it.next();
-            resultSet.add(value.toString());
-        }
-        return resultSet;
-    }
-
-    // will never return null
     private static Set<ChangeNotification<String>> toSetOfServerEntries(Attributes attrs, String attrName) throws NamingException {
         Attribute attr = attrs.get(attrName);
         if (attr == null) {

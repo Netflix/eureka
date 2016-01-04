@@ -1,6 +1,5 @@
 package com.netflix.eureka2;
 
-import com.netflix.eureka2.model.StdModelsInjector;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;

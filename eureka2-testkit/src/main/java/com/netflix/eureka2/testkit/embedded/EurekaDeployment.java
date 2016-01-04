@@ -168,12 +168,17 @@ public class EurekaDeployment {
         return interestClient;
     }
 
+    public EurekaInterestClient cannonicalInterestClient() {
+        return cannonicalInterestClient(null);
+    }
+
     /**
      * Create a {@link EurekaInterestClient} instance to do interest discovery with any instance in a read cluster,
      * using the canonical method to first discover the read cluster from the write cluster
      */
-    public EurekaInterestClient cannonicalInterestClient() {
+    public EurekaInterestClient cannonicalInterestClient(String clientId) {
         EurekaInterestClient interestClient = Eurekas.newInterestClientBuilder()
+                .withClientId(clientId)
                 .withTransportConfig(transportConfig)
                 .withServerResolver(ServerResolvers.fromEureka(getWriteCluster().interestResolver())
                         .forInterest(forVips(getReadCluster().getVip())))
@@ -282,7 +287,7 @@ public class EurekaDeployment {
             Map<Class<?>, Object> writeConfigOverrides = configurationOverrides == null ? null : configurationOverrides.get(ServerType.Write);
             EmbeddedWriteCluster writeCluster = new EmbeddedWriteCluster(writeExtensions,
                     extensionsEnabled, writeConfigOverrides,
-                    adminUIEnabled, ephemeralPorts, transportConfig.getCodec(), networkRouter);
+                    adminUIEnabled, ephemeralPorts, networkRouter);
             writeCluster.scaleUpBy(writeClusterSize);
 
             // Read cluster
@@ -291,7 +296,7 @@ public class EurekaDeployment {
             EmbeddedReadCluster readCluster = new EmbeddedReadCluster(writeCluster.registrationResolver(),
                     writeCluster.interestResolver(), readExtensions, extensionsEnabled,
                     readConfigOverrides,
-                    adminUIEnabled, ephemeralPorts, transportConfig.getCodec(), networkRouter);
+                    adminUIEnabled, ephemeralPorts, networkRouter);
             readCluster.scaleUpBy(readClusterSize);
 
             // Dashboard

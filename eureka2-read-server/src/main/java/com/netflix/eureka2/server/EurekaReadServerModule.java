@@ -16,19 +16,25 @@
 
 package com.netflix.eureka2.server;
 
+import javax.inject.Singleton;
+
 import com.google.inject.Provides;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.registry.EurekaRegistryView;
+import com.netflix.eureka2.server.config.EurekaInstanceInfoConfig;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.server.registry.EurekaReadServerRegistryView;
 import com.netflix.eureka2.server.service.EurekaReadServerSelfInfoResolver;
 import com.netflix.eureka2.server.service.EurekaReadServerSelfRegistrationService;
-import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.service.SelfRegistrationService;
+import com.netflix.eureka2.server.service.selfinfo.SelfInfoResolver;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
 import com.netflix.eureka2.server.spi.ExtensionContext;
-
-import javax.inject.Singleton;
+import com.netflix.eureka2.server.transport.EurekaTransportServer;
+import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
+import com.netflix.eureka2.spi.transport.EurekaServerTransportFactory;
+import rx.schedulers.Schedulers;
 
 /**
  * @author Tomasz Bak
@@ -41,6 +47,9 @@ public class EurekaReadServerModule extends AbstractEurekaServerModule {
         bindMetricFactories();
         bindSelfInfo();
         bindClients();
+
+        bind(EurekaClientTransportFactory.class).toInstance(EurekaClientTransportFactory.getDefaultFactory());
+        bind(EurekaServerTransportFactory.class).toInstance(EurekaServerTransportFactory.getDefaultFactory());
 
         bindInterestComponents();
 
@@ -60,6 +69,15 @@ public class EurekaReadServerModule extends AbstractEurekaServerModule {
     protected void bindClients() {
         bind(EurekaRegistrationClient.class).toProvider(EurekaRegistrationClientProvider.class);
         bind(EurekaInterestClient.class).toProvider(FullFetchInterestClientProvider.class);
+    }
+
+    @Provides
+    @Singleton
+    public EurekaTransportServer getTransportServer(EurekaServerTransportFactory transportFactory,
+                                                    EurekaServerTransportConfig config,
+                                                    EurekaInstanceInfoConfig instanceInfoConfig,
+                                                    EurekaRegistryView registryView) {
+        return new EurekaTransportServer(transportFactory, config, null, null, null, registryView, instanceInfoConfig, Schedulers.computation());
     }
 
     protected void bindRegistryComponents() {

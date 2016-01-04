@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
-import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.Server;
 import org.junit.Test;
 import rx.Observable;
 import rx.Subscriber;

@@ -16,10 +16,12 @@
 
 package com.netflix.eureka2.spi.protocol.common;
 
+import com.netflix.eureka2.spi.protocol.ProtocolMessage;
+
 /**
  * Marker interface for interest set update classes.
  *
  * @author Tomasz Bak
  */
-public interface InterestSetNotification {
+public interface InterestSetNotification extends ProtocolMessage {
 }

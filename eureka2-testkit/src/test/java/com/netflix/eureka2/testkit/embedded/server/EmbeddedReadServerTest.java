@@ -4,12 +4,11 @@ import java.util.List;
 
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
+import com.netflix.eureka2.client.EurekaRegistrationClient.RegistrationStatus;
 import com.netflix.eureka2.client.Eurekas;
-import com.netflix.eureka2.client.registration.RegistrationObservable;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.junit.resources.ReadServerResource;
@@ -29,10 +28,6 @@ import static org.junit.Assert.assertThat;
  */
 public class EmbeddedReadServerTest {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
     public final WriteServerResource writeServerResource = new WriteServerResource();
 
     public final ReadServerResource readServerResource = new ReadServerResource(writeServerResource);
@@ -43,17 +38,17 @@ public class EmbeddedReadServerTest {
     @Test(timeout = 10000)
     public void testInterestServices() throws Exception {
         EurekaRegistrationClient registrationClient = Eurekas.newRegistrationClientBuilder()
-                .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getRegistrationPort()))
+                .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(writeServerResource.getServerPort()))
                 .build();
 
         EurekaInterestClient interestClient = Eurekas.newInterestClientBuilder()
-                .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(readServerResource.getInterestPort()))
+                .withServerResolver(ServerResolvers.fromHostname("localhost").withPort(readServerResource.getServerPort()))
                 .build();
 
         InstanceInfo instanceInfo = SampleInstanceInfo.DiscoveryServer.build();
-        RegistrationObservable registrationRequest = registrationClient.register(Observable.just(instanceInfo));
+        Observable<RegistrationStatus> registrationRequest = registrationClient.register(Observable.just(instanceInfo));
         registrationRequest.subscribe();
-        registrationRequest.initialRegistrationResult().toBlocking().lastOrDefault(null);
+        registrationRequest.take(1).toBlocking().lastOrDefault(null);
 
         List<ChangeNotification<InstanceInfo>> notifications = interestClient
                 .forInterest(Interests.forFullRegistry())

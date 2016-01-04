@@ -10,7 +10,6 @@ import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.functions.InterestFunctions;
 import com.netflix.eureka2.client.resolver.ServerResolvers;
-import com.netflix.eureka2.codec.CodecType;
 import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.spi.protocol.registration.Register;
 import com.netflix.eureka2.model.instance.InstanceInfo;

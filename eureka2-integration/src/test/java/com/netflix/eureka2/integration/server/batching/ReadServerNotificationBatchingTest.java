@@ -6,15 +6,14 @@ import java.util.concurrent.TimeUnit;
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.functions.InterestFunctions;
 import com.netflix.eureka2.integration.EurekaDeploymentClients;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedReadServer;
+import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
 import org.junit.Before;
 import org.junit.Rule;
@@ -23,9 +22,7 @@ import org.junit.experimental.categories.Category;
 import rx.functions.Action1;
 
 import static com.netflix.eureka2.utils.functions.ChangeNotifications.dataOnlyFilter;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -33,10 +30,6 @@ import static org.junit.Assert.assertThat;
  */
 @Category({IntegrationTest.class, LongRunningTest.class})
 public class ReadServerNotificationBatchingTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private static final int REGISTRY_INITIAL_SIZE = 100;
 

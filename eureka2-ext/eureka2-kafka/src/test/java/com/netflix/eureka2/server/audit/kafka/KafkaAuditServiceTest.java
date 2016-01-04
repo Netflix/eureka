@@ -16,7 +16,6 @@
 
 package com.netflix.eureka2.server.audit.kafka;
 
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.server.audit.AuditRecord;
 import com.netflix.eureka2.server.audit.kafka.config.KafkaAuditServiceConfig;
 import com.netflix.eureka2.testkit.data.builder.SampleAuditRecord;
@@ -31,10 +30,6 @@ import static com.netflix.eureka2.server.audit.kafka.config.bean.KafkaAuditServi
  * @author Tomasz Bak
  */
 public class KafkaAuditServiceTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private KafkaAuditService auditService;
 

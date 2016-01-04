@@ -21,7 +21,6 @@ import com.netflix.eureka2.client.EurekaRegistrationClient;
 import com.netflix.eureka2.client.Eurekas;
 import com.netflix.eureka2.client.resolver.ServerResolver;
 import com.netflix.eureka2.model.InstanceModel;
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.datacenter.LocalDataCenterInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo.Status;
@@ -43,10 +42,6 @@ import static com.netflix.eureka2.model.interest.Interests.forVips;
  */
 public final class SimpleApp {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
     public static final InstanceInfo SERVICE_A = InstanceModel.getDefaultModel().newInstanceInfo()
             .withId("id_serviceA")
             .withApp("ServiceA")
@@ -57,13 +52,13 @@ public final class SimpleApp {
 
     private final String writeServerDns;
     private final int writeRegistrationPort;
-    private final int writeInterestPort;
+    private final int serverPort;
     private final String readServerVip;
 
-    public SimpleApp(String writeServerDns, int writeRegistrationPort, int writeInterestPort, String readServerVip) {
+    public SimpleApp(String writeServerDns, int writeRegistrationPort, int serverPort, String readServerVip) {
         this.writeServerDns = writeServerDns;
         this.writeRegistrationPort = writeRegistrationPort;
-        this.writeInterestPort = writeInterestPort;
+        this.serverPort = serverPort;
         this.readServerVip = readServerVip;
     }
 
@@ -75,7 +70,7 @@ public final class SimpleApp {
 
         ServerResolver interestClientResolver =
                 fromEureka(
-                        fromDnsName(writeServerDns).withPort(writeInterestPort)
+                        fromDnsName(writeServerDns).withPort(serverPort)
                 ).forInterest(forVips(readServerVip));
 
         EurekaInterestClient interestClient = Eurekas.newInterestClientBuilder()

@@ -16,15 +16,13 @@
 
 package com.netflix.eureka2.metric;
 
-import com.netflix.eureka2.channel.RegistrationChannel;
-import com.netflix.eureka2.channel.RegistrationChannel.STATE;
 import com.netflix.spectator.api.ExtendedRegistry;
 
 /**
  * @author Tomasz Bak
  */
-public class SpectatorRegistrationChannelMetrics extends AbstractStateMachineMetrics<STATE> implements RegistrationChannelMetrics {
+public class SpectatorRegistrationChannelMetrics extends SpectatorEurekaMetrics implements RegistrationChannelMetrics {
     public SpectatorRegistrationChannelMetrics(ExtendedRegistry registry, String name) {
-        super(registry, name, RegistrationChannel.STATE.class);
+        super(registry, name);
     }
 }

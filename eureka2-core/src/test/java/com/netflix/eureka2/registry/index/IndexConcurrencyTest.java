@@ -5,10 +5,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.junit.categories.LongRunningTest;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ChangeNotification.Kind;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
@@ -29,10 +28,6 @@ import static org.junit.Assert.assertThat;
  */
 @Category(LongRunningTest.class)
 public class IndexConcurrencyTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private static final int NOTIFICATIONS = 10000;
 

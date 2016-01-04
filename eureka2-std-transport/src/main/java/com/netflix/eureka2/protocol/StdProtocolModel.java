@@ -16,36 +16,38 @@
 
 package com.netflix.eureka2.protocol;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.StdSource;
 import com.netflix.eureka2.model.instance.Delta;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.StdDelta;
 import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
+import com.netflix.eureka2.model.transport.StdAcknowledgement;
+import com.netflix.eureka2.model.transport.StdGoAway;
 import com.netflix.eureka2.protocol.common.StdAddInstance;
 import com.netflix.eureka2.protocol.common.StdDeleteInstance;
 import com.netflix.eureka2.protocol.common.StdHeartbeat;
 import com.netflix.eureka2.protocol.common.StdStreamStateUpdate;
 import com.netflix.eureka2.protocol.interest.StdInterestRegistration;
-import com.netflix.eureka2.protocol.interest.StdUnregisterInterestSet;
 import com.netflix.eureka2.protocol.interest.StdUpdateInstanceInfo;
 import com.netflix.eureka2.protocol.register.StdRegister;
-import com.netflix.eureka2.protocol.register.StdUnregister;
 import com.netflix.eureka2.protocol.replication.StdReplicationHello;
 import com.netflix.eureka2.protocol.replication.StdReplicationHelloReply;
-import com.netflix.eureka2.spi.protocol.Acknowledgement;
+import com.netflix.eureka2.spi.model.Acknowledgement;
+import com.netflix.eureka2.spi.model.Heartbeat;
 import com.netflix.eureka2.spi.protocol.ProtocolModel;
 import com.netflix.eureka2.spi.protocol.common.AddInstance;
 import com.netflix.eureka2.spi.protocol.common.DeleteInstance;
-import com.netflix.eureka2.spi.protocol.common.Heartbeat;
+import com.netflix.eureka2.spi.protocol.common.GoAway;
 import com.netflix.eureka2.spi.protocol.common.StreamStateUpdate;
 import com.netflix.eureka2.spi.protocol.interest.InterestRegistration;
-import com.netflix.eureka2.spi.protocol.interest.UnregisterInterestSet;
 import com.netflix.eureka2.spi.protocol.interest.UpdateInstanceInfo;
 import com.netflix.eureka2.spi.protocol.registration.Register;
-import com.netflix.eureka2.spi.protocol.registration.Unregister;
 import com.netflix.eureka2.spi.protocol.replication.ReplicationHello;
 import com.netflix.eureka2.spi.protocol.replication.ReplicationHelloReply;
 
@@ -60,13 +62,13 @@ public class StdProtocolModel extends ProtocolModel {
     }
 
     @Override
-    public Unregister newUnregister() {
-        return StdUnregister.INSTANCE;
+    public Heartbeat newHeartbeat() {
+        return StdHeartbeat.INSTANCE;
     }
 
     @Override
-    public Heartbeat newHeartbeat() {
-        return StdHeartbeat.INSTANCE;
+    public GoAway newGoAway() {
+        return StdGoAway.INSTANCE;
     }
 
     @Override
@@ -85,8 +87,10 @@ public class StdProtocolModel extends ProtocolModel {
     }
 
     @Override
-    public UpdateInstanceInfo newUpdateInstanceInfo(Delta<?> delta) {
-        return new StdUpdateInstanceInfo((StdDelta<?>) delta);
+    public UpdateInstanceInfo newUpdateInstanceInfo(Delta<?>... deltas) {
+        Set deltaSet = new HashSet<>();
+        Collections.addAll(deltaSet, deltas);
+        return new StdUpdateInstanceInfo(deltaSet);
     }
 
     @Override
@@ -107,11 +111,6 @@ public class StdProtocolModel extends ProtocolModel {
     @Override
     public InterestRegistration newInterestRegistration(Interest<InstanceInfo> interest) {
         return new StdInterestRegistration(interest);
-    }
-
-    @Override
-    public UnregisterInterestSet newUnregisterInterestSet() {
-        return StdUnregisterInterestSet.INSTANCE;
     }
 
     public static ProtocolModel getStdModel() {

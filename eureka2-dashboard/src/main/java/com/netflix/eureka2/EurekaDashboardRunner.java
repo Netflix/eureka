@@ -1,9 +1,10 @@
 package com.netflix.eureka2;
 
+import java.util.List;
+
 import com.google.inject.Module;
 import com.google.inject.Singleton;
 import com.netflix.eureka2.config.EurekaDashboardConfig;
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.server.EurekaServerRunner;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
@@ -17,14 +18,8 @@ import netflix.adminresources.resources.KaryonWebAdminModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
 @Singleton
 public class EurekaDashboardRunner extends EurekaServerRunner<EurekaDashboardServer> {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaDashboardRunner.class);
 

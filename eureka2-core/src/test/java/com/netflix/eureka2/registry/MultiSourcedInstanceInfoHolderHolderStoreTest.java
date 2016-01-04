@@ -2,8 +2,7 @@ package com.netflix.eureka2.registry;
 
 import java.util.Collection;
 
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.StdSource;
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.registry.MultiSourcedInstanceInfoHolder.HolderStore;
@@ -12,10 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 
 /**
  * Have a dedicated test class for this inner class within NotifyingInstanceInfoHolder
@@ -25,14 +21,10 @@ import static org.hamcrest.Matchers.nullValue;
  */
 public class MultiSourcedInstanceInfoHolderHolderStoreTest {
 
-    static {
-        StdModelsInjector.injectStdModels();
-    }
-
     private final HolderStore dataStore = new HolderStore();
 
-    private final StdSource source1 = new StdSource(StdSource.Origin.REPLICATED, "replicationSourceId");
-    private final StdSource source2 = new StdSource(StdSource.Origin.LOCAL);
+    private final Source source1 = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "replicationSourceId");
+    private final Source source2 = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL);
 
     private final InstanceInfo info1 = SampleInstanceInfo.DiscoveryServer.build();
     private final InstanceInfo info2 = SampleInstanceInfo.ZuulServer.build();
@@ -60,7 +52,7 @@ public class MultiSourcedInstanceInfoHolderHolderStoreTest {
         assertThat(dataStore.dataMap.values(), containsInAnyOrder(newInfo1, info2));
 
         // add a new source
-        StdSource source3 = new StdSource(StdSource.Origin.REPLICATED, "anotherReplicationSourceId");
+        Source source3 = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "anotherReplicationSourceId");
         InstanceInfo info3 = SampleInstanceInfo.EurekaReadServer.build();
         dataStore.put(source3, info3);
 
@@ -69,7 +61,7 @@ public class MultiSourcedInstanceInfoHolderHolderStoreTest {
         assertThat(dataStore.dataMap.values(), containsInAnyOrder(newInfo1, info2, info3));
 
         // add for same source with different id
-        StdSource newSource2 = fromAnother(source2);
+        Source newSource2 = fromAnother(source2);
         InstanceInfo newInfo2 = SampleInstanceInfo.EurekaWriteServer.build();
         assertThat(source2, is(not(newSource2)));
         dataStore.put(newSource2, newInfo2);
@@ -84,16 +76,16 @@ public class MultiSourcedInstanceInfoHolderHolderStoreTest {
         InstanceInfo removed;
 
         // remove for non-existing source
-        StdSource source3 = new StdSource(StdSource.Origin.REPLICATED, "anotherReplicationSourceId");
+        Source source3 = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "anotherReplicationSourceId");
         removed = dataStore.remove(source3);
         assertThat(removed, is(nullValue()));
 
         // remove for existing sources with different id
-        StdSource newSource1 = fromAnother(source1);
+        Source newSource1 = fromAnother(source1);
         removed = dataStore.remove(newSource1);
         assertThat(removed, is(nullValue()));
 
-        StdSource newSource2 = fromAnother(source2);
+        Source newSource2 = fromAnother(source2);
         removed = dataStore.remove(newSource2);
         assertThat(removed, is(nullValue()));
 
@@ -117,16 +109,16 @@ public class MultiSourcedInstanceInfoHolderHolderStoreTest {
     public void testGetMatching() {
         InstanceInfo instanceInfo;
         // get with non-existent source
-        StdSource source3 = new StdSource(StdSource.Origin.REPLICATED, "anotherReplicationSourceId");
+        Source source3 = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "anotherReplicationSourceId");
         instanceInfo = dataStore.getMatching(source3);
         assertThat(instanceInfo, is(nullValue()));
 
         // get with a source that matches an existing source's origin:name but have diff id
-        StdSource newSource1 = fromAnother(source1);
+        Source newSource1 = fromAnother(source1);
         instanceInfo = dataStore.getMatching(newSource1);
         assertThat(instanceInfo, is(info1));
 
-        StdSource newSource2 = fromAnother(source2);
+        Source newSource2 = fromAnother(source2);
         instanceInfo = dataStore.getMatching(newSource2);
         assertThat(instanceInfo, is(info2));
 
@@ -150,16 +142,16 @@ public class MultiSourcedInstanceInfoHolderHolderStoreTest {
     public void testGetExact() {
         InstanceInfo instanceInfo;
         // get with non-existent source
-        StdSource source3 = new StdSource(StdSource.Origin.REPLICATED, "anotherReplicationSourceId");
+        Source source3 = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "anotherReplicationSourceId");
         instanceInfo = dataStore.getExact(source3);
         assertThat(instanceInfo, is(nullValue()));
 
         // get with a source that matches an existing source's origin:name but have diff id
-        StdSource newSource1 = fromAnother(source1);
+        Source newSource1 = fromAnother(source1);
         instanceInfo = dataStore.getExact(newSource1);
         assertThat(instanceInfo, is(nullValue()));
 
-        StdSource newSource2 = fromAnother(source2);
+        Source newSource2 = fromAnother(source2);
         instanceInfo = dataStore.getExact(newSource2);
         assertThat(instanceInfo, is(nullValue()));
 
@@ -186,7 +178,7 @@ public class MultiSourcedInstanceInfoHolderHolderStoreTest {
     }
 
     // create a source from another with the same origin and name (but diff id as the id is created internally)
-    private StdSource fromAnother(StdSource source) {
-        return new StdSource(source.getOrigin(), source.getName());
+    private Source fromAnother(Source source) {
+        return InstanceModel.getDefaultModel().createSource(source.getOrigin(), source.getName());
     }
 }

@@ -1,14 +1,10 @@
 package com.netflix.eureka2.integration.server.interest;
 
-import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
-
 import com.netflix.eureka2.client.EurekaInterestClient;
 import com.netflix.eureka2.client.EurekaRegistrationClient;
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.junit.categories.IntegrationTest;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.junit.resources.EurekaDeploymentResource;
@@ -16,6 +12,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import rx.Observable;
+
+import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 import static com.netflix.eureka2.testkit.internal.rx.RxBlocking.iteratorFrom;
 import static com.netflix.eureka2.testkit.junit.EurekaMatchers.addChangeNotificationOf;
@@ -28,10 +27,6 @@ import static org.hamcrest.Matchers.is;
  */
 @Category(IntegrationTest.class)
 public class WriteClusterInterestTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     @Rule
     public final EurekaDeploymentResource eurekaDeploymentResource = new EurekaDeploymentResource(1, 0);

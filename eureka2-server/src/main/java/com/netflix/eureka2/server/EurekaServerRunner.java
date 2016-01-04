@@ -5,6 +5,8 @@ import com.netflix.governator.LifecycleInjector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,16 +19,19 @@ public abstract class EurekaServerRunner<S extends AbstractEurekaServer> {
 
     private final Class<S> serverClass;
     protected final String name;
+    protected final String serverName;
 
     protected LifecycleInjector injector;
 
     protected EurekaServerRunner(Class<S> serverClass) {
         this.name = null;
+        this.serverName = getClass().getSimpleName() + '#' + getProcessPid();
         this.serverClass = serverClass;
     }
 
     protected EurekaServerRunner(String name, Class<S> serverClass) {
         this.name = name;
+        this.serverName = name + '#' + getProcessPid();
         this.serverClass = serverClass;
     }
 
@@ -71,4 +76,8 @@ public abstract class EurekaServerRunner<S extends AbstractEurekaServer> {
         return toReturn;
     }
 
+    public String getProcessPid() {
+        RuntimeMXBean rt = ManagementFactory.getRuntimeMXBean();
+        return rt.getName().substring(0, rt.getName().indexOf("@"));
+    }
 }

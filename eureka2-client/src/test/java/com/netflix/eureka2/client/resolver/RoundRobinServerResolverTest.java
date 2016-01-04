@@ -1,8 +1,9 @@
 package com.netflix.eureka2.client.resolver;
 
-import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
+import junit.framework.Assert;
 import org.junit.Test;
 import rx.Observable;
 import rx.Subscriber;
@@ -20,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.netflix.eureka2.utils.ExtCollections.asSet;
+import static junit.framework.Assert.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
@@ -128,9 +130,12 @@ public class RoundRobinServerResolverTest extends AbstractResolverTest {
         ExtTestSubscriber<Server> extTestSubscriber = new ExtTestSubscriber<>();
         resolver.resolve().subscribe(extTestSubscriber);
 
-        Server next = extTestSubscriber.takeNext(warmUpTimeout + 100, TimeUnit.MILLISECONDS);
-        assertThat(next, is(nullValue()));
-        extTestSubscriber.assertOnError();
+        try {
+            extTestSubscriber.takeNext(warmUpTimeout + 100, TimeUnit.MILLISECONDS);
+            fail("Exception from onError completed stream expected");
+        } catch (Exception e) {
+            extTestSubscriber.assertOnError();
+        }
     }
 
     @Test

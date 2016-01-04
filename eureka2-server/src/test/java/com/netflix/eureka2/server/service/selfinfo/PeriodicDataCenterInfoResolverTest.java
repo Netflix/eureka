@@ -3,7 +3,6 @@ package com.netflix.eureka2.server.service.selfinfo;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.eureka2.model.StdModelsInjector;
 import com.netflix.eureka2.model.datacenter.DataCenterInfo;
 import com.netflix.eureka2.model.datacenter.LocalDataCenterInfo;
 import com.netflix.eureka2.model.instance.InstanceInfoBuilder;
@@ -27,10 +26,6 @@ import static org.mockito.Mockito.when;
  * @author David Liu
  */
 public class PeriodicDataCenterInfoResolverTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private static final long RESOLVE_INTERVAL = 30L;
     private static final int WEB_ADMIN_PORT = 8088;

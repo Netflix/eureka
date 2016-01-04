@@ -16,8 +16,8 @@
 
 package com.netflix.eureka2.testkit.cli.command.session;
 
+import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.instance.Delta;
-import com.netflix.eureka2.model.instance.StdDelta.Builder;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.InstanceInfoField;
 import com.netflix.eureka2.model.instance.InstanceInfoField.Name;
@@ -67,7 +67,7 @@ public class UpdateCommand extends Command {
         }
 
         InstanceInfo lastInstanceInfo = activeSession.getInstanceInfo();
-        Delta<?> delta = new Builder()
+        Delta<?> delta = InstanceModel.getDefaultModel().newDelta()
                 .withId(lastInstanceInfo.getId())
                 .withDelta(field, value)
                 .build();

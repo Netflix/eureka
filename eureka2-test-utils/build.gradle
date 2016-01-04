@@ -19,6 +19,7 @@ apply plugin: 'application'
 dependencies {
     compile project(':eureka2-testkit')
     compile project(':eureka2-ext:eureka2-aws')
+    compile project(':eureka2-std-transport')
 
     compile "junit:junit:${junit_version}"
     compile "org.mockito:mockito-core:${mockito_version}"

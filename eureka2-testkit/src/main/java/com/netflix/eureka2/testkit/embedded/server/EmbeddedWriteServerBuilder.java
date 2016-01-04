@@ -1,33 +1,42 @@
 package com.netflix.eureka2.testkit.embedded.server;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
-import com.google.inject.Scopes;
+import com.google.inject.Provider;
 import com.google.inject.util.Modules;
-import com.netflix.eureka2.Server;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.notification.ChangeNotification;
+import com.netflix.eureka2.registry.EurekaRegistry;
+import com.netflix.eureka2.registry.EurekaRegistryView;
 import com.netflix.eureka2.server.AbstractEurekaServer;
 import com.netflix.eureka2.server.EurekaWriteServerConfigurationModule;
 import com.netflix.eureka2.server.EurekaWriteServerModule;
 import com.netflix.eureka2.server.ReplicationPeerAddressesProvider;
+import com.netflix.eureka2.server.config.EurekaInstanceInfoConfig;
+import com.netflix.eureka2.server.config.EurekaServerTransportConfig;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.server.module.CommonEurekaServerModule;
+import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.server.spi.ExtAbstractModule;
 import com.netflix.eureka2.server.spi.ExtAbstractModule.ServerType;
-import com.netflix.eureka2.server.transport.tcp.interest.TcpInterestServer;
-import com.netflix.eureka2.server.transport.tcp.registration.TcpRegistrationServer;
-import com.netflix.eureka2.server.transport.tcp.replication.TcpReplicationServer;
+import com.netflix.eureka2.server.transport.EurekaTransportServer;
+import com.netflix.eureka2.spi.transport.EurekaServerTransportFactory;
 import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
 import com.netflix.governator.DefaultGovernatorConfiguration;
 import com.netflix.governator.DefaultGovernatorConfiguration.Builder;
 import com.netflix.governator.Governator;
 import com.netflix.governator.LifecycleInjector;
 import com.netflix.governator.auto.ModuleListProviders;
+import io.reactivex.netty.metrics.MetricEventsListenerFactory;
 import rx.Observable;
 
+import static com.netflix.eureka2.Names.EUREKA_SERVICE;
 import static com.netflix.eureka2.server.config.ServerConfigurationNames.DEFAULT_CONFIG_PREFIX;
 
 /**
@@ -51,7 +60,7 @@ public class EmbeddedWriteServerBuilder extends EmbeddedServerBuilder<WriteServe
             coreModules.add(EurekaWriteServerConfigurationModule.fromConfig(configuration));
         }
         coreModules.add(new CommonEurekaServerModule());
-        coreModules.add(new EurekaWriteServerModule());
+        coreModules.add(new EmbeddedEurekaWriteServerModule(networkRouter));
 
         if (adminUI) {
             coreModules.add(new EmbeddedKaryonAdminModule(configuration.getEurekaTransport().getWebAdminPort()));
@@ -67,9 +76,6 @@ public class EmbeddedWriteServerBuilder extends EmbeddedServerBuilder<WriteServe
                     }
                 }
         );
-        if (networkRouter != null) {
-            overrides.add(new NetworkRouterModule(networkRouter));
-        }
 
         Module applicationModules = combineWithExtensionModules(Modules.combine(coreModules));
         applicationModules = combineWithConfigurationOverrides(applicationModules, overrides);
@@ -85,20 +91,53 @@ public class EmbeddedWriteServerBuilder extends EmbeddedServerBuilder<WriteServe
         return injector.getInstance(EmbeddedWriteServer.class);
     }
 
-    static class NetworkRouterModule extends AbstractModule {
+    static class EmbeddedEurekaWriteServerModule extends EurekaWriteServerModule {
 
         private final NetworkRouter networkRouter;
 
-        NetworkRouterModule(NetworkRouter networkRouter) {
+        EmbeddedEurekaWriteServerModule(NetworkRouter networkRouter) {
             this.networkRouter = networkRouter;
         }
 
         @Override
         protected void configure() {
-            bind(NetworkRouter.class).toInstance(networkRouter);
-            bind(TcpRegistrationServer.class).to(EmbeddedTcpRegistrationServer.class).in(Scopes.SINGLETON);
-            bind(TcpReplicationServer.class).to(EmbeddedTcpReplicationServer.class).in(Scopes.SINGLETON);
-            bind(TcpInterestServer.class).to(EmbeddedTcpInterestServer.class).in(Scopes.SINGLETON);
+            super.configure();
+            if (networkRouter != null) {
+                bind(NetworkRouter.class).toInstance(networkRouter);
+            }
+        }
+
+        @Override
+        protected void bindEurekaTransportServer() {
+            if (networkRouter == null) {
+                super.bindEurekaTransportServer();
+            } else {
+                bind(EurekaTransportServer.class).toProvider(EmbeddedWriteServerTransportProvider.class);
+            }
+        }
+
+        @Singleton
+        static class EmbeddedWriteServerTransportProvider implements Provider<EurekaTransportServer> {
+
+            private final EmbeddedEurekaTransportServer transportServer;
+
+            @Inject
+            EmbeddedWriteServerTransportProvider(EurekaServerTransportFactory transportFactory,
+                                                 EurekaServerTransportConfig config,
+                                                 @Named(EUREKA_SERVICE) Provider<EurekaRegistrationProcessor> registrationProcessor,
+                                                 @Named(EUREKA_SERVICE) MetricEventsListenerFactory servoEventsListenerFactory,
+                                                 EurekaRegistry registry,
+                                                 EurekaRegistryView registryView,
+                                                 EurekaInstanceInfoConfig instanceInfoConfig,
+                                                 NetworkRouter networkRouter) {
+                this.transportServer = new EmbeddedEurekaTransportServer(transportFactory, config, registrationProcessor, servoEventsListenerFactory, registry, registryView, instanceInfoConfig, networkRouter);
+                this.transportServer.start();
+            }
+
+            @Override
+            public EurekaTransportServer get() {
+                return transportServer;
+            }
         }
     }
 }

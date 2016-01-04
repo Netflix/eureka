@@ -1,6 +1,5 @@
 package com.netflix.eureka2.metric.noop;
 
-import com.netflix.eureka2.channel.InterestChannel.STATE;
 import com.netflix.eureka2.metric.server.ServerInterestChannelMetrics;
 
 /**
@@ -20,17 +19,5 @@ public class NoOpServerInterestChannelMetrics implements ServerInterestChannelMe
 
     @Override
     public void decrementSubscriptionCounter(AtomicInterest interestType, String id) {
-    }
-
-    @Override
-    public void incrementStateCounter(STATE state) {
-    }
-
-    @Override
-    public void stateTransition(STATE from, STATE to) {
-    }
-
-    @Override
-    public void decrementStateCounter(STATE state) {
     }
 }

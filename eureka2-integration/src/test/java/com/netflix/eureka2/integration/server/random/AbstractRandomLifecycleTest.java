@@ -1,25 +1,21 @@
 package com.netflix.eureka2.integration.server.random;
 
-import com.netflix.eureka2.model.StdModelsInjector;
-import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.notification.ChangeNotification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.number.OrderingComparison.lessThanOrEqualTo;
 
 /**
  * @author David Liu
  */
 public abstract class AbstractRandomLifecycleTest {
-
-    static {
-        StdModelsInjector.injectStdModels();
-    }
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractRandomLifecycleTest.class);
 
@@ -44,6 +40,6 @@ public abstract class AbstractRandomLifecycleTest {
         if (list == null || list.size() == 0) {
             return null;
         }
-        return list.get(list.size()-1);
+        return list.get(list.size() - 1);
     }
 }

@@ -19,6 +19,8 @@ package com.netflix.eureka2.codec.jackson;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
@@ -30,6 +32,13 @@ import com.netflix.eureka2.codec.jackson.mixin.DataCenterInfoMixIn;
 import com.netflix.eureka2.model.datacenter.DataCenterInfo;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.instance.StdInstanceInfo;
+import com.netflix.eureka2.model.transport.*;
+import com.netflix.eureka2.protocol.common.StdAddInstance;
+import com.netflix.eureka2.protocol.common.StdDeleteInstance;
+import com.netflix.eureka2.protocol.common.StdHeartbeat;
+import com.netflix.eureka2.protocol.common.StdStreamStateUpdate;
+import com.netflix.eureka2.protocol.interest.StdInterestRegistration;
+import com.netflix.eureka2.protocol.interest.StdUpdateInstanceInfo;
 import com.netflix.eureka2.spi.codec.EurekaCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +48,24 @@ import org.slf4j.LoggerFactory;
 public class JacksonEurekaCodec extends EurekaCodec {
 
     private static final Logger logger = LoggerFactory.getLogger(JacksonEurekaCodec.class);
+
+    static final Class<?>[] REGISTRATION_PROTOCOL_MODEL = {
+            StdInstanceInfo.class, StdHeartbeat.class, StdAcknowledgement.class, StdGoAway.class, StdClientHello.class, StdServerHello.class
+    };
+
+    static final Class<?>[] REPLICATION_PROTOCOL_MODEL = {
+            StdHeartbeat.class, StdReplicationClientHello.class, StdReplicationServerHello.class,
+            StdAddInstance.class, StdDeleteInstance.class, StdStreamStateUpdate.class,
+            StdAcknowledgement.class
+    };
+
+    static final Class<?>[] INTEREST_PROTOCOL_MODEL = {
+            StdInterestRegistration.class, StdHeartbeat.class,
+            StdAddInstance.class, StdDeleteInstance.class, StdUpdateInstanceInfo.class, StdStreamStateUpdate.class,
+            StdAcknowledgement.class
+    };
+
+    static final Set<Class<?>> SUPPORTED_TYPES = new HashSet<>(combined(REGISTRATION_PROTOCOL_MODEL, REPLICATION_PROTOCOL_MODEL, INTEREST_PROTOCOL_MODEL));
 
     static final ObjectMapper MAPPER;
 
@@ -102,5 +129,13 @@ public class JacksonEurekaCodec extends EurekaCodec {
             }
             throw new IOException(e);
         }
+    }
+
+    private static Set<Class<?>> combined(Class<?>[]... models) {
+        Set<Class<?>> result = new HashSet<>();
+        for (Class<?>[] model : models) {
+            Collections.addAll(result, model);
+        }
+        return result;
     }
 }

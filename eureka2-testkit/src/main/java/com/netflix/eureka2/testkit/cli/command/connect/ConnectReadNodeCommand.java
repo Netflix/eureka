@@ -39,7 +39,7 @@ public class ConnectReadNodeCommand extends AbstractConnectClusterCommand {
         ClusterAddress readNodeAddress = clusterTopology.getReadServers().get(nodeIdx);
         EurekaInterestClient interestClient = Eurekas.newInterestClientBuilder()
                 .withClientId("interestReadServerClient")
-                .withServerResolver(ServerResolvers.fromHostname(readNodeAddress.getHostName()).withPort(readNodeAddress.getInterestPort()))
+                .withServerResolver(ServerResolvers.fromHostname(readNodeAddress.getHostName()).withPort(readNodeAddress.getPort()))
                 .build();
         return Observable.just(new Session(SessionDescriptor.readNode(nodeIdx), null, interestClient));
     }

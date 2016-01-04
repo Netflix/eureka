@@ -1,8 +1,7 @@
 package com.netflix.eureka2.testkit.junit.resources;
 
-import com.netflix.eureka2.Server;
 import com.netflix.eureka2.client.resolver.ServerResolver;
-import com.netflix.eureka2.codec.CodecType;
+import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.server.config.WriteServerConfig;
 import com.netflix.eureka2.testkit.embedded.server.EmbeddedWriteServer;
@@ -24,7 +23,6 @@ public class WriteServerResource extends EurekaExternalResource {
 
     private final String name;
     private final String readClusterName;
-    private final CodecType codec;
 
     private EmbeddedWriteServer server;
 
@@ -33,13 +31,8 @@ public class WriteServerResource extends EurekaExternalResource {
     }
 
     public WriteServerResource(String name, String readClusterName) {
-        this(name, readClusterName, CodecType.Avro);
-    }
-
-    public WriteServerResource(String name, String readClusterName, CodecType codec) {
         this.name = name;
         this.readClusterName = readClusterName;
-        this.codec = codec;
     }
 
     @Override
@@ -53,11 +46,8 @@ public class WriteServerResource extends EurekaExternalResource {
                 )
                 .withTransportConfig(
                         anEurekaServerTransportConfig()
-                                .withCodec(codec)
                                 .withHttpPort(0)
-                                .withInterestPort(0)
-                                .withRegistrationPort(0)
-                                .withReplicationPort(0)
+                                .withServerPort(0)
                                 .withShutDownPort(0)
                                 .withWebAdminPort(0)
                                 .build()
@@ -83,20 +73,12 @@ public class WriteServerResource extends EurekaExternalResource {
         return name;
     }
 
-    public int getRegistrationPort() {
-        return server.getRegistrationPort();
-    }
-
-    public int getDiscoveryPort() {
-        return server.getInterestPort();
+    public int getServerPort() {
+        return server.getServerPort();
     }
 
     public ServerResolver getRegistrationResolver() {
         return server.getRegistrationResolver();
-    }
-
-    public ServerResolver getInterestResolver() {
-        return server.getInterestResolver();
     }
 
     public EmbeddedWriteServer getServer() {

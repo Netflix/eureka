@@ -17,19 +17,20 @@
 package com.netflix.eureka2.client;
 
 import com.netflix.eureka2.Names;
-import com.netflix.eureka2.channel.InterestChannel;
-import com.netflix.eureka2.client.channel.ClientChannelFactory;
-import com.netflix.eureka2.client.channel.InterestChannelFactory;
 import com.netflix.eureka2.client.interest.EurekaInterestClientImpl;
+import com.netflix.eureka2.model.InstanceModel;
+import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.EurekaRegistryImpl;
+import rx.schedulers.Schedulers;
 
 /**
  * @author David Liu
  */
-public class EurekaInterestClientBuilder
-        extends AbstractClientBuilder<EurekaInterestClient, EurekaInterestClientBuilder> {
+public class EurekaInterestClientBuilder extends AbstractClientBuilder<EurekaInterestClient, EurekaInterestClientBuilder> {
+
+    private static final long RETRY_INTERVAL_MS = 5 * 1000;
 
     /**
      * @deprecated do not create explicitly, use {@link Eurekas#newInterestClientBuilder()}
@@ -44,15 +45,14 @@ public class EurekaInterestClientBuilder
         if (serverResolver == null) {
             throw new IllegalArgumentException("Cannot build client for discovery without read server resolver");
         }
-        if(clientId == null) {
+        if (clientId == null) {
             clientId = Names.INTEREST_CLIENT;
         }
 
         EurekaRegistry<InstanceInfo> registry = new EurekaRegistryImpl(registryMetricFactory);
 
-        ClientChannelFactory<InterestChannel> channelFactory
-                = new InterestChannelFactory(clientId, transportConfig, serverResolver, registry, clientMetricFactory);
+        Source clientSource = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, clientId);
 
-        return new EurekaInterestClientImpl(registry, channelFactory);
+        return new EurekaInterestClientImpl(clientSource, serverResolver, transportFactory, transportConfig, registry, RETRY_INTERVAL_MS, Schedulers.computation());
     }
 }
