@@ -163,7 +163,7 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
     public synchronized void refreshAmazonInfo() {
         try {
             AmazonInfo newInfo = AmazonInfo.Builder.newBuilder().autoBuild(namespace);
-            if (!newInfo.equals(info)) {
+            if (shouldUpdate(newInfo, info)) {
                 // the datacenter info has changed, re-sync it
                 logger.warn("The AmazonInfo changed from : {} => {}", info, newInfo);
                 this.info = newInfo;
@@ -171,5 +171,20 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
         } catch (Throwable t) {
             logger.error("Cannot refresh the Amazon Info ", t);
         }
+    }
+
+    /* visible for testing */ static boolean shouldUpdate(AmazonInfo newInfo, AmazonInfo oldInfo) {
+        if (newInfo.getMetadata().isEmpty()) {
+            logger.warn("Newly resolved AmazonInfo is empty, skipping an update cycle");
+        } else if (!newInfo.equals(oldInfo)) {
+            int newKeySize = newInfo.getMetadata().size();
+            int oldKeySize = oldInfo.getMetadata().size();
+            if (newKeySize < oldKeySize) {
+                logger.warn("Newly resolved AmazonInfo contains less data than previous old:{} -> new:{}, skipping an update cycle", oldKeySize, newKeySize);
+            } else {  // final case that warrants an update
+                return true;
+            }
+        }
+        return false;
     }
 }
