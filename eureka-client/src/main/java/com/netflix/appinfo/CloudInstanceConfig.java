@@ -173,18 +173,18 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
         }
     }
 
-    private static boolean shouldUpdate(AmazonInfo newInfo, AmazonInfo oldInfo) {
+    /* visible for testing */ static boolean shouldUpdate(AmazonInfo newInfo, AmazonInfo oldInfo) {
         if (newInfo.getMetadata().isEmpty()) {
             logger.warn("Newly resolved AmazonInfo is empty, skipping an update cycle");
-            return false;
         } else if (!newInfo.equals(oldInfo)) {
             int newKeySize = newInfo.getMetadata().size();
             int oldKeySize = oldInfo.getMetadata().size();
             if (newKeySize < oldKeySize) {
                 logger.warn("Newly resolved AmazonInfo contains less data than previous old:{} -> new:{}, skipping an update cycle", oldKeySize, newKeySize);
-                return false;
+            } else {  // final case that warrants an update
+                return true;
             }
         }
-        return true;
+        return false;
     }
 }
