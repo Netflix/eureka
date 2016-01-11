@@ -100,6 +100,10 @@ public class EurekaCodecCompatibilityTest {
         verifyAllPairs(codingAction, Application.class, availableXmlWrappers);
     }
 
+    /**
+     * During deserialization process in compact mode not all fields might be filtered out. If JVM memory
+     * is an issue, compact version of the encoder should be used on the server side.
+     */
     @Test
     public void testInstanceInfoFullEncodeMiniDecodeJackson() throws Exception {
         final InstanceInfo instanceInfo = infoIterator.next();

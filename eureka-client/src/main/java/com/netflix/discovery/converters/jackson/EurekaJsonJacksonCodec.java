@@ -26,7 +26,9 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.KeyFormatter;
+import com.netflix.discovery.converters.jackson.mixin.ApplicationsJsonMixIn;
 import com.netflix.discovery.converters.jackson.mixin.InstanceInfoJsonMixIn;
+import com.netflix.discovery.shared.Applications;
 
 /**
  * JSON codec defaults to unwrapped mode, as ReplicationList in the replication channel, must be serialized
@@ -55,13 +57,14 @@ public class EurekaJsonJacksonCodec extends AbstractEurekaJacksonCodec {
         ObjectMapper newMapper = new ObjectMapper();
         SimpleModule jsonModule = new SimpleModule();
         jsonModule.setSerializerModifier(EurekaJacksonJsonModifiers.createJsonSerializerModifier(keyFormatter, compact));
-        jsonModule.setDeserializerModifier(EurekaJacksonJsonModifiers.createJsonDeserializerModifier(keyFormatter, compact));
+
         newMapper.registerModule(jsonModule);
         newMapper.setSerializationInclusion(Include.NON_NULL);
         newMapper.configure(SerializationFeature.WRAP_ROOT_VALUE, wrapped);
         newMapper.configure(SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED, false);
         newMapper.configure(DeserializationFeature.UNWRAP_ROOT_VALUE, wrapped);
         newMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+        newMapper.addMixIn(Applications.class, ApplicationsJsonMixIn.class);
         if (compact) {
             addMiniConfig(newMapper);
         } else {

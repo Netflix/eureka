@@ -19,9 +19,10 @@ package com.netflix.discovery.converters.jackson.mixin;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.netflix.discovery.converters.jackson.serializer.InstanceInfoJsonBeanSerializer;
 
 /**
- * @author Tomasz Bak
+ * Meta data are handled directly by {@link InstanceInfoJsonBeanSerializer}, for backwards compatibility reasons.
  */
 public interface InstanceInfoJsonMixIn {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Netflix, Inc.
+ * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.discovery.converters.jackson;
+package com.netflix.discovery.converters.jackson.serializer;
 
 import java.io.IOException;
 
@@ -27,10 +27,10 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.PortType;
 
 /**
- * @author Tomasz Bak
+ * Custom bean serializer to deal with legacy port layout (check {@link InstanceInfo.PortWrapper} for more information).
  */
-class InstanceInfoXmlBeanSerializer extends XmlBeanSerializer {
-    InstanceInfoXmlBeanSerializer(BeanSerializerBase src) {
+public class InstanceInfoXmlBeanSerializer extends XmlBeanSerializer {
+    public InstanceInfoXmlBeanSerializer(BeanSerializerBase src) {
         super(src);
     }
 
@@ -44,8 +44,10 @@ class InstanceInfoXmlBeanSerializer extends XmlBeanSerializer {
         xgen.writeFieldName("port");
         xgen.writeStartObject();
         xgen.setNextIsAttribute(true);
-        xgen.writeStringField("enabled", Boolean.toString(instanceInfo.isPortEnabled(PortType.UNSECURE)));
+        xgen.writeFieldName("enabled");
+        xgen.writeBoolean(instanceInfo.isPortEnabled(PortType.UNSECURE));
         xgen.setNextIsAttribute(false);
+        xgen.writeFieldName("port");
         xgen.setNextIsUnwrapped(true);
         xgen.writeString(Integer.toString(instanceInfo.getPort()));
         xgen.writeEndObject();
@@ -55,6 +57,7 @@ class InstanceInfoXmlBeanSerializer extends XmlBeanSerializer {
         xgen.setNextIsAttribute(true);
         xgen.writeStringField("enabled", Boolean.toString(instanceInfo.isPortEnabled(PortType.SECURE)));
         xgen.setNextIsAttribute(false);
+        xgen.writeFieldName("securePort");
         xgen.setNextIsUnwrapped(true);
         xgen.writeString(Integer.toString(instanceInfo.getSecurePort()));
         xgen.writeEndObject();

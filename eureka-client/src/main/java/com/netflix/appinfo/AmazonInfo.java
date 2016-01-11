@@ -34,7 +34,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.netflix.config.DynamicBooleanProperty;
 import com.netflix.config.DynamicIntProperty;
-import com.netflix.discovery.converters.jackson.StringInterningAmazonInfoBuilder;
+import com.netflix.discovery.converters.jackson.builder.StringInterningAmazonInfoBuilder;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

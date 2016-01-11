@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Netflix, Inc.
+ * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,12 @@
 
 package com.netflix.discovery.converters.jackson.mixin;
 
-import java.util.List;
-
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
-import com.netflix.discovery.converters.jackson.builder.ApplicationsXmlJacksonBuilder;
-import com.netflix.discovery.shared.Application;
+import com.netflix.discovery.converters.jackson.serializer.PortWrapperXmlDeserializer;
 
 /**
- * Attach custom builder that deals with configurable property name formatting.
- * {@link Application} objects are unwrapped in XML document. The necessary Jackson instrumentation is provided here.
+ * Add custom XML deserializer, due to issue with annotations based mapping in some Jackson versions.
  */
-@JsonDeserialize(builder = ApplicationsXmlJacksonBuilder.class)
-public interface ApplicationsXmlMixIn {
-
-    @JacksonXmlElementWrapper(useWrapping = false)
-    List<Application> getRegisteredApplications();
+@JsonDeserialize(using = PortWrapperXmlDeserializer.class)
+public interface PortWrapperXmlMixIn {
 }

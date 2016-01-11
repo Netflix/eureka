@@ -63,7 +63,7 @@ public final class DiscoveryBuildInfo {
     private static String resolveJarUrl(Class<?> clazz) {
         URL location = clazz.getResource('/' + clazz.getName().replace('.', '/') + ".class");
         if (location != null) {
-            Matcher matcher = Pattern.compile("(jar:file.*-[\\d.]+(-SNAPSHOT)?.jar)!.*$").matcher(location.toString());
+            Matcher matcher = Pattern.compile("(jar:file.*-[\\d.]+(-rc[\\d]+|-SNAPSHOT)?.jar)!.*$").matcher(location.toString());
             if (matcher.matches()) {
                 return matcher.group(1);
             }

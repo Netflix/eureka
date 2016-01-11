@@ -22,10 +22,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.netflix.appinfo.DataCenterInfo;
+import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.KeyFormatter;
 import com.netflix.discovery.converters.jackson.mixin.ApplicationXmlMixIn;
 import com.netflix.discovery.converters.jackson.mixin.ApplicationsXmlMixIn;
 import com.netflix.discovery.converters.jackson.mixin.DataCenterInfoXmlMixIn;
+import com.netflix.discovery.converters.jackson.mixin.PortWrapperXmlMixIn;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 
@@ -51,10 +53,10 @@ public class EurekaXmlJacksonCodec extends AbstractEurekaJacksonCodec {
         };
         xmlMapper.setSerializationInclusion(Include.NON_NULL);
         xmlMapper.addMixIn(DataCenterInfo.class, DataCenterInfoXmlMixIn.class);
+        xmlMapper.addMixIn(InstanceInfo.PortWrapper.class, PortWrapperXmlMixIn.class);
         xmlMapper.addMixIn(Application.class, ApplicationXmlMixIn.class);
         xmlMapper.addMixIn(Applications.class, ApplicationsXmlMixIn.class);
         SimpleModule xmlModule = new SimpleModule();
-        xmlModule.setDeserializerModifier(EurekaJacksonXmlModifiers.createXmlDeserializerModifier(keyFormatter, compact));
         xmlMapper.registerModule(xmlModule);
 
         if (compact) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Netflix, Inc.
+ * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.discovery.converters.jackson;
+package com.netflix.discovery.converters.jackson.serializer;
 
 import java.io.IOException;
 
@@ -26,13 +26,13 @@ import com.netflix.discovery.converters.KeyFormatter;
 import com.netflix.discovery.shared.Applications;
 
 /**
- * @author Tomasz Bak
+ * Support custom formatting of {@link Applications#appsHashCode} and {@link Applications#versionDelta}.
  */
-class ApplicationsJsonBeanSerializer extends BeanSerializer {
+public class ApplicationsJsonBeanSerializer extends BeanSerializer {
     private final String versionKey;
     private final String appsHashCodeKey;
 
-    ApplicationsJsonBeanSerializer(BeanSerializerBase src, KeyFormatter keyFormatter) {
+    public ApplicationsJsonBeanSerializer(BeanSerializerBase src, KeyFormatter keyFormatter) {
         super(src);
         versionKey = keyFormatter.formatKey("versions_delta");
         appsHashCodeKey = keyFormatter.formatKey("apps_hashcode");
