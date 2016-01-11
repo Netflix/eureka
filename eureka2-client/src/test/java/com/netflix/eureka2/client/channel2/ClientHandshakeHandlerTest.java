@@ -27,7 +27,7 @@ import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.ChannelPipeline;
 import com.netflix.eureka2.spi.channel.InterestHandler;
-import com.netflix.eureka2.spi.model.TransportModel;
+import com.netflix.eureka2.spi.model.ChannelModel;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.junit.Before;
@@ -78,7 +78,7 @@ public class ClientHandshakeHandlerTest {
             return inputStream.map(inputNotification -> {
                 if (inputNotification.getKind() == ChannelNotification.Kind.Hello) {
                     handshakeCompleted = true;
-                    return ChannelNotification.newHello(TransportModel.getDefaultModel().newServerHello(SERVER_SOURCE));
+                    return ChannelNotification.newHello(ChannelModel.getDefaultModel().newServerHello(SERVER_SOURCE));
                 }
                 return CHANNEL_NOTIFICATION;
             });

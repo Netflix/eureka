@@ -17,10 +17,10 @@
 package com.netflix.eureka2;
 
 import com.netflix.eureka2.model.*;
-import com.netflix.eureka2.protocol.StdProtocolModel;
+import com.netflix.eureka2.model.StdTransportModel;
 import com.netflix.eureka2.spi.model.ModelProvider;
+import com.netflix.eureka2.spi.model.ChannelModel;
 import com.netflix.eureka2.spi.model.TransportModel;
-import com.netflix.eureka2.spi.protocol.ProtocolModel;
 
 /**
  */
@@ -37,12 +37,12 @@ public class StdModelProvider implements ModelProvider {
     }
 
     @Override
-    public ProtocolModel getProtocolModel() {
-        return StdProtocolModel.getStdModel();
+    public TransportModel getTransportModel() {
+        return StdTransportModel.getStdModel();
     }
 
     @Override
-    public TransportModel getTransportModel() {
-        return StdTransportModel.getStdModel();
+    public ChannelModel getChannelModel() {
+        return StdChannelModel.getStdModel();
     }
 }

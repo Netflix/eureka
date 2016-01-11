@@ -23,8 +23,8 @@ import com.netflix.eureka2.server.channel.replication.ReplicationLoopException;
 import com.netflix.eureka2.server.channel.replication.SenderReplicationLoopDetectorHandler;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.ChannelPipeline;
-import com.netflix.eureka2.spi.model.ReplicationClientHello;
-import com.netflix.eureka2.spi.model.TransportModel;
+import com.netflix.eureka2.spi.model.ChannelModel;
+import com.netflix.eureka2.spi.model.channel.ReplicationClientHello;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.junit.Test;
@@ -53,7 +53,7 @@ public class SenderReplicationLoopDetectorHandlerTest {
 
         handler.handle(inputSubject).subscribe(testSubscriber);
 
-        ReplicationClientHello clientHello = TransportModel.getDefaultModel().newReplicationClientHello(CLIENT_SOURCE, 1);
+        ReplicationClientHello clientHello = ChannelModel.getDefaultModel().newReplicationClientHello(CLIENT_SOURCE, 1);
         inputSubject.onNext(ChannelNotification.newHello(clientHello));
 
         testSubscriber.assertOnError(ReplicationLoopException.class);
@@ -66,7 +66,7 @@ public class SenderReplicationLoopDetectorHandlerTest {
 
         handler.handle(inputSubject).subscribe(testSubscriber);
 
-        ReplicationClientHello clientHello = TransportModel.getDefaultModel().newReplicationClientHello(CLIENT_SOURCE, 1);
+        ReplicationClientHello clientHello = ChannelModel.getDefaultModel().newReplicationClientHello(CLIENT_SOURCE, 1);
         inputSubject.onNext(ChannelNotification.newHello(clientHello));
 
         ChangeNotification<InstanceInfo> addChange = new ChangeNotification<>(ChangeNotification.Kind.Add, SampleInstanceInfo.Backend.build());

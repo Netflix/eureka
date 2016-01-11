@@ -23,10 +23,12 @@ import java.util.List;
 
 import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.model.StdSource;
-import com.netflix.eureka2.model.transport.StdReplicationServerHello;
+import com.netflix.eureka2.model.channel.StdReplicationServerHello;
+import com.netflix.eureka2.model.transport.StdProtocolMessageEnvelope;
 import com.netflix.eureka2.spi.codec.EurekaCodec;
 import com.netflix.eureka2.spi.codec.EurekaCodecFactory;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
+import com.netflix.eureka2.spi.model.TransportModel;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
@@ -38,6 +40,15 @@ import io.netty.handler.codec.ByteToMessageCodec;
 public class JacksonNettyMessageCodec extends ByteToMessageCodec<Object> {
 
     private final EurekaCodecFactory codecFactory = EurekaCodecFactory.getDefaultFactory();
+    private final Class<? extends ProtocolMessageEnvelope> envelopeType;
+
+    public JacksonNettyMessageCodec() {
+        // We need active envelope type, so we use current factory to create an instance with this type
+        this.envelopeType = TransportModel.getDefaultModel().newEnvelope(
+                ProtocolMessageEnvelope.ProtocolType.Registration,
+                TransportModel.getDefaultModel().newAcknowledgement())
+                .getClass();
+    }
 
     @Override
     public boolean acceptOutboundMessage(Object msg) throws Exception {
@@ -62,9 +73,12 @@ public class JacksonNettyMessageCodec extends ByteToMessageCodec<Object> {
 
     @Override
     public void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+        if (in.readableBytes() == 0) {
+            return;
+        }
         ByteBufInputStream byteBufInputStream = new ByteBufInputStream(in);
         EurekaCodec eurekaCodec = codecFactory.getCodec();
-        ProtocolMessageEnvelope decodedValue = eurekaCodec.decode(byteBufInputStream, ProtocolMessageEnvelope.class);
+        ProtocolMessageEnvelope decodedValue = eurekaCodec.decode(byteBufInputStream, envelopeType);
         out.add(decodedValue);
     }
 
@@ -73,13 +87,13 @@ public class JacksonNettyMessageCodec extends ByteToMessageCodec<Object> {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
 
         StdReplicationServerHello hello = new StdReplicationServerHello(new StdSource(Source.Origin.INTERESTED, "test", 123));
-        ProtocolMessageEnvelope envelope = new ProtocolMessageEnvelope(ProtocolMessageEnvelope.ProtocolType.Registration, hello);
+        StdProtocolMessageEnvelope envelope = new StdProtocolMessageEnvelope(StdProtocolMessageEnvelope.ProtocolType.Registration, hello);
 
         codec.encode(envelope, output);
 
         System.out.println(new String(output.toByteArray()));
 
-        ProtocolMessageEnvelope decoded = codec.decode(new ByteArrayInputStream(output.toByteArray()), ProtocolMessageEnvelope.class);
+        StdProtocolMessageEnvelope decoded = codec.decode(new ByteArrayInputStream(output.toByteArray()), StdProtocolMessageEnvelope.class);
         System.out.println(decoded.getMessage());
     }
 }

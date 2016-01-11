@@ -109,11 +109,11 @@ public class ReplicationBatchHintsIntegrationTest extends AbstractBatchHintsInte
 //        channel2.asLifecycleObservable().subscribe();
 //
 //        Source senderSource1 = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "removeServer1", 0);
-//        channelSet1.incomingSubject.onNext(ProtocolModel.getDefaultModel().newReplicationHello(senderSource1, data1Size));  // subtract the buffer markers
+//        channelSet1.incomingSubject.onNext(TransportModel.getDefaultModel().newReplicationHello(senderSource1, data1Size));  // subtract the buffer markers
 //        remoteData1.concatWith(Observable.<InterestSetNotification>never()).subscribe(channelSet1.incomingSubject);
 //
 //        Source senderSource2 = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "removeServer2", 0);
-//        channelSet2.incomingSubject.onNext(ProtocolModel.getDefaultModel().newReplicationHello(senderSource2, data2Size));
+//        channelSet2.incomingSubject.onNext(TransportModel.getDefaultModel().newReplicationHello(senderSource2, data2Size));
 //        remoteData2.concatWith(Observable.<InterestSetNotification>never()).subscribe(channelSet2.incomingSubject);
 //
 //        Thread.sleep(500);  // let the registry run as it's on a different loop
@@ -126,7 +126,7 @@ public class ReplicationBatchHintsIntegrationTest extends AbstractBatchHintsInte
 //        channel3.asLifecycleObservable().subscribe();
 //
 //        Source senderSource3 = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "removeServer2", 1);
-//        channelSet3.incomingSubject.onNext(ProtocolModel.getDefaultModel().newReplicationHello(senderSource3, data2Size));
+//        channelSet3.incomingSubject.onNext(TransportModel.getDefaultModel().newReplicationHello(senderSource3, data2Size));
 //        // test an unclean channel, where we received 1 less from data2 and also did not see the bufferEnd
 //        // this should mean the last entry from data2 is still marked as from source2 and there are no eviction.
 //        remoteData2.take(data2.size() - 2).concatWith(Observable.<InterestSetNotification>never()).subscribe(channelSet3.incomingSubject);
@@ -142,7 +142,7 @@ public class ReplicationBatchHintsIntegrationTest extends AbstractBatchHintsInte
 //        channel4.asLifecycleObservable().subscribe();
 //
 //        Source senderSource4 = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "removeServer2", 2);
-//        channelSet4.incomingSubject.onNext(ProtocolModel.getDefaultModel().newReplicationHello(senderSource4, data2Size));
+//        channelSet4.incomingSubject.onNext(TransportModel.getDefaultModel().newReplicationHello(senderSource4, data2Size));
 //        // test data difference in the channel, where we received 2 less from data2 BUT we also saw a bufferEnd
 //        // this should mean content from data2 is 2 less from the original list and all other source types are evicted
 //        remoteData2.take(data2.size() - 3).concatWith(Observable.<InterestSetNotification>never()).subscribe(channelSet4.incomingSubject);

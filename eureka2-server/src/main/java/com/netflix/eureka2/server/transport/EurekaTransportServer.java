@@ -44,7 +44,7 @@ import com.netflix.eureka2.server.registry.EurekaRegistrationProcessor;
 import com.netflix.eureka2.server.service.selfinfo.ConfigSelfInfoResolver;
 import com.netflix.eureka2.spi.channel.ChannelPipeline;
 import com.netflix.eureka2.spi.channel.ChannelPipelineFactory;
-import com.netflix.eureka2.spi.model.TransportModel;
+import com.netflix.eureka2.spi.model.ChannelModel;
 import com.netflix.eureka2.spi.transport.EurekaServerTransportFactory;
 import com.netflix.eureka2.spi.transport.EurekaServerTransportFactory.ServerContext;
 import io.reactivex.netty.metrics.MetricEventsListenerFactory;
@@ -133,7 +133,7 @@ public class EurekaTransportServer {
                     subscriber.onNext(new ChannelPipeline<>("replicationServer@" + serverName,
                             new LoggingChannelHandler<ChangeNotification<InstanceInfo>, Void>(LoggingChannelHandler.LogLevel.INFO),
                             new ServerHeartbeatHandler<ChangeNotification<InstanceInfo>, Void>(config.getHeartbeatIntervalMs() * 3, scheduler),
-                            new ServerHandshakeHandler<ChangeNotification<InstanceInfo>, Void>(TransportModel.getDefaultModel().newReplicationServerHello(serverSource), idGenerator),
+                            new ServerHandshakeHandler<ChangeNotification<InstanceInfo>, Void>(ChannelModel.getDefaultModel().newReplicationServerHello(serverSource), idGenerator),
                             new InputChangeNotificationSourcingHandler<InstanceInfo, Void>(),
                             new ReceiverReplicationHandler(registry)
                     ));
@@ -152,7 +152,7 @@ public class EurekaTransportServer {
                     subscriber.onNext(new ChannelPipeline<>("registrationServer@" + serverName,
                             new LoggingChannelHandler<InstanceInfo, InstanceInfo>(LoggingChannelHandler.LogLevel.INFO),
                             new ServerHeartbeatHandler<InstanceInfo, InstanceInfo>(config.getHeartbeatIntervalMs() * 3, scheduler),
-                            new ServerHandshakeHandler<InstanceInfo, InstanceInfo>(TransportModel.getDefaultModel().newServerHello(serverSource), idGenerator),
+                            new ServerHandshakeHandler<InstanceInfo, InstanceInfo>(ChannelModel.getDefaultModel().newServerHello(serverSource), idGenerator),
                             new RegistrationProcessorBridgeHandler(registrationProcessor.get())
                     ));
                     subscriber.onCompleted();
@@ -170,7 +170,7 @@ public class EurekaTransportServer {
                     subscriber.onNext(new ChannelPipeline<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>("interestServer@" + serverName,
                             new LoggingChannelHandler(LogLevel.INFO),
                             new ServerHeartbeatHandler<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>(config.getHeartbeatIntervalMs() * 3, scheduler),
-                            new ServerHandshakeHandler<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>(TransportModel.getDefaultModel().newServerHello(serverSource), idGenerator),
+                            new ServerHandshakeHandler<Interest<InstanceInfo>, ChangeNotification<InstanceInfo>>(ChannelModel.getDefaultModel().newServerHello(serverSource), idGenerator),
                             new InterestMultiplexerBridgeHandler(registryView)
                     ));
                     subscriber.onCompleted();

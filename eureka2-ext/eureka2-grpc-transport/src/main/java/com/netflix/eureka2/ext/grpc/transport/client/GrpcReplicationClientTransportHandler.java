@@ -23,7 +23,7 @@ import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.ReplicationHandler;
-import com.netflix.eureka2.spi.model.ReplicationClientHello;
+import com.netflix.eureka2.spi.model.channel.ReplicationClientHello;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

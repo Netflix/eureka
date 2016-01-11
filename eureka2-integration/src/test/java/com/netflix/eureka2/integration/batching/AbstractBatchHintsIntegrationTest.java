@@ -11,10 +11,10 @@ import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.registry.MultiSourcedDataHolder;
-import com.netflix.eureka2.spi.protocol.ProtocolModel;
-import com.netflix.eureka2.spi.protocol.common.AddInstance;
-import com.netflix.eureka2.spi.protocol.common.InterestSetNotification;
-import com.netflix.eureka2.spi.protocol.common.StreamStateUpdate;
+import com.netflix.eureka2.spi.model.TransportModel;
+import com.netflix.eureka2.spi.model.transport.notification.AddInstance;
+import com.netflix.eureka2.spi.model.transport.notification.InterestSetNotification;
+import com.netflix.eureka2.spi.model.transport.notification.StreamStateUpdate;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -65,10 +65,10 @@ public abstract class AbstractBatchHintsIntegrationTest {
     }
 
     protected StreamStateUpdate newBufferStart(Interest<InstanceInfo> interest) {
-        return ProtocolModel.getDefaultModel().newStreamStateUpdate(StreamStateNotification.bufferStartNotification(interest));
+        return TransportModel.getDefaultModel().newStreamStateUpdate(StreamStateNotification.bufferStartNotification(interest));
     }
 
     protected StreamStateUpdate newBufferEnd(Interest<InstanceInfo> interest) {
-        return ProtocolModel.getDefaultModel().newStreamStateUpdate(StreamStateNotification.bufferEndNotification(interest));
+        return TransportModel.getDefaultModel().newStreamStateUpdate(StreamStateNotification.bufferEndNotification(interest));
     }
 }

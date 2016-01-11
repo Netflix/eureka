@@ -26,10 +26,10 @@ import com.netflix.eureka2.ext.grpc.model.instance.GrpcInstanceInfoWrapper;
 import com.netflix.eureka2.ext.grpc.model.interest.GrpcEmptyRegistryInterestWrapper;
 import com.netflix.eureka2.ext.grpc.model.interest.GrpcInterestWrapper;
 import com.netflix.eureka2.ext.grpc.model.interest.GrpcMultipleInterestWrapper;
-import com.netflix.eureka2.ext.grpc.model.transport.GrpcClientHelloWrapper;
-import com.netflix.eureka2.ext.grpc.model.transport.GrpcReplicationClientHelloWrapper;
-import com.netflix.eureka2.ext.grpc.model.transport.GrpcReplicationServerHelloWrapper;
-import com.netflix.eureka2.ext.grpc.model.transport.GrpcServerHelloWrapper;
+import com.netflix.eureka2.ext.grpc.model.channel.GrpcClientHelloWrapper;
+import com.netflix.eureka2.ext.grpc.model.channel.GrpcReplicationClientHelloWrapper;
+import com.netflix.eureka2.ext.grpc.model.channel.GrpcReplicationServerHelloWrapper;
+import com.netflix.eureka2.ext.grpc.model.channel.GrpcServerHelloWrapper;
 import com.netflix.eureka2.grpc.Eureka2;
 import com.netflix.eureka2.model.datacenter.DataCenterInfo;
 import com.netflix.eureka2.model.instance.Delta;
@@ -40,10 +40,10 @@ import com.netflix.eureka2.model.interest.MultipleInterests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ModifyNotification;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
-import com.netflix.eureka2.spi.model.ClientHello;
-import com.netflix.eureka2.spi.model.ReplicationClientHello;
-import com.netflix.eureka2.spi.model.ReplicationServerHello;
-import com.netflix.eureka2.spi.model.ServerHello;
+import com.netflix.eureka2.spi.model.channel.ClientHello;
+import com.netflix.eureka2.spi.model.channel.ReplicationClientHello;
+import com.netflix.eureka2.spi.model.channel.ReplicationServerHello;
+import com.netflix.eureka2.spi.model.channel.ServerHello;
 
 /**
  */
@@ -103,11 +103,15 @@ public final class GrpcModelConverters {
     }
 
     public static Interest<InstanceInfo> toInterest(List<Eureka2.GrpcInterest> grpcInterests) {
+        return Interests.forSome(toAtomicInterests(grpcInterests));
+    }
+
+    public static Interest<InstanceInfo>[] toAtomicInterests(List<Eureka2.GrpcInterest> grpcInterests) {
         Interest<InstanceInfo>[] interests = new Interest[grpcInterests.size()];
         for (int i = 0; i < interests.length; i++) {
             interests[i] = GrpcInterestWrapper.toInterest(grpcInterests.get(i));
         }
-        return Interests.forSome(interests);
+        return interests;
     }
 
     public static Interest<InstanceInfo> toInterest(Eureka2.GrpcInterestRegistration grpcInterestRegistration) {

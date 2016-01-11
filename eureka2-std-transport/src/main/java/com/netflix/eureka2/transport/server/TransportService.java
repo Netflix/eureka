@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.transport.server;
 
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope;
 
 /**
  */

@@ -18,7 +18,6 @@ package com.netflix.eureka2.spi.model;
 
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.InterestModel;
-import com.netflix.eureka2.spi.protocol.ProtocolModel;
 
 /**
  */
@@ -27,7 +26,7 @@ public interface ModelProvider {
 
     InterestModel getInterestModel();
 
-    ProtocolModel getProtocolModel();
+    ChannelModel getChannelModel();
 
     TransportModel getTransportModel();
 }

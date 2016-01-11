@@ -22,7 +22,7 @@ import com.netflix.eureka2.model.Source;
 import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelHandler;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
-import com.netflix.eureka2.spi.model.ServerHello;
+import com.netflix.eureka2.spi.model.channel.ServerHello;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;

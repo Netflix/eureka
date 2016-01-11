@@ -16,14 +16,15 @@
 
 package com.netflix.eureka2.ext.grpc;
 
+import com.netflix.eureka2.ext.grpc.model.GrpcChannelModel;
 import com.netflix.eureka2.ext.grpc.model.GrpcInstanceModel;
 import com.netflix.eureka2.ext.grpc.model.GrpcInterestModel;
 import com.netflix.eureka2.ext.grpc.model.GrpcTransportModel;
 import com.netflix.eureka2.model.InstanceModel;
 import com.netflix.eureka2.model.InterestModel;
 import com.netflix.eureka2.spi.model.ModelProvider;
+import com.netflix.eureka2.spi.model.ChannelModel;
 import com.netflix.eureka2.spi.model.TransportModel;
-import com.netflix.eureka2.spi.protocol.ProtocolModel;
 
 /**
  */
@@ -39,12 +40,12 @@ public class GrpcModelProvider implements ModelProvider {
     }
 
     @Override
-    public ProtocolModel getProtocolModel() {
-        throw new IllegalStateException("not supported");
+    public TransportModel getTransportModel() {
+        return GrpcTransportModel.getGrpcModel();
     }
 
     @Override
-    public TransportModel getTransportModel() {
-        return GrpcTransportModel.getGrpcModel();
+    public ChannelModel getChannelModel() {
+        return GrpcChannelModel.getGrpcModel();
     }
 }

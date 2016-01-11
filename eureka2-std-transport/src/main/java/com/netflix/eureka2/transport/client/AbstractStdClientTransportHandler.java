@@ -17,11 +17,11 @@
 package com.netflix.eureka2.transport.client;
 
 import com.netflix.eureka2.model.Server;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope.ProtocolType;
 import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelHandler;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope.ProtocolType;
 import com.netflix.eureka2.transport.ProtocolConverters;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.channel.ObservableConnection;
