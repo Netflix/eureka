@@ -24,16 +24,16 @@ import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.ChannelPipelineFactory;
-import com.netflix.eureka2.spi.model.Heartbeat;
-import com.netflix.eureka2.spi.model.ReplicationClientHello;
+import com.netflix.eureka2.spi.model.ChannelModel;
 import com.netflix.eureka2.spi.model.TransportModel;
+import com.netflix.eureka2.spi.model.channel.Heartbeat;
+import com.netflix.eureka2.spi.model.channel.ReplicationClientHello;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope.ProtocolType;
 import com.netflix.eureka2.transport.ProtocolConverters;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope.ProtocolType;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
-import static com.netflix.eureka2.protocol.ProtocolMessageEnvelope.replicationEnvelope;
 
 /**
  */
@@ -50,10 +50,10 @@ public class ReplicationTransportService implements TransportService {
                 try {
                     switch (replyNotification.getKind()) {
                         case Hello:
-                            envelope = Observable.just(replicationEnvelope(replyNotification.getHello()));
+                            envelope = Observable.just(TransportModel.getDefaultModel().replicationEnvelope(replyNotification.getHello()));
                             break;
                         case Heartbeat:
-                            envelope = Observable.just(replicationEnvelope(TransportModel.getDefaultModel().creatHeartbeat()));
+                            envelope = Observable.just(TransportModel.getDefaultModel().replicationEnvelope(ChannelModel.getDefaultModel().newHeartbeat()));
                             break;
                         case Data:
                             envelope = Observable.error(new IllegalStateException("Data notifications not expected"));

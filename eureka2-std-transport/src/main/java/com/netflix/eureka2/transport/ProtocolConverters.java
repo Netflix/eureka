@@ -21,22 +21,18 @@ import java.util.Set;
 
 import com.netflix.eureka2.model.instance.Delta;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.model.instance.StdInstanceInfo;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.ModifyNotification;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
-import com.netflix.eureka2.protocol.common.StdAddInstance;
-import com.netflix.eureka2.protocol.common.StdDeleteInstance;
-import com.netflix.eureka2.protocol.common.StdStreamStateUpdate;
-import com.netflix.eureka2.protocol.interest.StdUpdateInstanceInfo;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
+import com.netflix.eureka2.spi.model.ChannelModel;
 import com.netflix.eureka2.spi.model.TransportModel;
-import com.netflix.eureka2.spi.protocol.common.AddInstance;
-import com.netflix.eureka2.spi.protocol.common.DeleteInstance;
-import com.netflix.eureka2.spi.protocol.common.StreamStateUpdate;
-import com.netflix.eureka2.spi.protocol.interest.UpdateInstanceInfo;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope.ProtocolType;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope.ProtocolType;
+import com.netflix.eureka2.spi.model.transport.notification.AddInstance;
+import com.netflix.eureka2.spi.model.transport.notification.DeleteInstance;
+import com.netflix.eureka2.spi.model.transport.notification.StreamStateUpdate;
+import com.netflix.eureka2.spi.model.transport.notification.UpdateInstanceInfo;
 
 /**
  */
@@ -101,11 +97,11 @@ public final class ProtocolConverters {
     public static <T> ProtocolMessageEnvelope asProtocolEnvelope(ProtocolType protocolType, ChannelNotification<T> update) {
         switch (update.getKind()) {
             case Hello:
-                return new ProtocolMessageEnvelope(protocolType, update.getHello());
+                return TransportModel.getDefaultModel().newEnvelope(protocolType, update.getHello());
             case Heartbeat:
-                return new ProtocolMessageEnvelope(protocolType, TransportModel.getDefaultModel().creatHeartbeat());
+                return TransportModel.getDefaultModel().newEnvelope(protocolType, ChannelModel.getDefaultModel().newHeartbeat());
             case Data:
-                return new ProtocolMessageEnvelope(protocolType, update.getData());
+                return TransportModel.getDefaultModel().newEnvelope(protocolType, update.getData());
         }
         throw new IllegalArgumentException("Unsupported kind " + update.getKind());
     }
@@ -114,17 +110,18 @@ public final class ProtocolConverters {
         ProtocolMessageEnvelope envelope;
         switch (change.getKind()) {
             case Add:
-                envelope = new ProtocolMessageEnvelope(protocolType, new StdAddInstance((StdInstanceInfo) change.getData()));
+                envelope = TransportModel.getDefaultModel().newEnvelope(protocolType, TransportModel.getDefaultModel().newAddInstance(change.getData()));
                 break;
             case Modify:
-                Set deltas = ((ModifyNotification<InstanceInfo>) change).getDelta();
-                envelope = new ProtocolMessageEnvelope(protocolType, new StdUpdateInstanceInfo(deltas));
+                Set<Delta<?>> deltas = ((ModifyNotification<InstanceInfo>) change).getDelta();
+                Delta<?>[] deltaArray = deltas.toArray(new Delta[deltas.size()]);
+                envelope = TransportModel.getDefaultModel().newEnvelope(protocolType, TransportModel.getDefaultModel().newUpdateInstanceInfo(deltaArray));
                 break;
             case Delete:
-                envelope = new ProtocolMessageEnvelope(protocolType, new StdDeleteInstance(change.getData().getId()));
+                envelope = TransportModel.getDefaultModel().newEnvelope(protocolType, TransportModel.getDefaultModel().newDeleteInstance(change.getData().getId()));
                 break;
             case BufferSentinel:
-                envelope = new ProtocolMessageEnvelope(protocolType, new StdStreamStateUpdate((StreamStateNotification<InstanceInfo>) change));
+                envelope = TransportModel.getDefaultModel().newEnvelope(protocolType, TransportModel.getDefaultModel().newStreamStateUpdate((StreamStateNotification<InstanceInfo>) change));
                 break;
             default:
                 throw new IllegalStateException("Unrecognized change notification kind " + change.getKind());

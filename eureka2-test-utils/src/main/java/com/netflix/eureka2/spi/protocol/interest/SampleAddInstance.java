@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.spi.protocol.ProtocolModel;
-import com.netflix.eureka2.spi.protocol.common.AddInstance;
+import com.netflix.eureka2.spi.model.TransportModel;
+import com.netflix.eureka2.spi.model.transport.notification.AddInstance;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import rx.Observable;
 
@@ -30,7 +30,7 @@ public enum SampleAddInstance {
     public abstract AddInstance newMessage();
 
     public AddInstance newMessage(InstanceInfo seed) {
-        return ProtocolModel.getDefaultModel().newAddInstance(seed);
+        return TransportModel.getDefaultModel().newAddInstance(seed);
     }
 
     public static Observable<AddInstance> newMessages(SampleAddInstance app, int n) {
@@ -40,5 +40,4 @@ public enum SampleAddInstance {
         }
         return Observable.from(result);
     }
-
 }

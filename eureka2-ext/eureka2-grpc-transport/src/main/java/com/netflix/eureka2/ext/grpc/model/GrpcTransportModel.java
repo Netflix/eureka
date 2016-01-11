@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Netflix, Inc.
+ * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,30 @@
 
 package com.netflix.eureka2.ext.grpc.model;
 
-import com.netflix.eureka2.ext.grpc.model.transport.*;
-import com.netflix.eureka2.model.Source;
-import com.netflix.eureka2.spi.model.*;
+import java.util.Collections;
+import java.util.HashSet;
+
+import com.netflix.eureka2.ext.grpc.model.transport.GrpcAcknowledgementWrapper;
+import com.netflix.eureka2.ext.grpc.model.transport.GrpcGoAwayWrapper;
+import com.netflix.eureka2.ext.grpc.model.transport.GrpcInterestRegistrationWrapper;
+import com.netflix.eureka2.ext.grpc.model.transport.GrpcProtocolMessageEnvelopeWrapper;
+import com.netflix.eureka2.ext.grpc.model.transport.notification.GrpcAddInstanceWrapper;
+import com.netflix.eureka2.ext.grpc.model.transport.notification.GrpcDeleteInstanceWrapper;
+import com.netflix.eureka2.ext.grpc.model.transport.notification.GrpcStreamStateUpdateWrapper;
+import com.netflix.eureka2.ext.grpc.model.transport.notification.GrpcUpdateInstanceInfoWrapper;
+import com.netflix.eureka2.model.instance.Delta;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.notification.StreamStateNotification;
+import com.netflix.eureka2.spi.model.TransportModel;
+import com.netflix.eureka2.spi.model.transport.Acknowledgement;
+import com.netflix.eureka2.spi.model.transport.GoAway;
+import com.netflix.eureka2.spi.model.transport.InterestRegistration;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope;
+import com.netflix.eureka2.spi.model.transport.notification.AddInstance;
+import com.netflix.eureka2.spi.model.transport.notification.DeleteInstance;
+import com.netflix.eureka2.spi.model.transport.notification.StreamStateUpdate;
+import com.netflix.eureka2.spi.model.transport.notification.UpdateInstanceInfo;
 
 /**
  */
@@ -26,33 +47,45 @@ public class GrpcTransportModel extends TransportModel {
     private static final TransportModel INSTANCE = new GrpcTransportModel();
 
     @Override
-    public Heartbeat creatHeartbeat() {
-        return HeartbeatImpl.getInstance();
+    public <T> ProtocolMessageEnvelope newEnvelope(ProtocolMessageEnvelope.ProtocolType protocolType, T message) {
+        return GrpcProtocolMessageEnvelopeWrapper.newProtocolMessageEnvelope(protocolType, message);
     }
 
     @Override
-    public Acknowledgement createAcknowledgement() {
-        throw new IllegalStateException("not implemented yet");
+    public GoAway newGoAway() {
+        return GrpcGoAwayWrapper.getInstance();
     }
 
     @Override
-    public ClientHello newClientHello(Source clientSource) {
-        return GrpcClientHelloWrapper.newClientHello(clientSource);
+    public Acknowledgement newAcknowledgement() {
+        return GrpcAcknowledgementWrapper.getInstance();
     }
 
     @Override
-    public ReplicationClientHello newReplicationClientHello(Source clientSource, int registrySize) {
-        return GrpcReplicationClientHelloWrapper.newClientHello(clientSource, registrySize);
+    public AddInstance newAddInstance(InstanceInfo instance) {
+        return GrpcAddInstanceWrapper.newAddInstance(instance);
     }
 
     @Override
-    public ServerHello newServerHello(Source serverSource) {
-        return GrpcServerHelloWrapper.newServerHello(serverSource);
+    public DeleteInstance newDeleteInstance(String instanceId) {
+        return GrpcDeleteInstanceWrapper.newDeleteInstance(instanceId);
     }
 
     @Override
-    public ReplicationServerHello newReplicationServerHello(Source serverSource) {
-        return GrpcReplicationServerHelloWrapper.newServerHello(serverSource);
+    public UpdateInstanceInfo newUpdateInstanceInfo(Delta<?>... deltas) {
+        HashSet<Delta<?>> deltaSet = new HashSet<>();
+        Collections.addAll(deltaSet, deltas);
+        return GrpcUpdateInstanceInfoWrapper.newUpdateInstanceInfo(deltaSet);
+    }
+
+    @Override
+    public StreamStateUpdate newStreamStateUpdate(StreamStateNotification<InstanceInfo> notification) {
+        return GrpcStreamStateUpdateWrapper.newStreamStateUpdate(notification.getBufferState(), notification.getInterest());
+    }
+
+    @Override
+    public InterestRegistration newInterestRegistration(Interest<InstanceInfo> interest) {
+        return GrpcInterestRegistrationWrapper.newInterestRegistration(interest);
     }
 
     public static TransportModel getGrpcModel() {

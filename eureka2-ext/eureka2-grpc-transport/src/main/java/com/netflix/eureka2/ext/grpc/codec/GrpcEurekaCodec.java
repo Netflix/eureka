@@ -16,28 +16,52 @@
 
 package com.netflix.eureka2.ext.grpc.codec;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
+import com.netflix.eureka2.ext.grpc.model.channel.*;
 import com.netflix.eureka2.ext.grpc.model.instance.GrpcDeltaWrapper;
 import com.netflix.eureka2.ext.grpc.model.instance.GrpcInstanceInfoWrapper;
+import com.netflix.eureka2.ext.grpc.model.transport.GrpcAcknowledgementWrapper;
+import com.netflix.eureka2.ext.grpc.model.transport.GrpcGoAwayWrapper;
+import com.netflix.eureka2.ext.grpc.model.transport.GrpcInterestRegistrationWrapper;
+import com.netflix.eureka2.ext.grpc.model.transport.GrpcProtocolMessageEnvelopeWrapper;
+import com.netflix.eureka2.ext.grpc.model.transport.notification.GrpcAddInstanceWrapper;
+import com.netflix.eureka2.ext.grpc.model.transport.notification.GrpcDeleteInstanceWrapper;
+import com.netflix.eureka2.ext.grpc.model.transport.notification.GrpcStreamStateUpdateWrapper;
+import com.netflix.eureka2.ext.grpc.model.transport.notification.GrpcUpdateInstanceInfoWrapper;
 import com.netflix.eureka2.grpc.Eureka2;
 import com.netflix.eureka2.model.instance.Delta;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.spi.codec.EurekaCodec;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope;
 
 /**
  */
 public class GrpcEurekaCodec extends EurekaCodec {
 
-    static final Set<Class<?>> SUPPORTED_TYPES = new HashSet<>(Arrays.asList(
-            GrpcInstanceInfoWrapper.class,
-            GrpcDeltaWrapper.class
-    ));
+    static final Class<?>[] REGISTRATION_PROTOCOL_MODEL = {
+            GrpcInstanceInfoWrapper.class, GrpcHeartbeatWrapper.class, GrpcAcknowledgementWrapper.class,
+            GrpcGoAwayWrapper.class, GrpcClientHelloWrapper.class, GrpcServerHelloWrapper.class
+    };
+
+    static final Class<?>[] REPLICATION_PROTOCOL_MODEL = {
+            GrpcHeartbeatWrapper.class, GrpcReplicationClientHelloWrapper.class, GrpcReplicationServerHelloWrapper.class,
+            GrpcAddInstanceWrapper.class, GrpcDeleteInstanceWrapper.class, GrpcStreamStateUpdateWrapper.class,
+            GrpcAcknowledgementWrapper.class
+    };
+
+    static final Class<?>[] INTEREST_PROTOCOL_MODEL = {
+            GrpcInterestRegistrationWrapper.class, GrpcHeartbeatWrapper.class,
+            GrpcAddInstanceWrapper.class, GrpcDeleteInstanceWrapper.class, GrpcUpdateInstanceInfoWrapper.class, GrpcStreamStateUpdateWrapper.class,
+            GrpcAcknowledgementWrapper.class
+    };
+
+    static final Set<Class<?>> SUPPORTED_TYPES = new HashSet<>(combined(REGISTRATION_PROTOCOL_MODEL, REPLICATION_PROTOCOL_MODEL, INTEREST_PROTOCOL_MODEL));
 
     private final Set<Class<?>> acceptTypes;
 
@@ -63,6 +87,9 @@ public class GrpcEurekaCodec extends EurekaCodec {
         } else if (value instanceof GrpcDeltaWrapper) {
             Eureka2.GrpcDelta grpcDelta = ((GrpcDeltaWrapper) value).getGrpcObject();
             grpcDelta.writeTo(output);
+        } else if (value instanceof GrpcProtocolMessageEnvelopeWrapper) {
+            Eureka2.GrpcProtocolMessageEnvelope grpcEnvelope = ((GrpcProtocolMessageEnvelopeWrapper) value).getGrpcObject();
+            grpcEnvelope.writeTo(output);
         } else {
             throw new IllegalArgumentException("Grpc codec does not support type " + value.getClass());
         }
@@ -78,6 +105,18 @@ public class GrpcEurekaCodec extends EurekaCodec {
             Eureka2.GrpcDelta grpcDelta = Eureka2.GrpcDelta.getDefaultInstance().getParserForType().parseFrom(source);
             return (T) new GrpcDeltaWrapper<>(grpcDelta);
         }
+        if (ProtocolMessageEnvelope.class.isAssignableFrom(entityType)) {
+            Eureka2.GrpcProtocolMessageEnvelope grpcEnvelope = Eureka2.GrpcProtocolMessageEnvelope.getDefaultInstance().getParserForType().parseFrom(source);
+            return (T) new GrpcProtocolMessageEnvelopeWrapper(grpcEnvelope);
+        }
         throw new IllegalArgumentException("Grpc codec does not support type " + entityType);
+    }
+
+    private static Set<Class<?>> combined(Class<?>[]... models) {
+        Set<Class<?>> result = new HashSet<>();
+        for (Class<?>[] model : models) {
+            Collections.addAll(result, model);
+        }
+        return result;
     }
 }

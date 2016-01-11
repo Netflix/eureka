@@ -25,9 +25,9 @@ import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelHandler;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.ChannelPipeline;
-import com.netflix.eureka2.spi.model.ClientHello;
-import com.netflix.eureka2.spi.model.ServerHello;
-import com.netflix.eureka2.spi.model.TransportModel;
+import com.netflix.eureka2.spi.model.ChannelModel;
+import com.netflix.eureka2.spi.model.channel.ClientHello;
+import com.netflix.eureka2.spi.model.channel.ServerHello;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import com.netflix.eureka2.testkit.internal.rx.ExtTestSubscriber;
 import org.junit.Before;
@@ -46,8 +46,8 @@ public class ServerHandshakeHandlerTest {
 
     private static final Source CLIENT_SOURCE = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, "testClient");
     private static final Source SERVER_SOURCE = InstanceModel.getDefaultModel().createSource(Source.Origin.LOCAL, "testServer");
-    private static final ClientHello CLIENT_HELLO = TransportModel.getDefaultModel().newClientHello(CLIENT_SOURCE);
-    private static final ServerHello SERVER_HELLO = TransportModel.getDefaultModel().newServerHello(SERVER_SOURCE);
+    private static final ClientHello CLIENT_HELLO = ChannelModel.getDefaultModel().newClientHello(CLIENT_SOURCE);
+    private static final ServerHello SERVER_HELLO = ChannelModel.getDefaultModel().newServerHello(SERVER_SOURCE);
 
     private static final InstanceInfo INSTANCE = SampleInstanceInfo.Backend.build();
 

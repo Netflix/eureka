@@ -22,14 +22,14 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.instance.InstanceInfo;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope.ProtocolType;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.RegistrationHandler;
-import com.netflix.eureka2.spi.model.Acknowledgement;
-import com.netflix.eureka2.spi.model.Heartbeat;
-import com.netflix.eureka2.spi.model.ServerHello;
-import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.model.TransportModel;
+import com.netflix.eureka2.spi.model.channel.Heartbeat;
+import com.netflix.eureka2.spi.model.channel.ServerHello;
+import com.netflix.eureka2.spi.model.transport.Acknowledgement;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope.ProtocolType;
 import com.netflix.eureka2.transport.TransportDisconnected;
 import com.netflix.eureka2.utils.rx.ExtObservable;
 import io.reactivex.netty.channel.ObservableConnection;
@@ -74,7 +74,7 @@ public class StdRegistrationClientTransportHandler extends AbstractStdClientTran
     }
 
     private void doGracefulShutdown(ObservableConnection<Object, Object> connection) {
-        connection.writeAndFlush(new ProtocolMessageEnvelope(ProtocolType.Registration, ProtocolModel.getDefaultModel().newGoAway()))
+        connection.writeAndFlush(TransportModel.getDefaultModel().registrationEnvelope(TransportModel.getDefaultModel().newGoAway()))
                 .subscribe(
                         next -> {
                             // Void

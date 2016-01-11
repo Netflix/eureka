@@ -34,6 +34,10 @@ import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.model.notification.StreamStateNotification;
 import com.netflix.eureka2.spi.channel.*;
 import com.netflix.eureka2.spi.model.*;
+import com.netflix.eureka2.spi.model.channel.ClientHello;
+import com.netflix.eureka2.spi.model.channel.ReplicationClientHello;
+import com.netflix.eureka2.spi.model.channel.ReplicationServerHello;
+import com.netflix.eureka2.spi.model.channel.ServerHello;
 import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
 import com.netflix.eureka2.spi.transport.EurekaServerTransportFactory;
 import com.netflix.eureka2.testkit.netrouter.NetworkRouter;
@@ -49,7 +53,7 @@ public class TransportSession {
 
     private final InstanceModel instanceModel;
     private final InterestModel interestModel;
-    private final TransportModel transportModel;
+    private final ChannelModel channelModel;
 
     private final ClientHello clientHello;
     private final ReplicationClientHello replicationClientHello;
@@ -71,14 +75,14 @@ public class TransportSession {
         this.clientTransportFactory = clientTransportFactory;
         this.instanceModel = InstanceModel.getDefaultModel();
         this.interestModel = InterestModel.getDefaultModel();
-        this.transportModel = TransportModel.getDefaultModel();
+        this.channelModel = ChannelModel.getDefaultModel();
 
-        this.clientHello = transportModel.newClientHello(instanceModel.createSource(Source.Origin.LOCAL, "testClient", 1));
-        this.replicationClientHello = transportModel.newReplicationClientHello(instanceModel.createSource(Source.Origin.LOCAL, "replicationClient", 1), 1);
+        this.clientHello = channelModel.newClientHello(instanceModel.createSource(Source.Origin.LOCAL, "testClient", 1));
+        this.replicationClientHello = channelModel.newReplicationClientHello(instanceModel.createSource(Source.Origin.LOCAL, "replicationClient", 1), 1);
 
         Source serverSource = instanceModel.createSource(Source.Origin.LOCAL, "testServer", 1);
-        this.serverHello = transportModel.newServerHello(serverSource);
-        this.replicationServerHello = transportModel.newReplicationServerHello(serverSource);
+        this.serverHello = channelModel.newServerHello(serverSource);
+        this.replicationServerHello = channelModel.newReplicationServerHello(serverSource);
 
         ChannelPipelineFactory<InstanceInfo, InstanceInfo> registrationPipelineFactory = new ChannelPipelineFactory<InstanceInfo, InstanceInfo>() {
             @Override
@@ -128,8 +132,8 @@ public class TransportSession {
         return interestModel;
     }
 
-    public TransportModel getTransportModel() {
-        return transportModel;
+    public ChannelModel getChannelModel() {
+        return channelModel;
     }
 
     public ClientHello getClientHello() {

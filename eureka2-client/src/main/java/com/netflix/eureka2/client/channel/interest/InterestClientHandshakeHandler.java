@@ -24,7 +24,7 @@ import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.InterestHandler;
-import com.netflix.eureka2.spi.model.TransportModel;
+import com.netflix.eureka2.spi.model.ChannelModel;
 
 /**
  */
@@ -35,7 +35,7 @@ public class InterestClientHandshakeHandler extends ClientHandshakeHandler<Inter
     public InterestClientHandshakeHandler(Source clientSource, SourceIdGenerator serverIdGenerator) {
         super(serverIdGenerator);
         this.clientHelloNotification = ChannelNotification.newHello(
-                TransportModel.getDefaultModel().newClientHello(clientSource)
+                ChannelModel.getDefaultModel().newClientHello(clientSource)
         );
     }
 

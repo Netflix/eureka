@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Netflix, Inc.
+ * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,28 +17,56 @@
 package com.netflix.eureka2.spi.model;
 
 import com.netflix.eureka2.internal.util.ExtLoader;
-import com.netflix.eureka2.model.Source;
+import com.netflix.eureka2.model.instance.Delta;
+import com.netflix.eureka2.model.instance.InstanceInfo;
+import com.netflix.eureka2.model.interest.Interest;
+import com.netflix.eureka2.model.notification.StreamStateNotification;
+import com.netflix.eureka2.spi.model.transport.Acknowledgement;
+import com.netflix.eureka2.spi.model.transport.GoAway;
+import com.netflix.eureka2.spi.model.transport.InterestRegistration;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope.ProtocolType;
+import com.netflix.eureka2.spi.model.transport.notification.AddInstance;
+import com.netflix.eureka2.spi.model.transport.notification.DeleteInstance;
+import com.netflix.eureka2.spi.model.transport.notification.StreamStateUpdate;
+import com.netflix.eureka2.spi.model.transport.notification.UpdateInstanceInfo;
 
 /**
  */
 public abstract class TransportModel {
 
-    private static volatile TransportModel defaultModel;
+    private static TransportModel defaultModel;
 
-    public abstract Heartbeat creatHeartbeat();
+    public abstract <T> ProtocolMessageEnvelope newEnvelope(ProtocolType protocolType, T message);
 
-    public abstract Acknowledgement createAcknowledgement();
+    public <T> ProtocolMessageEnvelope registrationEnvelope(T message) {
+        return newEnvelope(ProtocolType.Registration, message);
+    }
 
-    public abstract ClientHello newClientHello(Source clientSource);
+    public <T> ProtocolMessageEnvelope interestEnvelope(T message) {
+        return newEnvelope(ProtocolType.Interest, message);
+    }
 
-    public abstract ReplicationClientHello newReplicationClientHello(Source clientSource, int registrySize);
+    public <T> ProtocolMessageEnvelope replicationEnvelope(T message) {
+        return newEnvelope(ProtocolType.Replication, message);
+    }
 
-    public abstract ServerHello newServerHello(Source serverSource);
+    public abstract GoAway newGoAway();
 
-    public abstract ReplicationServerHello newReplicationServerHello(Source serverSource);
+    public abstract Acknowledgement newAcknowledgement();
+
+    public abstract AddInstance newAddInstance(InstanceInfo instance);
+
+    public abstract DeleteInstance newDeleteInstance(String instanceId);
+
+    public abstract UpdateInstanceInfo newUpdateInstanceInfo(Delta<?>... delta);
+
+    public abstract StreamStateUpdate newStreamStateUpdate(StreamStateNotification<InstanceInfo> notification);
+
+    public abstract InterestRegistration newInterestRegistration(Interest<InstanceInfo> interest);
 
     public static TransportModel getDefaultModel() {
-        if(defaultModel == null) {
+        if (defaultModel == null) {
             return ExtLoader.resolveDefaultModel().getTransportModel();
         }
         return defaultModel;

@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.transport;
 
-import com.netflix.eureka2.model.StdTransportInjector;
+import com.netflix.eureka2.StdTransportInjector;
 import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
 import com.netflix.eureka2.spi.transport.EurekaServerTransportFactory;
 import com.netflix.eureka2.testkit.compatibility.transport.EurekaTransportCompatibilityTestSuite;

@@ -22,8 +22,8 @@ import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.ReplicationHandler;
-import com.netflix.eureka2.spi.model.ServerHello;
-import com.netflix.eureka2.spi.model.TransportModel;
+import com.netflix.eureka2.spi.model.channel.ServerHello;
+import com.netflix.eureka2.spi.model.ChannelModel;
 import rx.Observable;
 
 /**
@@ -36,7 +36,7 @@ public class ReplicationHandlerStub implements ReplicationHandler {
     private volatile int collectedChanges;
 
     public ReplicationHandlerStub(Source serverSource) {
-        this.serverHello = TransportModel.getDefaultModel().newServerHello(serverSource);
+        this.serverHello = ChannelModel.getDefaultModel().newServerHello(serverSource);
     }
 
     @Override

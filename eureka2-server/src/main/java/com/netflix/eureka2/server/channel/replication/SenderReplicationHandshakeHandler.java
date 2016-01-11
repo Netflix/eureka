@@ -24,8 +24,8 @@ import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.ReplicationHandler;
-import com.netflix.eureka2.spi.model.ReplicationClientHello;
-import com.netflix.eureka2.spi.model.TransportModel;
+import com.netflix.eureka2.spi.model.channel.ReplicationClientHello;
+import com.netflix.eureka2.spi.model.ChannelModel;
 
 /**
  */
@@ -42,7 +42,7 @@ public class SenderReplicationHandshakeHandler extends ClientHandshakeHandler<Ch
 
     @Override
     protected ChannelNotification<ChangeNotification<InstanceInfo>> createClientHello() {
-        ReplicationClientHello clientHello = TransportModel.getDefaultModel().newReplicationClientHello(clientSource, eurekaRegistry.size());
+        ReplicationClientHello clientHello = ChannelModel.getDefaultModel().newReplicationClientHello(clientSource, eurekaRegistry.size());
         return ChannelNotification.newHello(clientHello);
     }
 }

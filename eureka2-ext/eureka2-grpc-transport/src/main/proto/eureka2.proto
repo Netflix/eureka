@@ -3,7 +3,7 @@ syntax = "proto3";
 package com.netflix.eureka2.grpc;
 
 /**
- * Common protocol messages
+ * Eureka data and channel models
  */
 
 message GrpcSource {
@@ -131,53 +131,6 @@ message GrpcDelta {
     GrpcDeltaValue deltaValue = 2;
 }
 
-message GrpcAcknowledgement {
-}
-
-message GrpcHeartbeat {
-}
-
-message GrpcClientHello {
-    GrpcSource clientSource = 1;
-}
-
-message GrpcReplicationClientHello {
-    GrpcSource clientSource = 1;
-    int32 registrySize = 2;
-}
-
-message GrpcServerHello {
-    GrpcSource serverSource = 1;
-}
-
-message GrpcReplicationServerHello {
-    GrpcSource serverSource = 1;
-}
-
-/**
- * Registration protocol messages
- */
-
-message GrpcRegistrationRequest {
-    oneof oneof_request {
-        GrpcClientHello clientHello = 1;
-        GrpcInstanceInfo instanceInfo = 2;
-        GrpcHeartbeat heartbeat = 3;
-    }
-}
-
-message GrpcRegistrationResponse {
-    oneof item {
-        GrpcServerHello serverHello = 1;
-        GrpcHeartbeat heartbeat = 2;
-        GrpcAcknowledgement ack = 3;
-    }
-}
-
-/**
- * Interest protocol messages
- */
-
 message GrpcInterest {
 
     enum GrpcInterestOperator {
@@ -221,6 +174,115 @@ message GrpcInterest {
     }
 }
 
+message GrpcHeartbeat {
+}
+
+message GrpcClientHello {
+    GrpcSource clientSource = 1;
+}
+
+message GrpcReplicationClientHello {
+    GrpcSource clientSource = 1;
+    int32 registrySize = 2;
+}
+
+message GrpcServerHello {
+    GrpcSource serverSource = 1;
+}
+
+message GrpcReplicationServerHello {
+    GrpcSource serverSource = 1;
+}
+
+// ******************************************************************************************
+// Transport model (partially used by GRPC transport, but required for RxNetty)
+
+message GrpcAcknowledgement {
+}
+
+message GrpcGoAway {
+}
+
+message GrpcInterestRegistration {
+    repeated GrpcInterest interests = 1;
+}
+
+message GrpcAddInstance {
+    GrpcInstanceInfo instanceInfo = 1;
+}
+
+message GrpcDeleteInstance {
+    string instanceId = 1;
+}
+
+message GrpcUpdateInstanceInfo {
+    repeated GrpcDelta deltas = 1;
+}
+
+message GrpcStreamStateUpdate {
+    enum GrpcBufferState {
+        Unknown = 0;
+        BufferStart = 1;
+        BufferEnd = 2;
+    }
+
+    GrpcBufferState bufferState = 1;
+    GrpcInterest interest = 2;
+}
+
+message GrpcProtocolMessageEnvelope {
+    enum GrpcProtocolType {
+        Registration = 0;
+        Interest = 1;
+        Replication = 2;
+    }
+
+    GrpcProtocolType protocolType = 1;
+
+    oneof message_oneOf {
+        GrpcAcknowledgement acknowledgement = 2;
+        GrpcGoAway goAway = 3;
+        GrpcHeartbeat heartbeat = 4;
+        GrpcClientHello clientHello = 5;
+        GrpcReplicationClientHello replicationClientHello = 6;
+        GrpcServerHello serverHello = 7;
+        GrpcReplicationServerHello replicationServerHello = 8;
+        GrpcInstanceInfo instanceInfo = 9;
+        GrpcInterestRegistration interestRegistration = 10;
+        GrpcAddInstance addInstance = 11;
+        GrpcDeleteInstance deleteInstance = 12;
+        GrpcUpdateInstanceInfo updateInstanceInfo = 13;
+        GrpcStreamStateUpdate streamStateUpdate = 14;
+    }
+}
+
+// ******************************************************************************************
+// GRPC API specific data structures
+
+/**
+ * Registration protocol messages
+ */
+
+message GrpcRegistrationRequest {
+    oneof oneof_request {
+        GrpcClientHello clientHello = 1;
+        GrpcInstanceInfo instanceInfo = 2;
+        GrpcHeartbeat heartbeat = 3;
+    }
+}
+
+message GrpcRegistrationResponse {
+    oneof item {
+        GrpcServerHello serverHello = 1;
+        GrpcHeartbeat heartbeat = 2;
+        GrpcAcknowledgement ack = 3;
+    }
+}
+
+/**
+ * Interest protocol messages
+ */
+
 message GrpcChangeNotification {
 
     message GrpcAddChangeNotification {
@@ -243,10 +305,6 @@ message GrpcChangeNotification {
         GrpcDeleteChangeNotification delete = 3;
         GrpcBufferSentinelNotification bufferSentinel = 4;
     }
-}
-
-message GrpcInterestRegistration {
-    repeated GrpcInterest interests = 1;
 }
 
 message GrpcInterestRequest {

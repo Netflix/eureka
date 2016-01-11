@@ -24,21 +24,19 @@ import com.netflix.eureka2.model.Server;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.model.interest.Interest;
 import com.netflix.eureka2.model.notification.ChangeNotification;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope.ProtocolType;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.InterestHandler;
-import com.netflix.eureka2.spi.model.Heartbeat;
-import com.netflix.eureka2.spi.model.ServerHello;
-import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.model.TransportModel;
+import com.netflix.eureka2.spi.model.channel.Heartbeat;
+import com.netflix.eureka2.spi.model.channel.ServerHello;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope.ProtocolType;
 import com.netflix.eureka2.transport.ProtocolConverters;
 import com.netflix.eureka2.transport.TransportDisconnected;
 import com.netflix.eureka2.utils.rx.ExtObservable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
-
-import static com.netflix.eureka2.protocol.ProtocolMessageEnvelope.interestEnvelope;
 
 /**
  */
@@ -104,7 +102,7 @@ public class StdInterestClientTransportHandler extends AbstractStdClientTranspor
     @Override
     protected ProtocolMessageEnvelope asProtocolMessage(ChannelNotification<Interest<InstanceInfo>> update) {
         if (update.getKind() == ChannelNotification.Kind.Data) {
-            return interestEnvelope(ProtocolModel.getDefaultModel().newInterestRegistration(update.getData()));
+            return TransportModel.getDefaultModel().interestEnvelope(TransportModel.getDefaultModel().newInterestRegistration(update.getData()));
         }
         return super.asProtocolMessage(update);
     }

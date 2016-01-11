@@ -23,7 +23,7 @@ import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.spi.channel.ChannelHandler;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.RegistrationHandler;
-import com.netflix.eureka2.spi.model.TransportModel;
+import com.netflix.eureka2.spi.model.ChannelModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -47,7 +47,7 @@ public class RegistrationClientHandshakeHandler extends AbstractHandshakeHandler
                     .flatMap(clientSource -> {
                         logger.debug("Injecting hello message ahead of registration update stream");
                         ChannelNotification<InstanceInfo> helloNotification = ChannelNotification.newHello(
-                                TransportModel.getDefaultModel().newClientHello(clientSource)
+                                ChannelModel.getDefaultModel().newClientHello(clientSource)
                         );
                         return transport.handle(Observable.just(helloNotification).mergeWith(inputStream));
                     })

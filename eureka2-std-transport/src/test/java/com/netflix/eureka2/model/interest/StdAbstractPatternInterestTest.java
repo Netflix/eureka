@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.model.interest;
 
-import com.netflix.eureka2.model.StdTransportInjector;
+import com.netflix.eureka2.StdTransportInjector;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Assert;

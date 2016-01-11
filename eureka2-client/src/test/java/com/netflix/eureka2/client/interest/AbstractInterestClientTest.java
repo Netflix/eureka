@@ -31,7 +31,7 @@ import com.netflix.eureka2.registry.EurekaRegistry;
 import com.netflix.eureka2.spi.channel.ChannelContext;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.InterestHandler;
-import com.netflix.eureka2.spi.model.TransportModel;
+import com.netflix.eureka2.spi.model.ChannelModel;
 import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Before;
@@ -119,7 +119,7 @@ public class AbstractInterestClientTest {
                         inputNotification -> {
                             if (inputNotification.getKind() == ChannelNotification.Kind.Hello) {
                                 myReplySubject.onNext(ChannelNotification.newHello(
-                                        TransportModel.getDefaultModel().newServerHello(serverSource)
+                                        ChannelModel.getDefaultModel().newServerHello(serverSource)
                                 ));
                             } else if (inputNotification.getKind() == ChannelNotification.Kind.Heartbeat) {
                                 myReplySubject.onNext(ChannelNotification.newHeartbeat());

@@ -21,15 +21,14 @@ import java.io.IOException;
 import com.netflix.eureka2.model.instance.InstanceInfo;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.ChannelPipelineFactory;
-import com.netflix.eureka2.spi.model.ClientHello;
-import com.netflix.eureka2.spi.protocol.common.GoAway;
-import com.netflix.eureka2.spi.model.Heartbeat;
+import com.netflix.eureka2.spi.model.ChannelModel;
 import com.netflix.eureka2.spi.model.TransportModel;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
+import com.netflix.eureka2.spi.model.channel.ClientHello;
+import com.netflix.eureka2.spi.model.channel.Heartbeat;
+import com.netflix.eureka2.spi.model.transport.GoAway;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope;
 import rx.Observable;
 import rx.subjects.PublishSubject;
-
-import static com.netflix.eureka2.protocol.ProtocolMessageEnvelope.registrationEnvelope;
 
 /**
  */
@@ -45,13 +44,13 @@ class RegistrationTransportService implements TransportService {
                 try {
                     switch (replyNotification.getKind()) {
                         case Hello:
-                            envelope = registrationEnvelope(replyNotification.getHello());
+                            envelope = TransportModel.getDefaultModel().registrationEnvelope(replyNotification.getHello());
                             break;
                         case Heartbeat:
-                            envelope = registrationEnvelope(TransportModel.getDefaultModel().creatHeartbeat());
+                            envelope = TransportModel.getDefaultModel().registrationEnvelope(ChannelModel.getDefaultModel().newHeartbeat());
                             break;
                         case Data:
-                            envelope = registrationEnvelope(TransportModel.getDefaultModel().createAcknowledgement());
+                            envelope = TransportModel.getDefaultModel().registrationEnvelope(TransportModel.getDefaultModel().newAcknowledgement());
                             break;
                         default:
                             return Observable.error(new IllegalStateException("Unrecognized envelope kind " + replyNotification.getKind()));

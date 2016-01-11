@@ -16,7 +16,7 @@
 
 package com.netflix.eureka2.ext.grpc.transport;
 
-import com.netflix.eureka2.ext.grpc.model.GrpcTransportInjector;
+import com.netflix.eureka2.ext.grpc.GrpcTransportInjector;
 import com.netflix.eureka2.ext.grpc.transport.client.GrpcEurekaClientTransportFactory;
 import com.netflix.eureka2.ext.grpc.transport.server.GrpcEurekaServerTransportFactory;
 import com.netflix.eureka2.spi.transport.EurekaClientTransportFactory;

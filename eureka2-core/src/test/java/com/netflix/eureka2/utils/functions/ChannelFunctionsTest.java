@@ -18,7 +18,7 @@ import com.netflix.eureka2.model.notification.SourcedStreamStateNotification;
 import com.netflix.eureka2.model.notification.StreamStateNotification.BufferState;
 import com.netflix.eureka2.registry.*;
 import com.netflix.eureka2.registry.index.IndexRegistryImpl;
-import com.netflix.eureka2.spi.protocol.ProtocolModel;
+import com.netflix.eureka2.spi.model.TransportModel;
 import com.netflix.eureka2.testkit.data.builder.SampleInstanceInfo;
 import org.junit.Assert;
 import org.junit.Before;
@@ -61,7 +61,7 @@ public class ChannelFunctionsTest {
         Source remoteSource = InstanceModel.getDefaultModel().createSource(Source.Origin.REPLICATED, "remote");
 
         InstanceInfo a = infoIterator.next();
-        notification = channelFunctions.channelMessageToNotification(ProtocolModel.getDefaultModel().newAddInstance(a), localSource, cache);
+        notification = channelFunctions.channelMessageToNotification(TransportModel.getDefaultModel().newAddInstance(a), localSource, cache);
         assertThat(notification.getKind(), is(Kind.Add));
         assertThat(notification.getData(), is(a));
         assertThat(((Sourced) notification).getSource(), is(localSource));
@@ -69,14 +69,14 @@ public class ChannelFunctionsTest {
         assertThat(cache.get(a.getId()), is(a));
 
         InstanceInfo aNew = InstanceModel.getDefaultModel().newInstanceInfo().withInstanceInfo(a).withStatus(Status.OUT_OF_SERVICE).build();
-        notification = channelFunctions.channelMessageToNotification(ProtocolModel.getDefaultModel().newUpdateInstanceInfo(aNew.diffOlder(a).iterator().next()), remoteSource, cache);
+        notification = channelFunctions.channelMessageToNotification(TransportModel.getDefaultModel().newUpdateInstanceInfo(aNew.diffOlder(a).iterator().next()), remoteSource, cache);
         assertThat(notification.getKind(), is(Kind.Modify));
         assertThat(notification.getData(), is(aNew));
         assertThat(((Sourced) notification).getSource(), is(remoteSource));
         assertThat(cache.size(), is(1));
         assertThat(cache.get(a.getId()), is(aNew));
 
-        notification = channelFunctions.channelMessageToNotification(ProtocolModel.getDefaultModel().newDeleteInstance(a.getId()), localSource, cache);
+        notification = channelFunctions.channelMessageToNotification(TransportModel.getDefaultModel().newDeleteInstance(a.getId()), localSource, cache);
         assertThat(notification.getKind(), is(Kind.Delete));
         assertThat(notification.getData(), is(aNew));
         assertThat(((Sourced) notification).getSource(), is(localSource));

@@ -24,17 +24,17 @@ import com.netflix.eureka2.model.interest.Interests;
 import com.netflix.eureka2.model.notification.ChangeNotification;
 import com.netflix.eureka2.spi.channel.ChannelNotification;
 import com.netflix.eureka2.spi.channel.ChannelPipelineFactory;
-import com.netflix.eureka2.spi.model.ClientHello;
-import com.netflix.eureka2.spi.model.Heartbeat;
+import com.netflix.eureka2.spi.model.ChannelModel;
 import com.netflix.eureka2.spi.model.TransportModel;
-import com.netflix.eureka2.spi.protocol.interest.InterestRegistration;
+import com.netflix.eureka2.spi.model.channel.ClientHello;
+import com.netflix.eureka2.spi.model.channel.Heartbeat;
+import com.netflix.eureka2.spi.model.transport.InterestRegistration;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope;
+import com.netflix.eureka2.spi.model.transport.ProtocolMessageEnvelope.ProtocolType;
 import com.netflix.eureka2.transport.ProtocolConverters;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope;
-import com.netflix.eureka2.protocol.ProtocolMessageEnvelope.ProtocolType;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
-import static com.netflix.eureka2.protocol.ProtocolMessageEnvelope.interestEnvelope;
 
 /**
  */
@@ -49,10 +49,10 @@ public class InterestTransportService implements TransportService {
                 try {
                     switch (replyNotification.getKind()) {
                         case Hello:
-                            envelope = Observable.just(interestEnvelope(replyNotification.getHello()));
+                            envelope = Observable.just(TransportModel.getDefaultModel().interestEnvelope(replyNotification.getHello()));
                             break;
                         case Heartbeat:
-                            envelope = Observable.just(interestEnvelope(TransportModel.getDefaultModel().creatHeartbeat()));
+                            envelope = Observable.just(TransportModel.getDefaultModel().interestEnvelope(ChannelModel.getDefaultModel().newHeartbeat()));
                             break;
                         case Data:
                             try {
