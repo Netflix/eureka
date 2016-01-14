@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Netflix, Inc.
+ * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.discovery.converters.jackson;
+package com.netflix.discovery.converters.jackson.serializer;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -29,9 +29,9 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.PortType;
 
 /**
- * @author Tomasz Bak
+ * Custom bean serializer to deal with legacy port layout (check {@link InstanceInfo.PortWrapper} for more information).
  */
-class InstanceInfoJsonBeanSerializer extends BeanSerializer {
+public class InstanceInfoJsonBeanSerializer extends BeanSerializer {
 
     private static final Map<String, String> EMPTY_MAP = Collections.singletonMap("@class", "java.util.Collections$EmptyMap");
 
@@ -41,7 +41,7 @@ class InstanceInfoJsonBeanSerializer extends BeanSerializer {
     private final ObjectMapper stringMapObjectMapper = new ObjectMapper();
     private final boolean compactMode;
 
-    InstanceInfoJsonBeanSerializer(BeanSerializerBase src, boolean compactMode) {
+    public InstanceInfoJsonBeanSerializer(BeanSerializerBase src, boolean compactMode) {
         super(src);
         this.compactMode = compactMode;
     }

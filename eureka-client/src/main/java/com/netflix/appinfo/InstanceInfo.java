@@ -56,6 +56,30 @@ import org.slf4j.LoggerFactory;
 @XStreamAlias("instance")
 @JsonRootName("instance")
 public class InstanceInfo {
+
+    /**
+     * {@link InstanceInfo} JSON and XML format for port information does not follow the usual conventions, which
+     * makes its mapping complicated. This class represents the wire format for port information.
+     */
+    public static class PortWrapper {
+        private final boolean enabled;
+        private final int port;
+
+        @JsonCreator
+        public PortWrapper(@JsonProperty("@enabled") boolean enabled, @JsonProperty("$") int port) {
+            this.enabled = enabled;
+            this.port = port;
+        }
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public int getPort() {
+            return port;
+        }
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfo.class);
     private static final Pattern VIP_ATTRIBUTES_PATTERN = Pattern.compile("\\$\\{(.*?)\\}");
 
@@ -140,10 +164,8 @@ public class InstanceInfo {
             @JsonProperty("appGroupName") String appGroupName,
             @JsonProperty("ipAddr") String ipAddr,
             @JsonProperty("sid") String sid,
-            @JsonProperty("port") int port,
-            @JsonProperty("portEnabled") boolean portEnabled,
-            @JsonProperty("securePort") int securePort,
-            @JsonProperty("securePortEnabled") boolean securePortEnabled,
+            @JsonProperty("port") PortWrapper port,
+            @JsonProperty("securePort") PortWrapper securePort,
             @JsonProperty("homePageUrl") String homePageUrl,
             @JsonProperty("statusPageUrl") String statusPageUrl,
             @JsonProperty("healthCheckUrl") String healthCheckUrl,
@@ -167,10 +189,10 @@ public class InstanceInfo {
         this.appName = StringCache.intern(appName);
         this.appGroupName = StringCache.intern(appGroupName);
         this.ipAddr = ipAddr;
-        this.port = port;
-        this.isUnsecurePortEnabled = portEnabled;
-        this.securePort = securePort;
-        this.isSecurePortEnabled = securePortEnabled;
+        this.port = port == null ? 0 : port.getPort();
+        this.isUnsecurePortEnabled = port != null && port.isEnabled();
+        this.securePort = securePort == null ? 0 : securePort.getPort();
+        this.isSecurePortEnabled = securePort != null && securePort.isEnabled();
         this.homePageUrl = homePageUrl;
         this.statusPageUrl = statusPageUrl;
         this.healthCheckUrl = healthCheckUrl;
