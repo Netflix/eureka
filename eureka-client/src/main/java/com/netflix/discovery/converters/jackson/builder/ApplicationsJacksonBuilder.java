@@ -23,6 +23,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.discovery.converters.KeyFormatter;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Support custom formatting of {@link Applications#appsHashCode} and {@link Applications#versionDelta}. The
@@ -30,6 +32,8 @@ import com.netflix.discovery.shared.Applications;
  * depend here on fixed prefix to distinguish between property values, and map them correctly.
  */
 public class ApplicationsJacksonBuilder {
+
+    private static final Logger logger = LoggerFactory.getLogger(ApplicationsJacksonBuilder.class);
 
     private List<Application> applications;
     private long version;
@@ -42,10 +46,22 @@ public class ApplicationsJacksonBuilder {
 
     @JsonAnySetter
     public void with(String fieldName, Object value) {
+        if (fieldName == null || value == null) {
+            return;
+        }
         if (fieldName.startsWith("version")) {
-            version = value instanceof Number ? ((Number) value).longValue() : Long.parseLong((String) value);
+            try {
+                version = value instanceof Number ? ((Number) value).longValue() : Long.parseLong((String) value);
+            } catch (Exception e) {
+                version = -1;
+                logger.warn("Cannot parse version number {}; setting it to default == -1", value);
+            }
         } else if (fieldName.startsWith("apps")) {
-            appsHashCode = (String) value;
+            if (value instanceof String) {
+                appsHashCode = (String) value;
+            } else {
+                logger.warn("appsHashCode field is not a string, but {}", value.getClass());
+            }
         }
     }
 
