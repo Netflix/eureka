@@ -33,7 +33,7 @@ public class ExceptionsMetric {
 
     private final String name;
 
-    private final Map<String, Counter> exceptionCounters = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Counter> exceptionCounters = new ConcurrentHashMap<>();
 
     public ExceptionsMetric(String name) {
         this.name = name;
