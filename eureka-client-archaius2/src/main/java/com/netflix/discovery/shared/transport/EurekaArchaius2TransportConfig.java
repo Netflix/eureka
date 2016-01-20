@@ -1,9 +1,9 @@
 package com.netflix.discovery.shared.transport;
 
 import com.google.inject.Inject;
-import com.netflix.archaius.Config;
-import com.netflix.archaius.annotations.Configuration;
-import com.netflix.archaius.annotations.ConfigurationSource;
+import com.netflix.archaius.api.Config;
+import com.netflix.archaius.api.annotations.Configuration;
+import com.netflix.archaius.api.annotations.ConfigurationSource;
 
 /**
  * @author David Liu

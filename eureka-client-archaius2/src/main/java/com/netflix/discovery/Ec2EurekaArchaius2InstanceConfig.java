@@ -13,7 +13,7 @@ import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.DataCenterInfo.Name;
-import com.netflix.archaius.Config;
+import com.netflix.archaius.api.Config;
 
 /**
  * When running in EC2 add the following override binding.

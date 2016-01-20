@@ -6,10 +6,9 @@ import java.util.List;
 
 import com.google.inject.Inject;
 import com.netflix.appinfo.EurekaAccept;
-import com.netflix.archaius.Config;
-import com.netflix.archaius.annotations.Configuration;
-import com.netflix.archaius.annotations.ConfigurationSource;
-import com.netflix.discovery.shared.transport.EurekaArchaius2TransportConfig;
+import com.netflix.archaius.api.Config;
+import com.netflix.archaius.api.annotations.Configuration;
+import com.netflix.archaius.api.annotations.ConfigurationSource;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 
 @Configuration(prefix = "eureka")
