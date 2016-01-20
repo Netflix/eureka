@@ -9,8 +9,8 @@ import javax.inject.Singleton;
 import com.google.common.collect.Sets;
 import com.netflix.appinfo.AbstractInstanceConfig;
 import com.netflix.appinfo.DataCenterInfo;
-import com.netflix.archaius.Config;
-import com.netflix.archaius.annotations.ConfigurationSource;
+import com.netflix.archaius.api.Config;
+import com.netflix.archaius.api.annotations.ConfigurationSource;
 
 @Singleton
 @ConfigurationSource("eureka-client")

@@ -7,7 +7,7 @@ import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
-import com.netflix.archaius.Config;
+import com.netflix.archaius.api.Config;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.Ec2EurekaArchaius2InstanceConfig;
 import com.netflix.discovery.EurekaArchaius2ClientConfig;
