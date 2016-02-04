@@ -167,6 +167,8 @@ public class NamedConnectionPool extends ConnPoolByRoute {
     @Override
     public void shutdown() {
         super.shutdown();
-        Monitors.unregisterObject(name, this);
+        if(Monitors.isObjectRegistered(name, this)) {
+            Monitors.unregisterObject(name, this);
+        }
     }
 }

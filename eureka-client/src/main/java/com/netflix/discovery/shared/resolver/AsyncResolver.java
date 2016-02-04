@@ -133,7 +133,9 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
 
     @Override
     public void shutdown() {
-        Monitors.unregisterObject(name, this);
+        if(Monitors.isObjectRegistered(name, this)) {
+            Monitors.unregisterObject(name, this);
+        }
         executorService.shutdown();
         threadPoolExecutor.shutdown();
         backgroundTask.cancel();
