@@ -258,6 +258,7 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
             Builder requestBuilder = jerseyClient.resource(serviceUrl).path(urlPath).getRequestBuilder();
             addExtraHeaders(requestBuilder);
             response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);
+            // FIXME add clientAccept
 
             InstanceInfo infoFromPeer = null;
             if (response.getStatus() == Status.OK.getStatusCode() && response.hasEntity()) {

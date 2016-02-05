@@ -32,6 +32,8 @@ import org.slf4j.LoggerFactory;
  */
 public class ThresholdLevelsMetric {
 
+    public static final ThresholdLevelsMetric NO_OP_METRIC = new NoOpThresholdLevelMetric();
+
     private static final Logger logger = LoggerFactory.getLogger(ThresholdLevelsMetric.class);
 
     private final long[] levels;
@@ -84,6 +86,19 @@ public class ThresholdLevelsMetric {
                 DefaultMonitorRegistry.getInstance().unregister(gauge);
             } catch (Throwable ignore) {
             }
+        }
+    }
+
+    public static class NoOpThresholdLevelMetric extends ThresholdLevelsMetric {
+
+        public NoOpThresholdLevelMetric() {
+            super(null, null, new long[]{});
+        }
+
+        public void update(long delayMs) {
+        }
+
+        public void shutdown() {
         }
     }
 }

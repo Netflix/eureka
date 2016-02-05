@@ -14,6 +14,7 @@ import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.governator.InjectorBuilder;
 import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.guice.LifecycleInjectorBuilder;
 import com.netflix.governator.guice.LifecycleInjectorMode;
@@ -29,7 +30,6 @@ import org.junit.Test;
 public class EurekaModuleTest {
 
     private Injector injector;
-    private LifecycleManager lifecycleManager;
 
     @Before
     public void setUp() throws Exception {
@@ -38,30 +38,21 @@ public class EurekaModuleTest {
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default", "http://localhost:8080/eureka/v2");
 
-        LifecycleInjectorBuilder builder = LifecycleInjector.builder().withMode(LifecycleInjectorMode.SIMULATED_CHILD_INJECTORS);
-
-        Module testModule = Modules.override(new EurekaModule()).with(new AbstractModule() {
-            @Override
-            protected void configure() {
-                // the default impl of EurekaInstanceConfig is CloudInstanceConfig, which we only want in an AWS
-                // environment. Here we override that by binding MyDataCenterInstanceConfig to EurekaInstanceConfig.
-                bind(EurekaInstanceConfig.class).toProvider(MyDataCenterInstanceConfigProvider.class).in(Scopes.SINGLETON);
-            }
-        });
-
-        builder.withModules(testModule);
-
-        injector = builder.build().createInjector();
-        lifecycleManager = injector.getInstance(LifecycleManager.class);
-        lifecycleManager.start();
+        injector = InjectorBuilder
+                .fromModule(new EurekaModule())
+                .overrideWith(new AbstractModule() {
+                    @Override
+                    protected void configure() {
+                        // the default impl of EurekaInstanceConfig is CloudInstanceConfig, which we only want in an AWS
+                        // environment. Here we override that by binding MyDataCenterInstanceConfig to EurekaInstanceConfig.
+                        bind(EurekaInstanceConfig.class).toProvider(MyDataCenterInstanceConfigProvider.class).in(Scopes.SINGLETON);
+                    }
+                })
+                .createInjector();
     }
 
     @After
     public void tearDown() {
-        if (lifecycleManager != null) {
-            lifecycleManager.close();
-        }
-
         ConfigurationManager.getConfigInstance().clear();
     }
 

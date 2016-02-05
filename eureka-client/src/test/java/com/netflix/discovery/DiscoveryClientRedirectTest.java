@@ -61,7 +61,7 @@ public class DiscoveryClientRedirectTest {
             .withInstanceInfo(myInstanceInfo)
             .build();
     @Rule
-    public DiscoveryClientResource regiteringClientRule = DiscoveryClientResource.newBuilder()
+    public DiscoveryClientResource registeringClientRule = DiscoveryClientResource.newBuilder()
             .withRegistration(true)
             .withRegistryFetch(false)
             .withPortResolver(new Callable<Integer>() {
@@ -171,7 +171,16 @@ public class DiscoveryClientRedirectTest {
         targetServerMockClient.client.when(
                 request()
                         .withMethod("GET")
-                        .withPath("/eureka/v2/apps/")
+                        .withPath("/eureka/v2/apps/delta"),
+                Times.exactly(1)
+        ).respond(
+                response()
+                        .withStatusCode(500)
+        );
+        redirectServerMockClient.when(
+                request()
+                        .withMethod("GET")
+                        .withPath("/eureka/v2/apps/delta")
         ).respond(
                 response()
                         .withStatusCode(200)
@@ -189,9 +198,9 @@ public class DiscoveryClientRedirectTest {
             }
         }, 1, TimeUnit.MINUTES);
 
-        redirectServerMockClient.verify(request().withMethod("GET").withPath("/eureka/v2/apps/"), atLeast(2));
+        redirectServerMockClient.verify(request().withMethod("GET").withPath("/eureka/v2/apps/"), exactly(1));
         redirectServerMockClient.verify(request().withMethod("GET").withPath("/eureka/v2/apps/delta"), exactly(1));
-        targetServerMockClient.client.verify(request().withMethod("GET").withPath("/eureka/v2/apps/"), exactly(2));
+        targetServerMockClient.client.verify(request().withMethod("GET").withPath("/eureka/v2/apps/"), exactly(1));
         targetServerMockClient.client.verify(request().withMethod("GET").withPath("/eureka/v2/apps/delta"), exactly(1));
     }
 

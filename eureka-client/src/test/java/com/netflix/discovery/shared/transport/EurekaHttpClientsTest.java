@@ -18,6 +18,7 @@ package com.netflix.discovery.shared.transport;
 
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -36,6 +37,7 @@ import com.netflix.discovery.shared.resolver.aws.EurekaHttpResolver;
 import com.netflix.discovery.shared.resolver.aws.TestEurekaHttpResolver;
 import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
+import com.sun.jersey.api.client.filter.ClientFilter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -95,6 +97,7 @@ public class EurekaHttpClientsTest {
                 clusterResolver,
                 EurekaHttpClients.newTransportClientFactory(
                         clientConfig,
+                        Collections.<ClientFilter>emptyList(),
                         applicationInfoManager.getInfo()
                 ));
     }

@@ -3,7 +3,10 @@ package com.netflix.discovery.shared.transport;
 import javax.net.ssl.SSLContext;
 
 import com.netflix.appinfo.AbstractEurekaIdentity;
+import com.netflix.appinfo.EurekaAccept;
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.discovery.EurekaClient;
+import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.converters.wrappers.CodecWrappers;
 import com.netflix.discovery.converters.wrappers.DecoderWrapper;
 import com.netflix.discovery.converters.wrappers.EncoderWrapper;
@@ -21,6 +24,7 @@ public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactor
     protected boolean allowRedirect;
     protected boolean systemSSL;
     protected String clientName;
+    protected EurekaAccept eurekaAccept;
     protected int maxConnectionsPerHost = DEFAULT_MAX_CONNECTIONS_PER_HOST;
     protected int maxTotalConnections = DEFAULT_MAX_TOTAL_CONNECTIONS;
     protected SSLContext sslContext;
@@ -38,6 +42,7 @@ public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactor
     protected DecoderWrapper decoderWrapper;
     protected AbstractEurekaIdentity clientIdentity;
 
+
     public B withMyInstanceInfo(InstanceInfo myInstanceInfo) {
         this.myInstanceInfo = myInstanceInfo;
         return self();
@@ -45,6 +50,11 @@ public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactor
 
     public B withClientName(String clientName) {
         this.clientName = clientName;
+        return self();
+    }
+
+    public B withClientAccept(EurekaAccept eurekaAccept) {
+        this.eurekaAccept = eurekaAccept;
         return self();
     }
 

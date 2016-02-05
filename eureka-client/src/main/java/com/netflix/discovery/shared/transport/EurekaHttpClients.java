@@ -16,8 +16,10 @@
 
 package com.netflix.discovery.shared.transport;
 
+import java.util.Collection;
 import java.util.List;
 
+import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.EurekaClientNames;
@@ -35,7 +37,10 @@ import com.netflix.discovery.shared.transport.decorator.SessionedEurekaHttpClien
 import com.netflix.discovery.shared.transport.decorator.RedirectingEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.ServerStatusEvaluators;
+import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
 import com.netflix.discovery.shared.transport.jersey.JerseyEurekaHttpClientFactory;
+import com.sun.jersey.api.client.filter.ClientFilter;
+import com.sun.jersey.client.apache4.ApacheHttpClient4;
 
 /**
  * @author Tomasz Bak
@@ -93,8 +98,43 @@ public final class EurekaHttpClients {
     }
 
     public static TransportClientFactory newTransportClientFactory(final EurekaClientConfig clientConfig,
+                                                                   final Collection<ClientFilter> additionalFilters,
                                                                    final InstanceInfo myInstanceInfo) {
-        final TransportClientFactory jerseyFactory = JerseyEurekaHttpClientFactory.create(clientConfig, myInstanceInfo);
+        final TransportClientFactory jerseyFactory = JerseyEurekaHttpClientFactory.create(
+                clientConfig,
+                additionalFilters,
+                myInstanceInfo,
+                new EurekaClientIdentity(myInstanceInfo.getIPAddr())
+        );
+        final TransportClientFactory metricsFactory = MetricsCollectingEurekaHttpClient.createFactory(jerseyFactory);
+
+        return new TransportClientFactory() {
+            @Override
+            public EurekaHttpClient newClient(EurekaEndpoint serviceUrl) {
+                return metricsFactory.newClient(serviceUrl);
+            }
+
+            @Override
+            public void shutdown() {
+                metricsFactory.shutdown();
+                jerseyFactory.shutdown();
+            }
+        };
+    }
+
+    @Deprecated
+    public static TransportClientFactory newTransportClientFactory(final Collection<ClientFilter> additionalFilters,
+                                                                   final EurekaJerseyClient providedJerseyClient) {
+        ApacheHttpClient4 apacheHttpClient = providedJerseyClient.getClient();
+        if (additionalFilters != null) {
+            for (ClientFilter filter : additionalFilters) {
+                if (filter != null) {
+                    apacheHttpClient.addFilter(filter);
+                }
+            }
+        }
+
+        final TransportClientFactory jerseyFactory = new JerseyEurekaHttpClientFactory(providedJerseyClient, false);
         final TransportClientFactory metricsFactory = MetricsCollectingEurekaHttpClient.createFactory(jerseyFactory);
 
         return new TransportClientFactory() {
