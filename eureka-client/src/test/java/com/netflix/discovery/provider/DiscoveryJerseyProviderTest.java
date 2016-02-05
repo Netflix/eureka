@@ -16,7 +16,6 @@
 
 package com.netflix.discovery.provider;
 
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -32,7 +31,6 @@ import org.junit.Test;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
 /**
  */
@@ -85,38 +83,5 @@ public class DiscoveryJerseyProviderTest {
         MediaType mediaTypeWithNonSupportedCharset = new MediaType("application", "json", params);
 
         assertThat(jerseyProvider.isReadable(InstanceInfo.class, InstanceInfo.class, null, mediaTypeWithNonSupportedCharset), is(false));
-    }
-
-    @Test
-    public void testErrorHandlingIfXmlNotEnabled() throws Exception {
-        DiscoveryJerseyProvider jerseyProvider = new DiscoveryJerseyProvider(
-                CodecWrappers.getEncoder(CodecWrappers.JacksonJson.class),
-                CodecWrappers.getDecoder(CodecWrappers.JacksonJson.class)
-        ) {
-            @Override
-            boolean isJacksonXmlOnClasspath() {
-                return false;
-            }
-        };
-
-        // Write
-        assertThat(jerseyProvider.isWriteable(InstanceInfo.class, InstanceInfo.class, null, MediaType.APPLICATION_XML_TYPE), is(false));
-        try {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            jerseyProvider.writeTo(INSTANCE, InstanceInfo.class, InstanceInfo.class, null, MediaType.APPLICATION_XML_TYPE, null, out);
-            fail("WebApplicationException expected");
-        } catch (WebApplicationException e) {
-            // Expected
-        }
-
-        // Read
-        assertThat(jerseyProvider.isReadable(InstanceInfo.class, InstanceInfo.class, null, MediaType.APPLICATION_XML_TYPE), is(false));
-        try {
-            ByteArrayInputStream in = new ByteArrayInputStream(new byte[0]);
-            jerseyProvider.readFrom(InstanceInfo.class, InstanceInfo.class, null, MediaType.APPLICATION_XML_TYPE, null, in);
-            fail("WebApplicationException expected");
-        } catch (WebApplicationException e) {
-            // Expected
-        }
     }
 }

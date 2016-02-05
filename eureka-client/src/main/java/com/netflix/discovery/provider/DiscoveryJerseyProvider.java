@@ -55,7 +55,8 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter<Object>, Messa
     private final EncoderWrapper jsonEncoder;
     private final DecoderWrapper jsonDecoder;
 
-    // XML support is maintained for legacy/custom clients. These codecs are used only on the server side only
+    // XML support is maintained for legacy/custom clients. These codecs are used only on the server side only, while
+    // Eureka client is using JSON only.
     private final EncoderWrapper xmlEncoder;
     private final DecoderWrapper xmlDecoder;
 
@@ -73,17 +74,11 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter<Object>, Messa
             throw new UnsupportedOperationException("Encoder: " + jsonEncoder.codecName() + "is not supported for the client");
         }
 
-        // If jackson-dataformat-xml available, initialize XML codecs
-        if (isJacksonXmlOnClasspath()) {
-            this.xmlEncoder = CodecWrappers.getEncoder("JacksonXml");
-            this.xmlDecoder = CodecWrappers.getDecoder("JacksonXml");
+        this.xmlEncoder = CodecWrappers.getEncoder(CodecWrappers.XStreamXml.class);
+        this.xmlDecoder = CodecWrappers.getDecoder(CodecWrappers.XStreamXml.class);
 
-            LOGGER.info("Using XML encoding codec {}", this.xmlEncoder.codecName());
-            LOGGER.info("Using XML decoding codec {}", this.xmlDecoder.codecName());
-        } else {
-            this.xmlEncoder = null;
-            this.xmlDecoder = null;
-        }
+        LOGGER.info("Using XML encoding codec {}", this.xmlEncoder.codecName());
+        LOGGER.info("Using XML decoding codec {}", this.xmlDecoder.codecName());
     }
 
     @Override
@@ -102,11 +97,6 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter<Object>, Messa
             decoder = jsonDecoder;
         } else {
             decoder = xmlDecoder; // default
-        }
-
-        // XML codec may not be available
-        if (decoder == null) {
-            throw new WebApplicationException(createErrorReply(400, "No codec available to parse content type " + mediaType, mediaType));
         }
 
         try {
@@ -143,20 +133,6 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter<Object>, Messa
         }
 
         encoder.encode(serializableObject, outputStream);
-    }
-
-    /**
-     * jackson-dataformat-xml is an optional dependency, that none of the java clients would ever need.
-     * It is used only on the server side to support legacy clients using XML. As it is not guaranteed to be
-     * on CLASSPATH, it is loaded conditionally using reflection.
-     */
-    /* visible for testing */
-    boolean isJacksonXmlOnClasspath() {
-        try {
-            return DiscoveryJerseyProvider.class.getClassLoader().loadClass("com.fasterxml.jackson.dataformat.xml.XmlMapper") != null;
-        } catch (Exception ignore) {
-            return false;
-        }
     }
 
     private boolean isSupported(MediaType mediaType) {
