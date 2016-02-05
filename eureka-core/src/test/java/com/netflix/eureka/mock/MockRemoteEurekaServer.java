@@ -10,14 +10,10 @@ import java.io.IOException;
 import java.util.Map;
 
 import com.netflix.appinfo.AbstractEurekaIdentity;
-import com.netflix.discovery.converters.XmlXStream;
+import com.netflix.discovery.converters.jackson.EurekaJsonJacksonCodec;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.eureka.DefaultEurekaServerConfig;
-import com.netflix.eureka.EurekaServerContext;
-import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.RateLimitingFilter;
-import com.netflix.eureka.ServerRequestAuthFilter;
+import com.netflix.eureka.*;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 import org.mortbay.jetty.Request;
@@ -150,7 +146,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
                         apps.addApplication(application);
                     }
                     apps.setAppsHashCode(apps.getReconcileHashCode());
-                    sendOkResponseWithContent((Request) request, response, XmlXStream.getInstance().toXML(apps));
+                    sendOkResponseWithContent((Request) request, response, toJson(apps));
                     handled = true;
                     sentDelta = true;
                 } else if (pathInfo.startsWith("apps")) {
@@ -159,7 +155,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
                         apps.addApplication(application);
                     }
                     apps.setAppsHashCode(apps.getReconcileHashCode());
-                    sendOkResponseWithContent((Request) request, response, XmlXStream.getInstance().toXML(apps));
+                    sendOkResponseWithContent((Request) request, response, toJson(apps));
                     handled = true;
                 }
             }
@@ -172,14 +168,18 @@ public class MockRemoteEurekaServer extends ExternalResource {
 
         private void sendOkResponseWithContent(Request request, HttpServletResponse response, String content)
                 throws IOException {
-            response.setContentType("application/xml");
+            response.setContentType("application/json; charset=UTF-8");
             response.setStatus(HttpServletResponse.SC_OK);
-            response.getWriter().println(content);
-            response.getWriter().flush();
+            response.getOutputStream().write(content.getBytes("UTF-8"));
+            response.getOutputStream().flush();
             request.setHandled(true);
             System.out.println("Eureka resource mock, sent response for request path: " + request.getPathInfo() +
                     " with content" + content);
         }
+    }
+
+    private String toJson(Applications apps) throws IOException {
+        return new EurekaJsonJacksonCodec().getObjectMapper(Applications.class).writeValueAsString(apps);
     }
 
 }

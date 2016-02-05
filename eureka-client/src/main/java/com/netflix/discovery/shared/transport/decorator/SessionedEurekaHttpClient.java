@@ -79,7 +79,9 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
 
     @Override
     public void shutdown() {
-        Monitors.unregisterObject(name, this);
+        if(Monitors.isObjectRegistered(name, this)) {
+            Monitors.unregisterObject(name, this);
+        }
         TransportUtils.shutdown(eurekaHttpClientRef.getAndSet(null));
     }
 
