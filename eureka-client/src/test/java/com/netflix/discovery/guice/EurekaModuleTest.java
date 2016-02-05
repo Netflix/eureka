@@ -2,9 +2,7 @@ package com.netflix.discovery.guice;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
-import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.google.inject.util.Modules;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
@@ -15,10 +13,7 @@ import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.governator.InjectorBuilder;
-import com.netflix.governator.guice.LifecycleInjector;
-import com.netflix.governator.guice.LifecycleInjectorBuilder;
-import com.netflix.governator.guice.LifecycleInjectorMode;
-import com.netflix.governator.lifecycle.LifecycleManager;
+import com.netflix.governator.LifecycleInjector;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -29,7 +24,7 @@ import org.junit.Test;
  */
 public class EurekaModuleTest {
 
-    private Injector injector;
+    private LifecycleInjector injector;
 
     @Before
     public void setUp() throws Exception {
@@ -53,6 +48,9 @@ public class EurekaModuleTest {
 
     @After
     public void tearDown() {
+        if (injector != null) {
+            injector.shutdown();
+        }
         ConfigurationManager.getConfigInstance().clear();
     }
 
