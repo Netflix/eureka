@@ -64,6 +64,7 @@ import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpClients;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
+import com.netflix.discovery.shared.transport.LegacyEurekaHttpClients;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
 import com.netflix.discovery.util.ThresholdLevelsMetric;
@@ -452,7 +453,7 @@ public class DiscoveryClient implements EurekaClient {
 
         eurekaTransport.transportClientFactory = providedJerseyClient == null
                 ? EurekaHttpClients.newTransportClientFactory(clientConfig, additionalFilters, applicationInfoManager.getInfo())
-                : EurekaHttpClients.newTransportClientFactory(additionalFilters, providedJerseyClient);
+                : LegacyEurekaHttpClients.newTransportClientFactory(additionalFilters, providedJerseyClient);
 
         if (clientConfig.shouldRegisterWithEureka()) {
             EurekaHttpClientFactory newRegistrationClientFactory = null;
