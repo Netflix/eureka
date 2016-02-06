@@ -16,10 +16,8 @@
 
 package com.netflix.discovery.shared.transport;
 
-import java.util.Collection;
 import java.util.List;
 
-import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.EurekaClientNames;
@@ -32,13 +30,10 @@ import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
 import com.netflix.discovery.shared.resolver.aws.ConfigClusterResolver;
 import com.netflix.discovery.shared.resolver.aws.EurekaHttpResolver;
 import com.netflix.discovery.shared.resolver.aws.ZoneAffinityClusterResolver;
-import com.netflix.discovery.shared.transport.decorator.MetricsCollectingEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.SessionedEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.RedirectingEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.ServerStatusEvaluators;
-import com.netflix.discovery.shared.transport.jersey.JerseyEurekaHttpClientFactory;
-import com.sun.jersey.api.client.filter.ClientFilter;
 
 /**
  * @author Tomasz Bak
@@ -91,31 +86,6 @@ public final class EurekaHttpClients {
             @Override
             public void shutdown() {
                 wrapClosable(clusterResolver).shutdown();
-            }
-        };
-    }
-
-    public static TransportClientFactory newTransportClientFactory(final EurekaClientConfig clientConfig,
-                                                                   final Collection<ClientFilter> additionalFilters,
-                                                                   final InstanceInfo myInstanceInfo) {
-        final TransportClientFactory jerseyFactory = JerseyEurekaHttpClientFactory.create(
-                clientConfig,
-                additionalFilters,
-                myInstanceInfo,
-                new EurekaClientIdentity(myInstanceInfo.getIPAddr())
-        );
-        final TransportClientFactory metricsFactory = MetricsCollectingEurekaHttpClient.createFactory(jerseyFactory);
-
-        return new TransportClientFactory() {
-            @Override
-            public EurekaHttpClient newClient(EurekaEndpoint serviceUrl) {
-                return metricsFactory.newClient(serviceUrl);
-            }
-
-            @Override
-            public void shutdown() {
-                metricsFactory.shutdown();
-                jerseyFactory.shutdown();
             }
         };
     }

@@ -38,6 +38,7 @@ import com.netflix.discovery.shared.resolver.StaticClusterResolver;
 import com.netflix.discovery.shared.resolver.aws.ApplicationsResolver;
 import com.netflix.discovery.shared.resolver.aws.EurekaHttpResolver;
 import com.netflix.discovery.shared.resolver.aws.TestEurekaHttpResolver;
+import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.sun.jersey.api.client.ClientHandlerException;
@@ -101,7 +102,7 @@ public class EurekaHttpClientsTest {
                 "test",
                 transportConfig,
                 clusterResolver,
-                EurekaHttpClients.newTransportClientFactory(
+                TransportClientFactories.newTransportClientFactory(
                         clientConfig,
                         Collections.<ClientFilter>emptyList(),
                         applicationInfoManager.getInfo()
@@ -193,7 +194,7 @@ public class EurekaHttpClientsTest {
         TestFilter testFilter = new TestFilter();
         Collection<ClientFilter> additionalFilters = Arrays.asList(testFilter);
 
-        TransportClientFactory transportClientFactory = EurekaHttpClients.newTransportClientFactory(
+        TransportClientFactory transportClientFactory = TransportClientFactories.newTransportClientFactory(
                 clientConfig,
                 additionalFilters,
                 MY_INSTANCE
