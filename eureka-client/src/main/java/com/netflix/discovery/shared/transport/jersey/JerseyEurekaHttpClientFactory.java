@@ -17,6 +17,7 @@
 package com.netflix.discovery.shared.transport.jersey;
 
 import com.netflix.appinfo.AbstractEurekaIdentity;
+import com.netflix.appinfo.EurekaAccept;
 import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
@@ -28,6 +29,7 @@ import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
 import com.sun.jersey.api.client.config.ClientConfig;
+import com.sun.jersey.api.client.filter.ClientFilter;
 import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import com.sun.jersey.client.apache4.config.ApacheHttpClient4Config;
@@ -41,6 +43,11 @@ import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.CoreProtocolPNames;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
 
 /**
@@ -48,36 +55,48 @@ import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
  */
 public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
 
+    public static final String HTTP_X_DISCOVERY_ALLOW_REDIRECT = "X-Discovery-AllowRedirect";
+
     private final EurekaJerseyClient jerseyClient;
     private final ApacheHttpClient4 apacheClient;
     private final ApacheHttpClientConnectionCleaner cleaner;
-    private final boolean allowRedirects;
+    private final Map<String, String> additionalHeaders;
 
     /**
      * @deprecated {@link EurekaJerseyClient} is deprecated and will be removed
      */
     @Deprecated
     public JerseyEurekaHttpClientFactory(EurekaJerseyClient jerseyClient, boolean allowRedirects) {
-        this(jerseyClient, null, -1, allowRedirects);
+        this(
+                jerseyClient,
+                null,
+                -1,
+                Collections.singletonMap(HTTP_X_DISCOVERY_ALLOW_REDIRECT, allowRedirects ? "true" : "false")
+        );
     }
 
-    public JerseyEurekaHttpClientFactory(ApacheHttpClient4 apacheClient, long connectionIdleTimeout, boolean allowRedirects) {
-        this(null, apacheClient, connectionIdleTimeout, allowRedirects);
+    @Deprecated
+    public JerseyEurekaHttpClientFactory(EurekaJerseyClient jerseyClient, Map<String, String> additionalHeaders) {
+        this(jerseyClient, null, -1, additionalHeaders);
+    }
+
+    public JerseyEurekaHttpClientFactory(ApacheHttpClient4 apacheClient, long connectionIdleTimeout, Map<String, String> additionalHeaders) {
+        this(null, apacheClient, connectionIdleTimeout, additionalHeaders);
     }
 
     private JerseyEurekaHttpClientFactory(EurekaJerseyClient jerseyClient,
                                           ApacheHttpClient4 apacheClient,
                                           long connectionIdleTimeout,
-                                          boolean allowRedirects) {
+                                          Map<String, String> additionalHeaders) {
         this.jerseyClient = jerseyClient;
         this.apacheClient = jerseyClient != null ? jerseyClient.getClient() : apacheClient;
-        this.allowRedirects = allowRedirects;
+        this.additionalHeaders = additionalHeaders;
         this.cleaner = new ApacheHttpClientConnectionCleaner(this.apacheClient, connectionIdleTimeout);
     }
 
     @Override
     public EurekaHttpClient newClient(EurekaEndpoint endpoint) {
-        return new JerseyApplicationClient(apacheClient, endpoint.getServiceUrl(), allowRedirects);
+        return new JerseyApplicationClient(apacheClient, endpoint.getServiceUrl(), additionalHeaders);
     }
 
     @Override
@@ -91,11 +110,14 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
     }
 
     public static JerseyEurekaHttpClientFactory create(EurekaClientConfig clientConfig,
+                                                       Collection<ClientFilter> additionalFilters,
                                                        InstanceInfo myInstanceInfo,
                                                        AbstractEurekaIdentity clientIdentity) {
         JerseyEurekaHttpClientFactoryBuilder clientBuilder = newBuilder()
+                .withAdditionalFilters(additionalFilters)
                 .withMyInstanceInfo(myInstanceInfo)
                 .withUserAgent("Java-EurekaClient")
+                .withClientAccept(EurekaAccept.fromString(clientConfig.getClientDataAccept()))
                 .withAllowRedirect(clientConfig.allowRedirects())
                 .withConnectionTimeout(clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000)
                 .withReadTimeout(clientConfig.getEurekaServerReadTimeoutSeconds() * 1000)
@@ -121,17 +143,12 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
         return clientBuilder.build();
     }
 
-    public static JerseyEurekaHttpClientFactory create(EurekaClientConfig clientConfig,
-                                                       InstanceInfo myInstanceInfo) {
-        return create(clientConfig, myInstanceInfo, new EurekaClientIdentity(myInstanceInfo.getIPAddr()));
-    }
-
     public static JerseyEurekaHttpClientFactoryBuilder newBuilder() {
-        return new JerseyEurekaHttpClientFactoryBuilder(false);
+        return new JerseyEurekaHttpClientFactoryBuilder().withExperimental(false);
     }
 
     public static JerseyEurekaHttpClientFactoryBuilder experimentalBuilder() {
-        return new JerseyEurekaHttpClientFactoryBuilder(true);
+        return new JerseyEurekaHttpClientFactoryBuilder().withExperimental(true);
     }
 
     /**
@@ -140,21 +157,36 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
      */
     public static class JerseyEurekaHttpClientFactoryBuilder extends EurekaClientFactoryBuilder<JerseyEurekaHttpClientFactory, JerseyEurekaHttpClientFactoryBuilder> {
 
-        private final boolean experimental;
+        private Collection<ClientFilter> additionalFilters = Collections.emptyList();
+        private boolean experimental = false;
 
-        public JerseyEurekaHttpClientFactoryBuilder(boolean experimental) {
+        public JerseyEurekaHttpClientFactoryBuilder withAdditionalFilters(Collection<ClientFilter> additionalFilters) {
+            this.additionalFilters = additionalFilters;
+            return this;
+        }
+
+        public JerseyEurekaHttpClientFactoryBuilder withExperimental(boolean experimental) {
             this.experimental = experimental;
+            return this;
         }
 
         @Override
         public JerseyEurekaHttpClientFactory build() {
-            if (experimental) {
-                return buildExperimental();
+            Map<String, String> additionalHeaders = new HashMap<>();
+            if (allowRedirect) {
+                additionalHeaders.put(HTTP_X_DISCOVERY_ALLOW_REDIRECT, "true");
             }
-            return buildLegacy();
+            if (EurekaAccept.compact == eurekaAccept) {
+                additionalHeaders.put(EurekaAccept.HTTP_X_EUREKA_ACCEPT, eurekaAccept.name());
+            }
+
+            if (experimental) {
+                return buildExperimental(additionalHeaders);
+            }
+            return buildLegacy(additionalHeaders);
         }
 
-        private JerseyEurekaHttpClientFactory buildLegacy() {
+        private JerseyEurekaHttpClientFactory buildLegacy(Map<String, String> additionalHeaders) {
             EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
                     .withClientName(clientName)
                     .withUserAgent("Java-EurekaClient")
@@ -170,10 +202,10 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
             ApacheHttpClient4 discoveryApacheClient = jerseyClient.getClient();
             addFilters(discoveryApacheClient);
 
-            return new JerseyEurekaHttpClientFactory(jerseyClient, allowRedirect);
+            return new JerseyEurekaHttpClientFactory(jerseyClient, additionalHeaders);
         }
 
-        private JerseyEurekaHttpClientFactory buildExperimental() {
+        private JerseyEurekaHttpClientFactory buildExperimental(Map<String, String> additionalHeaders) {
             ThreadSafeClientConnManager cm = createConnectionManager();
             ClientConfig clientConfig = new DefaultApacheHttpClient4Config();
 
@@ -200,7 +232,7 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
             ApacheHttpClient4 apacheClient = ApacheHttpClient4.create(clientConfig);
             addFilters(apacheClient);
 
-            return new JerseyEurekaHttpClientFactory(apacheClient, connectionIdleTimeout, allowRedirect);
+            return new JerseyEurekaHttpClientFactory(apacheClient, connectionIdleTimeout, additionalHeaders);
         }
 
         /**
@@ -244,6 +276,14 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
             String ip = myInstanceInfo == null ? null : myInstanceInfo.getIPAddr();
             AbstractEurekaIdentity identity = clientIdentity == null ? new EurekaClientIdentity(ip) : clientIdentity;
             discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
+
+            if (additionalFilters != null) {
+                for (ClientFilter filter : additionalFilters) {
+                    if (filter != null) {
+                        discoveryApacheClient.addFilter(filter);
+                    }
+                }
+            }
         }
     }
 }

@@ -18,7 +18,11 @@ package com.netflix.discovery.shared.transport;
 
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.appinfo.ApplicationInfoManager;
@@ -34,8 +38,13 @@ import com.netflix.discovery.shared.resolver.StaticClusterResolver;
 import com.netflix.discovery.shared.resolver.aws.ApplicationsResolver;
 import com.netflix.discovery.shared.resolver.aws.EurekaHttpResolver;
 import com.netflix.discovery.shared.resolver.aws.TestEurekaHttpResolver;
+import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.ClientRequest;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.filter.ClientFilter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -93,8 +102,9 @@ public class EurekaHttpClientsTest {
                 "test",
                 transportConfig,
                 clusterResolver,
-                EurekaHttpClients.newTransportClientFactory(
+                TransportClientFactories.newTransportClientFactory(
                         clientConfig,
+                        Collections.<ClientFilter>emptyList(),
                         applicationInfoManager.getInfo()
                 ));
     }
@@ -177,6 +187,37 @@ public class EurekaHttpClientsTest {
 
         verify(remoteResolver, times(1)).getClusterEndpoints();
         verify(localResolver, times(2)).getClusterEndpoints();
+    }
 
+    @Test
+    public void testAddingAdditionalFilters() throws Exception {
+        TestFilter testFilter = new TestFilter();
+        Collection<ClientFilter> additionalFilters = Arrays.asList(testFilter);
+
+        TransportClientFactory transportClientFactory = TransportClientFactories.newTransportClientFactory(
+                clientConfig,
+                additionalFilters,
+                MY_INSTANCE
+        );
+
+        EurekaHttpClient client = transportClientFactory.newClient(clusterResolver.getClusterEndpoints().get(0));
+        client.getApplication("foo");
+
+        assertThat(testFilter.await(30, TimeUnit.SECONDS), is(true));
+    }
+
+    private static class TestFilter extends ClientFilter {
+
+        private final CountDownLatch latch = new CountDownLatch(1);
+
+        @Override
+        public ClientResponse handle(ClientRequest cr) throws ClientHandlerException {
+            latch.countDown();
+            return mock(ClientResponse.class);
+        }
+
+        public boolean await(long timeout, TimeUnit unit) throws Exception {
+            return latch.await(timeout, unit);
+        }
     }
 }

@@ -20,6 +20,8 @@ import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource.Builder;
 
+import java.util.Map;
+
 /**
  * A version of Jersey {@link EurekaHttpClient} to be used by applications.
  *
@@ -27,19 +29,19 @@ import com.sun.jersey.api.client.WebResource.Builder;
  */
 public class JerseyApplicationClient extends AbstractJerseyEurekaHttpClient {
 
-    public static final String HTTP_X_DISCOVERY_ALLOW_REDIRECT = "X-Discovery-AllowRedirect";
+    private final Map<String, String> additionalHeaders;
 
-    private final boolean allowRedirect;
-
-    public JerseyApplicationClient(Client jerseyClient, String serviceUrl, boolean allowRedirect) {
+    public JerseyApplicationClient(Client jerseyClient, String serviceUrl, Map<String, String> additionalHeaders) {
         super(jerseyClient, serviceUrl);
-        this.allowRedirect = allowRedirect;
+        this.additionalHeaders = additionalHeaders;
     }
 
     @Override
     protected void addExtraHeaders(Builder webResource) {
-        if (allowRedirect) {
-            webResource.header(HTTP_X_DISCOVERY_ALLOW_REDIRECT, "true");
+        if (additionalHeaders != null) {
+            for (String key : additionalHeaders.keySet()) {
+                webResource.header(key, additionalHeaders.get(key));
+            }
         }
     }
 }

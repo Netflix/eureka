@@ -134,6 +134,9 @@ public class SimpleEurekaHttpServer {
             httpExchange.sendResponseHeaders(HttpServletResponse.SC_NOT_FOUND, 0);
             return;
         }
+        if (httpResponse == null) {
+            httpResponse = EurekaHttpResponse.anEurekaHttpResponse(HttpServletResponse.SC_NOT_FOUND).build();
+        }
         mapResponse(httpExchange, httpResponse);
     }
 

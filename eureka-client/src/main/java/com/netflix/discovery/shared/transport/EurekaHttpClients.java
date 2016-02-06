@@ -30,12 +30,10 @@ import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
 import com.netflix.discovery.shared.resolver.aws.ConfigClusterResolver;
 import com.netflix.discovery.shared.resolver.aws.EurekaHttpResolver;
 import com.netflix.discovery.shared.resolver.aws.ZoneAffinityClusterResolver;
-import com.netflix.discovery.shared.transport.decorator.MetricsCollectingEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.SessionedEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.RedirectingEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.ServerStatusEvaluators;
-import com.netflix.discovery.shared.transport.jersey.JerseyEurekaHttpClientFactory;
 
 /**
  * @author Tomasz Bak
@@ -88,25 +86,6 @@ public final class EurekaHttpClients {
             @Override
             public void shutdown() {
                 wrapClosable(clusterResolver).shutdown();
-            }
-        };
-    }
-
-    public static TransportClientFactory newTransportClientFactory(final EurekaClientConfig clientConfig,
-                                                                   final InstanceInfo myInstanceInfo) {
-        final TransportClientFactory jerseyFactory = JerseyEurekaHttpClientFactory.create(clientConfig, myInstanceInfo);
-        final TransportClientFactory metricsFactory = MetricsCollectingEurekaHttpClient.createFactory(jerseyFactory);
-
-        return new TransportClientFactory() {
-            @Override
-            public EurekaHttpClient newClient(EurekaEndpoint serviceUrl) {
-                return metricsFactory.newClient(serviceUrl);
-            }
-
-            @Override
-            public void shutdown() {
-                metricsFactory.shutdown();
-                jerseyFactory.shutdown();
             }
         };
     }
