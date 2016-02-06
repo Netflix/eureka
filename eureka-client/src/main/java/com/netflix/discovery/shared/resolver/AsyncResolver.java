@@ -115,7 +115,12 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
 
         this.threadPoolExecutor = new ThreadPoolExecutor(
                 1, executorThreadPoolSize, 0, TimeUnit.SECONDS,
-                new SynchronousQueue<Runnable>());  // use direct handoff
+                new SynchronousQueue<Runnable>(),  // use direct handoff
+                new ThreadFactoryBuilder()
+                        .setNameFormat("AsyncResolver-executor-%d")
+                        .setDaemon(true)
+                        .build()
+        );
 
         this.backgroundTask = new TimedSupervisorTask(
                 this.getClass().getSimpleName(),
@@ -178,7 +183,7 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
         return false;
     }
 
-    private void scheduleTask(long delay) {
+    /* visible for testing */ void scheduleTask(long delay) {
         executorService.schedule(
                 backgroundTask, delay, TimeUnit.MILLISECONDS);
     }
