@@ -12,6 +12,8 @@ import java.util.List;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
@@ -81,6 +83,10 @@ public class AsyncResolverTest {
     public void testDelegateFailureAtWarmUp() {
         when(delegateResolver.getClusterEndpoints())
                 .thenReturn(null);
+
+        // override the scheduling which will be triggered immediately if warmUp fails (as is intended).
+        // do this to avoid thread race conditions for a more predictable test
+        doNothing().when(resolver).scheduleTask(anyLong());
 
         List endpoints = resolver.getClusterEndpoints();
         assertThat(endpoints.isEmpty(), is(true));
