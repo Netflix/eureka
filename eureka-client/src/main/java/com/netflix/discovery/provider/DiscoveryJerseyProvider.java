@@ -16,6 +16,7 @@
 
 package com.netflix.discovery.provider;
 
+import javax.annotation.Nullable;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
@@ -30,7 +31,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.discovery.converters.wrappers.CodecWrappers;
 import com.netflix.discovery.converters.wrappers.CodecWrappers.LegacyJacksonJson;
@@ -43,71 +44,92 @@ import org.slf4j.LoggerFactory;
  * A custom provider implementation for Jersey that dispatches to the
  * implementation that serializes/deserializes objects sent to and from eureka
  * server.
+ * <p/>
+ * <p>
+ * This implementation allows users to plugin their own
+ * serialization/deserialization mechanism by reading the annotation provided by
+ * specifying the {@link Serializer} and dispatching it to that implementation.
+ * </p>
  *
  * @author Karthik Ranganathan
  */
 @Provider
-@Produces({"application/json", "application/xml"})
+@Produces("*/*")
 @Consumes("*/*")
-public class DiscoveryJerseyProvider implements MessageBodyWriter<Object>, MessageBodyReader<Object> {
+public class DiscoveryJerseyProvider implements MessageBodyWriter, MessageBodyReader {
     private static final Logger LOGGER = LoggerFactory.getLogger(DiscoveryJerseyProvider.class);
 
-    private final EncoderWrapper jsonEncoder;
-    private final DecoderWrapper jsonDecoder;
+    // Cache the serializers so that they don't have to be instantiated every time
+    private static ConcurrentHashMap<Class, ISerializer> serializers = new ConcurrentHashMap<Class, ISerializer>();
 
-    // XML support is maintained for legacy/custom clients. These codecs are used only on the server side only, while
-    // Eureka client is using JSON only.
-    private final EncoderWrapper xmlEncoder;
-    private final DecoderWrapper xmlDecoder;
+    private final EncoderWrapper encoder;
+    private final DecoderWrapper decoder;
 
     public DiscoveryJerseyProvider() {
         this(null, null);
     }
 
-    public DiscoveryJerseyProvider(EncoderWrapper jsonEncoder, DecoderWrapper jsonDecoder) {
-        this.jsonEncoder = jsonEncoder == null ? CodecWrappers.getEncoder(LegacyJacksonJson.class) : jsonEncoder;
-        this.jsonDecoder = jsonDecoder == null ? CodecWrappers.getDecoder(LegacyJacksonJson.class) : jsonDecoder;
-        LOGGER.info("Using JSON encoding codec {}", this.jsonEncoder.codecName());
-        LOGGER.info("Using JSON decoding codec {}", this.jsonDecoder.codecName());
+    public DiscoveryJerseyProvider(EncoderWrapper encoder, DecoderWrapper decoder) {
+        this.encoder = encoder == null ? CodecWrappers.getEncoder(LegacyJacksonJson.class) : encoder;
+        this.decoder = decoder == null ? CodecWrappers.getDecoder(LegacyJacksonJson.class) : decoder;
 
-        if (jsonEncoder instanceof CodecWrappers.JacksonJsonMini) {
-            throw new UnsupportedOperationException("Encoder: " + jsonEncoder.codecName() + "is not supported for the client");
+        if (encoder instanceof CodecWrappers.JacksonJsonMini) {
+            throw new UnsupportedOperationException("Encoder: " + encoder.codecName() + "is not supported for the client");
         }
 
-        this.xmlEncoder = CodecWrappers.getEncoder(CodecWrappers.XStreamXml.class);
-        this.xmlDecoder = CodecWrappers.getDecoder(CodecWrappers.XStreamXml.class);
+        LOGGER.info("Using encoding codec {}", this.encoder.codecName());
+        LOGGER.info("Using decoding codec {}", this.decoder.codecName());
+    }
 
-        LOGGER.info("Using XML encoding codec {}", this.xmlEncoder.codecName());
-        LOGGER.info("Using XML decoding codec {}", this.xmlDecoder.codecName());
+    public EncoderWrapper getEncoder() {
+        return encoder;
+    }
+
+    public DecoderWrapper getDecoder() {
+        return decoder;
     }
 
     @Override
     public boolean isReadable(Class serializableClass, Type type, Annotation[] annotations, MediaType mediaType) {
-        return isSupported(mediaType) && isSupportedCharset(mediaType);
+        if ("application".equals(mediaType.getType()) && ("xml".equals(mediaType.getSubtype()) || "json".equals(mediaType.getSubtype()))) {
+            return checkForAnnotation(serializableClass);
+        }
+        return false;
     }
 
     @Override
     public Object readFrom(Class serializableClass, Type type,
                            Annotation[] annotations, MediaType mediaType,
                            MultivaluedMap headers, InputStream inputStream) throws IOException {
-        DecoderWrapper decoder;
-        if (MediaType.MEDIA_TYPE_WILDCARD.equals(mediaType.getSubtype())) {
-            decoder = xmlDecoder;
-        } else if ("json".equalsIgnoreCase(mediaType.getSubtype())) {
-            decoder = jsonDecoder;
-        } else {
-            decoder = xmlDecoder; // default
+        if (decoder.support(mediaType)) {
+            try {
+                return decoder.decode(inputStream, serializableClass);
+            } catch (Throwable e) {
+                if (e instanceof Error) { // See issue: https://github.com/Netflix/eureka/issues/72 on why we catch Error here.
+                    closeInputOnError(inputStream);
+                    throw new WebApplicationException(createErrorReply(500, e, mediaType));
+                }
+                LOGGER.debug("Cannot parse request body", e);
+                throw new WebApplicationException(createErrorReply(400, "cannot parse request body", mediaType));
+            }
         }
 
-        try {
-            return decoder.decode(inputStream, serializableClass);
-        } catch (Throwable e) {
-            if (e instanceof Error) { // See issue: https://github.com/Netflix/eureka/issues/72 on why we catch Error here.
-                closeInputOnError(inputStream);
-                throw new WebApplicationException(createErrorReply(500, e, mediaType));
+        // default to XML encoded with XStream
+        ISerializer serializer = getSerializer(serializableClass);
+        if (null != serializer) {
+            try {
+                return serializer.read(inputStream, serializableClass, mediaType);
+            } catch (Throwable e) {
+                if (e instanceof Error) { // See issue: https://github.com/Netflix/eureka/issues/72 on why we catch Error here.
+                    closeInputOnError(inputStream);
+                    throw new WebApplicationException(createErrorReply(500, e, mediaType));
+                }
+                LOGGER.debug("Cannot parse request body", e);
+                throw new WebApplicationException(createErrorReply(400, "cannot parse request body", mediaType));
             }
-            LOGGER.debug("Cannot parse request body", e);
-            throw new WebApplicationException(createErrorReply(400, "cannot parse request body", mediaType));
+        } else {
+            LOGGER.error("No serializer available for serializable class: {}, de-serialization will fail.", serializableClass);
+            throw new WebApplicationException(createErrorReply(500, "No serializer available for serializable class: " + serializableClass, mediaType));
         }
     }
 
@@ -118,48 +140,86 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter<Object>, Messa
 
     @Override
     public boolean isWriteable(Class serializableClass, Type type, Annotation[] annotations, MediaType mediaType) {
-        return isSupported(mediaType);
+        return checkForAnnotation(serializableClass);
     }
 
     @Override
     public void writeTo(Object serializableObject, Class serializableClass,
                         Type type, Annotation[] annotations, MediaType mediaType,
                         MultivaluedMap headers, OutputStream outputStream) throws IOException, WebApplicationException {
-        EncoderWrapper encoder = "json".equalsIgnoreCase(mediaType.getSubtype()) ? jsonEncoder : xmlEncoder;
 
-        // XML codec may not be available
-        if (encoder == null) {
-            throw new WebApplicationException(createErrorReply(400, "No codec available to serialize content type " + mediaType, mediaType));
+        if (encoder.support(mediaType)) {
+            encoder.encode(serializableObject, outputStream);
+        } else {  // default
+            ISerializer serializer = getSerializer(serializableClass);
+            if (null != serializer) {
+                serializer.write(serializableObject, outputStream, mediaType);
+            } else {
+                LOGGER.error("No serializer available for serializable class: " + serializableClass
+                        + ", serialization will fail.");
+                throw new IOException("No serializer available for serializable class: " + serializableClass);
+            }
         }
-
-        encoder.encode(serializableObject, outputStream);
     }
 
-    private boolean isSupported(MediaType mediaType) {
-        if (MediaType.APPLICATION_JSON_TYPE.isCompatible(mediaType)) {
-            return true;
-        }
-        if (MediaType.APPLICATION_XML_TYPE.isCompatible(mediaType)) {
-            return xmlDecoder != null;
+    /**
+     * Checks for the {@link java.io.Serializable} annotation for the given class.
+     *
+     * @param serializableClass The class to be serialized/deserialized.
+     * @return true if the annotation is present, false otherwise.
+     */
+    private boolean checkForAnnotation(Class serializableClass) {
+        try {
+            Annotation annotation = serializableClass.getAnnotation(Serializer.class);
+            if (annotation != null) {
+                return true;
+            }
+        } catch (Throwable th) {
+            LOGGER.warn("Exception in checking for annotations", th);
         }
         return false;
     }
 
     /**
-     * As content is cached, we expect both ends use UTF-8 always. If no content charset encoding is explicitly
-     * defined, UTF-8 is assumed as a default.
-     * As legacy clients may use ISO 8859-1 we accept it as well, although result may be unspecified if
-     * characters out of ASCII 0-127 range are used.
+     * Gets the {@link Serializer} implementation for serializing/ deserializing
+     * objects.
+     * <p/>
+     * <p/>
+     * The implementation is cached after the first time instantiation and then
+     * returned.
+     * <p/>
+     *
+     * @param serializableClass - The class that is to be serialized/deserialized.
+     * @return The {@link Serializer} implementation for serializing/
+     * deserializing objects.
      */
-    private static boolean isSupportedCharset(MediaType mediaType) {
-        Map<String, String> parameters = mediaType.getParameters();
-        if (parameters == null || parameters.isEmpty()) {
-            return true;
+    @Nullable
+    private static ISerializer getSerializer(@SuppressWarnings("rawtypes") Class serializableClass) {
+        ISerializer converter = null;
+        Annotation annotation = serializableClass.getAnnotation(Serializer.class);
+        if (annotation != null) {
+            Serializer payloadConverter = (Serializer) annotation;
+            String serializer = payloadConverter.value();
+            if (serializer != null) {
+                converter = serializers.get(serializableClass);
+                if (converter == null) {
+                    try {
+                        converter = (ISerializer) Class.forName(serializer).newInstance();
+                    } catch (InstantiationException e) {
+                        LOGGER.error("Error creating a serializer.", e);
+                    } catch (IllegalAccessException e) {
+                        LOGGER.error("Error creating a serializer.", e);
+                    } catch (ClassNotFoundException e) {
+                        LOGGER.error("Error creating a serializer.", e);
+                    }
+                    if (null != converter) {
+                        serializers.put(serializableClass, converter);
+                    }
+                }
+            }
+
         }
-        String charset = parameters.get("charset");
-        return charset == null
-                || "UTF-8".equalsIgnoreCase(charset)
-                || "ISO-8859-1".equalsIgnoreCase(charset);
+        return converter;
     }
 
     private static Response createErrorReply(int status, Throwable cause, MediaType mediaType) {
