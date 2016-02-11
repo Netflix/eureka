@@ -57,7 +57,10 @@ public class ApplicationsResolver implements ClusterResolver<AwsEndpoint> {
             List<InstanceInfo> validInstanceInfos = applications.getInstancesByVirtualHostName(vipAddress);
             for (InstanceInfo instanceInfo : validInstanceInfos) {
                 if (instanceInfo.getStatus() == InstanceInfo.InstanceStatus.UP) {
-                    result.add(ResolverUtils.instanceInfoToEndpoint(clientConfig, instanceInfo));
+                    AwsEndpoint endpoint = ResolverUtils.instanceInfoToEndpoint(clientConfig, transportConfig, instanceInfo);
+                    if (endpoint != null) {
+                        result.add(endpoint);
+                    }
                 }
             }
         }

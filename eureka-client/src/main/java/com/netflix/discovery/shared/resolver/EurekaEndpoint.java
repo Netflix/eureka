@@ -16,14 +16,17 @@
 
 package com.netflix.discovery.shared.resolver;
 
-/**
- * @author David Liu
- */
 public interface EurekaEndpoint extends Comparable<Object> {
 
     String getServiceUrl();
 
+    /**
+     * @deprecated use {@link #getNetworkAddress()}
+     */
+    @Deprecated
     String getHostName();
+
+    String getNetworkAddress();
 
     int getPort();
 

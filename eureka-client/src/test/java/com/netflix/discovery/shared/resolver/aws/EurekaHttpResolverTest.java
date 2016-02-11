@@ -6,6 +6,7 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
+import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.junit.After;
 import org.junit.Before;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.when;
 public class EurekaHttpResolverTest {
 
     private final EurekaClientConfig clientConfig = mock(EurekaClientConfig.class);
+    private final EurekaTransportConfig transportConfig = mock(EurekaTransportConfig.class);
     private final EurekaHttpClientFactory clientFactory = mock(EurekaHttpClientFactory.class);
     private final EurekaHttpClient httpClient = mock(EurekaHttpClient.class);
 
@@ -45,7 +47,7 @@ public class EurekaHttpResolverTest {
         when(clientFactory.newClient()).thenReturn(httpClient);
         when(httpClient.getVip(vipAddress)).thenReturn(EurekaHttpResponse.anEurekaHttpResponse(200, applications).build());
 
-        resolver = new EurekaHttpResolver(clientConfig, clientFactory, vipAddress);
+        resolver = new EurekaHttpResolver(clientConfig, transportConfig, clientFactory, vipAddress);
     }
 
     @After

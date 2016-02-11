@@ -34,6 +34,11 @@ public class DefaultEurekaTransportConfig implements EurekaTransportConfig {
     }
 
     @Override
+    public boolean applicationsResolverUseIp() {
+        return configInstance.getBooleanProperty(namespace + "applicationsResolverUseIp", false).get();
+    }
+
+    @Override
     public int getAsyncResolverRefreshIntervalMs() {
         return configInstance.getIntProperty(namespace + "asyncResolverRefreshIntervalMs", 5*60*1000).get();
     }

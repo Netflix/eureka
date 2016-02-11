@@ -23,6 +23,14 @@ public interface EurekaTransportConfig {
     int getApplicationsResolverDataStalenessThresholdSeconds();
 
     /**
+     * By default, the applications resolver extracts the public hostname from internal InstanceInfos for resolutions.
+     * Set this to true to change this behaviour to use ip addresses instead (private ip if ip type can be determined).
+     *
+     * @return false by default
+     */
+    boolean applicationsResolverUseIp();
+
+    /**
      * @return the interval to poll for the async resolver.
      */
     int getAsyncResolverRefreshIntervalMs();

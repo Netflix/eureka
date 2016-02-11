@@ -162,7 +162,7 @@ public class EurekaHttpClientsTest {
         when(remoteResolverClientFactory.newClient()).thenReturn(httpClient);
         when(httpClient.getVip(vipAddress)).thenReturn(EurekaHttpResponse.anEurekaHttpResponse(200, applications).build());
 
-        EurekaHttpResolver remoteResolver = spy(new TestEurekaHttpResolver(clientConfig, remoteResolverClientFactory, vipAddress));
+        EurekaHttpResolver remoteResolver = spy(new TestEurekaHttpResolver(clientConfig, transportConfig, remoteResolverClientFactory, vipAddress));
         when(transportConfig.getReadClusterVip()).thenReturn(vipAddress);
 
         ApplicationsResolver localResolver = spy(new ApplicationsResolver(

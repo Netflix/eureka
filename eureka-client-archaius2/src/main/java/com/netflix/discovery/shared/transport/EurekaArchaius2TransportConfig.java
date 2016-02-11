@@ -40,6 +40,11 @@ public class EurekaArchaius2TransportConfig implements EurekaTransportConfig {
     }
 
     @Override
+    public boolean applicationsResolverUseIp() {
+        return config.getBoolean("applicationsResolverUseIp", false);
+    }
+
+    @Override
     public int getAsyncResolverRefreshIntervalMs() {
         return config.getInteger("asyncResolverRefreshIntervalMs", 5 * 60 * 1000);
     }
