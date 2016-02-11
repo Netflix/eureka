@@ -29,11 +29,6 @@ public class DefaultEurekaTransportConfig implements EurekaTransportConfig {
     }
 
     @Override
-    public int getBootstrapResolverRefreshIntervalSeconds() {
-        return configInstance.getIntProperty(namespace + "bootstrapResolverRefreshIntervalSeconds", 5*60).get();
-    }
-
-    @Override
     public int getApplicationsResolverDataStalenessThresholdSeconds() {
         return configInstance.getIntProperty(namespace + "applicationsResolverDataStalenessThresholdSeconds", 5*60).get();
     }
@@ -54,8 +49,18 @@ public class DefaultEurekaTransportConfig implements EurekaTransportConfig {
     }
 
     @Override
+    public String getWriteClusterVip() {
+        return configInstance.getStringProperty(namespace + "writeClusterVip", null).get();
+    }
+
+    @Override
     public String getReadClusterVip() {
         return configInstance.getStringProperty(namespace + "readClusterVip", null).get();
+    }
+
+    @Override
+    public String getBootstrapResolverStrategy() {
+        return configInstance.getStringProperty(namespace + "bootstrapResolverStrategy", null).get();
     }
 
     @Override

@@ -34,11 +34,15 @@ import com.netflix.discovery.shared.transport.decorator.SessionedEurekaHttpClien
 import com.netflix.discovery.shared.transport.decorator.RedirectingEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.ServerStatusEvaluators;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Tomasz Bak
  */
 public final class EurekaHttpClients {
+
+    private static final Logger logger = LoggerFactory.getLogger(EurekaHttpClients.class);
 
     private EurekaHttpClients() {
     }
@@ -94,13 +98,43 @@ public final class EurekaHttpClients {
     // Resolvers for the client factories
     // ==================================
 
-    public static ClosableResolver<AwsEndpoint> newBootstrapResolver(final EurekaClientConfig clientConfig,
-                                                                     final InstanceInfo myInstanceInfo) {
+    public static final String COMPOSITE_BOOTSTRAP_STRATEGY = "composite";
+
+    public static ClosableResolver<AwsEndpoint> newBootstrapResolver(
+            final EurekaClientConfig clientConfig,
+            final EurekaTransportConfig transportConfig,
+            final InstanceInfo myInstanceInfo,
+            final ApplicationsResolver.ApplicationsSource applicationsSource)
+    {
+        if (COMPOSITE_BOOTSTRAP_STRATEGY.equals(transportConfig.getBootstrapResolverStrategy())) {
+            if (clientConfig.shouldFetchRegistry()) {
+                return compositeBootstrapResolver(
+                        clientConfig,
+                        transportConfig,
+                        myInstanceInfo,
+                        applicationsSource
+                );
+            } else {
+                logger.warn("Cannot create a composite bootstrap resolver if registry fetch is disabled." +
+                        " Falling back to using a default bootstrap resolver.");
+            }
+        }
+
+        // if all else fails, return the default
+        return defaultBootstrapResolver(clientConfig, myInstanceInfo);
+    }
+
+    /**
+     * @return a bootstrap resolver that resolves eureka server endpoints based on either DNS or static config,
+     *         depending on configuration for one or the other. This resolver will warm up at the start.
+     */
+    static ClosableResolver<AwsEndpoint> defaultBootstrapResolver(final EurekaClientConfig clientConfig,
+                                                                  final InstanceInfo myInstanceInfo) {
         String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
         String myZone = InstanceInfo.getZone(availZones, myInstanceInfo);
 
         ClusterResolver<AwsEndpoint> delegateResolver = new ZoneAffinityClusterResolver(
-                defaultBootstrapResolver(clientConfig, myInstanceInfo),
+                new ConfigClusterResolver(clientConfig, myInstanceInfo),
                 myZone,
                 true
         );
@@ -116,43 +150,24 @@ public final class EurekaHttpClients {
         );
     }
 
-    static ClusterResolver<AwsEndpoint> defaultBootstrapResolver(final EurekaClientConfig clientConfig,
-                                                                 final InstanceInfo myInstanceInfo) {
-        return new ConfigClusterResolver(clientConfig, myInstanceInfo);
-    }
-
-    static ClosableResolver<AwsEndpoint> queryClientResolver(final ClusterResolver bootstrapResolver,
-                                                             final TransportClientFactory transportClientFactory,
-                                                             final EurekaClientConfig clientConfig,
-                                                             final EurekaTransportConfig transportConfig,
-                                                             final InstanceInfo myInstanceInfo,
-                                                             final ApplicationsResolver.ApplicationsSource applicationsSource) {
-        final EurekaHttpResolver remoteResolver = new EurekaHttpResolver(
-                clientConfig,
-                transportConfig,
-                bootstrapResolver,
-                transportClientFactory,
-                transportConfig.getReadClusterVip()
-        );
+    /**
+     * @return a bootstrap resolver that resolves eureka server endpoints based on either DNS or static config,
+     *         depending on configuration for one or the other. This resolver will warm up at the start.
+     */
+    static ClosableResolver<AwsEndpoint> compositeBootstrapResolver(
+            final EurekaClientConfig clientConfig,
+            final EurekaTransportConfig transportConfig,
+            final InstanceInfo myInstanceInfo,
+            final ApplicationsResolver.ApplicationsSource applicationsSource)
+    {
+        final ConfigClusterResolver remoteResolver = new ConfigClusterResolver(clientConfig, myInstanceInfo);
 
         final ApplicationsResolver localResolver = new ApplicationsResolver(
                 clientConfig,
                 transportConfig,
-                applicationsSource
+                applicationsSource,
+                transportConfig.getWriteClusterVip()
         );
-
-        return queryClientResolver(remoteResolver, localResolver, clientConfig, transportConfig, myInstanceInfo);
-    }
-
-
-    /* testing */ static ClosableResolver<AwsEndpoint> queryClientResolver(
-            final EurekaHttpResolver remoteResolver,
-            final ApplicationsResolver localResolver,
-            final EurekaClientConfig clientConfig,
-            final EurekaTransportConfig transportConfig,
-            final InstanceInfo myInstanceInfo) {
-        String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
-        String myZone = InstanceInfo.getZone(availZones, myInstanceInfo);
 
         ClusterResolver<AwsEndpoint> compoundResolver = new ClusterResolver<AwsEndpoint>() {
             @Override
@@ -171,30 +186,91 @@ public final class EurekaHttpClients {
             }
         };
 
-        final AsyncResolver<AwsEndpoint> asyncResolver = new AsyncResolver<>(
-                EurekaClientNames.QUERY,
+        List<AwsEndpoint> initialValue = compoundResolver.getClusterEndpoints();
+
+        String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
+        String myZone = InstanceInfo.getZone(availZones, myInstanceInfo);
+
+        return new AsyncResolver<>(
+                EurekaClientNames.BOOTSTRAP,
                 new ZoneAffinityClusterResolver(compoundResolver, myZone, true),
+                initialValue,
                 transportConfig.getAsyncExecutorThreadPoolSize(),
-                transportConfig.getAsyncResolverRefreshIntervalMs(),
-                transportConfig.getAsyncResolverWarmUpTimeoutMs()
+                transportConfig.getAsyncResolverRefreshIntervalMs()
+        );
+    }
+
+    /**
+     * @return a resolver that resolves eureka server endpoints for query operations
+     */
+    static ClosableResolver<AwsEndpoint> queryClientResolver(final ClusterResolver bootstrapResolver,
+                                                             final TransportClientFactory transportClientFactory,
+                                                             final EurekaClientConfig clientConfig,
+                                                             final EurekaTransportConfig transportConfig,
+                                                             final InstanceInfo myInstanceInfo,
+                                                             final ApplicationsResolver.ApplicationsSource applicationsSource) {
+        final EurekaHttpResolver remoteResolver = new EurekaHttpResolver(
+                clientConfig,
+                transportConfig,
+                bootstrapResolver,
+                transportClientFactory,
+                transportConfig.getReadClusterVip()
         );
 
-        return new ClosableResolver<AwsEndpoint>() {
-            @Override
-            public void shutdown() {
-                asyncResolver.shutdown();
-            }
+        final ApplicationsResolver localResolver = new ApplicationsResolver(
+                clientConfig,
+                transportConfig,
+                applicationsSource,
+                transportConfig.getReadClusterVip()
+        );
 
+        return compositeQueryResolver(
+                remoteResolver,
+                localResolver,
+                clientConfig,
+                transportConfig,
+                myInstanceInfo
+        );
+    }
+
+    /**
+     * @return a composite resolver that resolves eureka server endpoints for query operations, given two resolvers:
+     *         a resolver that can resolve targets via a remote call to a remote source, and a resolver that
+     *         can resolve targets via data in the local registry.
+     */
+    /* testing */ static ClosableResolver<AwsEndpoint> compositeQueryResolver(
+            final ClusterResolver<AwsEndpoint> remoteResolver,
+            final ClusterResolver<AwsEndpoint> localResolver,
+            final EurekaClientConfig clientConfig,
+            final EurekaTransportConfig transportConfig,
+            final InstanceInfo myInstanceInfo) {
+        String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
+        String myZone = InstanceInfo.getZone(availZones, myInstanceInfo);
+
+        ClusterResolver<AwsEndpoint> compositeResolver = new ClusterResolver<AwsEndpoint>() {
             @Override
             public String getRegion() {
-                return asyncResolver.getRegion();
+                return clientConfig.getRegion();
             }
 
             @Override
             public List<AwsEndpoint> getClusterEndpoints() {
-                return asyncResolver.getClusterEndpoints();
+                List<AwsEndpoint> result = localResolver.getClusterEndpoints();
+                if (result.isEmpty()) {
+                    result = remoteResolver.getClusterEndpoints();
+                }
+
+                return result;
             }
         };
+
+        return new AsyncResolver<>(
+                EurekaClientNames.QUERY,
+                new ZoneAffinityClusterResolver(compositeResolver, myZone, true),
+                transportConfig.getAsyncExecutorThreadPoolSize(),
+                transportConfig.getAsyncResolverRefreshIntervalMs(),
+                transportConfig.getAsyncResolverWarmUpTimeoutMs()
+        );
     }
 
 

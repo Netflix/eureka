@@ -109,7 +109,6 @@ public class DiscoveryClient implements EurekaClient {
     private static final Logger logger = LoggerFactory.getLogger(DiscoveryClient.class);
 
     // Constants
-    public static final int MAX_FOLLOWED_REDIRECTS = 10;
     public static final String HTTP_X_DISCOVERY_ALLOW_REDIRECT = "X-Discovery-AllowRedirect";
 
     private static final String VALUE_DELIMITER = ",";
@@ -440,8 +439,27 @@ public class DiscoveryClient implements EurekaClient {
     private void scheduleServerEndpointTask(EurekaTransport eurekaTransport,
                                             DiscoveryClientOptionalArgs args) {
 
-        eurekaTransport.bootstrapResolver = EurekaHttpClients
-                .newBootstrapResolver(clientConfig, applicationInfoManager.getInfo());
+        ApplicationsResolver.ApplicationsSource applicationsSource = new ApplicationsResolver.ApplicationsSource() {
+            @Override
+            public Applications getApplications(int stalenessThreshold, TimeUnit timeUnit) {
+                long thresholdInMs = TimeUnit.MILLISECONDS.convert(stalenessThreshold, timeUnit);
+                long delay = getLastSuccessfulRegistryFetchTimePeriod();
+                if (delay > thresholdInMs) {
+                    logger.info("Local registry is too stale for local lookup. Threshold:{}, actual:{}",
+                            thresholdInMs, delay);
+                    return null;
+                } else {
+                    return localRegionApps.get();
+                }
+            }
+        };
+
+        eurekaTransport.bootstrapResolver = EurekaHttpClients.newBootstrapResolver(
+                clientConfig,
+                transportConfig,
+                applicationInfoManager.getInfo(),
+                applicationsSource
+        );
 
         Collection<ClientFilter> additionalFilters = args == null
                 ? Collections.emptyList()
@@ -484,20 +502,7 @@ public class DiscoveryClient implements EurekaClient {
                         clientConfig,
                         transportConfig,
                         applicationInfoManager.getInfo(),
-                        new ApplicationsResolver.ApplicationsSource() {
-                            @Override
-                            public Applications getApplications(int stalenessThreshold, TimeUnit timeUnit) {
-                                long thresholdInMs = TimeUnit.MILLISECONDS.convert(stalenessThreshold, timeUnit);
-                                long delay = getLastSuccessfulRegistryFetchTimePeriod();
-                                if (delay > thresholdInMs) {
-                                    logger.info("Local registry is too stale for local lookup. Threshold:{}, actual:{}",
-                                            thresholdInMs, delay);
-                                    return null;
-                                } else {
-                                    return localRegionApps.get();
-                                }
-                            }
-                        }
+                        applicationsSource
                 );
                 newQueryClient = newQueryClientFactory.newClient();
             } catch (Exception e) {
