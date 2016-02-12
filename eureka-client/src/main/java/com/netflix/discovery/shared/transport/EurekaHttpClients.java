@@ -153,8 +153,8 @@ public final class EurekaHttpClients {
     }
 
     /**
-     * @return a bootstrap resolver that resolves eureka server endpoints based on either DNS or static config,
-     *         depending on configuration for one or the other. This resolver will warm up at the start.
+     * @return a bootstrap resolver that resolves eureka server endpoints via a remote call to a "vip source"
+     *         the local registry, where the source is found from a rootResolver (dns or config)
      */
     static ClosableResolver<AwsEndpoint> compositeBootstrapResolver(
             final EurekaClientConfig clientConfig,
