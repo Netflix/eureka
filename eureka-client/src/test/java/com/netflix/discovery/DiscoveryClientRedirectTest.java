@@ -15,6 +15,7 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.EurekaEntityFunctions;
 import com.netflix.discovery.util.InstanceInfoGenerator;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -80,6 +81,19 @@ public class DiscoveryClientRedirectTest {
     @Before
     public void setUp() throws Exception {
         targetServerBaseUri = "http://localhost:" + targetServerMockRule.getHttpPort();
+    }
+
+    @After
+    public void tearDown() {
+        if (redirectServerMockClient != null) {
+            redirectServerMockClient.reset();
+            redirectServerMockClient.stop();
+        }
+
+        if (targetServerMockClient.client != null) {
+            targetServerMockClient.client.reset();
+            targetServerMockClient.client.stop();
+        }
     }
 
     @Test
