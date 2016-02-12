@@ -61,7 +61,7 @@ public class JerseyRemoteRegionClientFactory implements TransportClientFactory {
 
     @Override
     public EurekaHttpClient newClient(EurekaEndpoint endpoint) {
-        return new JerseyApplicationClient(getOrCreateJerseyClient(region, endpoint).getClient(), endpoint.getServiceUrl(), Collections.emptyMap());
+        return new JerseyApplicationClient(getOrCreateJerseyClient(region, endpoint).getClient(), endpoint.getServiceUrl(), Collections.<String, String>emptyMap());
     }
 
     @Override

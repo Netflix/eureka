@@ -444,7 +444,7 @@ public class DiscoveryClient implements EurekaClient {
                 .newBootstrapResolver(clientConfig, applicationInfoManager.getInfo());
 
         Collection<ClientFilter> additionalFilters = args == null
-                ? Collections.emptyList()
+                ? Collections.<ClientFilter>emptyList()
                 : args.additionalFilters;
 
         EurekaJerseyClient providedJerseyClient = args == null
