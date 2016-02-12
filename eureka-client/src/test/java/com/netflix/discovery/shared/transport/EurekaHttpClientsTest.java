@@ -36,6 +36,7 @@ import com.netflix.discovery.shared.resolver.DefaultEndpoint;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.resolver.StaticClusterResolver;
 import com.netflix.discovery.shared.resolver.aws.ApplicationsResolver;
+import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
 import com.netflix.discovery.shared.resolver.aws.EurekaHttpResolver;
 import com.netflix.discovery.shared.resolver.aws.TestEurekaHttpResolver;
 import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
@@ -53,7 +54,9 @@ import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEureka
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -138,6 +141,60 @@ public class EurekaHttpClientsTest {
 
         assertThat(result.getStatusCode(), is(equalTo(200)));
         assertThat(EurekaEntityComparators.equal(result.getEntity(), apps), is(true));
+    }
+
+    @Test
+    public void testCompositeBootstrapResolver() throws Exception {
+        Applications applications = InstanceInfoGenerator.newBuilder(5, "eurekaWrite", "someOther").build().toApplications();
+        Applications applications2 = InstanceInfoGenerator.newBuilder(2, "eurekaWrite", "someOther").build().toApplications();
+        String vipAddress = applications.getRegisteredApplications("eurekaWrite").getInstances().get(0).getVIPAddress();
+
+        // setup client config to use fixed root ips for testing
+        when(clientConfig.shouldUseDnsForFetchingServiceUrls()).thenReturn(false);
+        when(clientConfig.getEurekaServerServiceUrls(anyString())).thenReturn(Arrays.asList("http://foo:0"));  // can use anything here
+        when(clientConfig.getRegion()).thenReturn("us-east-1");
+
+        when(transportConfig.getWriteClusterVip()).thenReturn(vipAddress);
+        when(transportConfig.getAsyncExecutorThreadPoolSize()).thenReturn(3);
+        when(transportConfig.getAsyncResolverRefreshIntervalMs()).thenReturn(300);
+        when(transportConfig.getAsyncResolverWarmUpTimeoutMs()).thenReturn(200);
+
+        ApplicationsResolver.ApplicationsSource applicationsSource = mock(ApplicationsResolver.ApplicationsSource.class);
+        when(applicationsSource.getApplications(anyInt(), eq(TimeUnit.SECONDS)))
+                .thenReturn(null)  // first time
+                .thenReturn(applications)  // second time
+                .thenReturn(null);  // subsequent times
+
+        EurekaHttpClient mockHttpClient = mock(EurekaHttpClient.class);
+        when(mockHttpClient.getVip(eq(vipAddress)))
+                .thenReturn(anEurekaHttpResponse(200, applications).build())
+                .thenReturn(anEurekaHttpResponse(200, applications2).build());  // contains diff number of servers
+
+        TransportClientFactory transportClientFactory = mock(TransportClientFactory.class);
+        when(transportClientFactory.newClient(any(EurekaEndpoint.class))).thenReturn(mockHttpClient);
+
+        ClosableResolver<AwsEndpoint> resolver = EurekaHttpClients.compositeBootstrapResolver(
+                clientConfig,
+                transportConfig,
+                transportClientFactory,
+                applicationInfoManager.getInfo(),
+                applicationsSource
+        );
+
+        List endpoints = resolver.getClusterEndpoints();
+        assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
+
+        // wait for the second cycle that hits the app source
+        verify(applicationsSource, timeout(1000).times(2)).getApplications(anyInt(), eq(TimeUnit.SECONDS));
+        endpoints = resolver.getClusterEndpoints();
+        assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
+
+        // wait for the third cycle that hits the app source
+        // for the third cycle we have mocked the application resolver to return null data so should fall back
+        // to calling the remote resolver again (which should return applications2)
+        verify(applicationsSource, timeout(1000).times(3)).getApplications(anyInt(), eq(TimeUnit.SECONDS));
+        endpoints = resolver.getClusterEndpoints();
+        assertThat(endpoints.size(), equalTo(applications2.getInstancesByVirtualHostName(vipAddress).size()));
     }
 
     @Test

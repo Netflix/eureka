@@ -103,6 +103,7 @@ public final class EurekaHttpClients {
     public static ClosableResolver<AwsEndpoint> newBootstrapResolver(
             final EurekaClientConfig clientConfig,
             final EurekaTransportConfig transportConfig,
+            final TransportClientFactory transportClientFactory,
             final InstanceInfo myInstanceInfo,
             final ApplicationsResolver.ApplicationsSource applicationsSource)
     {
@@ -111,6 +112,7 @@ public final class EurekaHttpClients {
                 return compositeBootstrapResolver(
                         clientConfig,
                         transportConfig,
+                        transportClientFactory,
                         myInstanceInfo,
                         applicationsSource
                 );
@@ -157,10 +159,19 @@ public final class EurekaHttpClients {
     static ClosableResolver<AwsEndpoint> compositeBootstrapResolver(
             final EurekaClientConfig clientConfig,
             final EurekaTransportConfig transportConfig,
+            final TransportClientFactory transportClientFactory,
             final InstanceInfo myInstanceInfo,
             final ApplicationsResolver.ApplicationsSource applicationsSource)
     {
-        final ConfigClusterResolver remoteResolver = new ConfigClusterResolver(clientConfig, myInstanceInfo);
+        final ClusterResolver rootResolver = new ConfigClusterResolver(clientConfig, myInstanceInfo);
+
+        final EurekaHttpResolver remoteResolver = new EurekaHttpResolver(
+                clientConfig,
+                transportConfig,
+                rootResolver,
+                transportClientFactory,
+                transportConfig.getWriteClusterVip()
+        );
 
         final ApplicationsResolver localResolver = new ApplicationsResolver(
                 clientConfig,
@@ -169,7 +180,7 @@ public final class EurekaHttpClients {
                 transportConfig.getWriteClusterVip()
         );
 
-        ClusterResolver<AwsEndpoint> compoundResolver = new ClusterResolver<AwsEndpoint>() {
+        ClusterResolver<AwsEndpoint> compositeResolver = new ClusterResolver<AwsEndpoint>() {
             @Override
             public String getRegion() {
                 return clientConfig.getRegion();
@@ -186,14 +197,14 @@ public final class EurekaHttpClients {
             }
         };
 
-        List<AwsEndpoint> initialValue = compoundResolver.getClusterEndpoints();
+        List<AwsEndpoint> initialValue = compositeResolver.getClusterEndpoints();
 
         String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
         String myZone = InstanceInfo.getZone(availZones, myInstanceInfo);
 
         return new AsyncResolver<>(
                 EurekaClientNames.BOOTSTRAP,
-                new ZoneAffinityClusterResolver(compoundResolver, myZone, true),
+                new ZoneAffinityClusterResolver(compositeResolver, myZone, true),
                 initialValue,
                 transportConfig.getAsyncExecutorThreadPoolSize(),
                 transportConfig.getAsyncResolverRefreshIntervalMs()

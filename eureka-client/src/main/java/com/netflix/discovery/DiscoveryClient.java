@@ -439,6 +439,18 @@ public class DiscoveryClient implements EurekaClient {
     private void scheduleServerEndpointTask(EurekaTransport eurekaTransport,
                                             DiscoveryClientOptionalArgs args) {
 
+        Collection<ClientFilter> additionalFilters = args == null
+                ? Collections.emptyList()
+                : args.additionalFilters;
+
+        EurekaJerseyClient providedJerseyClient = args == null
+                ? null
+                : args.eurekaJerseyClient;
+
+        eurekaTransport.transportClientFactory = providedJerseyClient == null
+                ? TransportClientFactories.newTransportClientFactory(clientConfig, additionalFilters, applicationInfoManager.getInfo())
+                : TransportClientFactories.newTransportClientFactory(additionalFilters, providedJerseyClient);
+
         ApplicationsResolver.ApplicationsSource applicationsSource = new ApplicationsResolver.ApplicationsSource() {
             @Override
             public Applications getApplications(int stalenessThreshold, TimeUnit timeUnit) {
@@ -457,21 +469,10 @@ public class DiscoveryClient implements EurekaClient {
         eurekaTransport.bootstrapResolver = EurekaHttpClients.newBootstrapResolver(
                 clientConfig,
                 transportConfig,
+                eurekaTransport.transportClientFactory,
                 applicationInfoManager.getInfo(),
                 applicationsSource
         );
-
-        Collection<ClientFilter> additionalFilters = args == null
-                ? Collections.emptyList()
-                : args.additionalFilters;
-
-        EurekaJerseyClient providedJerseyClient = args == null
-                ? null
-                : args.eurekaJerseyClient;
-
-        eurekaTransport.transportClientFactory = providedJerseyClient == null
-                ? TransportClientFactories.newTransportClientFactory(clientConfig, additionalFilters, applicationInfoManager.getInfo())
-                : TransportClientFactories.newTransportClientFactory(additionalFilters, providedJerseyClient);
 
         if (clientConfig.shouldRegisterWithEureka()) {
             EurekaHttpClientFactory newRegistrationClientFactory = null;
