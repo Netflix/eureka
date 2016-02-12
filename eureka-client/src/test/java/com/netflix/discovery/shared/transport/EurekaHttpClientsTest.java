@@ -71,13 +71,14 @@ import static org.mockito.Mockito.when;
 public class EurekaHttpClientsTest {
 
     private static final InstanceInfo MY_INSTANCE = InstanceInfoGenerator.newBuilder(1, "myApp").build().first();
-    private final EurekaClientConfig clientConfig = mock(EurekaClientConfig.class);
-    private final EurekaTransportConfig transportConfig = mock(EurekaTransportConfig.class);
     private final EurekaInstanceConfig instanceConfig = mock(EurekaInstanceConfig.class);
     private final ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(instanceConfig, MY_INSTANCE);
 
     private final EurekaHttpClient writeRequestHandler = mock(EurekaHttpClient.class);
     private final EurekaHttpClient readRequestHandler = mock(EurekaHttpClient.class);
+
+    private EurekaClientConfig clientConfig;
+    private EurekaTransportConfig transportConfig;
 
     private SimpleEurekaHttpServer writeServer;
     private SimpleEurekaHttpServer readServer;
@@ -91,6 +92,9 @@ public class EurekaHttpClientsTest {
 
     @Before
     public void setUp() throws IOException {
+        clientConfig = mock(EurekaClientConfig.class);
+        transportConfig = mock(EurekaTransportConfig.class);
+
         when(clientConfig.getEurekaServerTotalConnectionsPerHost()).thenReturn(10);
         when(clientConfig.getEurekaServerTotalConnections()).thenReturn(10);
         when(transportConfig.getSessionedClientReconnectIntervalSeconds()).thenReturn(10);
@@ -173,28 +177,35 @@ public class EurekaHttpClientsTest {
         TransportClientFactory transportClientFactory = mock(TransportClientFactory.class);
         when(transportClientFactory.newClient(any(EurekaEndpoint.class))).thenReturn(mockHttpClient);
 
-        ClosableResolver<AwsEndpoint> resolver = EurekaHttpClients.compositeBootstrapResolver(
-                clientConfig,
-                transportConfig,
-                transportClientFactory,
-                applicationInfoManager.getInfo(),
-                applicationsSource
-        );
+        ClosableResolver<AwsEndpoint> resolver = null;
+        try {
+            resolver = EurekaHttpClients.compositeBootstrapResolver(
+                    clientConfig,
+                    transportConfig,
+                    transportClientFactory,
+                    applicationInfoManager.getInfo(),
+                    applicationsSource
+            );
 
-        List endpoints = resolver.getClusterEndpoints();
-        assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
+            List endpoints = resolver.getClusterEndpoints();
+            assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
 
-        // wait for the second cycle that hits the app source
-        verify(applicationsSource, timeout(1000).times(2)).getApplications(anyInt(), eq(TimeUnit.SECONDS));
-        endpoints = resolver.getClusterEndpoints();
-        assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
+            // wait for the second cycle that hits the app source
+            verify(applicationsSource, timeout(1000).times(2)).getApplications(anyInt(), eq(TimeUnit.SECONDS));
+            endpoints = resolver.getClusterEndpoints();
+            assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
 
-        // wait for the third cycle that hits the app source
-        // for the third cycle we have mocked the application resolver to return null data so should fall back
-        // to calling the remote resolver again (which should return applications2)
-        verify(applicationsSource, timeout(1000).times(3)).getApplications(anyInt(), eq(TimeUnit.SECONDS));
-        endpoints = resolver.getClusterEndpoints();
-        assertThat(endpoints.size(), equalTo(applications2.getInstancesByVirtualHostName(vipAddress).size()));
+            // wait for the third cycle that hits the app source
+            // for the third cycle we have mocked the application resolver to return null data so should fall back
+            // to calling the remote resolver again (which should return applications2)
+            verify(applicationsSource, timeout(1000).times(3)).getApplications(anyInt(), eq(TimeUnit.SECONDS));
+            endpoints = resolver.getClusterEndpoints();
+            assertThat(endpoints.size(), equalTo(applications2.getInstancesByVirtualHostName(vipAddress).size()));
+        } finally {
+            if (resolver != null) {
+                resolver.shutdown();
+            }
+        }
     }
 
     @Test
@@ -225,26 +236,33 @@ public class EurekaHttpClientsTest {
         ApplicationsResolver localResolver = spy(new ApplicationsResolver(
                 clientConfig, transportConfig, applicationsSource, transportConfig.getReadClusterVip()));
 
-        ClosableResolver resolver = EurekaHttpClients.compositeQueryResolver(
-                remoteResolver,
-                localResolver,
-                clientConfig,
-                transportConfig,
-                applicationInfoManager.getInfo()
-        );
+        ClosableResolver resolver = null;
+        try {
+            resolver = EurekaHttpClients.compositeQueryResolver(
+                    remoteResolver,
+                    localResolver,
+                    clientConfig,
+                    transportConfig,
+                    applicationInfoManager.getInfo()
+            );
 
-        List endpoints = resolver.getClusterEndpoints();
-        assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
-        verify(remoteResolver, times(1)).getClusterEndpoints();
-        verify(localResolver, times(1)).getClusterEndpoints();
+            List endpoints = resolver.getClusterEndpoints();
+            assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
+            verify(remoteResolver, times(1)).getClusterEndpoints();
+            verify(localResolver, times(1)).getClusterEndpoints();
 
-        // wait for the second cycle that hits the app source
-        verify(applicationsSource, timeout(1000).times(2)).getApplications(anyInt(), eq(TimeUnit.SECONDS));
-        endpoints = resolver.getClusterEndpoints();
-        assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
+            // wait for the second cycle that hits the app source
+            verify(applicationsSource, timeout(1000).times(2)).getApplications(anyInt(), eq(TimeUnit.SECONDS));
+            endpoints = resolver.getClusterEndpoints();
+            assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
 
-        verify(remoteResolver, times(1)).getClusterEndpoints();
-        verify(localResolver, times(2)).getClusterEndpoints();
+            verify(remoteResolver, times(1)).getClusterEndpoints();
+            verify(localResolver, times(2)).getClusterEndpoints();
+        } finally {
+            if (resolver != null) {
+                resolver.shutdown();
+            }
+        }
     }
 
     @Test
