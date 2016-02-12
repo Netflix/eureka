@@ -299,7 +299,7 @@ public class Applications {
         for (Application otherApp : apps.getRegisteredApplications()) {
             Application thisApp = this.getRegisteredApplications(otherApp.getName());
             if (thisApp == null) {
-                logger.warn("The application %s is not found in local cache :", otherApp.getName());
+                logger.warn("Application not found in local cache : {}", otherApp.getName());
                 continue;
             }
             for (InstanceInfo instanceInfo : thisApp.getInstancesAsIsFromEureka()) {
