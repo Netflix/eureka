@@ -34,7 +34,7 @@ ext {
 
 idea {
     project {
-        languageLevel = '1.8'
+        languageLevel = '1.7'
     }
 }
 
@@ -44,8 +44,8 @@ subprojects {
 
     group = "com.netflix.${githubProjectName}"
 
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
+    sourceCompatibility = 1.7
+    targetCompatibility = 1.7
 
     repositories {
         jcenter()

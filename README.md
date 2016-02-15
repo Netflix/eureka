@@ -18,6 +18,11 @@ At Netflix, Eureka is used for the following purposes apart from playing a criti
 * For carrying other additional application specific metadata about services for various other reasons.
 
 
+Building
+----------
+The build requires java8 because of some required libraries that are java8 (servo), but the source and target compatibility are still set to 1.7.
+
+
 Support
 ----------
 [Eureka Google Group] (https://groups.google.com/forum/?fromgroups#!forum/eureka_netflix)

@@ -192,7 +192,7 @@ public class EurekaHttpClientsTest {
     @Test
     public void testAddingAdditionalFilters() throws Exception {
         TestFilter testFilter = new TestFilter();
-        Collection<ClientFilter> additionalFilters = Arrays.asList(testFilter);
+        Collection<ClientFilter> additionalFilters = Arrays.<ClientFilter>asList(testFilter);
 
         TransportClientFactory transportClientFactory = TransportClientFactories.newTransportClientFactory(
                 clientConfig,
