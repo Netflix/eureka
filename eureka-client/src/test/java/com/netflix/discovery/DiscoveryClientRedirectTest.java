@@ -87,12 +87,10 @@ public class DiscoveryClientRedirectTest {
     public void tearDown() {
         if (redirectServerMockClient != null) {
             redirectServerMockClient.reset();
-            redirectServerMockClient.stop();
         }
 
         if (targetServerMockClient.client != null) {
             targetServerMockClient.client.reset();
-            targetServerMockClient.client.stop();
         }
     }
 

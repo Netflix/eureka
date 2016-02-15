@@ -62,7 +62,6 @@ public class JerseyReplicationClientTest {
     public void tearDown() {
         if (serverMockClient != null) {
             serverMockClient.reset();
-            serverMockClient.stop();
         }
     }
 
