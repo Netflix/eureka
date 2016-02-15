@@ -30,6 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * @deprecated as of 2016-02-11. Will be deleted in an upcoming release.
+ * See {@link com.netflix.discovery.shared.resolver.aws.ConfigClusterResolver} for replacement.
+ *
  * Server resolver that mimics the behavior of the original implementation. Either DNS or server
  * list resolvers are instantiated, and they can be swapped in runtime because of the dynamic configuration
  * change.
@@ -39,6 +42,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Tomasz Bak
  */
+@Deprecated
 public class LegacyClusterResolver implements ClusterResolver<AwsEndpoint> {
 
     private static final Logger logger = LoggerFactory.getLogger(LegacyClusterResolver.class);

@@ -45,7 +45,8 @@ public class ApplicationsResolverTest {
         resolver = new ApplicationsResolver(
                 clientConfig,
                 transportConfig,
-                applicationsSource
+                applicationsSource,
+                transportConfig.getReadClusterVip()
         );
     }
 
@@ -61,6 +62,14 @@ public class ApplicationsResolverTest {
     public void testVipDoesNotExist() {
         vipAddress = "doNotExist";
         when(transportConfig.getReadClusterVip()).thenReturn(vipAddress);
+
+        resolver = new ApplicationsResolver(  // recreate the resolver as desired config behaviour has changed
+                clientConfig,
+                transportConfig,
+                applicationsSource,
+                transportConfig.getReadClusterVip()
+        );
+
         when(applicationsSource.getApplications(anyInt(), eq(TimeUnit.SECONDS))).thenReturn(applications);
 
         List<AwsEndpoint> endpoints = resolver.getClusterEndpoints();

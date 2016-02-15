@@ -109,7 +109,6 @@ public class DiscoveryClient implements EurekaClient {
     private static final Logger logger = LoggerFactory.getLogger(DiscoveryClient.class);
 
     // Constants
-    public static final int MAX_FOLLOWED_REDIRECTS = 10;
     public static final String HTTP_X_DISCOVERY_ALLOW_REDIRECT = "X-Discovery-AllowRedirect";
 
     private static final String VALUE_DELIMITER = ",";
@@ -440,9 +439,6 @@ public class DiscoveryClient implements EurekaClient {
     private void scheduleServerEndpointTask(EurekaTransport eurekaTransport,
                                             DiscoveryClientOptionalArgs args) {
 
-        eurekaTransport.bootstrapResolver = EurekaHttpClients
-                .newBootstrapResolver(clientConfig, applicationInfoManager.getInfo());
-
         Collection<ClientFilter> additionalFilters = args == null
                 ? Collections.<ClientFilter>emptyList()
                 : args.additionalFilters;
@@ -454,6 +450,29 @@ public class DiscoveryClient implements EurekaClient {
         eurekaTransport.transportClientFactory = providedJerseyClient == null
                 ? TransportClientFactories.newTransportClientFactory(clientConfig, additionalFilters, applicationInfoManager.getInfo())
                 : TransportClientFactories.newTransportClientFactory(additionalFilters, providedJerseyClient);
+
+        ApplicationsResolver.ApplicationsSource applicationsSource = new ApplicationsResolver.ApplicationsSource() {
+            @Override
+            public Applications getApplications(int stalenessThreshold, TimeUnit timeUnit) {
+                long thresholdInMs = TimeUnit.MILLISECONDS.convert(stalenessThreshold, timeUnit);
+                long delay = getLastSuccessfulRegistryFetchTimePeriod();
+                if (delay > thresholdInMs) {
+                    logger.info("Local registry is too stale for local lookup. Threshold:{}, actual:{}",
+                            thresholdInMs, delay);
+                    return null;
+                } else {
+                    return localRegionApps.get();
+                }
+            }
+        };
+
+        eurekaTransport.bootstrapResolver = EurekaHttpClients.newBootstrapResolver(
+                clientConfig,
+                transportConfig,
+                eurekaTransport.transportClientFactory,
+                applicationInfoManager.getInfo(),
+                applicationsSource
+        );
 
         if (clientConfig.shouldRegisterWithEureka()) {
             EurekaHttpClientFactory newRegistrationClientFactory = null;
@@ -484,20 +503,7 @@ public class DiscoveryClient implements EurekaClient {
                         clientConfig,
                         transportConfig,
                         applicationInfoManager.getInfo(),
-                        new ApplicationsResolver.ApplicationsSource() {
-                            @Override
-                            public Applications getApplications(int stalenessThreshold, TimeUnit timeUnit) {
-                                long thresholdInMs = TimeUnit.MILLISECONDS.convert(stalenessThreshold, timeUnit);
-                                long delay = getLastSuccessfulRegistryFetchTimePeriod();
-                                if (delay > thresholdInMs) {
-                                    logger.info("Local registry is too stale for local lookup. Threshold:{}, actual:{}",
-                                            thresholdInMs, delay);
-                                    return null;
-                                } else {
-                                    return localRegionApps.get();
-                                }
-                            }
-                        }
+                        applicationsSource
                 );
                 newQueryClient = newQueryClientFactory.newClient();
             } catch (Exception e) {
@@ -1138,37 +1144,28 @@ public class DiscoveryClient implements EurekaClient {
 
                 ++deltaCount;
                 if (ActionType.ADDED.equals(instance.getActionType())) {
-                    Application existingApp = applications
-                            .getRegisteredApplications(instance.getAppName());
+                    Application existingApp = applications.getRegisteredApplications(instance.getAppName());
                     if (existingApp == null) {
                         applications.addApplication(app);
                     }
-                    logger.debug("Added instance {} to the existing apps in region {}",
-                            instance.getId(), instanceRegion);
-                    applications.getRegisteredApplications(
-                            instance.getAppName()).addInstance(instance);
+                    logger.debug("Added instance {} to the existing apps in region {}", instance.getId(), instanceRegion);
+                    applications.getRegisteredApplications(instance.getAppName()).addInstance(instance);
                 } else if (ActionType.MODIFIED.equals(instance.getActionType())) {
-                    Application existingApp = applications
-                            .getRegisteredApplications(instance.getAppName());
+                    Application existingApp = applications.getRegisteredApplications(instance.getAppName());
                     if (existingApp == null) {
                         applications.addApplication(app);
                     }
-                    logger.debug("Modified instance {} to the existing apps ",
-                            instance.getId());
+                    logger.debug("Modified instance {} to the existing apps ", instance.getId());
 
-                    applications.getRegisteredApplications(
-                            instance.getAppName()).addInstance(instance);
+                    applications.getRegisteredApplications(instance.getAppName()).addInstance(instance);
 
                 } else if (ActionType.DELETED.equals(instance.getActionType())) {
-                    Application existingApp = applications
-                            .getRegisteredApplications(instance.getAppName());
+                    Application existingApp = applications.getRegisteredApplications(instance.getAppName());
                     if (existingApp == null) {
                         applications.addApplication(app);
                     }
-                    logger.debug("Deleted instance {} to the existing apps ",
-                            instance.getId());
-                    applications.getRegisteredApplications(
-                            instance.getAppName()).removeInstance(instance);
+                    logger.debug("Deleted instance {} to the existing apps ", instance.getId());
+                    applications.getRegisteredApplications(instance.getAppName()).removeInstance(instance);
                 }
             }
         }

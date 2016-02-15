@@ -26,7 +26,7 @@ import java.util.List;
  */
 public class DefaultEndpoint implements EurekaEndpoint {
 
-    protected final String hostName;
+    protected final String networkAddress;
     protected final int port;
     protected final boolean isSecure;
     protected final String relativeUri;
@@ -37,7 +37,7 @@ public class DefaultEndpoint implements EurekaEndpoint {
 
         try {
             URL url = new URL(serviceUrl);
-            this.hostName = url.getHost();
+            this.networkAddress = url.getHost();
             this.port = url.getPort();
             this.isSecure = "https".equals(url.getProtocol());
             this.relativeUri = url.getPath();
@@ -46,8 +46,8 @@ public class DefaultEndpoint implements EurekaEndpoint {
         }
     }
 
-    public DefaultEndpoint(String hostName, int port, boolean isSecure, String relativeUri) {
-        this.hostName = hostName;
+    public DefaultEndpoint(String networkAddress, int port, boolean isSecure, String relativeUri) {
+        this.networkAddress = networkAddress;
         this.port = port;
         this.isSecure = isSecure;
         this.relativeUri = relativeUri;
@@ -55,7 +55,7 @@ public class DefaultEndpoint implements EurekaEndpoint {
         StringBuilder sb = new StringBuilder()
                 .append(isSecure ? "https" : "http")
                 .append("://")
-                .append(hostName)
+                .append(networkAddress)
                 .append(':')
                 .append(port);
         if (relativeUri != null) {
@@ -72,9 +72,15 @@ public class DefaultEndpoint implements EurekaEndpoint {
         return serviceUrl;
     }
 
+    @Deprecated
     @Override
     public String getHostName() {
-        return hostName;
+        return networkAddress;
+    }
+
+    @Override
+    public String getNetworkAddress() {
+        return networkAddress;
     }
 
     @Override
@@ -113,7 +119,7 @@ public class DefaultEndpoint implements EurekaEndpoint {
 
         if (isSecure != that.isSecure) return false;
         if (port != that.port) return false;
-        if (hostName != null ? !hostName.equals(that.hostName) : that.hostName != null) return false;
+        if (networkAddress != null ? !networkAddress.equals(that.networkAddress) : that.networkAddress != null) return false;
         if (relativeUri != null ? !relativeUri.equals(that.relativeUri) : that.relativeUri != null) return false;
         if (serviceUrl != null ? !serviceUrl.equals(that.serviceUrl) : that.serviceUrl != null) return false;
 
@@ -122,7 +128,7 @@ public class DefaultEndpoint implements EurekaEndpoint {
 
     @Override
     public int hashCode() {
-        int result = hostName != null ? hostName.hashCode() : 0;
+        int result = networkAddress != null ? networkAddress.hashCode() : 0;
         result = 31 * result + port;
         result = 31 * result + (isSecure ? 1 : 0);
         result = 31 * result + (relativeUri != null ? relativeUri.hashCode() : 0);

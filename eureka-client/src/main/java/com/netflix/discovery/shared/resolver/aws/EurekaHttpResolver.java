@@ -28,6 +28,7 @@ public class EurekaHttpResolver implements ClusterResolver<AwsEndpoint> {
     private static final Logger logger = LoggerFactory.getLogger(EurekaHttpResolver.class);
 
     private final EurekaClientConfig clientConfig;
+    private final EurekaTransportConfig transportConfig;
     private final String vipAddress;
     private final EurekaHttpClientFactory clientFactory;
 
@@ -38,6 +39,7 @@ public class EurekaHttpResolver implements ClusterResolver<AwsEndpoint> {
                               String vipAddress) {
         this(
                 clientConfig,
+                transportConfig,
                 RetryableEurekaHttpClient.createFactory(
                         EurekaClientNames.RESOLVER,
                         transportConfig,
@@ -50,9 +52,11 @@ public class EurekaHttpResolver implements ClusterResolver<AwsEndpoint> {
     }
 
     /* visible for testing */ EurekaHttpResolver(EurekaClientConfig clientConfig,
+                                                 EurekaTransportConfig transportConfig,
                                                  EurekaHttpClientFactory clientFactory,
                                                  String vipAddress) {
         this.clientConfig = clientConfig;
+        this.transportConfig = transportConfig;
         this.clientFactory = clientFactory;
         this.vipAddress = vipAddress;
     }
@@ -76,7 +80,10 @@ public class EurekaHttpResolver implements ClusterResolver<AwsEndpoint> {
                     applications.shuffleInstances(true);  // filter out non-UP instances
                     List<InstanceInfo> validInstanceInfos = applications.getInstancesByVirtualHostName(vipAddress);
                     for (InstanceInfo instanceInfo : validInstanceInfos) {
-                            result.add(ResolverUtils.instanceInfoToEndpoint(clientConfig, instanceInfo));
+                        AwsEndpoint endpoint = ResolverUtils.instanceInfoToEndpoint(clientConfig, transportConfig, instanceInfo);
+                        if (endpoint != null) {
+                            result.add(endpoint);
+                        }
                     }
                     logger.debug("Retrieved endpoint list {}", result);
                     return result;

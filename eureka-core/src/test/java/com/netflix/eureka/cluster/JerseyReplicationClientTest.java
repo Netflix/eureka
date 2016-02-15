@@ -16,6 +16,7 @@ import com.netflix.eureka.resources.ASGResource.ASGStatus;
 import com.netflix.eureka.resources.DefaultServerCodecs;
 import com.netflix.eureka.resources.ServerCodecs;
 import com.netflix.eureka.transport.JerseyReplicationClient;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,6 +56,13 @@ public class JerseyReplicationClientTest {
         replicationClient = JerseyReplicationClient.createReplicationClient(
                 config, serverCodecs, "http://localhost:" + serverMockRule.getHttpPort() + "/eureka/v2"
         );
+    }
+
+    @After
+    public void tearDown() {
+        if (serverMockClient != null) {
+            serverMockClient.reset();
+        }
     }
 
     @Test

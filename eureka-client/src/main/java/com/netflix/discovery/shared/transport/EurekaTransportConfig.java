@@ -18,16 +18,17 @@ public interface EurekaTransportConfig {
     double getRetryableClientQuarantineRefreshPercentage();
 
     /**
-     * Indicates how often(in seconds) to poll for changes to the bootstrap eureka server urls
-     *
-     * @return the interval to poll for bootstrap eureka server url changes (e.g. if stored in dns)
-     */
-    int getBootstrapResolverRefreshIntervalSeconds();
-
-    /**
      * @return the max staleness threshold tolerated by the applications resolver
      */
     int getApplicationsResolverDataStalenessThresholdSeconds();
+
+    /**
+     * By default, the applications resolver extracts the public hostname from internal InstanceInfos for resolutions.
+     * Set this to true to change this behaviour to use ip addresses instead (private ip if ip type can be determined).
+     *
+     * @return false by default
+     */
+    boolean applicationsResolverUseIp();
 
     /**
      * @return the interval to poll for the async resolver.
@@ -45,12 +46,30 @@ public interface EurekaTransportConfig {
     int getAsyncExecutorThreadPoolSize();
 
     /**
+     * The remote vipAddress of the primary eureka cluster to register with.
+     *
+     * @return the vipAddress for the write cluster to register with
+     */
+    String getWriteClusterVip();
+
+    /**
      * The remote vipAddress of the eureka cluster (either the primaries or a readonly replica) to fetch registry
      * data from.
      *
      * @return the vipAddress for the readonly cluster to redirect to, if applicable (can be the same as the bootstrap)
      */
     String getReadClusterVip();
+
+    /**
+     * Can be used to specify different bootstrap resolve strategies. Current supported strategies are:
+     *  - default (if no match): bootstrap from dns txt records or static config hostnames
+     *  - composite: bootstrap from local registry if data is available
+     *    and warm (see {@link #getApplicationsResolverDataStalenessThresholdSeconds()}, otherwise
+     *    fall back to a backing default
+     *
+     * @return null for the default strategy, by default
+     */
+    String getBootstrapResolverStrategy();
 
     /**
      * By default, the transport uses the same (bootstrap) resolver for queries.
