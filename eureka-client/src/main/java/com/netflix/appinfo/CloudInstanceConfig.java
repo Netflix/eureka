@@ -17,7 +17,9 @@
 package com.netflix.appinfo;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
@@ -173,18 +175,46 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
         }
     }
 
+    /**
+     * Rules of updating AmazonInfo:
+     * - instanceId must exist
+     * - localIp/privateIp most exist
+     * - publicHostname does not necessarily need to exist (e.g. in vpc)
+     */
     /* visible for testing */ static boolean shouldUpdate(AmazonInfo newInfo, AmazonInfo oldInfo) {
         if (newInfo.getMetadata().isEmpty()) {
             logger.warn("Newly resolved AmazonInfo is empty, skipping an update cycle");
         } else if (!newInfo.equals(oldInfo)) {
-            int newKeySize = newInfo.getMetadata().size();
-            int oldKeySize = oldInfo.getMetadata().size();
-            if (newKeySize < oldKeySize) {
-                logger.warn("Newly resolved AmazonInfo contains less data than previous old:{} -> new:{}, skipping an update cycle", oldKeySize, newKeySize);
-            } else {  // final case that warrants an update
-                return true;
+            if (isBlank(newInfo.get(MetaDataKey.instanceId))) {
+                logger.warn("instanceId is blank, skipping an update cycle");
+                return false;
+            } else if (isBlank(newInfo.get(MetaDataKey.localIpv4))) {
+                logger.warn("localIpv4 is blank, skipping an update cycle");
+                return false;
+            } else {
+                Set<String> newKeys = new HashSet<>(newInfo.getMetadata().keySet());
+                Set<String> oldKeys = new HashSet<>(oldInfo.getMetadata().keySet());
+
+                Set<String> union = new HashSet<>(newKeys);
+                union.retainAll(oldKeys);
+                newKeys.removeAll(union);
+                oldKeys.removeAll(union);
+
+                for (String key : newKeys) {
+                    logger.info("Adding new metadata {}={}", key, newInfo.getMetadata().get(key));
+                }
+
+                for (String key : oldKeys) {
+                    logger.info("Removing old metadata {}={}", key, oldInfo.getMetadata().get(key));
+                }
             }
+
+            return true;
         }
         return false;
+    }
+
+    private static boolean isBlank(String str) {
+        return str == null || str.isEmpty();
     }
 }
