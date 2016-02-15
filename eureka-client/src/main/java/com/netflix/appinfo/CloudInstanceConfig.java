@@ -167,7 +167,7 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
             AmazonInfo newInfo = AmazonInfo.Builder.newBuilder().autoBuild(namespace);
             if (shouldUpdate(newInfo, info)) {
                 // the datacenter info has changed, re-sync it
-                logger.warn("The AmazonInfo changed from : {} => {}", info, newInfo);
+                logger.info("The AmazonInfo changed from : {} => {}", info, newInfo);
                 this.info = newInfo;
             }
         } catch (Throwable t) {
