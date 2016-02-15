@@ -160,8 +160,8 @@ public class EurekaHttpClientsTest {
 
         when(transportConfig.getWriteClusterVip()).thenReturn(vipAddress);
         when(transportConfig.getAsyncExecutorThreadPoolSize()).thenReturn(4);
-        when(transportConfig.getAsyncResolverRefreshIntervalMs()).thenReturn(300);
-        when(transportConfig.getAsyncResolverWarmUpTimeoutMs()).thenReturn(200);
+        when(transportConfig.getAsyncResolverRefreshIntervalMs()).thenReturn(400);
+        when(transportConfig.getAsyncResolverWarmUpTimeoutMs()).thenReturn(400);
 
         ApplicationsResolver.ApplicationsSource applicationsSource = mock(ApplicationsResolver.ApplicationsSource.class);
         when(applicationsSource.getApplications(anyInt(), eq(TimeUnit.SECONDS)))
@@ -191,14 +191,14 @@ public class EurekaHttpClientsTest {
             assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
 
             // wait for the second cycle that hits the app source
-            verify(applicationsSource, timeout(1000).times(2)).getApplications(anyInt(), eq(TimeUnit.SECONDS));
+            verify(applicationsSource, timeout(3000).times(2)).getApplications(anyInt(), eq(TimeUnit.SECONDS));
             endpoints = resolver.getClusterEndpoints();
             assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
 
             // wait for the third cycle that triggers the mock http client (which is the third resolver cycle)
             // for the third cycle we have mocked the application resolver to return null data so should fall back
             // to calling the remote resolver again (which should return applications2)
-            verify(mockHttpClient, timeout(1000).times(3)).getVip(anyString());
+            verify(mockHttpClient, timeout(3000).times(3)).getVip(anyString());
             endpoints = resolver.getClusterEndpoints();
             assertThat(endpoints.size(), equalTo(applications2.getInstancesByVirtualHostName(vipAddress).size()));
         } finally {
@@ -214,8 +214,8 @@ public class EurekaHttpClientsTest {
         when(clientConfig.getRegion()).thenReturn("region");
 
         when(transportConfig.getAsyncExecutorThreadPoolSize()).thenReturn(3);
-        when(transportConfig.getAsyncResolverRefreshIntervalMs()).thenReturn(300);
-        when(transportConfig.getAsyncResolverWarmUpTimeoutMs()).thenReturn(200);
+        when(transportConfig.getAsyncResolverRefreshIntervalMs()).thenReturn(400);
+        when(transportConfig.getAsyncResolverWarmUpTimeoutMs()).thenReturn(400);
 
         Applications applications = InstanceInfoGenerator.newBuilder(5, "eurekaRead", "someOther").build().toApplications();
         String vipAddress = applications.getRegisteredApplications("eurekaRead").getInstances().get(0).getVIPAddress();
@@ -252,7 +252,7 @@ public class EurekaHttpClientsTest {
             verify(localResolver, times(1)).getClusterEndpoints();
 
             // wait for the second cycle that hits the app source
-            verify(applicationsSource, timeout(1000).times(2)).getApplications(anyInt(), eq(TimeUnit.SECONDS));
+            verify(applicationsSource, timeout(3000).times(2)).getApplications(anyInt(), eq(TimeUnit.SECONDS));
             endpoints = resolver.getClusterEndpoints();
             assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
 
