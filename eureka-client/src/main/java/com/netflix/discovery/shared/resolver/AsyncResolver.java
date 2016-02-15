@@ -109,7 +109,7 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
 
         this.executorService = Executors.newScheduledThreadPool(1,
                 new ThreadFactoryBuilder()
-                        .setNameFormat("AsyncResolver-%d")
+                        .setNameFormat("AsyncResolver-" + name + "-%d")
                         .setDaemon(true)
                         .build());
 
@@ -117,7 +117,7 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
                 1, executorThreadPoolSize, 0, TimeUnit.SECONDS,
                 new SynchronousQueue<Runnable>(),  // use direct handoff
                 new ThreadFactoryBuilder()
-                        .setNameFormat("AsyncResolver-executor-%d")
+                        .setNameFormat("AsyncResolver-" + name + "-executor-%d")
                         .setDaemon(true)
                         .build()
         );
