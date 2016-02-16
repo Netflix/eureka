@@ -6,11 +6,8 @@ import com.netflix.appinfo.InstanceInfo;
  * Event containing the latest instance status information.  This event
  * is sent to the {@link com.netflix.eventbus.spi.EventBus} by {@link EurekaClient) whenever
  * a status change is identified from the remote Eureka server response.
- *
- * @author elandau
- *
  */
-public class StatusChangeEvent extends DiscoveryEvent {
+public class StatusChangeEvent extends AbstractEurekaEvent {
     private final InstanceInfo.InstanceStatus current;
     private final InstanceInfo.InstanceStatus previous;
 

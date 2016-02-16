@@ -6,6 +6,9 @@ package com.netflix.discovery;
  * 
  * @author brenuart
  */
-public class CacheRefreshedEvent extends DiscoveryEvent {
-
+public class CacheRefreshedEvent extends AbstractEurekaEvent {
+    @Override
+    public String toString() {
+        return "CacheRefreshedEvent[]";
+    }
 }

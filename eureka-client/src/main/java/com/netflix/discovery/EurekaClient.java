@@ -161,6 +161,20 @@ public interface EurekaClient extends LookupService {
     public void registerHealthCheck(HealthCheckHandler healthCheckHandler);
 
     /**
+     * Register {@link EurekaEventListener} with the eureka client.
+     *
+     * Once registered, the eureka client will invoke {@link EurekaEventListener#onEvent} 
+     * whenever there is a change in eureka client's internal state.  Use this instead of 
+     * polling the client for changes.  
+     * 
+     * {@link EurekaEventListener#onEvent} is called from the context of an internal thread 
+     * and must therefore return as quickly as possible without blocking.
+     * 
+     * @param eventListener
+     */
+    public void registerEventListener(EurekaEventListener eventListener);
+    
+    /**
      * @return the current registered healthcheck handler
      */
     public HealthCheckHandler getHealthCheckHandler();
