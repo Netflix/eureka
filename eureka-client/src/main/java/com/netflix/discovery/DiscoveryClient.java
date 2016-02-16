@@ -154,9 +154,6 @@ public class DiscoveryClient implements EurekaClient {
     private final AtomicReference<String[]> remoteRegionsRef;
     private final InstanceRegionChecker instanceRegionChecker;
 
-    private final AtomicReference<String> lastQueryRedirect = new AtomicReference<String>();
-    private final AtomicReference<String> lastRegisterRedirect = new AtomicReference<String>();
-
     private final EndpointUtils.ServiceUrlRandomizer urlRandomizer;
     private final Provider<BackupRegistry> backupRegistryProvider;
     private final EurekaTransport eurekaTransport;
