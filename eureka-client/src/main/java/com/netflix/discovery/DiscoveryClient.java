@@ -629,6 +629,11 @@ public class DiscoveryClient implements EurekaClient {
         this.eventListeners.add(eventListener);
     }
 
+    @Override
+    public boolean unregisterEventListener(EurekaEventListener eventListener) {
+        return this.eventListeners.remove(eventListener);
+    }
+
     /**
      * Gets the list of instances matching the given VIP Address.
      *
@@ -1460,7 +1465,7 @@ public class DiscoveryClient implements EurekaClient {
                 logger.debug("Completed cache refresh task for discovery. All Apps hash code is {} ",
                         allAppsHashCodes.toString());
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             logger.error("Cannot fetch registry from server", e);
         }        
     }

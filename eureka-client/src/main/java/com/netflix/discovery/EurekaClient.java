@@ -1,8 +1,9 @@
 package com.netflix.discovery;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Set;
+
+import javax.annotation.Nullable;
 
 import com.google.inject.ImplementedBy;
 import com.netflix.appinfo.HealthCheckCallback;
@@ -173,6 +174,15 @@ public interface EurekaClient extends LookupService {
      * @param eventListener
      */
     public void registerEventListener(EurekaEventListener eventListener);
+    
+    /**
+     * Unregister a {@link EurekaEventListener} previous registered with {@link EurekaClient#registerEventListener}
+     * or injected into the constructor of {@link DiscoveryClient}
+     * 
+     * @param eventListener
+     * @return True if removed otherwise false if the listener was never registered.
+     */
+    public boolean unregisterEventListener(EurekaEventListener eventListener);
     
     /**
      * @return the current registered healthcheck handler
