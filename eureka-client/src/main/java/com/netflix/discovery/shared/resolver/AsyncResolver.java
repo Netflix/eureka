@@ -109,13 +109,18 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
 
         this.executorService = Executors.newScheduledThreadPool(1,
                 new ThreadFactoryBuilder()
-                        .setNameFormat("AsyncResolver-%d")
+                        .setNameFormat("AsyncResolver-" + name + "-%d")
                         .setDaemon(true)
                         .build());
 
         this.threadPoolExecutor = new ThreadPoolExecutor(
                 1, executorThreadPoolSize, 0, TimeUnit.SECONDS,
-                new SynchronousQueue<Runnable>());  // use direct handoff
+                new SynchronousQueue<Runnable>(),  // use direct handoff
+                new ThreadFactoryBuilder()
+                        .setNameFormat("AsyncResolver-" + name + "-executor-%d")
+                        .setDaemon(true)
+                        .build()
+        );
 
         this.backgroundTask = new TimedSupervisorTask(
                 this.getClass().getSimpleName(),
@@ -133,7 +138,9 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
 
     @Override
     public void shutdown() {
-        Monitors.unregisterObject(name, this);
+        if(Monitors.isObjectRegistered(name, this)) {
+            Monitors.unregisterObject(name, this);
+        }
         executorService.shutdown();
         threadPoolExecutor.shutdown();
         backgroundTask.cancel();
@@ -176,7 +183,7 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
         return false;
     }
 
-    private void scheduleTask(long delay) {
+    /* visible for testing */ void scheduleTask(long delay) {
         executorService.schedule(
                 backgroundTask, delay, TimeUnit.MILLISECONDS);
     }

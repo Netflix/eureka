@@ -410,6 +410,11 @@ public class InstanceInfo {
          * @return the {@link InstanceInfo} builder.
          */
         public Builder setHostName(String hostName) {
+            if (hostName == null || hostName.isEmpty()) {
+                logger.warn("Passed in hostname is blank, not setting it");
+                return this;
+            }
+
             String existingHostName = result.hostName;
             result.hostName = hostName;
             if ((existingHostName != null)

@@ -44,7 +44,7 @@ public class DiscoveryClientEventBusTest {
 
     @Rule
     public DiscoveryClientResource discoveryClientResource = DiscoveryClientResource.newBuilder()
-            .withRegistration(true)
+            .withRegistration(false)  // we don't need the registration thread for status change
             .withRegistryFetch(true)
             .connectWith(eurekaHttpServer)
             .build();

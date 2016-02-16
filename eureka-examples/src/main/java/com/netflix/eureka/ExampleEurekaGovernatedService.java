@@ -1,12 +1,11 @@
 package com.netflix.eureka;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.util.Modules;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.discovery.guice.EurekaModule;
-import com.netflix.governator.Governator;
+import com.netflix.governator.InjectorBuilder;
 import com.netflix.governator.LifecycleInjector;
 
 /**
@@ -26,8 +25,9 @@ public class ExampleEurekaGovernatedService {
     private static LifecycleInjector init() throws Exception {
         System.out.println("Creating injector for Example Service");
 
-        LifecycleInjector injector = Governator.createInjector(
-                Modules.override(new EurekaModule()).with(new AbstractModule() {
+        LifecycleInjector injector = InjectorBuilder
+                .fromModules(new EurekaModule(), new ExampleServiceModule())
+                .overrideWith(new AbstractModule() {
                     @Override
                     protected void configure() {
                         DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory.getInstance();
@@ -39,10 +39,8 @@ public class ExampleEurekaGovernatedService {
                         // (DiscoveryClient optional bindings) bind the optional event bus
                         // bind(EventBus.class).to(EventBusImpl.class).in(Scopes.SINGLETON);
                     }
-                }),
-                new ExampleServiceModule()
-        );
-
+                })
+                .createInjector();
 
         System.out.println("Done creating the injector");
         return injector;

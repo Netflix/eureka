@@ -22,13 +22,23 @@ public class ApplicationsResolver implements ClusterResolver<AwsEndpoint> {
     private final EurekaClientConfig clientConfig;
     private final EurekaTransportConfig transportConfig;
     private final ApplicationsSource applicationsSource;
+    private final String vipAddress;
 
+    @Deprecated
     public ApplicationsResolver(EurekaClientConfig clientConfig,
                                 EurekaTransportConfig transportConfig,
                                 ApplicationsSource applicationsSource) {
+        this(clientConfig, transportConfig, applicationsSource, transportConfig.getReadClusterVip());
+    }
+
+    public ApplicationsResolver(EurekaClientConfig clientConfig,
+                                EurekaTransportConfig transportConfig,
+                                ApplicationsSource applicationsSource,
+                                String vipAddress) {
         this.clientConfig = clientConfig;
         this.transportConfig = transportConfig;
         this.applicationsSource = applicationsSource;
+        this.vipAddress = vipAddress;
     }
 
     @Override
@@ -43,12 +53,14 @@ public class ApplicationsResolver implements ClusterResolver<AwsEndpoint> {
         Applications applications = applicationsSource.getApplications(
                 transportConfig.getApplicationsResolverDataStalenessThresholdSeconds(), TimeUnit.SECONDS);
 
-        String vipAddress = transportConfig.getReadClusterVip();
         if (applications != null && vipAddress != null) {
             List<InstanceInfo> validInstanceInfos = applications.getInstancesByVirtualHostName(vipAddress);
             for (InstanceInfo instanceInfo : validInstanceInfos) {
                 if (instanceInfo.getStatus() == InstanceInfo.InstanceStatus.UP) {
-                    result.add(ResolverUtils.instanceInfoToEndpoint(clientConfig, instanceInfo));
+                    AwsEndpoint endpoint = ResolverUtils.instanceInfoToEndpoint(clientConfig, transportConfig, instanceInfo);
+                    if (endpoint != null) {
+                        result.add(endpoint);
+                    }
                 }
             }
         }

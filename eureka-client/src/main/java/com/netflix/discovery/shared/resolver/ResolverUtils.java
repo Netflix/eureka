@@ -29,12 +29,17 @@ import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
+import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import com.netflix.discovery.util.SystemUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Tomasz Bak
  */
 public final class ResolverUtils {
+
+    private static final Logger logger = LoggerFactory.getLogger(ResolverUtils.class);
 
     private static final String LOCAL_IPV4_ADDRESS = SystemUtil.getServerIPv4();
 
@@ -108,15 +113,33 @@ public final class ResolverUtils {
         return compareSet.isEmpty();
     }
 
-    public static AwsEndpoint instanceInfoToEndpoint(EurekaClientConfig clientConfig, InstanceInfo instanceInfo) {
+    public static AwsEndpoint instanceInfoToEndpoint(EurekaClientConfig clientConfig,
+                                                     EurekaTransportConfig transportConfig,
+                                                     InstanceInfo instanceInfo) {
         String zone = null;
         DataCenterInfo dataCenterInfo = instanceInfo.getDataCenterInfo();
         if (dataCenterInfo instanceof AmazonInfo) {
             zone = ((AmazonInfo) dataCenterInfo).get(AmazonInfo.MetaDataKey.availabilityZone);
         }
 
+        String networkAddress;
+        if (transportConfig.applicationsResolverUseIp()) {
+            if (instanceInfo.getDataCenterInfo() instanceof AmazonInfo) {
+                networkAddress = ((AmazonInfo) instanceInfo.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.localIpv4);
+            } else {
+                networkAddress = instanceInfo.getIPAddr();
+            }
+        } else {
+            networkAddress = instanceInfo.getHostName();
+        }
+
+        if (networkAddress == null) {  // final check
+            logger.error("Cannot resolve InstanceInfo {} to a proper resolver endpoint, skipping", instanceInfo);
+            return null;
+        }
+
         return new AwsEndpoint(
-                instanceInfo.getHostName(),
+                networkAddress,
                 instanceInfo.getPort(),
                 false,
                 clientConfig.getEurekaServerURLContext(),

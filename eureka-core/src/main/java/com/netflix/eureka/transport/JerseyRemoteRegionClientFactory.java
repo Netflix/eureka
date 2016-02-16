@@ -19,6 +19,7 @@ package com.netflix.eureka.transport;
 import javax.inject.Inject;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Collections;
 
 import com.netflix.discovery.EurekaIdentityHeaderFilter;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
@@ -60,7 +61,7 @@ public class JerseyRemoteRegionClientFactory implements TransportClientFactory {
 
     @Override
     public EurekaHttpClient newClient(EurekaEndpoint endpoint) {
-        return new JerseyApplicationClient(getOrCreateJerseyClient(region, endpoint).getClient(), endpoint.getServiceUrl(), false);
+        return new JerseyApplicationClient(getOrCreateJerseyClient(region, endpoint).getClient(), endpoint.getServiceUrl(), Collections.<String, String>emptyMap());
     }
 
     @Override

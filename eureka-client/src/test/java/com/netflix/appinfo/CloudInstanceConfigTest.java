@@ -6,9 +6,12 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static com.netflix.appinfo.AmazonInfo.MetaDataKey.amiId;
+import static com.netflix.appinfo.AmazonInfo.MetaDataKey.instanceId;
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.localIpv4;
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.publicHostname;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -69,37 +72,73 @@ public class CloudInstanceConfigTest {
     }
 
     @Test
-    public void testAmazonInfoUpdate() {
+    public void testAmazonInfoNoUpdateIfEqual() {
         AmazonInfo oldInfo = (AmazonInfo) instanceInfo.getDataCenterInfo();
 
-        // false for update if equal
-        AmazonInfo newInfo1 = oldInfo;
-        assertThat(CloudInstanceConfig.shouldUpdate(newInfo1, oldInfo), is(false));
+        AmazonInfo newInfo = copyAmazonInfo(instanceInfo);
+        assertThat(CloudInstanceConfig.shouldUpdate(newInfo, oldInfo), is(false));
+    }
 
-        // false for update if new is empty
-        AmazonInfo newInfo2 = new AmazonInfo();
-        assertThat(CloudInstanceConfig.shouldUpdate(newInfo2, oldInfo), is(false));
+    @Test
+    public void testAmazonInfoNoUpdateIfEmpty() {
+        AmazonInfo oldInfo = (AmazonInfo) instanceInfo.getDataCenterInfo();
 
-        AmazonInfo newInfo3 = new AmazonInfo();
-        for (String key : oldInfo.getMetadata().keySet()) {
-            newInfo3.getMetadata().put(key, oldInfo.getMetadata().get(key));
-        }
-        int originalInfo3Size = newInfo3.getMetadata().size();
+        AmazonInfo newInfo = new AmazonInfo();
+        assertThat(CloudInstanceConfig.shouldUpdate(newInfo, oldInfo), is(false));
+    }
 
-        // true for update if new contains diff data
-        newInfo3.getMetadata().put(AmazonInfo.MetaDataKey.instanceId.getName(), "foo");
-        assertThat(CloudInstanceConfig.shouldUpdate(newInfo3, oldInfo), is(true));
+    @Test
+    public void testAmazonInfoNoUpdateIfNoInstanceId() {
+        AmazonInfo oldInfo = (AmazonInfo) instanceInfo.getDataCenterInfo();
 
-        // true for update if new contains more data
+        AmazonInfo newInfo = copyAmazonInfo(instanceInfo);
+        newInfo.getMetadata().remove(instanceId.getName());
+        assertThat(newInfo.getId(), is(nullValue()));
+        assertThat(newInfo.get(instanceId), is(nullValue()));
+        assertThat(CloudInstanceConfig.shouldUpdate(newInfo, oldInfo), is(false));
+
+        newInfo.getMetadata().put(instanceId.getName(), "");
+        assertThat(newInfo.getId(), is(""));
+        assertThat(newInfo.get(instanceId), is(""));
+        assertThat(CloudInstanceConfig.shouldUpdate(newInfo, oldInfo), is(false));
+    }
+
+    @Test
+    public void testAmazonInfoNoUpdateIfNoLocalIpv4() {
+        AmazonInfo oldInfo = (AmazonInfo) instanceInfo.getDataCenterInfo();
+
+        AmazonInfo newInfo = copyAmazonInfo(instanceInfo);
+        newInfo.getMetadata().remove(localIpv4.getName());
+        assertThat(newInfo.get(localIpv4), is(nullValue()));
+        assertThat(CloudInstanceConfig.shouldUpdate(newInfo, oldInfo), is(false));
+
+        newInfo.getMetadata().put(localIpv4.getName(), "");
+        assertThat(newInfo.get(localIpv4), is(""));
+        assertThat(CloudInstanceConfig.shouldUpdate(newInfo, oldInfo), is(false));
+    }
+
+    @Test
+    public void testAmazonInfoUpdatePositiveCase() {
+        AmazonInfo oldInfo = (AmazonInfo) instanceInfo.getDataCenterInfo();
+
+        AmazonInfo newInfo = copyAmazonInfo(instanceInfo);
+        newInfo.getMetadata().remove(amiId.getName());
+        assertThat(newInfo.getMetadata().size(), is(oldInfo.getMetadata().size() - 1));
+        assertThat(CloudInstanceConfig.shouldUpdate(newInfo, oldInfo), is(true));
+
         String newKey = "someNewKey";
-        newInfo3.getMetadata().put(newKey, "bar");
-        assertThat(newInfo3.getMetadata().size(), is(originalInfo3Size + 1));
-        assertThat(CloudInstanceConfig.shouldUpdate(newInfo3, oldInfo), is(true));
+        newInfo.getMetadata().put(newKey, "bar");
+        assertThat(newInfo.getMetadata().size(), is(oldInfo.getMetadata().size()));
+        assertThat(CloudInstanceConfig.shouldUpdate(newInfo, oldInfo), is(true));
+    }
 
-        // false if there is now less data
-        newInfo3.getMetadata().remove(newKey);
-        newInfo3.getMetadata().remove(AmazonInfo.MetaDataKey.instanceId.getName());
-        assertThat(newInfo3.getMetadata().size(), is(originalInfo3Size - 1));
-        assertThat(CloudInstanceConfig.shouldUpdate(newInfo3, oldInfo), is(false));
+
+    private static AmazonInfo copyAmazonInfo(InstanceInfo instanceInfo) {
+        AmazonInfo currInfo = (AmazonInfo) instanceInfo.getDataCenterInfo();
+        AmazonInfo copyInfo = new AmazonInfo();
+        for (String key : currInfo.getMetadata().keySet()) {
+            copyInfo.getMetadata().put(key, currInfo.getMetadata().get(key));
+        }
+        return copyInfo;
     }
 }

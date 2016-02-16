@@ -35,13 +35,13 @@ public class EurekaArchaius2TransportConfig implements EurekaTransportConfig {
     }
 
     @Override
-    public int getBootstrapResolverRefreshIntervalSeconds() {
-        return config.getInteger("bootstrapResolverRefreshIntervalSeconds", 5 * 60);
+    public int getApplicationsResolverDataStalenessThresholdSeconds() {
+        return config.getInteger("applicationsResolverDataStalenessThresholdSeconds", 5*60);
     }
 
     @Override
-    public int getApplicationsResolverDataStalenessThresholdSeconds() {
-        return config.getInteger("applicationsResolverDataStalenessThresholdSeconds", 5*60);
+    public boolean applicationsResolverUseIp() {
+        return config.getBoolean("applicationsResolverUseIp", false);
     }
 
     @Override
@@ -60,8 +60,18 @@ public class EurekaArchaius2TransportConfig implements EurekaTransportConfig {
     }
 
     @Override
+    public String getWriteClusterVip() {
+        return config.getString("writeClusterVip", null);
+    }
+
+    @Override
     public String getReadClusterVip() {
         return config.getString("readClusterVip", null);
+    }
+
+    @Override
+    public String getBootstrapResolverStrategy() {
+        return config.getString("bootstrapResolverStrategy", null);
     }
 
     @Override

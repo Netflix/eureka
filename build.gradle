@@ -18,10 +18,10 @@ ext {
     jettisonVersion='1.3.7'
     apacheHttpClientVersion='4.3.4'
     guiceVersion='4.0'
-    servoVersion='0.9.4'
-    governatorVersion='1.10.5'
-    archaiusVersion='0.7.1'
-    archaius2Version='2.0.0-rc.36'
+    servoVersion='0.12.3'
+    governatorVersion='1.12.5'
+    archaiusVersion='0.7.3'
+    archaius2Version='2.0.0'
     blitzVersion='1.34'
     mockitoVersion='1.10.19'
     junit_version='4.11'
@@ -34,7 +34,7 @@ ext {
 
 idea {
     project {
-        languageLevel = '1.8'
+        languageLevel = '1.7'
     }
 }
 
@@ -44,8 +44,8 @@ subprojects {
 
     group = "com.netflix.${githubProjectName}"
 
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
+    sourceCompatibility = 1.7
+    targetCompatibility = 1.7
 
     repositories {
         jcenter()

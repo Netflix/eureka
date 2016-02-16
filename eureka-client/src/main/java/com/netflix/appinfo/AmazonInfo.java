@@ -54,6 +54,7 @@ import org.slf4j.LoggerFactory;
 public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
     private Map<String, String> metadata = new HashMap<String, String>();
+
     private static DynamicBooleanProperty shouldLogAWSMetadataError;
     private static DynamicIntProperty awsMetaDataReadTimeout;
     private static DynamicIntProperty awsMetaDataConnectTimeout;
@@ -145,6 +146,10 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
             } finally {
                 br.close();
             }
+        }
+
+        public String toString() {
+            return getName();
         }
     }
 
