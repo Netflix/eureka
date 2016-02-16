@@ -69,6 +69,11 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
                 defaultAddress = config.getHostName(false);
             }
 
+            // fail safe
+            if (defaultAddress == null || defaultAddress.isEmpty()) {
+                defaultAddress = config.getIpAddress();
+            }
+
             builder.setNamespace(config.getNamespace())
                     .setInstanceId(instanceId)
                     .setAppName(config.getAppname())
