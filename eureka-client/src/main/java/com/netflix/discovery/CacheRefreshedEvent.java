@@ -7,5 +7,8 @@ package com.netflix.discovery;
  * @author brenuart
  */
 public class CacheRefreshedEvent extends DiscoveryEvent {
-
+    @Override
+    public String toString() {
+        return "CacheRefreshedEvent[timestamp=" + getTimestamp() + "]";
+    }
 }

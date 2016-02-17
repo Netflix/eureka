@@ -16,10 +16,9 @@
 
 package com.netflix.discovery;
 
-import javax.annotation.Nullable;
-import javax.annotation.PreDestroy;
-import javax.inject.Singleton;
-import javax.ws.rs.core.Response.Status;
+import static com.netflix.discovery.EurekaClientNames.METRIC_REGISTRATION_PREFIX;
+import static com.netflix.discovery.EurekaClientNames.METRIC_REGISTRY_PREFIX;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.SynchronousQueue;
@@ -41,6 +41,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import javax.annotation.Nullable;
+import javax.annotation.PreDestroy;
+import javax.inject.Singleton;
+import javax.ws.rs.core.Response.Status;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
@@ -74,11 +82,6 @@ import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
 import com.sun.jersey.api.client.filter.ClientFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static com.netflix.discovery.EurekaClientNames.METRIC_REGISTRATION_PREFIX;
-import static com.netflix.discovery.EurekaClientNames.METRIC_REGISTRY_PREFIX;
 
 /**
  * The class that is instrumental for interactions with <tt>Eureka Server</tt>.
@@ -150,7 +153,7 @@ public class DiscoveryClient implements EurekaClient {
     private final AtomicReference<String> remoteRegionsToFetch;
     private final AtomicReference<String[]> remoteRegionsRef;
     private final InstanceRegionChecker instanceRegionChecker;
-    private final EventBus eventBus;
+
     private final EndpointUtils.ServiceUrlRandomizer urlRandomizer;
     private final Provider<BackupRegistry> backupRegistryProvider;
     private final EurekaTransport eurekaTransport;
@@ -158,6 +161,7 @@ public class DiscoveryClient implements EurekaClient {
     private volatile HealthCheckHandler healthCheckHandler;
     private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<>();
     private volatile InstanceInfo.InstanceStatus lastRemoteInstanceStatus = InstanceInfo.InstanceStatus.UNKNOWN;
+    private final CopyOnWriteArraySet<EurekaEventListener> eventListeners = new CopyOnWriteArraySet<>();
 
     private String appPathIdentifier;
     private ApplicationInfoManager.StatusChangeListener statusChangeListener;
@@ -215,42 +219,60 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     public static class DiscoveryClientOptionalArgs {
-        @Inject(optional = true)
-        private EventBus eventBus;
-
-        @Inject(optional = true)
         private Provider<HealthCheckCallback> healthCheckCallbackProvider;
 
-        @Inject(optional = true)
         private Provider<HealthCheckHandler> healthCheckHandlerProvider;
 
-        @Inject(optional = true)
         private Collection<ClientFilter> additionalFilters;
 
-        @Inject(optional = true)
         private EurekaJerseyClient eurekaJerseyClient;
+        
+        private Set<EurekaEventListener> eventListeners;
 
-        public DiscoveryClientOptionalArgs() {
+        @Inject(optional = true)
+        public void setEventListeners(Set<EurekaEventListener> listeners) {
+            if (eventListeners == null) {
+                eventListeners = new HashSet<>();
+            }
+            eventListeners.addAll(listeners);
+        }
+        
+        @Inject(optional = true)
+        public void setEventBus(final EventBus eventBus) {
+            if (eventListeners == null) {
+                eventListeners = new HashSet<>();
+            }
+            
+            eventListeners.add(new EurekaEventListener() {
+                @Override
+                public void onEvent(EurekaEvent event) {
+                    eventBus.publish(event);
+                }
+            });
         }
 
-        public void setEventBus(EventBus eventBus) {
-            this.eventBus = eventBus;
-        }
-
+        @Inject(optional = true) 
         public void setHealthCheckCallbackProvider(Provider<HealthCheckCallback> healthCheckCallbackProvider) {
             this.healthCheckCallbackProvider = healthCheckCallbackProvider;
         }
 
+        @Inject(optional = true) 
         public void setHealthCheckHandlerProvider(Provider<HealthCheckHandler> healthCheckHandlerProvider) {
             this.healthCheckHandlerProvider = healthCheckHandlerProvider;
         }
 
+        @Inject(optional = true) 
         public void setAdditionalFilters(Collection<ClientFilter> additionalFilters) {
             this.additionalFilters = additionalFilters;
         }
 
+        @Inject(optional = true) 
         public void setEurekaJerseyClient(EurekaJerseyClient eurekaJerseyClient) {
             this.eurekaJerseyClient = eurekaJerseyClient;
+        }
+        
+        Set<EurekaEventListener> getEventListeners() {
+            return eventListeners == null ? Collections.<EurekaEventListener>emptySet() : eventListeners;
         }
     }
 
@@ -316,13 +338,12 @@ public class DiscoveryClient implements EurekaClient {
         if (args != null) {
             this.healthCheckHandlerProvider = args.healthCheckHandlerProvider;
             this.healthCheckCallbackProvider = args.healthCheckCallbackProvider;
-            this.eventBus = args.eventBus;
+            this.eventListeners.addAll(args.getEventListeners());
         } else {
             this.healthCheckCallbackProvider = null;
             this.healthCheckHandlerProvider = null;
-            this.eventBus = null;
         }
-
+        
         this.applicationInfoManager = applicationInfoManager;
         InstanceInfo myInfo = applicationInfoManager.getInfo();
 
@@ -601,6 +622,16 @@ public class DiscoveryClient implements EurekaClient {
         if (healthCheckHandler != null) {
             this.healthCheckHandler = healthCheckHandler;
         }
+    }
+
+    @Override
+    public void registerEventListener(EurekaEventListener eventListener) {
+        this.eventListeners.add(eventListener);
+    }
+
+    @Override
+    public boolean unregisterEventListener(EurekaEventListener eventListener) {
+        return this.eventListeners.remove(eventListener);
     }
 
     /**
@@ -1380,60 +1411,65 @@ public class DiscoveryClient implements EurekaClient {
      */
     class CacheRefreshThread implements Runnable {
         public void run() {
-            try {
-                boolean isFetchingRemoteRegionRegistries = isFetchingRemoteRegionRegistries();
-
-                boolean remoteRegionsModified = false;
-                // This makes sure that a dynamic change to remote regions to fetch is honored.
-                String latestRemoteRegions = clientConfig.fetchRegistryForRemoteRegions();
-                if (null != latestRemoteRegions) {
-                    String currentRemoteRegions = remoteRegionsToFetch.get();
-                    if (!latestRemoteRegions.equals(currentRemoteRegions)) {
-                        // Both remoteRegionsToFetch and AzToRegionMapper.regionsToFetch need to be in sync
-                        synchronized (instanceRegionChecker.getAzToRegionMapper()) {
-                            if (remoteRegionsToFetch.compareAndSet(currentRemoteRegions, latestRemoteRegions)) {
-                                String[] remoteRegions = latestRemoteRegions.split(",");
-                                remoteRegionsRef.set(remoteRegions);
-                                instanceRegionChecker.getAzToRegionMapper().setRegionsToFetch(remoteRegions);
-                                remoteRegionsModified = true;
-                            } else {
-                                logger.info("Remote regions to fetch modified concurrently," +
-                                        " ignoring change from {} to {}", currentRemoteRegions, latestRemoteRegions);
-                            }
-                        }
-                    } else {
-                        // Just refresh mapping to reflect any DNS/Property change
-                        instanceRegionChecker.getAzToRegionMapper().refreshMapping();
-                    }
-                }
-
-                boolean success = fetchRegistry(remoteRegionsModified);
-                if (success) {
-                    registrySize = localRegionApps.get().size();
-                    lastSuccessfulRegistryFetchTimestamp = System.currentTimeMillis();
-                }
-
-                if (logger.isDebugEnabled()) {
-                    StringBuilder allAppsHashCodes = new StringBuilder();
-                    allAppsHashCodes.append("Local region apps hashcode: ");
-                    allAppsHashCodes.append(localRegionApps.get().getAppsHashCode());
-                    allAppsHashCodes.append(", is fetching remote regions? ");
-                    allAppsHashCodes.append(isFetchingRemoteRegionRegistries);
-                    for (Map.Entry<String, Applications> entry : remoteRegionVsApps.entrySet()) {
-                        allAppsHashCodes.append(", Remote region: ");
-                        allAppsHashCodes.append(entry.getKey());
-                        allAppsHashCodes.append(" , apps hashcode: ");
-                        allAppsHashCodes.append(entry.getValue().getAppsHashCode());
-                    }
-                    logger.debug("Completed cache refresh task for discovery. All Apps hash code is {} ",
-                            allAppsHashCodes.toString());
-                }
-            } catch (Throwable th) {
-                logger.error("Cannot fetch registry from server", th);
-            }
+            refreshRegistry();
         }
     }
 
+    @VisibleForTesting
+    void refreshRegistry() {
+        try {
+            boolean isFetchingRemoteRegionRegistries = isFetchingRemoteRegionRegistries();
+
+            boolean remoteRegionsModified = false;
+            // This makes sure that a dynamic change to remote regions to fetch is honored.
+            String latestRemoteRegions = clientConfig.fetchRegistryForRemoteRegions();
+            if (null != latestRemoteRegions) {
+                String currentRemoteRegions = remoteRegionsToFetch.get();
+                if (!latestRemoteRegions.equals(currentRemoteRegions)) {
+                    // Both remoteRegionsToFetch and AzToRegionMapper.regionsToFetch need to be in sync
+                    synchronized (instanceRegionChecker.getAzToRegionMapper()) {
+                        if (remoteRegionsToFetch.compareAndSet(currentRemoteRegions, latestRemoteRegions)) {
+                            String[] remoteRegions = latestRemoteRegions.split(",");
+                            remoteRegionsRef.set(remoteRegions);
+                            instanceRegionChecker.getAzToRegionMapper().setRegionsToFetch(remoteRegions);
+                            remoteRegionsModified = true;
+                        } else {
+                            logger.info("Remote regions to fetch modified concurrently," +
+                                    " ignoring change from {} to {}", currentRemoteRegions, latestRemoteRegions);
+                        }
+                    }
+                } else {
+                    // Just refresh mapping to reflect any DNS/Property change
+                    instanceRegionChecker.getAzToRegionMapper().refreshMapping();
+                }
+            }
+
+            boolean success = fetchRegistry(remoteRegionsModified);
+            if (success) {
+                registrySize = localRegionApps.get().size();
+                lastSuccessfulRegistryFetchTimestamp = System.currentTimeMillis();
+            }
+
+            if (logger.isDebugEnabled()) {
+                StringBuilder allAppsHashCodes = new StringBuilder();
+                allAppsHashCodes.append("Local region apps hashcode: ");
+                allAppsHashCodes.append(localRegionApps.get().getAppsHashCode());
+                allAppsHashCodes.append(", is fetching remote regions? ");
+                allAppsHashCodes.append(isFetchingRemoteRegionRegistries);
+                for (Map.Entry<String, Applications> entry : remoteRegionVsApps.entrySet()) {
+                    allAppsHashCodes.append(", Remote region: ");
+                    allAppsHashCodes.append(entry.getKey());
+                    allAppsHashCodes.append(" , apps hashcode: ");
+                    allAppsHashCodes.append(entry.getValue().getAppsHashCode());
+                }
+                logger.debug("Completed cache refresh task for discovery. All Apps hash code is {} ",
+                        allAppsHashCodes.toString());
+            }
+        } catch (Throwable e) {
+            logger.error("Cannot fetch registry from server", e);
+        }        
+    }
+    
     /**
      * Fetch the registry information from back up registry if all eureka server
      * urls are unreachable.
@@ -1543,10 +1579,9 @@ public class DiscoveryClient implements EurekaClient {
      *
      * @param event the event to send on the eventBus
      */
-    protected void fireEvent(DiscoveryEvent event) {
-        // Publish event if an EventBus is available
-        if (eventBus != null) {
-            eventBus.publish(event);
+    protected void fireEvent(final EurekaEvent event) {
+        for (EurekaEventListener listener : eventListeners) {
+            listener.onEvent(event);
         }
     }
 
