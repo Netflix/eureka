@@ -6,8 +6,4 @@ package com.netflix.discovery;
  * @see {@link EurekaEventListener}
  */
 public interface EurekaEvent {
-    /**
-     * @return Time at which the event occurred
-     */
-    long getTimestamp();
 }
