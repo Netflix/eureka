@@ -76,7 +76,7 @@ public class ConfigClusterResolver implements ClusterResolver<AwsEndpoint> {
                     endpoints.add(new AwsEndpoint(
                             serviceURI.getHost(),
                             serviceURI.getPort(),
-                            "https".equalsIgnoreCase(serviceURI.getSchemeSpecificPart()),
+                            "https".equalsIgnoreCase(serviceURI.getScheme()),
                             serviceURI.getPath(),
                             getRegion(),
                             zone
