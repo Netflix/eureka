@@ -32,7 +32,7 @@ public class ConfigClusterResolverTest {
             "http://1.1.2.2:8000/eureka/v2/"
     );
     private final List<String> endpointsE = Arrays.asList(
-            "https://1.1.3.1:8000/eureka/v2/"
+            "https://1.1.3.1/eureka/v2/"
     );
     private ConfigClusterResolver resolver;
 
@@ -59,7 +59,8 @@ public class ConfigClusterResolverTest {
 
 		for (AwsEndpoint endpoint : endpoints) {
 			if (endpoint.getZone().equals("us-east-1e")) {
-				assertThat(endpoint.isSecure(), equalTo(true));
+				assertThat("secure was wrong", endpoint.isSecure(), equalTo(true));
+				assertThat("serviceUrl contains -1", endpoint.getServiceUrl().contains("-1"), equalTo(false));
 			}
 		}
     }
