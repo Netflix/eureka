@@ -55,9 +55,11 @@ public class DefaultEndpoint implements EurekaEndpoint {
         StringBuilder sb = new StringBuilder()
                 .append(isSecure ? "https" : "http")
                 .append("://")
-                .append(networkAddress)
-                .append(':')
-                .append(port);
+                .append(networkAddress);
+		if (port >= 0) {
+			sb.append(':')
+				.append(port);
+		}
         if (relativeUri != null) {
             if (!relativeUri.startsWith("/")) {
                 sb.append('/');
