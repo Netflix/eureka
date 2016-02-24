@@ -188,6 +188,14 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         int count = 0;
 
         for (int i = 0; ((i < serverConfig.getRegistrySyncRetries()) && (count == 0)); i++) {
+            if (i > 0) {
+                try {
+                    Thread.sleep(serverConfig.getRegistrySyncRetryWaitMs());
+                } catch (InterruptedException e) {
+                    logger.warn("Interrupted during registry transfer..");
+                    break;
+                }
+            }
             Applications apps = eurekaClient.getApplications();
             for (Application app : apps.getRegisteredApplications()) {
                 for (InstanceInfo instance : app.getInstances()) {
@@ -199,14 +207,6 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                     } catch (Throwable t) {
                         logger.error("During DS init copy", t);
                     }
-                }
-            }
-            if (count == 0) {
-                try {
-                    Thread.sleep(serverConfig.getRegistrySyncRetryWaitMs());
-                } catch (InterruptedException e) {
-                    logger.warn("Interrupted during registry transfer..");
-                    break;
                 }
             }
         }
