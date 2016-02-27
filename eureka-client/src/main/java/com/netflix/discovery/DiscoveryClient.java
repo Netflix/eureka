@@ -860,8 +860,8 @@ public class DiscoveryClient implements EurekaClient {
             cancelScheduledTasks();
 
             // If APPINFO was registered
-            if (instanceInfo != null && clientConfig.shouldRegisterWithEureka()) {
-                instanceInfo.setStatus(InstanceStatus.DOWN);
+            if (applicationInfoManager != null && clientConfig.shouldRegisterWithEureka()) {
+                applicationInfoManager.setInstanceStatus(InstanceStatus.DOWN);
                 unregister();
             }
 
@@ -1362,7 +1362,7 @@ public class DiscoveryClient implements EurekaClient {
         }
 
         if (null != status) {
-            instanceInfo.setStatus(status);
+            applicationInfoManager.setInstanceStatus(status);
         }
     }
 
