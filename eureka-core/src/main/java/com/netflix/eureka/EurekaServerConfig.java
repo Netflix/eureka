@@ -135,6 +135,15 @@ public interface EurekaServerConfig {
     int getRenewalThresholdUpdateIntervalMs();
 
     /**
+     * The interval with which the Self Preservation Mode
+     * Status Announcement gets updated. Current announcement
+     * is logged and delivered though servo.
+     *
+     * @return time in milliseconds indicating the interval.
+     */
+    int getSelfPreservationStatusUpdateIntervalMs();
+
+    /**
      * The interval with which the information about the changes in peer eureka
      * nodes is updated. The user can use the DNS mechanism or dynamic
      * configuration provided by <a href="https://github.com/Netflix/archaius">Archaius</a> to

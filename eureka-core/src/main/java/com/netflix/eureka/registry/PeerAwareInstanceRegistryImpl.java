@@ -47,6 +47,8 @@ import com.netflix.eureka.resources.ServerCodecs;
 import com.netflix.eureka.util.MeasuredRate;
 import com.netflix.servo.DefaultMonitorRegistry;
 import com.netflix.servo.annotations.DataSourceType;
+import com.netflix.servo.monitor.BasicInformational;
+import com.netflix.servo.monitor.MonitorConfig;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
 import org.slf4j.Logger;
@@ -89,6 +91,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
 
     private static final String US_EAST_1 = "us-east-1";
     private static final int PRIME_PEER_NODES_RETRY_MS = 30000;
+    private static final BasicInformational SELF_PRESERVATION_MODE_INFORMATIONAL = new BasicInformational(MonitorConfig.builder("eureka.selfPreservationMode").build());
 
     private long startupTime = 0;
     private boolean peerInstancesTransferEmptyOnStartup = true;
@@ -133,6 +136,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         this.peerEurekaNodes = peerEurekaNodes;
         initializedResponseCache();
         scheduleRenewalThresholdUpdateTask();
+        scheduleSelfPreservationStatusUpdateTask();
         initRemoteRegionRegistry();
 
         try {
@@ -175,6 +179,16 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                            }
                        }, serverConfig.getRenewalThresholdUpdateIntervalMs(),
                 serverConfig.getRenewalThresholdUpdateIntervalMs());
+    }
+
+    private void scheduleSelfPreservationStatusUpdateTask() {
+        timer.schedule(new TimerTask() {
+                           @Override
+                           public void run() {
+                               updateSelfPreservationStatus();
+                           }
+                       }, serverConfig.getSelfPreservationStatusUpdateIntervalMs(),
+                serverConfig.getSelfPreservationStatusUpdateIntervalMs());
     }
 
     /**
@@ -521,6 +535,16 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             logger.info("Current renewal threshold is : {}", numberOfRenewsPerMinThreshold);
         } catch (Throwable e) {
             logger.error("Cannot update renewal threshold", e);
+        }
+    }
+
+    private void updateSelfPreservationStatus() {
+        if (this.isSelfPreservationModeEnabled() && this.isBelowRenewThresold() == 1) {
+            SELF_PRESERVATION_MODE_INFORMATIONAL.setValue("true");
+            logger.error("Self-preservation mode is active");
+        } else {
+            SELF_PRESERVATION_MODE_INFORMATIONAL.setValue("false");
+            logger.info("Self-preservation mode is not active");
         }
     }
 
