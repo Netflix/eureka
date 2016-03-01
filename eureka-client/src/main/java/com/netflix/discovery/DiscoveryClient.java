@@ -622,7 +622,9 @@ public class DiscoveryClient implements EurekaClient {
         if (healthCheckHandler != null) {
             this.healthCheckHandler = healthCheckHandler;
             // schedule an onDemand update of the instanceInfo when a new healthcheck handler is registered
-            instanceInfoReplicator.onDemandUpdate();
+            if (instanceInfoReplicator != null) {
+                instanceInfoReplicator.onDemandUpdate();
+            }
         }
     }
 
