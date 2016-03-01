@@ -153,9 +153,10 @@ public interface EurekaClient extends LookupService {
     /**
      * Register {@link HealthCheckHandler} with the eureka client.
      *
-     * Once registered, the eureka client will invoke the
-     * {@link HealthCheckHandler} in intervals specified by
-     * {@link EurekaClientConfig#getInstanceInfoReplicationIntervalSeconds()}.
+     * Once registered, the eureka client will first make an onDemand update of the
+     * registering instanceInfo by calling the newly registered healthcheck handler,
+     * and subsequently invoke the {@link HealthCheckHandler} in intervals specified
+     * by {@link EurekaClientConfig#getInstanceInfoReplicationIntervalSeconds()}.
      *
      * @param healthCheckHandler app specific healthcheck handler.
      */
