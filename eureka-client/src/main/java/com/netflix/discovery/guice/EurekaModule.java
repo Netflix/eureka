@@ -15,7 +15,7 @@ import com.netflix.discovery.providers.DefaultEurekaClientConfigProvider;
 /**
  * @author David Liu
  */
-public class EurekaModule extends AbstractModule {
+public final class EurekaModule extends AbstractModule {
     @Override
     protected void configure() {
         // need to eagerly initialize
@@ -32,5 +32,15 @@ public class EurekaModule extends AbstractModule {
         bind(InstanceInfo.class).toProvider(EurekaConfigBasedInstanceInfoProvider.class).in(Scopes.SINGLETON);
 
         bind(EurekaClient.class).to(DiscoveryClient.class).in(Scopes.SINGLETON);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj != null && getClass().equals(obj.getClass());
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
     }
 }
