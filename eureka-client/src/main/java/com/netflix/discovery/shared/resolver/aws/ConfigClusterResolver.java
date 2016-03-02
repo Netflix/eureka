@@ -37,8 +37,10 @@ public class ConfigClusterResolver implements ClusterResolver<AwsEndpoint> {
     @Override
     public List<AwsEndpoint> getClusterEndpoints() {
         if (clientConfig.shouldUseDnsForFetchingServiceUrls()) {
+            logger.info("Resolving eureka endpoints via DNS");
             return getClusterEndpointsFromDns();
         } else {
+            logger.info("Resolving eureka endpoints via configuration");
             return getClusterEndpointsFromConfig();
         }
     }
@@ -58,7 +60,13 @@ public class ConfigClusterResolver implements ClusterResolver<AwsEndpoint> {
                 clientConfig.getEurekaServerURLContext()
         );
 
-        return dnsResolver.getClusterEndpoints();
+        List<AwsEndpoint> endpoints = dnsResolver.getClusterEndpoints();
+
+        if (endpoints.isEmpty()) {
+            logger.error("Cannot resolve to any endpoints for the given dnsName: {}", discoveryDnsName);
+        }
+
+        return endpoints;
     }
 
     private List<AwsEndpoint> getClusterEndpointsFromConfig() {
@@ -90,6 +98,11 @@ public class ConfigClusterResolver implements ClusterResolver<AwsEndpoint> {
         if (logger.isDebugEnabled()) {
             logger.debug("Config resolved to {}", endpoints);
         }
+
+        if (endpoints.isEmpty()) {
+            logger.error("Cannot resolve to any endpoints from provided configuration: {}", serviceUrls);
+        }
+
         return endpoints;
     }
 }
