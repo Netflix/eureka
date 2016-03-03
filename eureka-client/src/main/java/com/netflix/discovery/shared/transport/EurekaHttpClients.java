@@ -142,6 +142,10 @@ public final class EurekaHttpClients {
         );
 
         List<AwsEndpoint> initialValue = delegateResolver.getClusterEndpoints();
+        if (initialValue.isEmpty()) {
+            String msg = "Initial resolution of Eureka endpoints failed. Check ConfigClusterResolver logs for more info";
+            logger.error(msg);
+        }
 
         return new AsyncResolver<>(
                 EurekaClientNames.BOOTSTRAP,
@@ -198,6 +202,10 @@ public final class EurekaHttpClients {
         };
 
         List<AwsEndpoint> initialValue = compositeResolver.getClusterEndpoints();
+        if (initialValue.isEmpty()) {
+            String msg = "Initial resolution of Eureka endpoints failed. Check ConfigClusterResolver logs for more info";
+            logger.error(msg);
+        }
 
         String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
         String myZone = InstanceInfo.getZone(availZones, myInstanceInfo);
