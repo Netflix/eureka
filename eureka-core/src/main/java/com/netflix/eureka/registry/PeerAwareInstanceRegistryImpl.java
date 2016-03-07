@@ -39,7 +39,10 @@ import com.netflix.eureka.resources.ServerCodecs;
 import com.netflix.eureka.util.MeasuredRate;
 import com.netflix.servo.DefaultMonitorRegistry;
 import com.netflix.servo.annotations.DataSourceType;
-import com.netflix.servo.monitor.*;
+import com.netflix.servo.monitor.MonitorConfig;
+import com.netflix.servo.monitor.Monitors;
+import com.netflix.servo.monitor.NumberGauge;
+import com.netflix.servo.monitor.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
