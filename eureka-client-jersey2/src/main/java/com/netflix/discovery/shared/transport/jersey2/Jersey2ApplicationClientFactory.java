@@ -20,10 +20,13 @@ import javax.net.ssl.SSLContext;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
+import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.FileInputStream;
 import java.security.KeyStore;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import com.netflix.discovery.provider.DiscoveryJerseyProvider;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
@@ -67,10 +70,21 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
 
     public static class Jersey2ApplicationClientFactoryBuilder extends EurekaClientFactoryBuilder<Jersey2ApplicationClientFactory, Jersey2ApplicationClientFactoryBuilder> {
 
+        private List<Feature> features = new ArrayList<>();
+
+        public Jersey2ApplicationClientFactoryBuilder withFeature(Feature feature) {
+            features.add(feature);
+            return this;
+        }
+
         @Override
         public Jersey2ApplicationClientFactory build() {
             ClientBuilder clientBuilder = ClientBuilder.newBuilder();
             ClientConfig clientConfig = new ClientConfig();
+
+            for (Feature feature : features) {
+                clientConfig.register(feature);
+            }
 
             addProviders(clientConfig);
             addSSLConfiguration(clientBuilder);

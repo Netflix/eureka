@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -31,8 +32,8 @@ public class ConfigClusterResolverTest {
             "http://1.1.2.1:8000/eureka/v2/",
             "http://1.1.2.2:8000/eureka/v2/"
     );
-    private final List<String> endpointsE = Arrays.asList(
-            "https://1.1.3.1/eureka/v2/"
+    private final List<String> endpointsWithBasicAuth = Arrays.asList(
+            "https://myuser:mypassword@1.1.3.1/eureka/v2/"
     );
     private ConfigClusterResolver resolver;
 
@@ -43,7 +44,7 @@ public class ConfigClusterResolverTest {
         when(clientConfig.getAvailabilityZones("us-east-1")).thenReturn(new String[]{"us-east-1c", "us-east-1d", "us-east-1e"});
         when(clientConfig.getEurekaServerServiceUrls("us-east-1c")).thenReturn(endpointsC);
         when(clientConfig.getEurekaServerServiceUrls("us-east-1d")).thenReturn(endpointsD);
-        when(clientConfig.getEurekaServerServiceUrls("us-east-1e")).thenReturn(endpointsE);
+        when(clientConfig.getEurekaServerServiceUrls("us-east-1e")).thenReturn(endpointsWithBasicAuth);
 
         InstanceInfo instanceInfo = new InstanceInfo.Builder(InstanceInfoGenerator.takeOne())
                 .setDataCenterInfo(new MyDataCenterInfo(DataCenterInfo.Name.MyOwn))
@@ -59,8 +60,9 @@ public class ConfigClusterResolverTest {
 
 		for (AwsEndpoint endpoint : endpoints) {
 			if (endpoint.getZone().equals("us-east-1e")) {
-				assertThat("secure was wrong", endpoint.isSecure(), equalTo(true));
-				assertThat("serviceUrl contains -1", endpoint.getServiceUrl().contains("-1"), equalTo(false));
+				assertThat("secure was wrong", endpoint.isSecure(), is(true));
+				assertThat("serviceUrl contains -1", endpoint.getServiceUrl().contains("-1"), is(false));
+                assertThat("BASIC auth credentials expected", endpoint.getServiceUrl().contains("myuser:mypassword"), is(true));
 			}
 		}
     }

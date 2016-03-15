@@ -16,12 +16,14 @@
 
 package com.netflix.discovery.shared.transport;
 
+import java.net.URI;
+
+import com.google.common.base.Preconditions;
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.discovery.converters.wrappers.CodecWrappers.JacksonJson;
 import com.netflix.discovery.shared.resolver.DefaultEndpoint;
 import com.netflix.discovery.shared.transport.jersey.JerseyEurekaHttpClientFactory;
 import org.junit.After;
-import org.junit.Before;
 
 /**
  * @author Tomasz Bak
@@ -32,9 +34,15 @@ public class SimpleEurekaHttpServerTest extends EurekaHttpClientCompatibilityTes
     private EurekaHttpClient eurekaHttpClient;
 
     @Override
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
+    @After
+    public void tearDown() throws Exception {
+        httpClientFactory.shutdown();
+        super.tearDown();
+    }
+
+    @Override
+    protected EurekaHttpClient getEurekaHttpClient(URI serviceURI) {
+        Preconditions.checkState(eurekaHttpClient == null, "EurekaHttpClient has been already created");
 
         httpClientFactory = JerseyEurekaHttpClientFactory.newBuilder()
                 .withClientName("test")
@@ -43,19 +51,8 @@ public class SimpleEurekaHttpServerTest extends EurekaHttpClientCompatibilityTes
                 .withDecoder(JacksonJson.class.getSimpleName(), EurekaAccept.full.name())
                 .withEncoder(JacksonJson.class.getSimpleName())
                 .build();
-        int port = getHttpServer().getServerPort();
-        this.eurekaHttpClient = httpClientFactory.newClient(new DefaultEndpoint("http://localhost:" + port + "/v2"));
-    }
+        this.eurekaHttpClient = httpClientFactory.newClient(new DefaultEndpoint(serviceURI.toString()));
 
-    @Override
-    @After
-    public void tearDown() throws Exception {
-        httpClientFactory.shutdown();
-        super.tearDown();
-    }
-
-    @Override
-    public EurekaHttpClient getEurekaHttpClient() {
         return eurekaHttpClient;
     }
 }

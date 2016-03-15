@@ -16,26 +16,18 @@
 
 package com.netflix.discovery.shared.transport.jersey;
 
+import java.net.URI;
+
+import com.google.common.base.Preconditions;
 import com.netflix.discovery.shared.resolver.DefaultEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientCompatibilityTestSuite;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
 import org.junit.After;
-import org.junit.Before;
 
 public class JerseyApplicationClientTest extends EurekaHttpClientCompatibilityTestSuite {
 
     private JerseyApplicationClient jerseyHttpClient;
-
-    @Override
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-        TransportClientFactory clientFactory = JerseyEurekaHttpClientFactory.newBuilder()
-                .withClientName("compatibilityTestClient")
-                .build();
-        jerseyHttpClient = (JerseyApplicationClient) clientFactory.newClient(new DefaultEndpoint(getHttpServer().getServiceURI().toString()));
-    }
 
     @Override
     @After
@@ -47,7 +39,14 @@ public class JerseyApplicationClientTest extends EurekaHttpClientCompatibilityTe
     }
 
     @Override
-    public EurekaHttpClient getEurekaHttpClient() {
+    protected EurekaHttpClient getEurekaHttpClient(URI serviceURI) {
+        Preconditions.checkState(jerseyHttpClient == null, "EurekaHttpClient has been already created");
+
+        TransportClientFactory clientFactory = JerseyEurekaHttpClientFactory.newBuilder()
+                .withClientName("compatibilityTestClient")
+                .build();
+        jerseyHttpClient = (JerseyApplicationClient) clientFactory.newClient(new DefaultEndpoint(serviceURI.toString()));
+
         return jerseyHttpClient;
     }
 }

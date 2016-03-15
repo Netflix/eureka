@@ -17,12 +17,18 @@
 package com.netflix.discovery.shared.transport;
 
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.UriBuilder;
+import java.net.URI;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEurekaHttpResponse;
@@ -41,22 +47,42 @@ public abstract class EurekaHttpClientCompatibilityTestSuite {
     private static final String REMOTE_REGION = "us-east-1";
 
     private final EurekaHttpClient requestHandler = mock(EurekaHttpClient.class);
+
+    private final List<EurekaHttpRequest> observedHttpRequests = new CopyOnWriteArrayList<>();
+    private final EurekaTransportEventListener transportEventListener = new EurekaTransportEventListener() {
+        @Override
+        public void onHttpRequest(EurekaHttpRequest request) {
+            observedHttpRequests.add(request);
+        }
+    };
+
     private SimpleEurekaHttpServer httpServer;
 
     protected EurekaHttpClientCompatibilityTestSuite() {
     }
 
+    @Before
     public void setUp() throws Exception {
-        httpServer = new SimpleEurekaHttpServer(requestHandler);
+        httpServer = new SimpleEurekaHttpServer(requestHandler, transportEventListener);
     }
 
+    @After
     public void tearDown() throws Exception {
         httpServer.shutdown();
     }
 
-    public abstract EurekaHttpClient getEurekaHttpClient();
+    protected abstract EurekaHttpClient getEurekaHttpClient(URI serviceURI);
 
-    public SimpleEurekaHttpServer getHttpServer() {
+    protected EurekaHttpClient getEurekaHttpClient() {
+        return getEurekaHttpClient(getHttpServer().getServiceURI());
+    }
+
+    protected EurekaHttpClient getEurekaClientWithBasicAuthentication(String userName, String password) {
+        URI serviceURI = UriBuilder.fromUri(getHttpServer().getServiceURI()).userInfo(userName + ':' + password).build();
+        return getEurekaHttpClient(serviceURI);
+    }
+
+    protected SimpleEurekaHttpServer getHttpServer() {
         return httpServer;
     }
 
@@ -200,6 +226,16 @@ public abstract class EurekaHttpClientCompatibilityTestSuite {
 
         EurekaHttpResponse<Void> httpResponse = getEurekaHttpClient().deleteStatusOverride(instance.getAppName(), instance.getId(), instance);
         assertThat(httpResponse.getStatusCode(), is(equalTo(200)));
+    }
+
+    @Test
+    public void testBasicAuthentication() throws Exception {
+        InstanceInfo instance = InstanceInfoGenerator.takeOne();
+        when(requestHandler.register(instance)).thenReturn(EurekaHttpResponse.status(204));
+
+        EurekaHttpResponse<Void> httpResponse = getEurekaClientWithBasicAuthentication("myuser", "mypassword").register(instance);
+        assertThat(httpResponse.getStatusCode(), is(equalTo(204)));
+        assertThat(observedHttpRequests.get(0).getHeaders().containsKey(HttpHeaders.AUTHORIZATION), is(true));
     }
 
     private static void verifyResponseOkWithEntity(Applications original, EurekaHttpResponse<Applications> httpResponse) {

@@ -1,5 +1,7 @@
 package com.netflix.discovery.junit.resource;
 
+import javax.ws.rs.core.UriBuilder;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -10,6 +12,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Preconditions;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.EurekaInstanceConfig;
@@ -51,6 +54,8 @@ public class DiscoveryClientResource extends ExternalResource {
     private final Callable<Integer> portResolverCallable;
     private final List<String> remoteRegions;
     private final String vipFetch;
+    private final String userName;
+    private final String password;
 
     private EventBus eventBus;
     private ApplicationInfoManager applicationManager;
@@ -67,6 +72,8 @@ public class DiscoveryClientResource extends ExternalResource {
         this.instance = builder.instance;
         this.remoteRegions = builder.remoteRegions;
         this.vipFetch = builder.vipFetch;
+        this.userName = builder.userName;
+        this.password = builder.password;
     }
 
     public InstanceInfo getMyInstanceInfo() {
@@ -142,15 +149,20 @@ public class DiscoveryClientResource extends ExternalResource {
 
     private EurekaClientConfig createEurekaClientConfig() throws Exception {
         // Cluster connectivity
-        String serviceURI;
+        URI serviceURI;
         if (portResolverCallable != null) {
-            serviceURI = "http://localhost:" + portResolverCallable.call() + "/eureka/v2/";
+            serviceURI = new URI("http://localhost:" + portResolverCallable.call() + "/eureka/v2/");
         } else if (eurekaHttpServer != null) {
-            serviceURI = eurekaHttpServer.getServiceURI().toString();
+            serviceURI = eurekaHttpServer.getServiceURI();
         } else {
             throw new IllegalStateException("Either port or EurekaHttpServer must be configured");
         }
-        bindProperty(EUREKA_TEST_NAMESPACE + "serviceUrl.default", serviceURI);
+
+        if (userName != null) {
+            serviceURI = UriBuilder.fromUri(serviceURI).userInfo(userName + ':' + password).build();
+        }
+
+        bindProperty(EUREKA_TEST_NAMESPACE + "serviceUrl.default", serviceURI.toString());
         if (remoteRegions != null && !remoteRegions.isEmpty()) {
             StringBuilder regions = new StringBuilder();
             for (String region : remoteRegions) {
@@ -283,6 +295,8 @@ public class DiscoveryClientResource extends ExternalResource {
         private SimpleEurekaHttpServer eurekaHttpServer;
         private List<String> remoteRegions;
         private String vipFetch;
+        private String userName;
+        private String password;
 
         public DiscoveryClientRuleBuilder withInstanceInfo(InstanceInfo instance) {
             this.instance = instance;
@@ -319,6 +333,14 @@ public class DiscoveryClientResource extends ExternalResource {
 
         public DiscoveryClientRuleBuilder withVipFetch(String vipFetch) {
             this.vipFetch = vipFetch;
+            return this;
+        }
+
+        public DiscoveryClientRuleBuilder basicAuthentication(String userName, String password) {
+            Preconditions.checkNotNull(userName, "HTTP basic authentication user name is null");
+            Preconditions.checkNotNull(password, "HTTP basic authentication password is null");
+            this.userName = userName;
+            this.password = password;
             return this;
         }
 

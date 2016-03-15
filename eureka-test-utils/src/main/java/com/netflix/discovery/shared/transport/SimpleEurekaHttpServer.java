@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -34,6 +35,7 @@ import com.netflix.discovery.converters.wrappers.CodecWrappers.JacksonJson;
 import com.netflix.discovery.converters.wrappers.DecoderWrapper;
 import com.netflix.discovery.converters.wrappers.EncoderWrapper;
 import com.netflix.discovery.shared.Applications;
+import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -52,13 +54,19 @@ public class SimpleEurekaHttpServer {
     private static final Logger logger = LoggerFactory.getLogger(SimpleEurekaHttpServer.class);
 
     private final EurekaHttpClient requestHandler;
+    private final EurekaTransportEventListener eventListener;
     private final HttpServer httpServer;
 
     private final EncoderWrapper encoder = CodecWrappers.getEncoder(JacksonJson.class);
     private final DecoderWrapper decoder = CodecWrappers.getDecoder(JacksonJson.class);
 
     public SimpleEurekaHttpServer(EurekaHttpClient requestHandler) throws IOException {
+        this(requestHandler, null);
+    }
+
+    public SimpleEurekaHttpServer(EurekaHttpClient requestHandler, EurekaTransportEventListener eventListener) throws IOException {
         this.requestHandler = requestHandler;
+        this.eventListener = eventListener;
 
         this.httpServer = HttpServer.create(new InetSocketAddress(0), 1);
         httpServer.createContext("/v2", createEurekaV2Handle());
@@ -86,6 +94,9 @@ public class SimpleEurekaHttpServer {
         return new HttpHandler() {
             @Override
             public void handle(HttpExchange httpExchange) throws IOException {
+                if(eventListener != null) {
+                    eventListener.onHttpRequest(mapToEurekaHttpRequest(httpExchange));
+                }
                 try {
                     String method = httpExchange.getRequestMethod();
                     String path = httpExchange.getRequestURI().getPath();
@@ -228,6 +239,16 @@ public class SimpleEurekaHttpServer {
         } else {
             httpExchange.sendResponseHeaders(HttpServletResponse.SC_NOT_FOUND, 0);
         }
+    }
+
+    private EurekaHttpRequest mapToEurekaHttpRequest(HttpExchange httpExchange) {
+        Headers exchangeHeaders = httpExchange.getRequestHeaders();
+        Map<String, String> headers = new HashMap<>();
+
+        for(String key: exchangeHeaders.keySet()) {
+            headers.put(key, exchangeHeaders.getFirst(key));
+        }
+        return new EurekaHttpRequest(httpExchange.getRequestMethod(), httpExchange.getRequestURI(), headers);
     }
 
     private <T> void mapResponse(HttpExchange httpExchange, EurekaHttpResponse<T> response) throws IOException {
