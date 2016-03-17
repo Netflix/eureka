@@ -21,6 +21,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +41,7 @@ import com.netflix.discovery.util.StringUtil;
 import org.glassfish.jersey.client.JerseyClient;
 import org.glassfish.jersey.client.JerseyInvocation.Builder;
 import org.glassfish.jersey.client.JerseyWebTarget;
+import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,11 +57,30 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
     private final JerseyClient jerseyClient;
     private final String serviceUrl;
     private final boolean allowRedirect;
+    private final String userName;
+    private final String password;
 
     public Jersey2ApplicationClient(JerseyClient jerseyClient, String serviceUrl, boolean allowRedirect) {
         this.jerseyClient = jerseyClient;
         this.serviceUrl = serviceUrl;
         this.allowRedirect = allowRedirect;
+
+        // Jersey2 does not read credentials from the URI. We extract it here and enable authentication feature.
+        String localUserName = null;
+        String localPassword = null;
+        try {
+            URI serviceURI = new URI(serviceUrl);
+            if (serviceURI.getUserInfo() != null) {
+                String[] credentials = serviceURI.getUserInfo().split(":");
+                if (credentials.length == 2) {
+                    localUserName = credentials[0];
+                    localPassword = credentials[1];
+                }
+            }
+        } catch (URISyntaxException ignore) {
+        }
+        this.userName = localUserName;
+        this.password = localPassword;
     }
 
     @Override
@@ -67,6 +89,7 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
         Response response = null;
         try {
             Builder resourceBuilder = jerseyClient.target(serviceUrl).path(urlPath).request();
+            addExtraProperties(resourceBuilder);
             addExtraHeaders(resourceBuilder);
             response = resourceBuilder
                     .accept(MediaType.APPLICATION_JSON)
@@ -90,6 +113,7 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
         Response response = null;
         try {
             Builder resourceBuilder = jerseyClient.target(serviceUrl).path(urlPath).request();
+            addExtraProperties(resourceBuilder);
             addExtraHeaders(resourceBuilder);
             response = resourceBuilder.delete();
             return anEurekaHttpResponse(response.getStatus()).headers(headersOf(response)).build();
@@ -116,6 +140,7 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
                 webResource = webResource.queryParam("overriddenstatus", overriddenStatus.name());
             }
             Builder requestBuilder = webResource.request();
+            addExtraProperties(requestBuilder);
             addExtraHeaders(requestBuilder);
             response = requestBuilder.put(Entity.entity("{}", MediaType.APPLICATION_JSON_TYPE)); // Jersey2 refuses to handle PUT with no body
             EurekaHttpResponseBuilder<InstanceInfo> eurekaResponseBuilder = anEurekaHttpResponse(response.getStatus(), InstanceInfo.class).headers(headersOf(response));
@@ -143,6 +168,7 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
                     .queryParam("value", newStatus.name())
                     .queryParam("lastDirtyTimestamp", info.getLastDirtyTimestamp().toString())
                     .request();
+            addExtraProperties(requestBuilder);
             addExtraHeaders(requestBuilder);
             response = requestBuilder.put(Entity.entity("{}", MediaType.APPLICATION_JSON_TYPE)); // Jersey2 refuses to handle PUT with no body
             return anEurekaHttpResponse(response.getStatus()).headers(headersOf(response)).build();
@@ -165,6 +191,7 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
                     .path(urlPath)
                     .queryParam("lastDirtyTimestamp", info.getLastDirtyTimestamp().toString())
                     .request();
+            addExtraProperties(requestBuilder);
             addExtraHeaders(requestBuilder);
             response = requestBuilder.delete();
             return anEurekaHttpResponse(response.getStatus()).headers(headersOf(response)).build();
@@ -204,6 +231,7 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
         Response response = null;
         try {
             Builder requestBuilder = jerseyClient.target(serviceUrl).path(urlPath).request();
+            addExtraProperties(requestBuilder);
             addExtraHeaders(requestBuilder);
             response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).get();
 
@@ -230,6 +258,7 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
                 webTarget = webTarget.queryParam("regions", StringUtil.join(regions));
             }
             Builder requestBuilder = webTarget.request();
+            addExtraProperties(requestBuilder);
             addExtraHeaders(requestBuilder);
             response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).get();
 
@@ -262,6 +291,7 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
         Response response = null;
         try {
             Builder requestBuilder = jerseyClient.target(serviceUrl).path(urlPath).request();
+            addExtraProperties(requestBuilder);
             addExtraHeaders(requestBuilder);
             response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).get();
 
@@ -282,7 +312,13 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
 
     @Override
     public void shutdown() {
+    }
 
+    protected void addExtraProperties(Builder webResource) {
+        if (userName != null) {
+            webResource.property(HttpAuthenticationFeature.HTTP_AUTHENTICATION_USERNAME, userName)
+                    .property(HttpAuthenticationFeature.HTTP_AUTHENTICATION_PASSWORD, password);
+        }
     }
 
     protected void addExtraHeaders(Builder webResource) {

@@ -80,16 +80,8 @@ public class ConfigClusterResolver implements ClusterResolver<AwsEndpoint> {
         for (String zone : serviceUrls.keySet()) {
             for(String url : serviceUrls.get(zone)) {
                 try {
-                    URI serviceURI = new URI(url);
-                    endpoints.add(new AwsEndpoint(
-                            serviceURI.getHost(),
-                            serviceURI.getPort(),
-                            "https".equalsIgnoreCase(serviceURI.getScheme()),
-                            serviceURI.getPath(),
-                            getRegion(),
-                            zone
-                    ));
-                } catch (URISyntaxException ignore) {
+                    endpoints.add(new AwsEndpoint(url, getRegion(), zone));
+                } catch (Exception ignore) {
                     logger.warn("Invalid eureka server URI: ; removing from the server pool", url);
                 }
             }

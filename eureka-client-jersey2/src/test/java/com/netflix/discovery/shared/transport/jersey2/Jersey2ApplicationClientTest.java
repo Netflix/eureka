@@ -16,12 +16,15 @@
 
 package com.netflix.discovery.shared.transport.jersey2;
 
+import java.net.URI;
+
 import com.netflix.discovery.shared.resolver.DefaultEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientCompatibilityTestSuite;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
+import com.netflix.discovery.shared.transport.jersey2.Jersey2ApplicationClientFactory.Jersey2ApplicationClientFactoryBuilder;
+import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.junit.After;
-import org.junit.Before;
 
 /**
  * @author Tomasz Bak
@@ -29,14 +32,6 @@ import org.junit.Before;
 public class Jersey2ApplicationClientTest extends EurekaHttpClientCompatibilityTestSuite {
 
     private Jersey2ApplicationClient jersey2HttpClient;
-
-    @Override
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-        TransportClientFactory clientFactory = Jersey2ApplicationClientFactory.newBuilder().build();
-        jersey2HttpClient = (Jersey2ApplicationClient) clientFactory.newClient(new DefaultEndpoint(getHttpServer().getServiceURI().toString()));
-    }
 
     @Override
     @After
@@ -48,7 +43,13 @@ public class Jersey2ApplicationClientTest extends EurekaHttpClientCompatibilityT
     }
 
     @Override
-    public EurekaHttpClient getEurekaHttpClient() {
+    protected EurekaHttpClient getEurekaHttpClient(URI serviceURI) {
+        Jersey2ApplicationClientFactoryBuilder factoryBuilder = Jersey2ApplicationClientFactory.newBuilder();
+        if (serviceURI.getUserInfo() != null) {
+            factoryBuilder.withFeature(HttpAuthenticationFeature.basicBuilder().build());
+        }
+        TransportClientFactory clientFactory = factoryBuilder.build();
+        jersey2HttpClient = (Jersey2ApplicationClient) clientFactory.newClient(new DefaultEndpoint(serviceURI.toString()));
         return jersey2HttpClient;
     }
 }

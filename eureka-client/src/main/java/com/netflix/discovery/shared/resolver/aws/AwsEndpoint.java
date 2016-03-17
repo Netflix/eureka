@@ -14,6 +14,12 @@ public class AwsEndpoint extends DefaultEndpoint {
     protected final String zone;
     protected final String region;
 
+    public AwsEndpoint(String serviceURI, String region, String zone) {
+        super(serviceURI);
+        this.region = region;
+        this.zone = zone;
+    }
+
     public AwsEndpoint(String hostName, int port, boolean isSecure, String relativeUri, String region, String zone) {
         super(hostName, port, isSecure, relativeUri);
         this.region=region;
