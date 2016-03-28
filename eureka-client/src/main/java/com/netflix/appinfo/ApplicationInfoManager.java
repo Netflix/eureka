@@ -102,6 +102,10 @@ public class ApplicationInfoManager {
         return instanceInfo;
     }
 
+    public EurekaInstanceConfig getEurekaInstanceConfig() {
+        return config;
+    }
+
     /**
      * Register user-specific instance meta data. Application can send any other
      * additional meta data that need to be accessed for other reasons.The data

@@ -535,6 +535,10 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
+    public EurekaClientConfig getEurekaClientConfig() {
+        return clientConfig;
+    }
+
     /*
      * (non-Javadoc)
      * @see com.netflix.discovery.shared.LookupService#getApplication(java.lang.String)
