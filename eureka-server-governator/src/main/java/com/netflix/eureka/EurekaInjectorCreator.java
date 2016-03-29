@@ -1,13 +1,11 @@
 package com.netflix.eureka;
 
-import com.netflix.archaius.bridge.StaticArchaiusBridgeModule;
-import com.netflix.archaius.guice.ArchaiusModule;
+import com.netflix.discovery.guice.EurekaModule;
+import com.netflix.eureka.guice.Ec2EurekaServerModule;
+import com.netflix.eureka.guice.LocalDevEurekaServerModule;
+import com.netflix.governator.InjectorBuilder;
 import com.netflix.governator.LifecycleInjector;
 import com.netflix.governator.ProvisionDebugModule;
-import com.netflix.governator.guice.annotations.Bootstrap;
-import com.netflix.governator.guice.jetty.JettyModule;
-import com.netflix.karyon.Karyon;
-import com.netflix.karyon.ModuleListProviders;
 import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.guice.JerseyServletModule;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
@@ -23,15 +21,12 @@ import java.util.Map;
 public class EurekaInjectorCreator {
     private static final Logger logger = LoggerFactory.getLogger(EurekaInjectorCreator.class);
 
-    private static final String NAME = "eureka-server";
-
-    public static LifecycleInjector createInjector(boolean embedded) {
+    public static LifecycleInjector createInjector() {
         try {
-            return Karyon.forApplication(NAME)
-                    .addAutoModuleListProvider(ModuleListProviders.forPackages("com.netflix.eureka.guice"))
-                    .addModules(
-                            new ArchaiusModule(),
-                            new StaticArchaiusBridgeModule(),
+            return InjectorBuilder
+                    .fromModules(
+                            new EurekaModule(),
+                            new Ec2EurekaServerModule(),
                             new ProvisionDebugModule(),
                             new JerseyServletModule() {
                                 @Override
@@ -51,10 +46,9 @@ public class EurekaInjectorCreator {
                                     filter("/*").through(GuiceContainer.class, params);
                                     bind(GuiceContainer.class).asEagerSingleton();
                                 }
-                            },
-                            embedded ? new JettyModule() : new Bootstrap.NullModule()
+                            }
                     )
-                    .start();
+                    .createInjector();
         } catch (Exception e) {
             logger.error("Failed to create the injector", e);
             e.printStackTrace();
