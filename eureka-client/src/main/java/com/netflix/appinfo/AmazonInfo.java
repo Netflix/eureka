@@ -254,7 +254,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
             if (awsMetaDataConnectTimeout == null) {
                 awsMetaDataConnectTimeout = com.netflix.config.DynamicPropertyFactory
                         .getInstance().getIntProperty(
-                                namespace + "mt.connect_timeout", 3000);
+                                namespace + "mt.connect_timeout", 2000);
             }
             if (awsMetaDataRetries == null) {
                 awsMetaDataRetries = com.netflix.config.DynamicPropertyFactory
