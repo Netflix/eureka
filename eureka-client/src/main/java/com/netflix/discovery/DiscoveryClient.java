@@ -882,11 +882,14 @@ public class DiscoveryClient implements EurekaClient {
      * unregister w/ the eureka service.
      */
     void unregister() {
-        try {
-            EurekaHttpResponse<Void> httpResponse = eurekaTransport.registrationClient.cancel(instanceInfo.getAppName(), instanceInfo.getId());
-            logger.info(PREFIX + appPathIdentifier + " - deregister  status: " + httpResponse.getStatusCode());
-        } catch (Exception e) {
-            logger.error(PREFIX + appPathIdentifier + " - de-registration failed" + e.getMessage(), e);
+        // It can be null if  'unregister' flag is set
+        if(eurekaTransport != null) {
+            try {
+                EurekaHttpResponse<Void> httpResponse = eurekaTransport.registrationClient.cancel(instanceInfo.getAppName(), instanceInfo.getId());
+                logger.info(PREFIX + appPathIdentifier + " - deregister  status: " + httpResponse.getStatusCode());
+            } catch (Exception e) {
+                logger.error(PREFIX + appPathIdentifier + " - de-registration failed" + e.getMessage(), e);
+            }
         }
     }
 
