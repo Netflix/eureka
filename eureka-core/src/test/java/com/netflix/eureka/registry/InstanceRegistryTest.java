@@ -9,6 +9,7 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.Pair;
 import com.netflix.eureka.AbstractTester;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -168,6 +169,29 @@ public class InstanceRegistryTest extends AbstractTester {
         assertThat(testTask.getCompensationTimeMs(), is(0l));
         assertThat(testTask.getCompensationTimeMs(), is(10l));
         assertThat(testTask.getCompensationTimeMs(), is(0l));
+    }
+
+    /**
+     * This test demonstrates an issue where if first registration is done with status
+     * OUT_OF_SERVICE, the status change in subsequent registration is ignored.
+     * Check {@link PeerAwareInstanceRegistryImpl#getOverriddenInstanceStatus}, to see implementation details.
+     */
+    @Test
+    @Ignore
+    public void testFirstRegisterWithOutOfService() throws Exception {
+        InstanceInfo outOfServiceInstance = createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
+        outOfServiceInstance.setStatus(InstanceStatus.OUT_OF_SERVICE);
+        registry.register(outOfServiceInstance, false);
+
+        InstanceInfo foundInstance = registry.getInstanceByAppAndId(outOfServiceInstance.getAppName(), outOfServiceInstance.getId());
+        assertThat(foundInstance.getStatus(), is(equalTo(InstanceStatus.OUT_OF_SERVICE)));
+
+        InstanceInfo upInstance = new InstanceInfo(outOfServiceInstance);
+        upInstance.setStatus(InstanceStatus.UP);
+        registry.register(upInstance, false);
+
+        InstanceInfo foundInstance2 = registry.getInstanceByAppAndId(upInstance.getAppName(), upInstance.getId());
+        assertThat(foundInstance2.getStatus(), is(equalTo(InstanceStatus.UP)));
     }
 
     private void verifyLocalInstanceStatus(String id, InstanceStatus status) {
