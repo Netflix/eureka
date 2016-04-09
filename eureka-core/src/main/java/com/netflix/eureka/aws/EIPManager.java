@@ -260,7 +260,8 @@ public class EIPManager implements AwsBinder {
             myPublicIP = ((AmazonInfo) myInfo.getDataCenterInfo())
                     .get(MetaDataKey.publicIpv4);
             if (myPublicIP == null) {
-                throw new RuntimeException("Cannot dissociate eip from this instance since instance does not have one");
+                logger.info("Instance is not associated with an EIP. Will not try to unbind");
+                return;
             }
 
             try {
