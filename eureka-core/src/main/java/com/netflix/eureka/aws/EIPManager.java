@@ -259,6 +259,11 @@ public class EIPManager implements AwsBinder {
                 && myInfo.getDataCenterInfo().getName() == Name.Amazon) {
             myPublicIP = ((AmazonInfo) myInfo.getDataCenterInfo())
                     .get(MetaDataKey.publicIpv4);
+            if (myPublicIP == null) {
+                logger.info("Instance is not associated with an EIP. Will not try to unbind");
+                return;
+            }
+
             try {
                 AmazonEC2 ec2Service = getEC2Service();
                 DescribeAddressesRequest describeAddressRequest = new DescribeAddressesRequest()
