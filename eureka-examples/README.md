@@ -6,13 +6,14 @@ The eureka example requires 3 participants:
   registered REST endpoint.
 
 ### Setting up the Eureka server
-1. [Build](https://github.com/Netflix/eureka/wiki/Building-Eureka-Client-and-Server) the application.
-2. The above build also sets up all the libraries needed for running the demo service and the demo client.
-3. Copy the WAR artifact to your tomcat deployment directory under _$TOMCAT_HOME/webapps/
+1. Edit [eureka-server.properties](https://github.com/Netflix/eureka/blob/master/eureka-server/src/main/resources/eureka-server.properties) and uncomment the two settings that makes the demo server start up faster (via disabling safeguards)
+2. [Build](https://github.com/Netflix/eureka/wiki/Building-Eureka-Client-and-Server) the application.
+3. The above build also sets up all the libraries needed for running the demo service and the demo client.
+4. Copy the WAR artifact to your tomcat deployment directory under _$TOMCAT_HOME/webapps/
 <pre><code>
 cp ./eureka-server/build/libs/eureka-server-XXX-SNAPSHOT.war $TOMCAT_HOME/webapps/eureka.war
 </pre></code>
-4. Start your tomcat server. Access _**http://localhost:8080/eureka**_ to verify the information there. Your server's eureka client should register itself in 30 seconds and you should see that information there.
+5. Start your tomcat server. Access _**http://localhost:8080/eureka**_ to verify the information there. Your server's eureka client should register itself in 30 seconds and you should see that information there.
 
 ### Running the examples directly
 1. Start up a local eureka server
