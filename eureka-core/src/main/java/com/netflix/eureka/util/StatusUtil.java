@@ -29,6 +29,7 @@ public class StatusUtil {
 
     public StatusInfo getStatusInfo() {
         StatusInfo.Builder builder = StatusInfo.Builder.newBuilder();
+        builder.isHealthy(true);
         // Add application level status
         StringBuilder upReplicas = new StringBuilder();
         StringBuilder downReplicas = new StringBuilder();
@@ -40,10 +41,11 @@ public class StatusUtil {
                 replicaHostNames.append(", ");
             }
             replicaHostNames.append(node.getServiceUrl());
-            if (isReplicaAvailable(myAppName, node.getServiceUrl())) {
+            if (isReplicaAvailable(node.getServiceUrl())) {
                 upReplicas.append(node.getServiceUrl()).append(',');
             } else {
                 downReplicas.append(node.getServiceUrl()).append(',');
+                builder.isHealthy(false);
             }
         }
 
@@ -54,7 +56,7 @@ public class StatusUtil {
         return builder.build();
     }
 
-    private boolean isReplicaAvailable(String myAppName, String url) {
+    private boolean isReplicaAvailable(String url) {
 
         try {
             String givenHostName = new URI(url).getHost();
@@ -67,7 +69,6 @@ public class StatusUtil {
                     return true;
                 }
             }
-            givenHostName = new URI(url).getHost();
         } catch (Throwable e) {
             logger.error("Could not determine if the replica is available ", e);
         }
