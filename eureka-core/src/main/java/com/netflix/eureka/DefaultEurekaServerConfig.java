@@ -218,6 +218,13 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     }
 
     @Override
+    public int getSelfPreservationStatusUpdateIntervalMs() {
+        return configInstance.getIntProperty(
+                namespace + "renewalSelfPreservationStatusUpdateIntervalMs",
+                (60 * 1000)).get();
+    }
+
+    @Override
     public double getRenewalPercentThreshold() {
         return configInstance.getDoubleProperty(
                 namespace + "renewalPercentThreshold", 0.85).get();
