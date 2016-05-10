@@ -5,10 +5,12 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.*;
-import com.amazonaws.util.EC2MetadataUtils;
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
+import com.google.common.net.InetAddresses;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
@@ -17,10 +19,8 @@ import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.servo.monitor.Monitors;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.net.util.IPAddressUtil;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -32,6 +32,14 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+/**
+ * Amazon ENI binder for instances.
+ *
+ * Candidate ENI's discovery is done using the same mechanism as Elastic ip binder, via dns records or service urls.
+ * 
+ * The dns records and the service urls should use the ENI private dns or private ip
+ *
+ */
 public class ElasticNetworkInterfaceBinder implements AwsBinder {
     private static final Logger logger = LoggerFactory.getLogger(ElasticNetworkInterfaceBinder.class);
     private static final int IP_BIND_SLEEP_TIME_MS = 1000;
@@ -110,26 +118,45 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
         return false;
     }
 
+    /**
+     * Binds an ENI to the instance.
+     *
+     * The candidate ENI's are deduced in the same wa the EIP binder works: Via dns records or via service urls,
+     * depending on configuration.
+     *
+     * It will try to attach the first ENI that is:
+     *      Available
+     *      For this subnet
+     *      In the list of candidate ENI's
+     *
+     * @throws MalformedURLException
+     */
     public void bind() throws MalformedURLException {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
         String myInstanceId = ((AmazonInfo) myInfo.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.instanceId);
         String myZone = ((AmazonInfo) myInfo.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.availabilityZone);
 
-        List<String> ips = getCandidateIps();
+        final List<String> ips = getCandidateIps();
+        Ordering<NetworkInterface> ipsOrder = Ordering.natural().onResultOf(new Function<NetworkInterface, Integer>() {
+            public Integer apply(NetworkInterface networkInterface) {
+                return ips.indexOf(networkInterface.getPrivateIpAddress());
+            }
+        });
 
         AmazonEC2 ec2Service = getEC2Service();
+        String subnetId = instanceData(myInstanceId, ec2Service).getSubnetId();
 
         DescribeNetworkInterfacesResult result = ec2Service
                 .describeNetworkInterfaces(new DescribeNetworkInterfacesRequest()
                                 .withFilters(new Filter("private-ip-address", ips))
                                 .withFilters(new Filter("status", Lists.newArrayList("available")))
-                                .withFilters(new Filter("availability-zone", Lists.newArrayList(myZone)))
+                                .withFilters(new Filter("subnet-id", Lists.newArrayList(subnetId)))
                 );
 
         if (result.getNetworkInterfaces().isEmpty()) {
             logger.info("No ip is free to be associated with this instance. Candidate ips are: {} for zone: ", ips, myZone);
         } else {
-            NetworkInterface selected = result.getNetworkInterfaces().get(0);
+            NetworkInterface selected = ipsOrder.min(result.getNetworkInterfaces());
             ec2Service.attachNetworkInterface(
                     new AttachNetworkInterfaceRequest()
                             .withNetworkInterfaceId(selected.getNetworkInterfaceId())
@@ -165,6 +192,12 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
         return ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(myInstanceId)).getReservations().get(0).getInstances().get(0);
     }
 
+    /**
+     * Based on shouldUseDnsForFetchingServiceUrls configuration, either retrieves candidates from dns records or from
+     * configuration properties.
+     *
+     *
+     */
     public List<String> getCandidateIps() throws MalformedURLException {
         InstanceInfo myInfo = applicationInfoManager.getInfo();
         String myZone = ((AmazonInfo) myInfo.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.availabilityZone);
@@ -180,7 +213,7 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
 
         for(String candidate : candidates) {
             String host = new URL(candidate).getHost();
-            if (IPAddressUtil.isIPv4LiteralAddress(host)) {
+            if (InetAddresses.isInetAddress(host)) {
                 ips.add(host);
             } else {
                 // ip-172-31-55-172.ec2.internal -> ip-172-31-55-172
@@ -189,7 +222,7 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
                 List<String> noIpPrefix = Splitter.on("-").splitToList(firstPartOfHost).subList(1, 5);
                 // [172,31,55,172] -> 172.31.55.172
                 String ip = Joiner.on(".").join(noIpPrefix);
-                if (IPAddressUtil.isIPv4LiteralAddress(ip)) {
+                if (InetAddresses.isInetAddress(ip)) {
                     ips.add(ip);
                 } else {
                     throw new IllegalArgumentException("Illegal internal hostname " + host + " translated to '" + ip + "'");
