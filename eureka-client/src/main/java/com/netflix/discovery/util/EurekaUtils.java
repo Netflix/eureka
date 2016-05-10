@@ -25,7 +25,8 @@ public final class EurekaUtils {
             defaultPrivateIp = ((AmazonInfo) instanceInfo.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.localIpv4);
         }
 
-        if (defaultPrivateIp == null) {
+        if (isNullOrEmpty(defaultPrivateIp)) {
+            // no other information, best effort
             defaultPrivateIp = instanceInfo.getIPAddr();
         }
 
@@ -48,4 +49,26 @@ public final class EurekaUtils {
         }
         return false;
     }
+
+    /**
+     * check to see if the instanceInfo record is of a server that is deployed within EC2 VPC (best effort check
+     * based on assumption of existing vpcId). This check could be for the local server or a remote server.
+     *
+     * @param instanceInfo
+     * @return true if the record contains a non null, non empty AWS vpcId
+     */
+    public static boolean isInVpc(InstanceInfo instanceInfo) {
+        if (instanceInfo.getDataCenterInfo() instanceof AmazonInfo) {
+            AmazonInfo info = (AmazonInfo) instanceInfo.getDataCenterInfo();
+            String vpcId = info.get(AmazonInfo.MetaDataKey.vpcId);
+            return !isNullOrEmpty(vpcId);
+        }
+
+        return false;
+    }
+
+    private static boolean isNullOrEmpty(String str) {
+        return str == null || str.isEmpty();
+    }
+
 }
