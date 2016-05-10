@@ -1211,7 +1211,7 @@ public class DiscoveryClient implements EurekaClient {
                         applications.getRegisteredApplications(instance.getAppName()).removeInstance(instance);
                     }
                 } catch (Exception e) {
-                    logger.warn("Error applying delta of instanceInfo: {}", instance);
+                    logger.warn("Error applying delta of instanceInfo with id:{}, appName:{}", instance.getId(), instance.getAppName(), e);
                 }
             }
         }
