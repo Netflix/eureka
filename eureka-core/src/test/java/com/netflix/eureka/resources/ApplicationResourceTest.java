@@ -110,6 +110,21 @@ public class ApplicationResourceTest extends AbstractTester {
         when(instanceInfo.getAppName()).thenReturn(applicationResource.getName() + "extraExtra");
         response = applicationResource.addInstance(instanceInfo, false+"");
         assertThat(response.getStatus(), is(400));
+
+        instanceInfo = spy(InstanceInfoGenerator.takeOne());
+        when(instanceInfo.getDataCenterInfo()).thenReturn(null);
+        response = applicationResource.addInstance(instanceInfo, false+"");
+        assertThat(response.getStatus(), is(400));
+
+        instanceInfo = spy(InstanceInfoGenerator.takeOne());
+        when(instanceInfo.getDataCenterInfo()).thenReturn(new DataCenterInfo() {
+            @Override
+            public Name getName() {
+                return null;
+            }
+        });
+        response = applicationResource.addInstance(instanceInfo, false+"");
+        assertThat(response.getStatus(), is(400));
     }
 
     @Test

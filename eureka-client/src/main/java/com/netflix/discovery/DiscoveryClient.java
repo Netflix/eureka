@@ -1173,47 +1173,49 @@ public class DiscoveryClient implements EurekaClient {
         int deltaCount = 0;
         for (Application app : delta.getRegisteredApplications()) {
             for (InstanceInfo instance : app.getInstances()) {
-                Applications applications = getApplications();
-                String instanceRegion = instanceRegionChecker.getInstanceRegion(instance);
-                if (!instanceRegionChecker.isLocalRegion(instanceRegion)) {
-                    Applications remoteApps = remoteRegionVsApps.get(instanceRegion);
-                    if (null == remoteApps) {
-                        remoteApps = new Applications();
-                        remoteRegionVsApps.put(instanceRegion, remoteApps);
+                try {
+                    Applications applications = getApplications();
+                    String instanceRegion = instanceRegionChecker.getInstanceRegion(instance);
+                    if (!instanceRegionChecker.isLocalRegion(instanceRegion)) {
+                        Applications remoteApps = remoteRegionVsApps.get(instanceRegion);
+                        if (null == remoteApps) {
+                            remoteApps = new Applications();
+                            remoteRegionVsApps.put(instanceRegion, remoteApps);
+                        }
+                        applications = remoteApps;
                     }
-                    applications = remoteApps;
-                }
 
-                ++deltaCount;
-                if (ActionType.ADDED.equals(instance.getActionType())) {
-                    Application existingApp = applications.getRegisteredApplications(instance.getAppName());
-                    if (existingApp == null) {
-                        applications.addApplication(app);
-                    }
-                    logger.debug("Added instance {} to the existing apps in region {}", instance.getId(), instanceRegion);
-                    applications.getRegisteredApplications(instance.getAppName()).addInstance(instance);
-                } else if (ActionType.MODIFIED.equals(instance.getActionType())) {
-                    Application existingApp = applications.getRegisteredApplications(instance.getAppName());
-                    if (existingApp == null) {
-                        applications.addApplication(app);
-                    }
-                    logger.debug("Modified instance {} to the existing apps ", instance.getId());
+                    ++deltaCount;
+                    if (ActionType.ADDED.equals(instance.getActionType())) {
+                        Application existingApp = applications.getRegisteredApplications(instance.getAppName());
+                        if (existingApp == null) {
+                            applications.addApplication(app);
+                        }
+                        logger.debug("Added instance {} to the existing apps in region {}", instance.getId(), instanceRegion);
+                        applications.getRegisteredApplications(instance.getAppName()).addInstance(instance);
+                    } else if (ActionType.MODIFIED.equals(instance.getActionType())) {
+                        Application existingApp = applications.getRegisteredApplications(instance.getAppName());
+                        if (existingApp == null) {
+                            applications.addApplication(app);
+                        }
+                        logger.debug("Modified instance {} to the existing apps ", instance.getId());
 
-                    applications.getRegisteredApplications(instance.getAppName()).addInstance(instance);
+                        applications.getRegisteredApplications(instance.getAppName()).addInstance(instance);
 
-                } else if (ActionType.DELETED.equals(instance.getActionType())) {
-                    Application existingApp = applications.getRegisteredApplications(instance.getAppName());
-                    if (existingApp == null) {
-                        applications.addApplication(app);
+                    } else if (ActionType.DELETED.equals(instance.getActionType())) {
+                        Application existingApp = applications.getRegisteredApplications(instance.getAppName());
+                        if (existingApp == null) {
+                            applications.addApplication(app);
+                        }
+                        logger.debug("Deleted instance {} to the existing apps ", instance.getId());
+                        applications.getRegisteredApplications(instance.getAppName()).removeInstance(instance);
                     }
-                    logger.debug("Deleted instance {} to the existing apps ", instance.getId());
-                    applications.getRegisteredApplications(instance.getAppName()).removeInstance(instance);
+                } catch (Exception e) {
+                    logger.warn("Error applying delta of instanceInfo: {}", instance);
                 }
             }
         }
-        logger.debug(
-                "The total number of instances fetched by the delta processor : {}",
-                deltaCount);
+        logger.debug("The total number of instances fetched by the delta processor : {}", deltaCount);
 
         getApplications().setVersion(delta.getVersion());
         getApplications().shuffleInstances(clientConfig.shouldFilterOnlyUpInstances());
