@@ -153,6 +153,10 @@ public class ApplicationResource {
             return Response.status(400).entity("Missing appName").build();
         } else if (!appName.equals(info.getAppName())) {
             return Response.status(400).entity("Mismatched appName, expecting " + appName + " but was " + info.getAppName()).build();
+        } else if (info.getDataCenterInfo() == null) {
+            return Response.status(400).entity("Missing dataCenterInfo").build();
+        } else if (info.getDataCenterInfo().getName() == null) {
+            return Response.status(400).entity("Missing dataCenterInfo Name").build();
         }
 
         // handle cases where clients may be registering with bad DataCenterInfo with missing data

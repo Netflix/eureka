@@ -1211,9 +1211,7 @@ public class DiscoveryClient implements EurekaClient {
                 }
             }
         }
-        logger.debug(
-                "The total number of instances fetched by the delta processor : {}",
-                deltaCount);
+        logger.debug("The total number of instances fetched by the delta processor : {}", deltaCount);
 
         getApplications().setVersion(delta.getVersion());
         getApplications().shuffleInstances(clientConfig.shouldFilterOnlyUpInstances());

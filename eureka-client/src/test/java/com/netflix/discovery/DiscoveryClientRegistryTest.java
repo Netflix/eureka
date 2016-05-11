@@ -243,6 +243,33 @@ public class DiscoveryClientRegistryTest {
         assertThat(client.getApplications().getAppsHashCode(), is(equalTo("DOWN_1_UP_1_")));
     }
 
+
+    @Test
+    public void testApplyDeltaWithBadInstanceInfoDataCenterInfoAsNull() throws Exception {
+        InstanceInfoGenerator instanceGen = InstanceInfoGenerator.newBuilder(2, "testApp").build();
+
+        // Full fetch with one item
+        InstanceInfo first = instanceGen.first();
+        Applications initial = toApplications(first);
+        when(requestHandler.getApplications(TEST_REMOTE_REGION)).thenReturn(
+                anEurekaHttpResponse(200, initial).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
+        EurekaClient client = discoveryClientResource.getClient();
+        assertThat(client.getApplications().getAppsHashCode(), is(equalTo("UP_1_")));
+
+        // Delta with one add
+        InstanceInfo second = new InstanceInfo.Builder(instanceGen.take(1)).setStatus(InstanceStatus.DOWN).setDataCenterInfo(null).build();
+        Applications delta = toApplications(second);
+        delta.setAppsHashCode("DOWN_1_UP_1_");
+
+        when(requestHandler.getDelta(TEST_REMOTE_REGION)).thenReturn(
+                anEurekaHttpResponse(200, delta).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
+
+        assertThat(discoveryClientResource.awaitCacheUpdate(5, TimeUnit.SECONDS), is(true));
+        assertThat(client.getApplications().getAppsHashCode(), is(equalTo("DOWN_1_UP_1_")));
+    }
+
     /**
      * There is a bug, because of which remote registry data structures are not initialized during full registry fetch, only during delta.
      */
