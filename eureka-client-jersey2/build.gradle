@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-apply plugin: 'nebula-test-jar'
+apply plugin: 'nebula.test-jar'
 
 configurations.all {
     exclude group: 'com.sun.jersey'
