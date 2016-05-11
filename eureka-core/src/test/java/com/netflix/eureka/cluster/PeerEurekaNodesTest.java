@@ -1,10 +1,12 @@
 package com.netflix.eureka.cluster;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.discovery.DefaultEurekaClientConfig;
@@ -97,7 +99,7 @@ public class PeerEurekaNodesTest {
 
     static class TestablePeerEurekaNodes extends PeerEurekaNodes {
 
-        private List<String> peerUrls;
+        private AtomicReference<List<String>> peerUrlsRef = new AtomicReference<>(Collections.<String>emptyList());
         private final ConcurrentHashMap<String, PeerEurekaNode> peerEurekaNodeByUrl = new ConcurrentHashMap<>();
         private final AtomicInteger reloadCounter = new AtomicInteger();
 
@@ -111,7 +113,7 @@ public class PeerEurekaNodesTest {
         }
 
         void withPeerUrls(String... peerUrls) {
-            this.peerUrls = Arrays.asList(peerUrls);
+            this.peerUrlsRef.set(Arrays.asList(peerUrls));
         }
 
         boolean awaitNextReload(long timeout, TimeUnit timeUnit) throws InterruptedException {
@@ -131,7 +133,7 @@ public class PeerEurekaNodesTest {
 
         @Override
         protected List<String> resolvePeerUrls() {
-            return peerUrls;
+            return peerUrlsRef.get();
         }
 
         @Override
