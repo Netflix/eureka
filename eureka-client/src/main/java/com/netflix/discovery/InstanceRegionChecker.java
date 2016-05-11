@@ -25,7 +25,7 @@ public class InstanceRegionChecker {
 
     @Nullable
     public String getInstanceRegion(InstanceInfo instanceInfo) {
-        if (instanceInfo.getDataCenterInfo() == null) {
+        if (instanceInfo.getDataCenterInfo() == null || instanceInfo.getDataCenterInfo().getName() == null) {
             logger.warn("Cannot get region for instance id:{}, app:{} as dataCenterInfo is null. Returning local:{} by default",
                     instanceInfo.getId(), instanceInfo.getAppName(), localRegion);
 

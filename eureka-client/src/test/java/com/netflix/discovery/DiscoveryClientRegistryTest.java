@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.junit.resource.DiscoveryClientResource;
@@ -258,16 +259,22 @@ public class DiscoveryClientRegistryTest {
         assertThat(client.getApplications().getAppsHashCode(), is(equalTo("UP_1_")));
 
         // Delta with one add
-        InstanceInfo second = new InstanceInfo.Builder(instanceGen.take(1)).setStatus(InstanceStatus.DOWN).setDataCenterInfo(null).build();
-        Applications delta = toApplications(second);
-        delta.setAppsHashCode("DOWN_1_UP_1_");
+        InstanceInfo second = new InstanceInfo.Builder(instanceGen.take(1)).setInstanceId("foo1").setStatus(InstanceStatus.DOWN).setDataCenterInfo(null).build();
+        InstanceInfo third = new InstanceInfo.Builder(instanceGen.take(1)).setInstanceId("foo2").setStatus(InstanceStatus.UP).setDataCenterInfo(new DataCenterInfo() {
+            @Override
+            public Name getName() {
+                return null;
+            }
+        }).build();
+        Applications delta = toApplications(second, third);
+        delta.setAppsHashCode("DOWN_1_UP_2_");
 
         when(requestHandler.getDelta(TEST_REMOTE_REGION)).thenReturn(
                 anEurekaHttpResponse(200, delta).type(MediaType.APPLICATION_JSON_TYPE).build()
         );
 
         assertThat(discoveryClientResource.awaitCacheUpdate(5, TimeUnit.SECONDS), is(true));
-        assertThat(client.getApplications().getAppsHashCode(), is(equalTo("DOWN_1_UP_1_")));
+        assertThat(client.getApplications().getAppsHashCode(), is(equalTo("DOWN_1_UP_2_")));
     }
 
     /**
