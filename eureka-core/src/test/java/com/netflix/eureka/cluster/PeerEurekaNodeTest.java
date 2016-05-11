@@ -151,7 +151,7 @@ public class PeerEurekaNodeTest {
     }
 
     private Object expectRequestType(RequestType requestType) throws InterruptedException {
-        HandledRequest handledRequest = httpReplicationClient.nextHandledRequest(30, TimeUnit.SECONDS);
+        HandledRequest handledRequest = httpReplicationClient.nextHandledRequest(60, TimeUnit.SECONDS);
         assertThat(handledRequest, is(notNullValue()));
         assertThat(handledRequest.getRequestType(), is(equalTo(requestType)));
         return handledRequest.getData();
