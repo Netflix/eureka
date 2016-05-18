@@ -81,7 +81,7 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
     private AmazonInfo initDataCenterInfo() {
         AmazonInfo info;
         try {
-            info = AmazonInfo.Builder.newBuilder().autoBuild(namespace, true /* fail fast */);
+            info = AmazonInfo.Builder.newBuilder().autoBuild(namespace);
             logger.info("Datacenter is: " + Name.Amazon);
         } catch (Throwable e) {
             logger.error("Cannot initialize amazon info :", e);
