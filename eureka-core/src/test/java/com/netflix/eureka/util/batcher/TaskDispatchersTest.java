@@ -93,7 +93,7 @@ public class TaskDispatchersTest {
 
     @Test
     public void testTasksAreDistributedAcrossAllWorkerThreads() throws Exception {
-        int threadCount = 5;
+        int threadCount = 3;
         CountingTaskProcessor countingProcessor = new CountingTaskProcessor();
 
         TaskDispatcher<Integer, Boolean> dispatcher = TaskDispatchers.createBatchingTaskDispatcher(
