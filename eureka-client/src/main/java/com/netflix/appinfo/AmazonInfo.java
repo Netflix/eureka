@@ -59,14 +59,15 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
     private static DynamicIntProperty awsMetaDataReadTimeout;
     private static DynamicIntProperty awsMetaDataConnectTimeout;
     private static DynamicIntProperty awsMetaDataRetries;
+    private static DynamicIntProperty awsMetaDataFailFastRetries;
 
     private static final String AWS_API_VERSION = "latest";
     private static final String AWS_METADATA_URL = "http://169.254.169.254/"
             + AWS_API_VERSION + "/meta-data/";
 
     public enum MetaDataKey {
+        instanceId("instance-id"),  // always have this first as we use it as a fail fast mechanism
         amiId("ami-id"),
-        instanceId("instance-id"),
         instanceType("instance-type"),
         localIpv4("local-ipv4"),
         localHostname("local-hostname"),
@@ -184,15 +185,28 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
             return result;
         }
 
+        public AmazonInfo autoBuild(String namespace) {
+            return this.autoBuild(namespace, false);
+        }
+
         /**
          * Build the {@link AmazonInfo} automatically via HTTP calls to instance
          * metadata API.
+         *
          * @param namespace the namespace to look for configuration properties.
+         * @param failFast true if should failFast and return after {@link #awsMetaDataFailFastRetries} of exceptions
+         *                 when trying to get the instanceId.
          * @return the instance information specific to AWS.
          */
-        public AmazonInfo autoBuild(String namespace) {
+        public AmazonInfo autoBuild(String namespace, boolean failFast) {
             initProperties(namespace);
+            int failFastRetryCount = awsMetaDataFailFastRetries.get();
+
             for (MetaDataKey key : MetaDataKey.values()) {
+                if (failFastRetryCount <= 0) {
+                    logger.warn("Skipping the rest of AmazonInfo init as we are failing fast after {} retries", awsMetaDataFailFastRetries.get());
+                    break;  // break out of loop and return whatever we have thus far
+                }
                 int numOfRetries = awsMetaDataRetries.get();
                 while (numOfRetries-- > 0) {
                     try {
@@ -223,6 +237,9 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
                         break;
                     } catch (Throwable e) {
+                        if (failFast && key == MetaDataKey.instanceId) {
+                            failFastRetryCount--;
+                        }
                         if (shouldLogAWSMetadataError.get()) {
                             logger.warn("Cannot get the value for the metadata key :" + key + " Reason :", e);
                         }
@@ -249,7 +266,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
             if (awsMetaDataReadTimeout == null) {
                 awsMetaDataReadTimeout = com.netflix.config.DynamicPropertyFactory
                         .getInstance().getIntProperty(
-                                namespace + "mt.read_timeout", 8000);
+                                namespace + "mt.read_timeout", 5000);
             }
             if (awsMetaDataConnectTimeout == null) {
                 awsMetaDataConnectTimeout = com.netflix.config.DynamicPropertyFactory
@@ -259,6 +276,11 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
             if (awsMetaDataRetries == null) {
                 awsMetaDataRetries = com.netflix.config.DynamicPropertyFactory
                         .getInstance().getIntProperty(namespace + "mt.num_retries",
+                                3);
+            }
+            if (awsMetaDataFailFastRetries == null) {
+                awsMetaDataFailFastRetries = com.netflix.config.DynamicPropertyFactory
+                        .getInstance().getIntProperty(namespace + "mt.fail_fast.retries",
                                 3);
             }
         }

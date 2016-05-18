@@ -64,7 +64,7 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
             String defaultAddress;
             if (config instanceof CloudInstanceConfig) {
                 // Refresh AWS data center info, and return up to date address
-                defaultAddress = ((CloudInstanceConfig) config).resolveDefaultAddress();
+                defaultAddress = ((CloudInstanceConfig) config).resolveDefaultAddress(false);
             } else {
                 defaultAddress = config.getHostName(false);
             }
