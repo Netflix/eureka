@@ -39,6 +39,20 @@ import java.util.TimerTask;
  * 
  * The dns records and the service urls should use the ENI private dns or private ip
  *
+ * Dns record examples
+ *  txt.us-east-1.eureka="us-east-1a.eureka" "us-east-1b.eureka"
+ *  txt.us-east-1a.eureka="ip-172-31-y-y.ec2.internal"
+ *  txt.us-east-1b.eureka="ip-172-31-x-x.ec2.internal"
+ * where "ip-172-31-x-x.ec2.internal" is the ENI private dns
+ *
+ * Service url example:
+ *  eureka.serviceUrl.us-east-1a=http://ip-172-31-x-x.ec2.internal:7001/eureka/v2/
+ *
+ * ENI Binding strategy should be configured via property like:
+ *
+ * eureka.awsBindingStrategy=ENI
+ * 
+ * If there are no available ENI's for the availability zone, it will not attach any already attached ENI
  */
 public class ElasticNetworkInterfaceBinder implements AwsBinder {
     private static final Logger logger = LoggerFactory.getLogger(ElasticNetworkInterfaceBinder.class);
