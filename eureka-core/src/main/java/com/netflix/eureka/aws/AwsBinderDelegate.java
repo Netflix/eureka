@@ -28,6 +28,9 @@ public class AwsBinderDelegate implements AwsBinder {
             case EIP:
                 delegate = new EIPManager(serverConfig, clientConfig, registry, applicationInfoManager);
                 break;
+            case ENI:
+                delegate = new ElasticNetworkInterfaceBinder(serverConfig, clientConfig, registry, applicationInfoManager);
+                break;
             default:
                 throw new IllegalArgumentException("Unexpected BindingStrategy " + bindingStrategy);
         }
