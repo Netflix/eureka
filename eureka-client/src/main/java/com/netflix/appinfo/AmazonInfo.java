@@ -61,7 +61,8 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
     private static DynamicIntProperty awsMetaDataRetries;
 
     /**
-     * A fail fast mechanism exist for autoBuilding AmazonInfo based on the below configurations.
+     * When creating an AmazonInfo via {@link com.netflix.appinfo.AmazonInfo.Builder#autoBuild(String)},
+     * a fail fast mechanism exist based on the below configuration.
      * If enabled (default to true), the {@link com.netflix.appinfo.AmazonInfo.Builder#autoBuild(String)}
      * method will exit early after failing to load the value for the first metadata key (instanceId),
      * after the expected number of retries as defined by {@link #awsMetaDataRetries}.
@@ -69,8 +70,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
     private static DynamicBooleanProperty awsMetaDataFailFastOnFirstLoad;
 
     private static final String AWS_API_VERSION = "latest";
-    private static final String AWS_METADATA_URL = "http://169.254.169.254/"
-            + AWS_API_VERSION + "/meta-data/";
+    private static final String AWS_METADATA_URL = "http://169.254.169.254/" + AWS_API_VERSION + "/meta-data/";
 
     public enum MetaDataKey {
         instanceId("instance-id"),  // always have this first as we use it as a fail fast mechanism
@@ -163,8 +163,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
 
     public static final class Builder {
-        private static final Logger logger = LoggerFactory
-                .getLogger(Builder.class);
+        private static final Logger logger = LoggerFactory.getLogger(Builder.class);
         private static final int SLEEP_TIME_MS = 100;
 
         @XStreamOmitField
