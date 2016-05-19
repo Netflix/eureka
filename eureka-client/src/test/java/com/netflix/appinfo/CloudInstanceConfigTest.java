@@ -62,13 +62,13 @@ public class CloudInstanceConfigTest {
     public void testResolveDefaultAddress() {
         config.info = (AmazonInfo) instanceInfo.getDataCenterInfo();
         AmazonInfo info = (AmazonInfo) instanceInfo.getDataCenterInfo();
-        assertThat(config.resolveDefaultAddress(), is(info.get(publicHostname)));
+        assertThat(config.resolveDefaultAddress(false), is(info.get(publicHostname)));
 
         config.info.getMetadata().remove(publicHostname.getName());
-        assertThat(config.resolveDefaultAddress(), is(info.get(localIpv4)));
+        assertThat(config.resolveDefaultAddress(false), is(info.get(localIpv4)));
 
         config.info.getMetadata().remove(localIpv4.getName());
-        assertThat(config.resolveDefaultAddress(), is(dummyDefault));
+        assertThat(config.resolveDefaultAddress(false), is(dummyDefault));
     }
 
     @Test

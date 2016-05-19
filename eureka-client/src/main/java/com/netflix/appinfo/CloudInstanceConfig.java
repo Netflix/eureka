@@ -113,9 +113,17 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
         return info;
     }
 
+    /**
+     * @deprecated use {@link #resolveDefaultAddress(boolean)}
+     */
+    @Deprecated
     public String resolveDefaultAddress() {
+        return this.resolveDefaultAddress(true);
+    }
+
+    public String resolveDefaultAddress(boolean refresh) {
         // In this method invocation data center info will be refreshed.
-        String result = getHostName(true);
+        String result = getHostName(refresh);
 
         for (String name : getDefaultAddressResolutionOrder()) {
             try {

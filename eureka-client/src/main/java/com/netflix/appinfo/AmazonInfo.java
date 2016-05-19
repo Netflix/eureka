@@ -60,13 +60,21 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
     private static DynamicIntProperty awsMetaDataConnectTimeout;
     private static DynamicIntProperty awsMetaDataRetries;
 
+    /**
+     * When creating an AmazonInfo via {@link com.netflix.appinfo.AmazonInfo.Builder#autoBuild(String)},
+     * a fail fast mechanism exist based on the below configuration.
+     * If enabled (default to true), the {@link com.netflix.appinfo.AmazonInfo.Builder#autoBuild(String)}
+     * method will exit early after failing to load the value for the first metadata key (instanceId),
+     * after the expected number of retries as defined by {@link #awsMetaDataRetries}.
+     */
+    private static DynamicBooleanProperty awsMetaDataFailFastOnFirstLoad;
+
     private static final String AWS_API_VERSION = "latest";
-    private static final String AWS_METADATA_URL = "http://169.254.169.254/"
-            + AWS_API_VERSION + "/meta-data/";
+    private static final String AWS_METADATA_URL = "http://169.254.169.254/" + AWS_API_VERSION + "/meta-data/";
 
     public enum MetaDataKey {
+        instanceId("instance-id"),  // always have this first as we use it as a fail fast mechanism
         amiId("ami-id"),
-        instanceId("instance-id"),
         instanceType("instance-type"),
         localIpv4("local-ipv4"),
         localHostname("local-hostname"),
@@ -155,8 +163,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
 
     public static final class Builder {
-        private static final Logger logger = LoggerFactory
-                .getLogger(Builder.class);
+        private static final Logger logger = LoggerFactory.getLogger(Builder.class);
         private static final int SLEEP_TIME_MS = 100;
 
         @XStreamOmitField
@@ -187,6 +194,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
         /**
          * Build the {@link AmazonInfo} automatically via HTTP calls to instance
          * metadata API.
+         *
          * @param namespace the namespace to look for configuration properties.
          * @return the instance information specific to AWS.
          */
@@ -236,6 +244,16 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
                         }
                     }
                 }
+
+                if (key == MetaDataKey.instanceId
+                        && awsMetaDataFailFastOnFirstLoad.get()
+                        && !result.metadata.containsKey(MetaDataKey.instanceId.getName())) {
+
+                    logger.warn("Skipping the rest of AmazonInfo init as we were not able to load instanceId after " +
+                                    "the configured number of retries: {}, per fail fast configuration: {}",
+                            awsMetaDataRetries.get(), awsMetaDataFailFastOnFirstLoad.get());
+                    break;  // break out of loop and return whatever we have thus far
+                }
             }
             return result;
         }
@@ -249,7 +267,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
             if (awsMetaDataReadTimeout == null) {
                 awsMetaDataReadTimeout = com.netflix.config.DynamicPropertyFactory
                         .getInstance().getIntProperty(
-                                namespace + "mt.read_timeout", 8000);
+                                namespace + "mt.read_timeout", 5000);
             }
             if (awsMetaDataConnectTimeout == null) {
                 awsMetaDataConnectTimeout = com.netflix.config.DynamicPropertyFactory
@@ -260,6 +278,11 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
                 awsMetaDataRetries = com.netflix.config.DynamicPropertyFactory
                         .getInstance().getIntProperty(namespace + "mt.num_retries",
                                 3);
+            }
+            if (awsMetaDataFailFastOnFirstLoad == null) {
+                awsMetaDataFailFastOnFirstLoad = com.netflix.config.DynamicPropertyFactory
+                        .getInstance().getBooleanProperty(namespace + "mt.fail_fast_on_first_load",
+                                true);
             }
         }
     }

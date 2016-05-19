@@ -159,7 +159,7 @@ public class ApplicationInfoManager {
         String newAddress;
         if (config instanceof CloudInstanceConfig) {
             // Refresh data center info, and return up to date address
-            newAddress = ((CloudInstanceConfig) config).resolveDefaultAddress();
+            newAddress = ((CloudInstanceConfig) config).resolveDefaultAddress(true);
         } else {
             newAddress = config.getHostName(true);
         }
