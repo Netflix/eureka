@@ -96,4 +96,15 @@ public class InstanceInfoReplicatorTest {
         verify(discoveryClient, times(3)).refreshInstanceInfo(); // 1 initial refresh, 1 onDemand, 1 auto
         verify(discoveryClient, times(1)).register();  // all but 1 is no-op
     }
+
+    @Test
+    public void testOnDemandUpdateResetAutomaticRefreshWithInitialDelay() throws Throwable {
+        replicator.start(1000 * refreshRateSeconds);
+
+        assertTrue(replicator.onDemandUpdate());
+
+        Thread.sleep(1000 * refreshRateSeconds + 100);
+        verify(discoveryClient, times(2)).refreshInstanceInfo(); // 1 onDemand, 1 auto
+        verify(discoveryClient, times(1)).register();  // all but 1 is no-op
+    }
 }

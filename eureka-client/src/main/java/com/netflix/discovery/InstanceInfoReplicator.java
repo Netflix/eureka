@@ -62,7 +62,8 @@ class InstanceInfoReplicator implements Runnable {
     public void start(int initialDelayMs) {
         if (started.compareAndSet(false, true)) {
             instanceInfo.setIsDirty();  // for initial register
-            scheduler.schedule(this, initialDelayMs, TimeUnit.SECONDS);
+            Future next = scheduler.schedule(this, initialDelayMs, TimeUnit.SECONDS);
+            scheduledPeriodicRef.set(next);
         }
     }
 
@@ -78,9 +79,9 @@ class InstanceInfoReplicator implements Runnable {
                 public void run() {
                     logger.debug("Executing on-demand update of local InstanceInfo");
 
-                    // cancel the latest scheduled update, it will be rescheduled at the end of run()
                     Future latestPeriodic = scheduledPeriodicRef.get();
                     if (latestPeriodic != null && !latestPeriodic.isDone()) {
+                        logger.debug("Canceling the latest scheduled update, it will be rescheduled at the end of on demand update");
                         latestPeriodic.cancel(false);
                     }
 
