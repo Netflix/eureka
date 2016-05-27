@@ -393,6 +393,9 @@ public class DiscoveryClient implements EurekaClient {
             DiscoveryManager.getInstance().setEurekaClientConfig(config);
 
             initTimestampMs = System.currentTimeMillis();
+
+            logger.info("Discovery Client initialized at timestamp {} with initial instances count: {}",
+                    initTimestampMs, this.getApplications().size());
             return;  // no need to setup up an network tasks and we are done
         }
 
@@ -455,6 +458,8 @@ public class DiscoveryClient implements EurekaClient {
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
 
         initTimestampMs = System.currentTimeMillis();
+        logger.info("Discovery Client initialized at timestamp {} with initial instances count: {}",
+                initTimestampMs, this.getApplications().size());
     }
 
     private void scheduleServerEndpointTask(EurekaTransport eurekaTransport,
@@ -859,8 +864,10 @@ public class DiscoveryClient implements EurekaClient {
      */
     @PreDestroy
     @Override
-    public void shutdown() {
+    public synchronized void shutdown() {
         if (isShutdown.compareAndSet(false, true)) {
+            logger.info("Shutting down DiscoveryClient ...");
+
             if (statusChangeListener != null && applicationInfoManager != null) {
                 applicationInfoManager.unregisterStatusChangeListener(statusChangeListener.getId());
             }
@@ -879,6 +886,8 @@ public class DiscoveryClient implements EurekaClient {
 
             heartbeatStalenessMonitor.shutdown();
             registryStalenessMonitor.shutdown();
+
+            logger.info("Completed shut down of DiscoveryClient");
         }
     }
 
@@ -887,8 +896,9 @@ public class DiscoveryClient implements EurekaClient {
      */
     void unregister() {
         // It can be null if shouldRegisterWithEureka == false
-        if(eurekaTransport != null) {
+        if(eurekaTransport != null && eurekaTransport.registrationClient != null) {
             try {
+                logger.info("Unregistering ...");
                 EurekaHttpResponse<Void> httpResponse = eurekaTransport.registrationClient.cancel(instanceInfo.getAppName(), instanceInfo.getId());
                 logger.info(PREFIX + appPathIdentifier + " - deregister  status: " + httpResponse.getStatusCode());
             } catch (Exception e) {

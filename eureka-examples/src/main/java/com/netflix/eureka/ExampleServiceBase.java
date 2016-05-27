@@ -20,8 +20,6 @@ import java.util.Date;
 /**
  * An example service (that can be initialized in a variety of ways) that registers with eureka
  * and listens for REST calls on port 8001.
- *
- * @author David Liu
  */
 @Singleton
 public class ExampleServiceBase {
@@ -60,7 +58,8 @@ public class ExampleServiceBase {
         System.out.println("Service started and ready to process requests..");
 
         try {
-            ServerSocket serverSocket = new ServerSocket(configInstance.getIntProperty("eureka.port", 8010).get());
+            int myServingPort = applicationInfoManager.getInfo().getPort();  // read from my registered info
+            ServerSocket serverSocket = new ServerSocket(myServingPort);
             final Socket s = serverSocket.accept();
             System.out.println("Client got connected... processing request from the client");
             processRequest(s);
@@ -69,23 +68,18 @@ public class ExampleServiceBase {
             e.printStackTrace();
         }
 
-        System.out.println("Simulating service doing work by sleeping for " + 10 + " seconds...");
+        System.out.println("Simulating service doing work by sleeping for " + 5 + " seconds...");
         try {
-            Thread.sleep(10 * 1000);
+            Thread.sleep(5 * 1000);
         } catch (InterruptedException e) {
             // Nothing
         }
-
-        System.out.println("Removing registration from eureka");
-        this.stop();
-
-        System.out.println("Shutting down server. Demo over.");
-
     }
 
     @PreDestroy
     public void stop() {
         if (eurekaClient != null) {
+            System.out.println("Shutting down server. Demo over.");
             eurekaClient.shutdown();
         }
     }

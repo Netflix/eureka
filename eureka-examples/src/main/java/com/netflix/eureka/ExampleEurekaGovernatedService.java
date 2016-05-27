@@ -10,8 +10,6 @@ import com.netflix.governator.LifecycleInjector;
 
 /**
  * Sample Eureka service that registers with Eureka to receive and process requests, using EurekaModule.
- *
- * @author David Liu
  */
 public class ExampleEurekaGovernatedService {
 

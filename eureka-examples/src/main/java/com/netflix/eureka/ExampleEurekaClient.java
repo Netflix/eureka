@@ -24,11 +24,14 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Date;
 
+import com.netflix.appinfo.ApplicationInfoManager;
+import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
-import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.discovery.DefaultEurekaClientConfig;
-import com.netflix.discovery.DiscoveryManager;
+import com.netflix.discovery.DiscoveryClient;
+import com.netflix.discovery.EurekaClient;
+import com.netflix.discovery.EurekaClientConfig;
 
 /**
  * Sample Eureka client that discovers the example service using Eureka and sends requests.
@@ -36,25 +39,37 @@ import com.netflix.discovery.DiscoveryManager;
  * In this example, the program tries to get the example from the EurekaClient, and then
  * makes a REST call to a supported service endpoint
  *
- * @author Karthik Ranganathan
  */
 public class ExampleEurekaClient {
-    private static final DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory.getInstance();
 
-    public void sendRequestToServiceUsingEureka() {
+    private static ApplicationInfoManager applicationInfoManager;
+    private static EurekaClient eurekaClient;
+
+    private static synchronized ApplicationInfoManager initializeApplicationInfoManager(EurekaInstanceConfig instanceConfig) {
+        if (applicationInfoManager == null) {
+            applicationInfoManager = new ApplicationInfoManager(instanceConfig);
+        }
+
+        return applicationInfoManager;
+    }
+
+    private static synchronized EurekaClient initializeEurekaClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig clientConfig) {
+        if (eurekaClient == null) {
+            eurekaClient = new DiscoveryClient(applicationInfoManager, clientConfig);
+        }
+
+        return eurekaClient;
+    }
+
+
+    public void sendRequestToServiceUsingEureka(EurekaClient eurekaClient) {
         // initialize the client
-        DiscoveryManager.getInstance().initComponent(
-                new MyDataCenterInstanceConfig(),
-                new DefaultEurekaClientConfig());
-
         // this is the vip address for the example service to talk to as defined in conf/sample-eureka-service.properties
         String vipAddress = "sampleservice.mydomain.net";
 
         InstanceInfo nextServerInfo = null;
         try {
-            nextServerInfo = DiscoveryManager.getInstance()
-                    .getEurekaClient()
-                    .getNextServerFromEureka(vipAddress, false);
+            nextServerInfo = eurekaClient.getNextServerFromEureka(vipAddress, false);
         } catch (Exception e) {
             System.err.println("Cannot get an instance of example service to talk to from eureka");
             System.exit(-1);
@@ -95,14 +110,21 @@ public class ExampleEurekaClient {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        // finally shutdown
-        DiscoveryManager.getInstance().getEurekaClient().shutdown();
     }
 
     public static void main(String[] args) {
         ExampleEurekaClient sampleClient = new ExampleEurekaClient();
-        sampleClient.sendRequestToServiceUsingEureka();
+
+        // create the client
+        ApplicationInfoManager applicationInfoManager = initializeApplicationInfoManager(new MyDataCenterInstanceConfig());
+        EurekaClient client = initializeEurekaClient(applicationInfoManager, new DefaultEurekaClientConfig());
+
+        // use the client
+        sampleClient.sendRequestToServiceUsingEureka(client);
+
+
+        // shutdown the client
+        eurekaClient.shutdown();
     }
 
 }
