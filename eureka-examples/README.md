@@ -29,7 +29,7 @@ cp ./eureka-server/build/libs/eureka-server-XXX-SNAPSHOT.war $TOMCAT_HOME/webapp
 ## Examples Provided
 
 ### ExampleEurekaService
-An example service that registers itself with eureka.
+An example service that registers itself with eureka. (Note: prefer the DI version of creation in ExampleEurekaGovernatedService).
 
 ### ExampleEurekaGovernatedService
 The same as the ExampleEurekaService, where Governator/Guice is used to initialize everything. The gradle javaExec for this is <code>./gradlew :eureka-examples:runExampleGovernatedService</code> and the distribution generated script is <code>./bin/ExampleEurekaGovernatedService</code>

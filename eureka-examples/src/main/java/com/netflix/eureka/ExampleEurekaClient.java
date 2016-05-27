@@ -28,6 +28,7 @@ import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
+import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.EurekaClient;
@@ -47,7 +48,8 @@ public class ExampleEurekaClient {
 
     private static synchronized ApplicationInfoManager initializeApplicationInfoManager(EurekaInstanceConfig instanceConfig) {
         if (applicationInfoManager == null) {
-            applicationInfoManager = new ApplicationInfoManager(instanceConfig);
+            InstanceInfo instanceInfo = new EurekaConfigBasedInstanceInfoProvider(instanceConfig).get();
+            applicationInfoManager = new ApplicationInfoManager(instanceConfig, instanceInfo);
         }
 
         return applicationInfoManager;
