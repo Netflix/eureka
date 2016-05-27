@@ -393,6 +393,9 @@ public class DiscoveryClient implements EurekaClient {
             DiscoveryManager.getInstance().setEurekaClientConfig(config);
 
             initTimestampMs = System.currentTimeMillis();
+
+            logger.info("Discovery Client initialized at timestamp {} with initial instances count: {}",
+                    initTimestampMs, this.getApplications().size());
             return;  // no need to setup up an network tasks and we are done
         }
 
@@ -455,6 +458,8 @@ public class DiscoveryClient implements EurekaClient {
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
 
         initTimestampMs = System.currentTimeMillis();
+        logger.info("Discovery Client initialized at timestamp {} with initial instances count: {}",
+                initTimestampMs, this.getApplications().size());
     }
 
     private void scheduleServerEndpointTask(EurekaTransport eurekaTransport,
@@ -859,8 +864,10 @@ public class DiscoveryClient implements EurekaClient {
      */
     @PreDestroy
     @Override
-    public void shutdown() {
+    public synchronized void shutdown() {
         if (isShutdown.compareAndSet(false, true)) {
+            logger.info("Shutting down DiscoveryClient ...");
+
             if (statusChangeListener != null && applicationInfoManager != null) {
                 applicationInfoManager.unregisterStatusChangeListener(statusChangeListener.getId());
             }
@@ -879,6 +886,8 @@ public class DiscoveryClient implements EurekaClient {
 
             heartbeatStalenessMonitor.shutdown();
             registryStalenessMonitor.shutdown();
+
+            logger.info("Completed shut down of DiscoveryClient");
         }
     }
 
@@ -887,8 +896,9 @@ public class DiscoveryClient implements EurekaClient {
      */
     void unregister() {
         // It can be null if shouldRegisterWithEureka == false
-        if(eurekaTransport != null) {
+        if(eurekaTransport != null && eurekaTransport.registrationClient != null) {
             try {
+                logger.info("Unregistering ...");
                 EurekaHttpResponse<Void> httpResponse = eurekaTransport.registrationClient.cancel(instanceInfo.getAppName(), instanceInfo.getId());
                 logger.info(PREFIX + appPathIdentifier + " - deregister  status: " + httpResponse.getStatusCode());
             } catch (Exception e) {
@@ -1116,7 +1126,7 @@ public class DiscoveryClient implements EurekaClient {
      *             on any error.
      */
     private void reconcileAndLogDifference(Applications delta, String reconcileHashCode) throws Throwable {
-        logger.warn("The Reconcile hashcodes do not match, client : {}, server : {}. Getting the full registry",
+        logger.debug("The Reconcile hashcodes do not match, client : {}, server : {}. Getting the full registry",
                 reconcileHashCode, delta.getAppsHashCode());
 
         RECONCILE_HASH_CODES_MISMATCH.increment();
@@ -1133,26 +1143,28 @@ public class DiscoveryClient implements EurekaClient {
             return;
         }
 
-        try {
-            Map<String, List<String>> reconcileDiffMap = getApplications().getReconcileMapDiff(serverApps);
-            StringBuilder reconcileBuilder = new StringBuilder("");
-            for (Map.Entry<String, List<String>> mapEntry : reconcileDiffMap.entrySet()) {
-                reconcileBuilder.append(mapEntry.getKey()).append(": ");
-                for (String displayString : mapEntry.getValue()) {
-                    reconcileBuilder.append(displayString);
+        if (logger.isDebugEnabled()) {
+            try {
+                Map<String, List<String>> reconcileDiffMap = getApplications().getReconcileMapDiff(serverApps);
+                StringBuilder reconcileBuilder = new StringBuilder("");
+                for (Map.Entry<String, List<String>> mapEntry : reconcileDiffMap.entrySet()) {
+                    reconcileBuilder.append(mapEntry.getKey()).append(": ");
+                    for (String displayString : mapEntry.getValue()) {
+                        reconcileBuilder.append(displayString);
+                    }
+                    reconcileBuilder.append('\n');
                 }
-                reconcileBuilder.append('\n');
+                String reconcileString = reconcileBuilder.toString();
+                logger.debug("The reconcile string is {}", reconcileString);
+            } catch (Throwable e) {
+                logger.error("Could not calculate reconcile string ", e);
             }
-            String reconcileString = reconcileBuilder.toString();
-            logger.warn("The reconcile string is {}", reconcileString);
-        } catch (Throwable e) {
-            logger.error("Could not calculate reconcile string ", e);
         }
 
         if (fetchRegistryGeneration.compareAndSet(currentUpdateGeneration, currentUpdateGeneration + 1)) {
             localRegionApps.set(this.filterAndShuffle(serverApps));
             getApplications().setVersion(delta.getVersion());
-            logger.warn(
+            logger.debug(
                     "The Reconcile hashcodes after complete sync up, client : {}, server : {}.",
                     getApplications().getReconcileHashCode(),
                     delta.getAppsHashCode());

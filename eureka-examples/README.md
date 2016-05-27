@@ -13,7 +13,13 @@ The eureka example requires 3 participants:
 <pre><code>
 cp ./eureka-server/build/libs/eureka-server-XXX-SNAPSHOT.war $TOMCAT_HOME/webapps/eureka.war
 </pre></code>
-5. Start your tomcat server. Access _**http://localhost:8080/eureka**_ to verify the information there. Your server's eureka client should register itself in 30 seconds and you should see that information there.
+5. Create (or add to) a setenv.sh in tomcat/bin/ with the following java opts (these are for the demo server to start up fast, see EurekaServerConfig.java for their documentation):
+<pre>
+JAVA_OPTS=" \
+  -Deureka.waitTimeInMsWhenSyncEmpty=0 \
+  -Deureka.numberRegistrySyncRetries=0"
+</pre>
+6. Start your tomcat server. Access _**http://localhost:8080/eureka**_ to verify the information there. Your server's eureka client should register itself in 30 seconds and you should see that information there.
 
 ### Running the examples directly
 1. Start up a local eureka server
@@ -29,7 +35,7 @@ cp ./eureka-server/build/libs/eureka-server-XXX-SNAPSHOT.war $TOMCAT_HOME/webapp
 ## Examples Provided
 
 ### ExampleEurekaService
-An example service that registers itself with eureka.
+An example service that registers itself with eureka. (Note: prefer the DI version of creation in ExampleEurekaGovernatedService).
 
 ### ExampleEurekaGovernatedService
 The same as the ExampleEurekaService, where Governator/Guice is used to initialize everything. The gradle javaExec for this is <code>./gradlew :eureka-examples:runExampleGovernatedService</code> and the distribution generated script is <code>./bin/ExampleEurekaGovernatedService</code>
