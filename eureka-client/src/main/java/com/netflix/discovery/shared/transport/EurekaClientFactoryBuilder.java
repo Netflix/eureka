@@ -18,7 +18,7 @@ public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactor
 
     private static final int DEFAULT_MAX_CONNECTIONS_PER_HOST = 50;
     private static final int DEFAULT_MAX_TOTAL_CONNECTIONS = 200;
-    private static final long DEFAULT_CONNECTION_IDLE_TIMEOUT = 30 * 1000;
+    private static final long DEFAULT_CONNECTION_IDLE_TIMEOUT = 30;
 
     protected InstanceInfo myInstanceInfo;
     protected boolean allowRedirect;
