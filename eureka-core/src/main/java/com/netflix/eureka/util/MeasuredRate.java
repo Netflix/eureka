@@ -28,19 +28,21 @@ import org.slf4j.LoggerFactory;
  * @author Karthik Ranganathan,Greg Kim
  */
 public class MeasuredRate {
-    private static final Logger logger = LoggerFactory
-            .getLogger(MeasuredRate.class);
+    private static final Logger logger = LoggerFactory.getLogger(MeasuredRate.class);
     private final AtomicLong lastBucket = new AtomicLong(0);
     private final AtomicLong currentBucket = new AtomicLong(0);
-    private final long sampleInterval;
-    private Timer timer = new Timer("Eureka-MeasureRateTimer", true);
+    private final Timer timer;
+
+    // private ctor for NO_OP instance
+    private MeasuredRate() {
+        this.timer = null;
+    }
 
     /**
-     * @param sampleInterval
-     *            in milliseconds
+     * @param sampleInterval in milliseconds
      */
     public MeasuredRate(long sampleInterval) {
-        this.sampleInterval = sampleInterval;
+        this.timer = new Timer("Eureka-MeasureRateTimer", true);
         timer.schedule(new TimerTask() {
 
             @Override
@@ -68,4 +70,11 @@ public class MeasuredRate {
     public void increment() {
         currentBucket.incrementAndGet();
     }
+
+    public static final MeasuredRate NO_OP_MEASURED_RATE = new MeasuredRate() {
+        @Override
+        public void increment() {
+            // do nothing
+        }
+    };
 }

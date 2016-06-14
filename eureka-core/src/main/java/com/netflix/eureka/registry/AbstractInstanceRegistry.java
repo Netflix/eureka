@@ -95,7 +95,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     private Timer deltaRetentionTimer = new Timer("Eureka-DeltaRetentionTimer", true);
     private Timer evictionTimer = new Timer("Eureka-EvictionTimer", true);
-    private volatile MeasuredRate renewsLastMin;
+    private volatile MeasuredRate renewsLastMin = MeasuredRate.NO_OP_MEASURED_RATE;
 
     private final AtomicReference<EvictionTask> evictionTaskRef = new AtomicReference<EvictionTask>();
 
@@ -1148,11 +1148,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             description = "Number of total heartbeats received in the last minute", type = DataSourceType.GAUGE)
     @Override
     public long getNumOfRenewsInLastMin() {
-        if (renewsLastMin != null) {
-            return renewsLastMin.getCount();
-        } else {
-            return 0;
-        }
+        return renewsLastMin.getCount();
     }
 
 
