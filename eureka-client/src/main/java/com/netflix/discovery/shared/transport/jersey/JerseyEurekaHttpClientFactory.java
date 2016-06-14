@@ -123,7 +123,7 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
                 .withReadTimeout(clientConfig.getEurekaServerReadTimeoutSeconds() * 1000)
                 .withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost())
                 .withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections())
-                .withConnectionIdleTimeout(clientConfig.getEurekaConnectionIdleTimeoutSeconds())
+                .withConnectionIdleTimeout(clientConfig.getEurekaConnectionIdleTimeoutSeconds() * 1000)
                 .withEncoder(clientConfig.getEncoderName())
                 .withDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept())
                 .withClientIdentity(clientIdentity);
