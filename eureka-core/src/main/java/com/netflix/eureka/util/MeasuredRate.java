@@ -31,30 +31,45 @@ public class MeasuredRate {
     private static final Logger logger = LoggerFactory.getLogger(MeasuredRate.class);
     private final AtomicLong lastBucket = new AtomicLong(0);
     private final AtomicLong currentBucket = new AtomicLong(0);
+
+    private final long sampleInterval;
     private final Timer timer;
 
-    // private ctor for NO_OP instance
-    private MeasuredRate() {
-        this.timer = null;
-    }
+    private volatile boolean isActive;
 
     /**
      * @param sampleInterval in milliseconds
      */
     public MeasuredRate(long sampleInterval) {
+        this.sampleInterval = sampleInterval;
         this.timer = new Timer("Eureka-MeasureRateTimer", true);
-        timer.schedule(new TimerTask() {
+        this.isActive = false;
+    }
 
-            @Override
-            public void run() {
-                try {
-                    // Zero out the current bucket.
-                    lastBucket.set(currentBucket.getAndSet(0));
-                } catch (Throwable e) {
-                    logger.error("Cannot reset the Measured Rate", e);
+    public synchronized void start() {
+        if (!isActive) {
+            timer.schedule(new TimerTask() {
+
+                @Override
+                public void run() {
+                    try {
+                        // Zero out the current bucket.
+                        lastBucket.set(currentBucket.getAndSet(0));
+                    } catch (Throwable e) {
+                        logger.error("Cannot reset the Measured Rate", e);
+                    }
                 }
-            }
-        }, sampleInterval, sampleInterval);
+            }, sampleInterval, sampleInterval);
+
+            isActive = true;
+        }
+    }
+
+    public synchronized void stop() {
+        if (isActive) {
+            timer.cancel();
+            isActive = false;
+        }
     }
 
     /**
@@ -70,11 +85,4 @@ public class MeasuredRate {
     public void increment() {
         currentBucket.incrementAndGet();
     }
-
-    public static final MeasuredRate NO_OP_MEASURED_RATE = new MeasuredRate() {
-        @Override
-        public void increment() {
-            // do nothing
-        }
-    };
 }

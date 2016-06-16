@@ -95,7 +95,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     private Timer deltaRetentionTimer = new Timer("Eureka-DeltaRetentionTimer", true);
     private Timer evictionTimer = new Timer("Eureka-EvictionTimer", true);
-    private volatile MeasuredRate renewsLastMin = MeasuredRate.NO_OP_MEASURED_RATE;
+    private final MeasuredRate renewsLastMin;
 
     private final AtomicReference<EvictionTask> evictionTaskRef = new AtomicReference<EvictionTask>();
 
@@ -117,10 +117,12 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         this.serverCodecs = serverCodecs;
         this.recentCanceledQueue = new CircularQueue<Pair<Long, String>>(1000);
         this.recentRegisteredQueue = new CircularQueue<Pair<Long, String>>(1000);
+
+        this.renewsLastMin = new MeasuredRate(1000 * 60 * 1);
+
         this.deltaRetentionTimer.schedule(getDeltaRetentionTask(),
                 serverConfig.getDeltaRetentionTimerIntervalInMs(),
                 serverConfig.getDeltaRetentionTimerIntervalInMs());
-
     }
 
     @Override
@@ -1223,7 +1225,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     }
 
     protected void postInit() {
-        renewsLastMin = new MeasuredRate(1000 * 60 * 1);
+        renewsLastMin.start();
         if (evictionTaskRef.get() != null) {
             evictionTaskRef.get().cancel();
         }
@@ -1240,6 +1242,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     public void shutdown() {
         deltaRetentionTimer.cancel();
         evictionTimer.cancel();
+        renewsLastMin.stop();
     }
 
     @com.netflix.servo.annotations.Monitor(name = "numOfElementsinInstanceCache", description = "Number of overrides in the instance Cache", type = DataSourceType.GAUGE)
