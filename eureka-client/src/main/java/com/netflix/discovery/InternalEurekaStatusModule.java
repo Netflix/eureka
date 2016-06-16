@@ -1,11 +1,11 @@
 package com.netflix.discovery;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import com.google.common.base.Supplier;
 import com.google.inject.AbstractModule;
-import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.governator.annotations.binding.DownStatus;
