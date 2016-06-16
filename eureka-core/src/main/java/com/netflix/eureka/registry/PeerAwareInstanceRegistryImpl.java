@@ -109,7 +109,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         }
     };
 
-    private final MeasuredRate numberOfReplicationsLastMin = new MeasuredRate(1000 * 60 * 1);
+    private final MeasuredRate numberOfReplicationsLastMin;
 
     protected final EurekaClient eurekaClient;
     protected volatile PeerEurekaNodes peerEurekaNodes;
@@ -126,10 +126,12 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     ) {
         super(serverConfig, clientConfig, serverCodecs);
         this.eurekaClient = eurekaClient;
+        this.numberOfReplicationsLastMin = new MeasuredRate(1000 * 60 * 1);
     }
 
     @Override
     public void init(PeerEurekaNodes peerEurekaNodes) throws Exception {
+        this.numberOfReplicationsLastMin.start();
         this.peerEurekaNodes = peerEurekaNodes;
         initializedResponseCache();
         scheduleRenewalThresholdUpdateTask();
@@ -153,10 +155,12 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             logger.error("Cannot shutdown monitor registry", t);
         }
         try {
-        peerEurekaNodes.shutdown();
+            peerEurekaNodes.shutdown();
         } catch (Throwable t) {
             logger.error("Cannot shutdown ReplicaAwareInstanceRegistry", t);
         }
+        numberOfReplicationsLastMin.stop();
+
         super.shutdown();
     }
 
