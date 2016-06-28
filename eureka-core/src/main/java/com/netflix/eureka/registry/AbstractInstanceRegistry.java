@@ -188,30 +188,34 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      *
      * @see com.netflix.eureka.lease.LeaseManager#register(java.lang.Object, int, boolean)
      */
-    public void register(InstanceInfo r, int leaseDuration, boolean isReplication) {
+    public void register(InstanceInfo registrant, int leaseDuration, boolean isReplication) {
         try {
             read.lock();
-            Map<String, Lease<InstanceInfo>> gMap = registry.get(r.getAppName());
+            Map<String, Lease<InstanceInfo>> gMap = registry.get(registrant.getAppName());
             REGISTER.increment(isReplication);
             if (gMap == null) {
                 final ConcurrentHashMap<String, Lease<InstanceInfo>> gNewMap = new ConcurrentHashMap<String, Lease<InstanceInfo>>();
-                gMap = registry.putIfAbsent(r.getAppName(), gNewMap);
+                gMap = registry.putIfAbsent(registrant.getAppName(), gNewMap);
                 if (gMap == null) {
                     gMap = gNewMap;
                 }
             }
-            Lease<InstanceInfo> existingLease = gMap.get(r.getId());
+            Lease<InstanceInfo> existingLease = gMap.get(registrant.getId());
             // Retain the last dirty timestamp without overwriting it, if there is already a lease
             if (existingLease != null && (existingLease.getHolder() != null)) {
                 Long existingLastDirtyTimestamp = existingLease.getHolder().getLastDirtyTimestamp();
-                Long registrationLastDirtyTimestamp = r.getLastDirtyTimestamp();
+                Long registrationLastDirtyTimestamp = registrant.getLastDirtyTimestamp();
                 logger.debug("Existing lease found (existing={}, provided={}", existingLastDirtyTimestamp, registrationLastDirtyTimestamp);
                 if (existingLastDirtyTimestamp > registrationLastDirtyTimestamp) {
-                    logger.warn("There is an existing lease and the existing lease's dirty timestamp {} is " +
-                                    "greater than the one that is being registered {}",
-                            existingLastDirtyTimestamp,
-                            registrationLastDirtyTimestamp);
-                    r.setLastDirtyTimestamp(existingLastDirtyTimestamp);
+                    logger.warn("There is an existing lease and the existing lease's dirty timestamp {} is greater" +
+                            " than the one that is being registered {}", existingLastDirtyTimestamp, registrationLastDirtyTimestamp);
+
+                    if ("true".equals(serverConfig.getExperimental("registry.registration.ignoreIfDirtyTimestampIsOlder"))) {
+                        logger.warn("Using the existing instanceInfo instead of the new instanceInfo as the registrant");
+                        registrant = existingLease.getHolder();
+                    } else {
+                        registrant.setLastDirtyTimestamp(existingLastDirtyTimestamp);
+                    }
                 }
             } else {
                 // The lease does not exist and hence it is a new registration
@@ -227,45 +231,45 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 }
                 logger.debug("No previous lease information found; it is new registration");
             }
-            Lease<InstanceInfo> lease = new Lease<InstanceInfo>(r, leaseDuration);
+            Lease<InstanceInfo> lease = new Lease<InstanceInfo>(registrant, leaseDuration);
             if (existingLease != null) {
                 lease.setServiceUpTimestamp(existingLease.getServiceUpTimestamp());
             }
-            gMap.put(r.getId(), lease);
+            gMap.put(registrant.getId(), lease);
             synchronized (recentRegisteredQueue) {
                 recentRegisteredQueue.add(new Pair<Long, String>(
                         System.currentTimeMillis(),
-                        r.getAppName() + "(" + r.getId() + ")"));
+                        registrant.getAppName() + "(" + registrant.getId() + ")"));
             }
             // This is where the initial state transfer of overridden status happens
-            if (!InstanceStatus.UNKNOWN.equals(r.getOverriddenStatus())) {
+            if (!InstanceStatus.UNKNOWN.equals(registrant.getOverriddenStatus())) {
                 logger.debug("Found overridden status {} for instance {}. Checking to see if needs to be add to the "
-                                + "overrides", r.getOverriddenStatus(), r.getId());
-                if (!overriddenInstanceStatusMap.containsKey(r.getId())) {
-                    logger.info("Not found overridden id {} and hence adding it", r.getId());
-                    overriddenInstanceStatusMap.put(r.getId(), r.getOverriddenStatus());
+                                + "overrides", registrant.getOverriddenStatus(), registrant.getId());
+                if (!overriddenInstanceStatusMap.containsKey(registrant.getId())) {
+                    logger.info("Not found overridden id {} and hence adding it", registrant.getId());
+                    overriddenInstanceStatusMap.put(registrant.getId(), registrant.getOverriddenStatus());
                 }
             }
-            InstanceStatus overriddenStatusFromMap = overriddenInstanceStatusMap.get(r.getId());
+            InstanceStatus overriddenStatusFromMap = overriddenInstanceStatusMap.get(registrant.getId());
             if (overriddenStatusFromMap != null) {
                 logger.info("Storing overridden status {} from map", overriddenStatusFromMap);
-                r.setOverriddenStatus(overriddenStatusFromMap);
+                registrant.setOverriddenStatus(overriddenStatusFromMap);
             }
 
             // Set the status based on the overridden status rules
-            InstanceStatus overriddenInstanceStatus = getOverriddenInstanceStatus(r, existingLease, isReplication);
-            r.setStatusWithoutDirty(overriddenInstanceStatus);
+            InstanceStatus overriddenInstanceStatus = getOverriddenInstanceStatus(registrant, existingLease, isReplication);
+            registrant.setStatusWithoutDirty(overriddenInstanceStatus);
 
             // If the lease is registered with UP status, set lease service up timestamp
-            if (InstanceStatus.UP.equals(r.getStatus())) {
+            if (InstanceStatus.UP.equals(registrant.getStatus())) {
                 lease.serviceUp();
             }
-            r.setActionType(ActionType.ADDED);
+            registrant.setActionType(ActionType.ADDED);
             recentlyChangedQueue.add(new RecentlyChangedItem(lease));
-            r.setLastUpdatedTimestamp();
-            invalidateCache(r.getAppName(), r.getVIPAddress(), r.getSecureVipAddress());
+            registrant.setLastUpdatedTimestamp();
+            invalidateCache(registrant.getAppName(), registrant.getVIPAddress(), registrant.getSecureVipAddress());
             logger.info("Registered instance {}/{} with status {} (replication={})",
-                    r.getAppName(), r.getId(), r.getStatus(), isReplication);
+                    registrant.getAppName(), registrant.getId(), registrant.getStatus(), isReplication);
         } finally {
             read.unlock();
         }
