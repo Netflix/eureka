@@ -81,12 +81,12 @@ public class ReplicationConcurrencyTest {
         Mockito.when(server2Peers.getPeerEurekaNodes()).thenReturn(Collections.<PeerEurekaNode>emptyList());
         server2 = new MockServer(appName, server2Peers);
 
-        // register with server1 (configured to NOT replicate with server2 to simulate replication delay)
+        // register with server1
         server1.applicationResource.addInstance(instance1, "false"/* isReplication */);  // STARTING
         server1Sees = server1.registry.getInstanceByAppAndId(appName, id);
         assertThat(server1Sees, equalTo(instance1));
 
-        // update with server2, which is also configured to replicate with server1
+        // update (via a register) with server2
         server2.applicationResource.addInstance(instance2, "false"/* isReplication */);  // UP
         server2Sees = server2.registry.getInstanceByAppAndId(appName, id);
         assertThat(server2Sees, equalTo(instance2));
