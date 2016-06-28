@@ -194,8 +194,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             Map<String, Lease<InstanceInfo>> gMap = registry.get(r.getAppName());
             REGISTER.increment(isReplication);
             if (gMap == null) {
-                final ConcurrentHashMap<String, Lease<InstanceInfo>> gNewMap =
-                        new ConcurrentHashMap<String, Lease<InstanceInfo>>();
+                final ConcurrentHashMap<String, Lease<InstanceInfo>> gNewMap = new ConcurrentHashMap<String, Lease<InstanceInfo>>();
                 gMap = registry.putIfAbsent(r.getAppName(), gNewMap);
                 if (gMap == null) {
                     gMap = gNewMap;
@@ -606,8 +605,6 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             }
         }
 
-        boolean experimental = "true".equalsIgnoreCase(serverConfig.getExperimental("evict.cancel.disabled"));
-
         // To compensate for GC pauses or drifting local time, we need to use current registry size as a base for
         // triggering self-preservation. Without that we would wipe out full registry.
         int registrySize = (int) getLocalRegistrySize();
@@ -629,11 +626,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 String id = lease.getHolder().getId();
                 EXPIRED.increment();
                 logger.warn("DS: Registry: expired lease for {}/{}", appName, id);
-                if (experimental) {
-                    internalCancel(appName, id, false);
-                } else {
-                    cancel(appName, id, false);
-                }
+                internalCancel(appName, id, false);
             }
         }
     }
@@ -1257,14 +1250,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         @Override
         public void run() {
             try {
-                boolean experimental = "true".equalsIgnoreCase(serverConfig.getExperimental("evict.compensateForDelays"));
-                if (experimental) {
-                    long compensationTimeMs = getCompensationTimeMs();
-                    logger.info("Running the evict task with compensationTime {}ms", compensationTimeMs);
-                    evict(compensationTimeMs);
-                } else {
-                    evict();
-                }
+                long compensationTimeMs = getCompensationTimeMs();
+                logger.info("Running the evict task with compensationTime {}ms", compensationTimeMs);
+                evict(compensationTimeMs);
             } catch (Throwable e) {
                 logger.error("Could not run the evict task", e);
             }

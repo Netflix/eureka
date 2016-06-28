@@ -131,7 +131,7 @@ public class PeerEurekaNodes {
 
         int idx = 0;
         while (idx < replicaUrls.size()) {
-            if (isThisMe(replicaUrls.get(idx))) {
+            if (isThisMyUrl(replicaUrls.get(idx))) {
                 replicaUrls.remove(idx);
             } else {
                 idx++;
@@ -200,6 +200,8 @@ public class PeerEurekaNodes {
     }
 
     /**
+     * @deprecated 2016-06-27 use instance version of {@link #isThisMyUrl(String)}
+     *
      * Checks if the given service url contains the current host which is trying
      * to replicate. Only after the EIP binding is done the host has a chance to
      * identify itself in the list of replica nodes and needs to take itself out
@@ -211,6 +213,22 @@ public class PeerEurekaNodes {
      */
     public static boolean isThisMe(String url) {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
+        String hostName = hostFromUrl(url);
+        return hostName != null && hostName.equals(myInfo.getHostName());
+    }
+
+    /**
+     * Checks if the given service url contains the current host which is trying
+     * to replicate. Only after the EIP binding is done the host has a chance to
+     * identify itself in the list of replica nodes and needs to take itself out
+     * of replication traffic.
+     *
+     * @param url the service url of the replica node that the check is made.
+     * @return true, if the url represents the current node which is trying to
+     *         replicate, false otherwise.
+     */
+    public boolean isThisMyUrl(String url) {
+        InstanceInfo myInfo = applicationInfoManager.getInfo();
         String hostName = hostFromUrl(url);
         return hostName != null && hostName.equals(myInfo.getHostName());
     }

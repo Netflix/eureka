@@ -511,7 +511,7 @@ public class DiscoveryClient implements EurekaClient {
                 );
                 newRegistrationClient = newRegistrationClientFactory.newClient();
             } catch (Exception e) {
-                logger.warn("Experimental transport initialization failure", e);
+                logger.warn("Transport initialization failure", e);
             }
             eurekaTransport.registrationClientFactory = newRegistrationClientFactory;
             eurekaTransport.registrationClient = newRegistrationClient;
@@ -533,7 +533,7 @@ public class DiscoveryClient implements EurekaClient {
                 );
                 newQueryClient = newQueryClientFactory.newClient();
             } catch (Exception e) {
-                logger.warn("Experimental transport initialization failure", e);
+                logger.warn("Transport initialization failure", e);
             }
             eurekaTransport.queryClientFactory = newQueryClientFactory;
             eurekaTransport.queryClient = newQueryClient;

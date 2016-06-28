@@ -143,7 +143,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
             newEurekaHttpClient = EurekaServerHttpClients.createRemoteRegionClient(
                     serverConfig, clientConfig.getTransportConfig(), serverCodecs, clusterResolver);
         } catch (Exception e) {
-            logger.warn("Experimental transport initialization failure", e);
+            logger.warn("Transport initialization failure", e);
         }
         this.eurekaHttpClient = newEurekaHttpClient;
 
