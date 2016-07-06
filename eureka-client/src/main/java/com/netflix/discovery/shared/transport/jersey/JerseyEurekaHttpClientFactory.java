@@ -183,10 +183,10 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
             if (experimental) {
                 return buildExperimental(additionalHeaders);
             }
-            return buildLegacy(additionalHeaders);
+            return buildLegacy(additionalHeaders, systemSSL);
         }
 
-        private JerseyEurekaHttpClientFactory buildLegacy(Map<String, String> additionalHeaders) {
+        private JerseyEurekaHttpClientFactory buildLegacy(Map<String, String> additionalHeaders, boolean systemSSL) {
             EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
                     .withClientName(clientName)
                     .withUserAgent("Java-EurekaClient")
@@ -197,6 +197,10 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
                     .withConnectionIdleTimeout((int) connectionIdleTimeout)
                     .withEncoderWrapper(encoderWrapper)
                     .withDecoderWrapper(decoderWrapper);
+
+            if (systemSSL) {
+                clientBuilder.withSystemSSLConfiguration();
+            }
 
             EurekaJerseyClient jerseyClient = clientBuilder.build();
             ApacheHttpClient4 discoveryApacheClient = jerseyClient.getClient();
