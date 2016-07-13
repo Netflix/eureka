@@ -148,12 +148,25 @@ public class AbstractTester {
     }
 
     protected static InstanceInfo createLocalInstance(String hostname) {
+        return createLocalInstanceWithStatus(hostname, InstanceInfo.InstanceStatus.UP);
+    }
+
+    protected static InstanceInfo createLocalStartingInstance(String hostname) {
+        return createLocalInstanceWithStatus(hostname, InstanceInfo.InstanceStatus.STARTING);
+    }
+
+    protected static InstanceInfo createLocalOutOfServiceInstance(String hostname) {
+        return createLocalInstanceWithStatus(hostname, InstanceInfo.InstanceStatus.OUT_OF_SERVICE);
+    }
+
+    private static InstanceInfo createLocalInstanceWithStatus(String hostname, InstanceInfo.InstanceStatus status) {
         InstanceInfo.Builder instanceBuilder = InstanceInfo.Builder.newBuilder();
         instanceBuilder.setAppName(LOCAL_REGION_APP_NAME);
         instanceBuilder.setHostName(hostname);
         instanceBuilder.setIPAddr("10.10.101.1");
         instanceBuilder.setDataCenterInfo(getAmazonInfo(null, hostname));
         instanceBuilder.setLeaseInfo(LeaseInfo.Builder.newBuilder().build());
+        instanceBuilder.setStatus(status);
         return instanceBuilder.build();
     }
 
