@@ -39,4 +39,9 @@ public class LeaseExistsRule implements InstanceStatusOverrideRule {
         }
         return StatusOverrideResult.NO_MATCH;
     }
+
+    @Override
+    public String toString() {
+        return LeaseExistsRule.class.getName();
+    }
 }

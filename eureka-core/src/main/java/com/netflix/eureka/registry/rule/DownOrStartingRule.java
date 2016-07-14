@@ -31,4 +31,9 @@ public class DownOrStartingRule implements InstanceStatusOverrideRule {
         }
         return StatusOverrideResult.NO_MATCH;
     }
+
+    @Override
+    public String toString() {
+        return DownOrStartingRule.class.getName();
+    }
 }

@@ -139,6 +139,11 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     }
 
     @Override
+    protected InstanceStatusOverrideRule getInstanceInfoOverrideRule() {
+        return this.instanceStatusOverrideRule;
+    }
+
+    @Override
     public void init(PeerEurekaNodes peerEurekaNodes) throws Exception {
         this.numberOfReplicationsLastMin.start();
         this.peerEurekaNodes = peerEurekaNodes;
@@ -689,12 +694,5 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             description = "Current registry size", type = DataSourceType.GAUGE)
     public long getLocalRegistrySize() {
         return super.getLocalRegistrySize();
-    }
-
-    @Override
-    protected InstanceInfo.InstanceStatus getOverriddenInstanceStatus(InstanceInfo r,
-                                                                      Lease<InstanceInfo> existingLease,
-                                                                      boolean isReplication) {
-        return instanceStatusOverrideRule.apply(r, existingLease, isReplication).status();
     }
 }

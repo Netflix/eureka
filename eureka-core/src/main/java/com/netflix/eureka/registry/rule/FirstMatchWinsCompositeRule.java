@@ -1,7 +1,12 @@
 package com.netflix.eureka.registry.rule;
 
+import com.google.common.collect.Lists;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.eureka.lease.Lease;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * This rule takes an ordered list of rules and returns the result of the first match or the
@@ -13,10 +18,18 @@ public class FirstMatchWinsCompositeRule implements InstanceStatusOverrideRule {
 
     private InstanceStatusOverrideRule[] rules;
     private InstanceStatusOverrideRule defaultRule;
+    private final String compositeRuleName;
 
     public FirstMatchWinsCompositeRule(InstanceStatusOverrideRule... rules) {
         this.rules = rules;
         this.defaultRule = new DefaultStatusRule();
+        // Let's build up and "cache" the rule name to be used by toString();
+        List<String> ruleNames = new ArrayList<>(rules.length+1);
+        for (int i = 0; i < rules.length; ++i) {
+            ruleNames.add(rules[i].toString());
+        }
+        ruleNames.add(defaultRule.toString());
+        compositeRuleName = ruleNames.toString();
     }
 
     @Override
@@ -30,5 +43,10 @@ public class FirstMatchWinsCompositeRule implements InstanceStatusOverrideRule {
             }
         }
         return defaultRule.apply(instanceInfo, existingLease, isReplication);
+    }
+
+    @Override
+    public String toString() {
+        return this.compositeRuleName;
     }
 }

@@ -33,4 +33,10 @@ public class OverrideExistsRule implements InstanceStatusOverrideRule {
         }
         return StatusOverrideResult.NO_MATCH;
     }
+
+    @Override
+    public String toString() {
+        return OverrideExistsRule.class.getName();
+    }
+
 }

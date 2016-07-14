@@ -22,4 +22,9 @@ public class DefaultStatusRule implements InstanceStatusOverrideRule {
                 instanceInfo.getId());
         return StatusOverrideResult.matchingStatus(instanceInfo.getStatus());
     }
+
+    @Override
+    public String toString() {
+        return DefaultStatusRule.class.getName();
+    }
 }
