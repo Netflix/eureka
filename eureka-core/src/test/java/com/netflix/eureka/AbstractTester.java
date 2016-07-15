@@ -28,6 +28,10 @@ import com.netflix.eureka.resources.ServerCodecs;
 import org.junit.After;
 import org.junit.Before;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsNull.notNullValue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
@@ -75,12 +79,7 @@ public class AbstractTester {
         builder.setHostName("Hosttt");
         builder.setAppName("EurekaTestApp-" + UUID.randomUUID());
         builder.setLeaseInfo(LeaseInfo.Builder.newBuilder().build());
-        builder.setDataCenterInfo(new DataCenterInfo() {
-            @Override
-            public Name getName() {
-                return Name.MyOwn;
-            }
-        });
+        builder.setDataCenterInfo(getDataCenterInfo());
 
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
                 "http://localhost:" + mockRemoteEurekaServer.getPort() + MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
@@ -92,7 +91,7 @@ public class AbstractTester {
         client = new DiscoveryClient(applicationInfoManager, clientConfig);
 
         ServerCodecs serverCodecs = new DefaultServerCodecs(serverConfig);
-        registry = new TestPeerAwareInstanceRegistry(serverConfig, clientConfig, serverCodecs, client);
+        registry = makePeerAwareInstanceRegistry(serverConfig, clientConfig, serverCodecs, client);
         serverContext = new DefaultEurekaServerContext(
                 serverConfig,
                 serverCodecs,
@@ -102,6 +101,22 @@ public class AbstractTester {
         );
 
         serverContext.initialize();
+    }
+
+    protected DataCenterInfo getDataCenterInfo() {
+        return new DataCenterInfo() {
+            @Override
+            public Name getName() {
+                return Name.MyOwn;
+            }
+        };
+    }
+
+    protected PeerAwareInstanceRegistryImpl makePeerAwareInstanceRegistry(EurekaServerConfig serverConfig,
+                                                                      EurekaClientConfig clientConfig,
+                                                                      ServerCodecs serverCodecs,
+                                                                      EurekaClient eurekaClient) {
+        return new TestPeerAwareInstanceRegistry(serverConfig, clientConfig, serverCodecs, eurekaClient);
     }
 
     protected MockRemoteEurekaServer newMockRemoteServer() {
@@ -207,5 +222,16 @@ public class AbstractTester {
         public InstanceInfo getNextServerFromEureka(String virtualHostname, boolean secure) {
             return null;
         }
+    }
+
+    protected void verifyLocalInstanceStatus(String id, InstanceInfo.InstanceStatus status) {
+        InstanceInfo instanceInfo = registry.getApplication(LOCAL_REGION_APP_NAME).getByInstanceId(id);
+        assertThat("InstanceInfo with id " + id + " not found", instanceInfo, is(notNullValue()));
+        assertThat("Invalid InstanceInfo state", instanceInfo.getStatus(), is(equalTo(status)));
+    }
+
+    protected void registerInstanceLocally(InstanceInfo remoteInstance) {
+        registry.register(remoteInstance, 10000000, false);
+        registeredApps.add(new Pair<String, String>(LOCAL_REGION_APP_NAME, LOCAL_REGION_APP_NAME));
     }
 }

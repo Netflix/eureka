@@ -6,14 +6,11 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.discovery.shared.Pair;
 import com.netflix.eureka.AbstractTester;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -198,7 +195,7 @@ public class InstanceRegistryTest extends AbstractTester {
         registerInstanceLocally(myInstance);
         verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.OUT_OF_SERVICE);
 
-        // Then, we re-register with "out of service".
+        // Then, we re-register with "UP".
         InstanceInfo sameInstance = createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
         registry.register(sameInstance, 10000000, false);
         verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.OUT_OF_SERVICE);
@@ -226,16 +223,4 @@ public class InstanceRegistryTest extends AbstractTester {
         assertThat(testTask.getCompensationTimeMs(), is(10l));
         assertThat(testTask.getCompensationTimeMs(), is(0l));
     }
-
-    private void verifyLocalInstanceStatus(String id, InstanceStatus status) {
-        InstanceInfo instanceInfo = registry.getApplication(LOCAL_REGION_APP_NAME).getByInstanceId(id);
-        assertThat("InstanceInfo with id " + id + " not found", instanceInfo, is(notNullValue()));
-        assertThat("Invalid InstanceInfo state", instanceInfo.getStatus(), is(equalTo(status)));
-    }
-
-    private void registerInstanceLocally(InstanceInfo remoteInstance) {
-        registry.register(remoteInstance, 10000000, false);
-        registeredApps.add(new Pair<String, String>(LOCAL_REGION_APP_NAME, LOCAL_REGION_APP_NAME));
-    }
-
 }
