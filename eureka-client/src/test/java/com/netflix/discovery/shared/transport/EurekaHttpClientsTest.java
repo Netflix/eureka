@@ -109,7 +109,7 @@ public class EurekaHttpClientsTest {
                 "test",
                 transportConfig,
                 clusterResolver,
-                TransportClientFactories.newTransportClientFactory(
+                TransportClientFactories.INSTANCE.newTransportClientFactory(
                         clientConfig,
                         Collections.<ClientFilter>emptyList(),
                         applicationInfoManager.getInfo()
@@ -270,7 +270,7 @@ public class EurekaHttpClientsTest {
         TestFilter testFilter = new TestFilter();
         Collection<ClientFilter> additionalFilters = Arrays.<ClientFilter>asList(testFilter);
 
-        TransportClientFactory transportClientFactory = TransportClientFactories.newTransportClientFactory(
+        TransportClientFactory transportClientFactory = TransportClientFactories.INSTANCE.newTransportClientFactory(
                 clientConfig,
                 additionalFilters,
                 MY_INSTANCE

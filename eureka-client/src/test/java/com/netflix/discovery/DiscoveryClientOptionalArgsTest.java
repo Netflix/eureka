@@ -2,38 +2,42 @@ package com.netflix.discovery;
 
 import javax.inject.Provider;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import com.netflix.appinfo.HealthCheckCallback;
 import com.netflix.appinfo.HealthCheckHandler;
-import com.netflix.discovery.DiscoveryClient.DiscoveryClientOptionalArgs;
+import com.netflix.discovery.shared.transport.jersey.DiscoveryClientOptionalArgs;
 
 /**
  * @author Matt Nelson
  */
 public class DiscoveryClientOptionalArgsTest {
     
+    private DiscoveryClientOptionalArgs args;
+    
+    @Before
+    public void before() {
+        args = new DiscoveryClientOptionalArgs();
+    }
+    
     @Test
     public void testHealthCheckCallbackGuiceProvider() {
-        DiscoveryClientOptionalArgs args = new DiscoveryClientOptionalArgs();
         args.setHealthCheckCallbackProvider(new GuiceProvider<HealthCheckCallback>());
     }
     
     @Test
     public void testHealthCheckCallbackJavaxProvider() {
-        DiscoveryClientOptionalArgs args = new DiscoveryClientOptionalArgs();
         args.setHealthCheckCallbackProvider(new JavaxProvider<HealthCheckCallback>());
     }
     
     @Test
     public void testHealthCheckHandlerGuiceProvider() {
-        DiscoveryClientOptionalArgs args = new DiscoveryClientOptionalArgs();
         args.setHealthCheckHandlerProvider(new GuiceProvider<HealthCheckHandler>());
     }
     
     @Test
     public void testHealthCheckHandlerJavaxProvider() {
-        DiscoveryClientOptionalArgs args = new DiscoveryClientOptionalArgs();
         args.setHealthCheckHandlerProvider(new JavaxProvider<HealthCheckHandler>());
     }
     

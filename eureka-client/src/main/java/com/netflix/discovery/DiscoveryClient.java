@@ -76,7 +76,6 @@ import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
 import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import com.netflix.discovery.util.ThresholdLevelsMetric;
-import com.netflix.eventbus.spi.EventBus;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.Monitors;
@@ -218,64 +217,6 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
-    public static class DiscoveryClientOptionalArgs {
-        private Provider<HealthCheckCallback> healthCheckCallbackProvider;
-
-        private Provider<HealthCheckHandler> healthCheckHandlerProvider;
-
-        private Collection<ClientFilter> additionalFilters;
-
-        private EurekaJerseyClient eurekaJerseyClient;
-        
-        private Set<EurekaEventListener> eventListeners;
-
-        @Inject(optional = true)
-        public void setEventListeners(Set<EurekaEventListener> listeners) {
-            if (eventListeners == null) {
-                eventListeners = new HashSet<>();
-            }
-            eventListeners.addAll(listeners);
-        }
-        
-        @Inject(optional = true)
-        public void setEventBus(final EventBus eventBus) {
-            if (eventListeners == null) {
-                eventListeners = new HashSet<>();
-            }
-            
-            eventListeners.add(new EurekaEventListener() {
-                @Override
-                public void onEvent(EurekaEvent event) {
-                    eventBus.publish(event);
-                }
-            });
-        }
-
-        @Inject(optional = true) 
-        public void setHealthCheckCallbackProvider(Provider<HealthCheckCallback> healthCheckCallbackProvider) {
-            this.healthCheckCallbackProvider = healthCheckCallbackProvider;
-        }
-
-        @Inject(optional = true) 
-        public void setHealthCheckHandlerProvider(Provider<HealthCheckHandler> healthCheckHandlerProvider) {
-            this.healthCheckHandlerProvider = healthCheckHandlerProvider;
-        }
-
-        @Inject(optional = true) 
-        public void setAdditionalFilters(Collection<ClientFilter> additionalFilters) {
-            this.additionalFilters = additionalFilters;
-        }
-
-        @Inject(optional = true) 
-        public void setEurekaJerseyClient(EurekaJerseyClient eurekaJerseyClient) {
-            this.eurekaJerseyClient = eurekaJerseyClient;
-        }
-        
-        Set<EurekaEventListener> getEventListeners() {
-            return eventListeners == null ? Collections.<EurekaEventListener>emptySet() : eventListeners;
-        }
-    }
-
     /**
      * Assumes applicationInfoManager is already initialized
      *
@@ -292,7 +233,7 @@ public class DiscoveryClient implements EurekaClient {
      * @deprecated use constructor that takes ApplicationInfoManager instead of InstanceInfo directly
      */
     @Deprecated
-    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
+    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args) {
         this(ApplicationInfoManager.getInstance(), config, args);
     }
 
@@ -300,7 +241,7 @@ public class DiscoveryClient implements EurekaClient {
         this(applicationInfoManager, config, null);
     }
 
-    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
+    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args) {
         this(applicationInfoManager, config, args, new Provider<BackupRegistry>() {
             private volatile BackupRegistry backupRegistryInstance;
 
@@ -333,7 +274,7 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     @Inject
-    DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, DiscoveryClientOptionalArgs args,
+    DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args,
                     Provider<BackupRegistry> backupRegistryProvider) {
         if (args != null) {
             this.healthCheckHandlerProvider = args.healthCheckHandlerProvider;
@@ -463,19 +404,26 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     private void scheduleServerEndpointTask(EurekaTransport eurekaTransport,
-                                            DiscoveryClientOptionalArgs args) {
+                                            AbstractDiscoveryClientOptionalArgs args) {
 
-        Collection<ClientFilter> additionalFilters = args == null
-                ? Collections.<ClientFilter>emptyList()
+            
+        Collection<?> additionalFilters = args == null
+                ? Collections.emptyList()
                 : args.additionalFilters;
 
         EurekaJerseyClient providedJerseyClient = args == null
                 ? null
                 : args.eurekaJerseyClient;
-
+        
+        TransportClientFactories transportClientFactories = TransportClientFactories.INSTANCE;
+        if (args != null && args.getTransportClientFactories() != null) {
+            transportClientFactories = args.getTransportClientFactories();
+        }
+        
+        // If the transport factory was not supplied with args, assume they are using jersey 1 for passivity
         eurekaTransport.transportClientFactory = providedJerseyClient == null
-                ? TransportClientFactories.newTransportClientFactory(clientConfig, additionalFilters, applicationInfoManager.getInfo())
-                : TransportClientFactories.newTransportClientFactory(additionalFilters, providedJerseyClient);
+                ? transportClientFactories.newTransportClientFactory(clientConfig, (Collection<ClientFilter>) additionalFilters, applicationInfoManager.getInfo())
+                : transportClientFactories.newTransportClientFactory((Collection<ClientFilter>) additionalFilters, providedJerseyClient);
 
         ApplicationsResolver.ApplicationsSource applicationsSource = new ApplicationsResolver.ApplicationsSource() {
             @Override
@@ -542,6 +490,10 @@ public class DiscoveryClient implements EurekaClient {
 
     public EurekaClientConfig getEurekaClientConfig() {
         return clientConfig;
+    }
+    
+    public ApplicationInfoManager getApplicationInfoManager() {
+        return applicationInfoManager;
     }
 
     /*

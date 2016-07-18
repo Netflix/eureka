@@ -1,4 +1,4 @@
-package com.netflix.eureka.cluster;
+package com.netflix.discovery.shared.transport;
 
 import java.util.Iterator;
 

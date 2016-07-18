@@ -19,7 +19,6 @@ package com.netflix.discovery;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.DiscoveryClient.DiscoveryClientOptionalArgs;
 import com.netflix.discovery.shared.LookupService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,7 +75,7 @@ public class DiscoveryManager {
      * @param eurekaConfig the eureka client configuration of the instance.
      */
     public void initComponent(EurekaInstanceConfig config,
-                              EurekaClientConfig eurekaConfig, DiscoveryClientOptionalArgs args) {
+                              EurekaClientConfig eurekaConfig, AbstractDiscoveryClientOptionalArgs args) {
         this.eurekaInstanceConfig = config;
         this.eurekaClientConfig = eurekaConfig;
         if (ApplicationInfoManager.getInstance().getInfo() == null) {

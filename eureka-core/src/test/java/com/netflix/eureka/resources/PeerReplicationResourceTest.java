@@ -3,16 +3,16 @@ package com.netflix.eureka.resources;
 import javax.ws.rs.core.Response;
 
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.discovery.shared.transport.ClusterSampleData;
 import com.netflix.eureka.EurekaServerContext;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
-import com.netflix.eureka.cluster.ClusterSampleData;
 import com.netflix.eureka.cluster.protocol.ReplicationInstance;
 import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
 import org.junit.Test;
 
-import static com.netflix.eureka.cluster.ClusterSampleData.newReplicationInstanceOf;
+import static com.netflix.discovery.shared.transport.ClusterSampleData.newReplicationInstanceOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;

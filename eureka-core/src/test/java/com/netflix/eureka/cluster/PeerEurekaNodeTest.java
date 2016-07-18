@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
+import com.netflix.discovery.shared.transport.ClusterSampleData;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
@@ -17,8 +18,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static com.netflix.eureka.cluster.ClusterSampleData.RETRY_SLEEP_TIME_MS;
-import static com.netflix.eureka.cluster.ClusterSampleData.SERVER_UNAVAILABLE_SLEEP_TIME_MS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -144,8 +143,8 @@ public class PeerEurekaNodeTest {
                 config,
                 BATCH_SIZE,
                 MAX_BATCHING_DELAY_MS,
-                RETRY_SLEEP_TIME_MS,
-                SERVER_UNAVAILABLE_SLEEP_TIME_MS
+                ClusterSampleData.RETRY_SLEEP_TIME_MS,
+                ClusterSampleData.SERVER_UNAVAILABLE_SLEEP_TIME_MS
         );
         return peerEurekaNode;
     }

@@ -5,7 +5,6 @@ import javax.net.ssl.SSLContext;
 import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.converters.wrappers.CodecWrappers;
 import com.netflix.discovery.converters.wrappers.DecoderWrapper;
@@ -41,6 +40,18 @@ public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactor
     protected EncoderWrapper encoderWrapper;
     protected DecoderWrapper decoderWrapper;
     protected AbstractEurekaIdentity clientIdentity;
+    
+    public B withClientConfig(EurekaClientConfig clientConfig) {
+        withClientAccept(EurekaAccept.fromString(clientConfig.getClientDataAccept()));
+        withAllowRedirect(clientConfig.allowRedirects());
+        withConnectionTimeout(clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000);
+        withReadTimeout(clientConfig.getEurekaServerReadTimeoutSeconds() * 1000);
+        withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost());
+        withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections());
+        withConnectionIdleTimeout(clientConfig.getEurekaConnectionIdleTimeoutSeconds() * 1000);
+        withEncoder(clientConfig.getEncoderName());
+        return withDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept());
+    }
 
 
     public B withMyInstanceInfo(InstanceInfo myInstanceInfo) {
