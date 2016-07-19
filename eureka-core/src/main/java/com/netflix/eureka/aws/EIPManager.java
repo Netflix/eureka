@@ -343,10 +343,16 @@ public class EIPManager implements AwsBinder {
         }
         for (String cname : ec2Urls) {
             int beginIndex = cname.indexOf("ec2-") + 4;
-            int endIndex = cname.indexOf(regionPhrase + ".compute");
-            String eipStr = cname.substring(beginIndex, endIndex);
-            String eip = eipStr.replaceAll("\\-", ".");
-            returnedUrls.add(eip);
+
+            // Handle case where there are no cnames containing "ec2-"
+            // Reasons include:
+            //  Systems without public addresses - purely attached to corp lan via AWS Direct Connect
+            if (-1 < beginIndex) {
+                int endIndex = cname.indexOf(regionPhrase + ".compute");
+                String eipStr = cname.substring(beginIndex, endIndex);
+                String eip = eipStr.replaceAll("\\-", ".");
+                returnedUrls.add(eip);
+            }
         }
         return returnedUrls;
     }
