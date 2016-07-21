@@ -209,13 +209,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 if (existingLastDirtyTimestamp > registrationLastDirtyTimestamp) {
                     logger.warn("There is an existing lease and the existing lease's dirty timestamp {} is greater" +
                             " than the one that is being registered {}", existingLastDirtyTimestamp, registrationLastDirtyTimestamp);
-
-                    if ("true".equals(serverConfig.getExperimental("registry.registration.ignoreIfDirtyTimestampIsOlder"))) {
-                        logger.warn("Using the existing instanceInfo instead of the new instanceInfo as the registrant");
-                        registrant = existingLease.getHolder();
-                    } else {
-                        registrant.setLastDirtyTimestamp(existingLastDirtyTimestamp);
-                    }
+                    logger.warn("Using the existing instanceInfo instead of the new instanceInfo as the registrant");
+                    registrant = existingLease.getHolder();
                 }
             } else {
                 // The lease does not exist and hence it is a new registration
