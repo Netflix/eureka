@@ -6,8 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * If the instance is STARTING or DOWN then we return that.
- * This rule has precedence over the {@link OverrideExistsRule}.
+ * This rule matches if the instance is DOWN or STARTING.
  *
  * Created by Nikos Michalakis on 7/13/16.
  */

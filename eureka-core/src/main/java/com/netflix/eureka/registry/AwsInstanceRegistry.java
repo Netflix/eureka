@@ -56,6 +56,8 @@ public class AwsInstanceRegistry extends PeerAwareInstanceRegistryImpl {
     public void init(PeerEurekaNodes peerEurekaNodes) throws Exception {
         super.init(peerEurekaNodes);
         this.awsAsgUtil = new AwsAsgUtil(serverConfig, clientConfig, this);
+        // We first check if the instance is STARTING or DOWN, then we check explicit overrides,
+        // then we see if our ASG is UP, then we check the status of a potentially existing lease.
         this.instanceStatusOverrideRule = new FirstMatchWinsCompositeRule(new DownOrStartingRule(),
                 new OverrideExistsRule(overriddenInstanceStatusMap), new AsgEnabledRule(this.awsAsgUtil),
                 new LeaseExistsRule());

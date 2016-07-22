@@ -134,6 +134,8 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         super(serverConfig, clientConfig, serverCodecs);
         this.eurekaClient = eurekaClient;
         this.numberOfReplicationsLastMin = new MeasuredRate(1000 * 60 * 1);
+        // We first check if the instance is STARTING or DOWN, then we check explicit overrides,
+        // then we check the status of a potentially existing lease.
         this.instanceStatusOverrideRule = new FirstMatchWinsCompositeRule(new DownOrStartingRule(),
                 new OverrideExistsRule(overriddenInstanceStatusMap), new LeaseExistsRule());
     }

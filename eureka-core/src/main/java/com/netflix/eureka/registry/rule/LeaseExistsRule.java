@@ -6,8 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This rule matches if we have an existing lease for the instance.
- * It must be applied after the {@link OverrideExistsRule}.
+ * This rule matches if we have an existing lease for the instance that is UP or OUT_OF_SERVICE.
  *
  * Created by Nikos Michalakis on 7/13/16.
  */

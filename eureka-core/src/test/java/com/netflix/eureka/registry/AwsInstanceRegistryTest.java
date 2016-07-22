@@ -25,14 +25,14 @@ public class AwsInstanceRegistryTest extends InstanceRegistryTest {
         verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.UP);
 
         // Now we disable the ASG and we should expect OUT_OF_SERVICE status.
-        ((AwsInstanceRegistry) registry).getAwsAsgUtil().setStatus("ASG-YO-HO", false);
+        ((AwsInstanceRegistry) registry).getAwsAsgUtil().setStatus(myInstance.getASGName(), false);
 
         myInstance = createLocalUpInstanceWithAsg(LOCAL_REGION_INSTANCE_1_HOSTNAME);
         registerInstanceLocally(myInstance);
         verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.OUT_OF_SERVICE);
 
         // Now we re-enable the ASG and we should expect UP status.
-        ((AwsInstanceRegistry) registry).getAwsAsgUtil().setStatus("ASG-YO-HO", true);
+        ((AwsInstanceRegistry) registry).getAwsAsgUtil().setStatus(myInstance.getASGName(), true);
 
         myInstance = createLocalUpInstanceWithAsg(LOCAL_REGION_INSTANCE_1_HOSTNAME);
         registerInstanceLocally(myInstance);

@@ -17,10 +17,10 @@ public class StatusOverrideResult {
     }
 
     // Does the rule match?
-    private boolean matches;
+    private final boolean matches;
 
     // The status computed by the rule.
-    private InstanceInfo.InstanceStatus status;
+    private final InstanceInfo.InstanceStatus status;
 
     private StatusOverrideResult(boolean matches, InstanceInfo.InstanceStatus status) {
         this.matches = matches;
