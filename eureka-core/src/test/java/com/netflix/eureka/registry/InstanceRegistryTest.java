@@ -6,14 +6,11 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.discovery.shared.Pair;
 import com.netflix.eureka.AbstractTester;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -153,6 +150,63 @@ public class InstanceRegistryTest extends AbstractTester {
     }
 
     @Test
+    public void testStatusOverrideStartingStatus() throws Exception {
+        // Regular registration first
+        InstanceInfo myInstance = createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
+        registerInstanceLocally(myInstance);
+        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.UP);
+
+        // Override status
+        boolean statusResult = registry.statusUpdate(LOCAL_REGION_APP_NAME, myInstance.getId(), InstanceStatus.OUT_OF_SERVICE, "0", false);
+        assertThat("Couldn't override instance status", statusResult, is(true));
+        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.OUT_OF_SERVICE);
+
+        // If we are not UP or OUT_OF_SERVICE, the OUT_OF_SERVICE override does not apply. It gets trumped by the current
+        // status (STARTING or DOWN). Here we test with STARTING.
+        myInstance = createLocalStartingInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
+        registerInstanceLocally(myInstance);
+        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.STARTING);
+    }
+
+    @Test
+    public void testStatusOverrideWithExistingLeaseUp() throws Exception {
+        // Without an override we expect to get the existing UP lease when we re-register with OUT_OF_SERVICE.
+        // First, we are "up".
+        InstanceInfo myInstance = createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
+        registerInstanceLocally(myInstance);
+        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.UP);
+
+        // Then, we re-register with "out of service".
+        InstanceInfo sameInstance = createLocalOutOfServiceInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
+        registry.register(sameInstance, 10000000, false);
+        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.UP);
+
+        // Let's try again. We shouldn't see a difference.
+        sameInstance = createLocalOutOfServiceInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
+        registry.register(sameInstance, 10000000, false);
+        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.UP);
+    }
+
+    @Test
+    public void testStatusOverrideWithExistingLeaseOutOfService() throws Exception {
+        // Without an override we expect to get the existing OUT_OF_SERVICE lease when we re-register with UP.
+        // First, we are "out of service".
+        InstanceInfo myInstance = createLocalOutOfServiceInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
+        registerInstanceLocally(myInstance);
+        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.OUT_OF_SERVICE);
+
+        // Then, we re-register with "UP".
+        InstanceInfo sameInstance = createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
+        registry.register(sameInstance, 10000000, false);
+        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.OUT_OF_SERVICE);
+
+        // Let's try again. We shouldn't see a difference.
+        sameInstance = createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
+        registry.register(sameInstance, 10000000, false);
+        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.OUT_OF_SERVICE);
+    }
+
+    @Test
     public void testEvictionTaskCompensationTime() throws Exception {
         long evictionTaskPeriodNanos = serverConfig.getEvictionIntervalTimerInMs() * 1000000;
 
@@ -169,16 +223,4 @@ public class InstanceRegistryTest extends AbstractTester {
         assertThat(testTask.getCompensationTimeMs(), is(10l));
         assertThat(testTask.getCompensationTimeMs(), is(0l));
     }
-
-    private void verifyLocalInstanceStatus(String id, InstanceStatus status) {
-        InstanceInfo instanceInfo = registry.getApplication(LOCAL_REGION_APP_NAME).getByInstanceId(id);
-        assertThat("InstanceInfo with id " + id + " not found", instanceInfo, is(notNullValue()));
-        assertThat("Invalid InstanceInfo state", instanceInfo.getStatus(), is(equalTo(status)));
-    }
-
-    private void registerInstanceLocally(InstanceInfo remoteInstance) {
-        registry.register(remoteInstance, 10000000, false);
-        registeredApps.add(new Pair<String, String>(LOCAL_REGION_APP_NAME, LOCAL_REGION_APP_NAME));
-    }
-
 }

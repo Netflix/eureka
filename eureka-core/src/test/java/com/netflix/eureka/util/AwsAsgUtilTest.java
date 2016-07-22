@@ -13,6 +13,7 @@ import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.aws.AwsAsgUtil;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -30,6 +31,7 @@ public class AwsAsgUtilTest {
     private PeerAwareInstanceRegistry registry;
     private DiscoveryClient client;
     private AwsAsgUtil awsAsgUtil;
+    private InstanceInfo instanceInfo;
 
     @Before
     public void setUp() throws Exception {
@@ -45,8 +47,9 @@ public class AwsAsgUtilTest {
         builder.setAppName("fake-" + UUID.randomUUID());
         builder.setLeaseInfo(LeaseInfo.Builder.newBuilder().build());
         builder.setDataCenterInfo(dataCenterInfo);
+        instanceInfo = builder.build();
 
-        applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), builder.build());
+        applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), instanceInfo);
         DefaultEurekaClientConfig clientConfig = new DefaultEurekaClientConfig();
         // setup config in advance, used in initialize converter
         client = mock(DiscoveryClient.class);
@@ -61,8 +64,12 @@ public class AwsAsgUtilTest {
     }
 
     @Test
-    public void testAsyncLoadingFromCache() {
-
+    public void testDefaultAsgStatus() {
+        Assert.assertEquals(true, awsAsgUtil.isASGEnabled(instanceInfo));
     }
 
+    @Test
+    public void testAsyncLoadingFromCache() {
+        // TODO
+    }
 }

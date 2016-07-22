@@ -51,6 +51,7 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.Pair;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.lease.Lease;
+import com.netflix.eureka.registry.rule.InstanceStatusOverrideRule;
 import com.netflix.eureka.resources.ServerCodecs;
 import com.netflix.eureka.util.MeasuredRate;
 import com.netflix.servo.annotations.DataSourceType;
@@ -1307,11 +1308,19 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         }
     }
 
-    // FIXME this should really be part of peerAware registry as it has knowledge of replication ...
-    // fix in next round of code clean up
-    protected abstract InstanceInfo.InstanceStatus getOverriddenInstanceStatus(InstanceInfo r,
-                                                                               Lease<InstanceInfo> existingLease,
-                                                                               boolean isReplication);
+    /**
+     * @return The rule that will process the instance status override.
+     */
+    protected abstract InstanceStatusOverrideRule getInstanceInfoOverrideRule();
+
+    protected InstanceInfo.InstanceStatus getOverriddenInstanceStatus(InstanceInfo r,
+                                                                    Lease<InstanceInfo> existingLease,
+                                                                    boolean isReplication) {
+        InstanceStatusOverrideRule rule = getInstanceInfoOverrideRule();
+        logger.debug("Processing override status using rule: {}", rule);
+        return rule.apply(r, existingLease, isReplication).status();
+    }
+
     private TimerTask getDeltaRetentionTask() {
         return new TimerTask() {
 
