@@ -30,7 +30,7 @@ public class Jersey2TransportClientFactories implements TransportClientFactories
                 clientConfig,
                 additionalFilters,
                 myInstanceInfo,
-                new EurekaClientIdentity(myInstanceInfo.getIPAddr())
+                new EurekaClientIdentity(myInstanceInfo.getIPAddr(), "Jersey2DefaultClient")
         );
         final TransportClientFactory metricsFactory = MetricsCollectingEurekaHttpClient.createFactory(jerseyFactory);
 

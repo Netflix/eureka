@@ -32,6 +32,7 @@ import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DeploymentContext;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryClient;
+import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.converters.JsonXStream;
 import com.netflix.discovery.converters.XmlXStream;
@@ -82,10 +83,22 @@ public class EurekaBootStrap implements ServletContextListener {
     protected volatile EurekaServerContext serverContext;
     protected volatile AwsBinder awsBinder;
     
-    private DiscoveryClient discoveryClient;
+    private EurekaClient eurekaClient;
+
+    /**
+     * Construct a default instance of Eureka boostrap
+     */
+    public EurekaBootStrap() {
+        this(null);
+    }
     
-    protected void setDiscoveryClient(DiscoveryClient discoveryClient) {
-        this.discoveryClient = discoveryClient;
+    /**
+     * Construct an instance of eureka bootstrap with the supplied eureka client
+     * 
+     * @param eurekaClient the eureka client to bootstrap
+     */
+    public EurekaBootStrap(EurekaClient eurekaClient) {
+        this.eurekaClient = eurekaClient;
     }
 
     /**
@@ -144,7 +157,7 @@ public class EurekaBootStrap implements ServletContextListener {
 
         ApplicationInfoManager applicationInfoManager = null;
 
-        if (discoveryClient == null) {
+        if (eurekaClient == null) {
             EurekaInstanceConfig instanceConfig = isCloud(ConfigurationManager.getDeploymentContext())
                     ? new CloudInstanceConfig()
                     : new MyDataCenterInstanceConfig();
@@ -153,34 +166,34 @@ public class EurekaBootStrap implements ServletContextListener {
                     instanceConfig, new EurekaConfigBasedInstanceInfoProvider(instanceConfig).get());
             
             EurekaClientConfig eurekaClientConfig = new DefaultEurekaClientConfig();
-            discoveryClient = new DiscoveryClient(applicationInfoManager, eurekaClientConfig);
+            eurekaClient = new DiscoveryClient(applicationInfoManager, eurekaClientConfig);
         } else {
-            applicationInfoManager = discoveryClient.getApplicationInfoManager();
+            applicationInfoManager = eurekaClient.getApplicationInfoManager();
         }
 
         PeerAwareInstanceRegistry registry;
         if (isAws(applicationInfoManager.getInfo())) {
             registry = new AwsInstanceRegistry(
                     eurekaServerConfig,
-                    discoveryClient.getEurekaClientConfig(),
+                    eurekaClient.getEurekaClientConfig(),
                     serverCodecs,
-                    discoveryClient
+                    eurekaClient
             );
-            awsBinder = new AwsBinderDelegate(eurekaServerConfig, discoveryClient.getEurekaClientConfig(), registry, applicationInfoManager);
+            awsBinder = new AwsBinderDelegate(eurekaServerConfig, eurekaClient.getEurekaClientConfig(), registry, applicationInfoManager);
             awsBinder.start();
         } else {
             registry = new PeerAwareInstanceRegistryImpl(
                     eurekaServerConfig,
-                    discoveryClient.getEurekaClientConfig(),
+                    eurekaClient.getEurekaClientConfig(),
                     serverCodecs,
-                    discoveryClient
+                    eurekaClient
             );
         }
 
         PeerEurekaNodes peerEurekaNodes = getPeerEurekaNodes(
                 registry,
                 eurekaServerConfig,
-                discoveryClient.getEurekaClientConfig(),
+                eurekaClient.getEurekaClientConfig(),
                 serverCodecs,
                 applicationInfoManager
         );

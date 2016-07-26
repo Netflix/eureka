@@ -15,8 +15,7 @@ import com.netflix.eureka.resources.ServerCodecs;
 public class Jersey2EurekaBootStrap extends EurekaBootStrap {
     
     public Jersey2EurekaBootStrap(DiscoveryClient discoveryClient) {
-        super();
-        setDiscoveryClient(discoveryClient);
+        super(discoveryClient);
     }
 
     @Override    
@@ -31,5 +30,4 @@ public class Jersey2EurekaBootStrap extends EurekaBootStrap {
         
         return peerEurekaNodes;
     }
-
 }

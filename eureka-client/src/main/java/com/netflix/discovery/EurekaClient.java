@@ -6,6 +6,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import com.google.inject.ImplementedBy;
+import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.HealthCheckCallback;
 import com.netflix.appinfo.HealthCheckHandler;
 import com.netflix.appinfo.InstanceInfo;
@@ -198,4 +199,14 @@ public interface EurekaClient extends LookupService {
      * Shuts down Eureka Client. Also sends a deregistration request to the eureka server.
      */
     public void shutdown();
+    
+    /**
+     * @return the configuration of this eureka client
+     */
+    public EurekaClientConfig getEurekaClientConfig();
+    
+    /**
+     * @return the application info manager of this eureka client
+     */
+    public ApplicationInfoManager getApplicationInfoManager();
 }

@@ -9,8 +9,6 @@ import com.sun.jersey.api.client.filter.ClientFilter;
 
 public interface TransportClientFactories<F> {
     
-    static final TransportClientFactories<ClientFilter> INSTANCE = new Jersey1TransportClientFactories();
-    
     @Deprecated
     public TransportClientFactory newTransportClientFactory(final Collection<F> additionalFilters,
                                                                    final EurekaJerseyClient providedJerseyClient);

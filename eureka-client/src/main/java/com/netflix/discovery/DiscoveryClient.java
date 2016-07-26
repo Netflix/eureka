@@ -75,6 +75,7 @@ import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
 import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
+import com.netflix.discovery.shared.transport.jersey.TransportClientFactoriesProvider;
 import com.netflix.discovery.util.ThresholdLevelsMetric;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Counter;
@@ -415,10 +416,14 @@ public class DiscoveryClient implements EurekaClient {
                 ? null
                 : args.eurekaJerseyClient;
         
-        TransportClientFactories transportClientFactories = TransportClientFactories.INSTANCE;
+        TransportClientFactories argsTransportClientFactories = null;
         if (args != null && args.getTransportClientFactories() != null) {
-            transportClientFactories = args.getTransportClientFactories();
+            argsTransportClientFactories = args.getTransportClientFactories();
         }
+        
+        // Ignore the raw types warnings since the client filter interface changed between jersey 1/2
+        @SuppressWarnings("rawtypes")
+        TransportClientFactories transportClientFactories = new TransportClientFactoriesProvider(argsTransportClientFactories).get();
         
         // If the transport factory was not supplied with args, assume they are using jersey 1 for passivity
         eurekaTransport.transportClientFactory = providedJerseyClient == null
@@ -488,10 +493,12 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
+    @Override
     public EurekaClientConfig getEurekaClientConfig() {
         return clientConfig;
     }
     
+    @Override
     public ApplicationInfoManager getApplicationInfoManager() {
         return applicationInfoManager;
     }
