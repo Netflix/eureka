@@ -18,6 +18,7 @@ import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.endpoint.EndpointUtils;
+import com.netflix.discovery.shared.Application;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.resources.ServerCodecs;
@@ -228,9 +229,23 @@ public class PeerEurekaNodes {
      *         replicate, false otherwise.
      */
     public boolean isThisMyUrl(String url) {
-        InstanceInfo myInfo = applicationInfoManager.getInfo();
+        return isInstanceURL(url, applicationInfoManager.getInfo());
+    }
+    
+    /**
+     * Checks if the given service url matches the supplied instance
+     *
+     * @param url the service url of the replica node that the check is made.
+     * @param instance the instance to check the service url against
+     * @return true, if the url represents the supplied instance, false otherwise.
+     */
+    public boolean isInstanceURL(String url, InstanceInfo instance) {
         String hostName = hostFromUrl(url);
-        return hostName != null && hostName.equals(myInfo.getHostName());
+        String myInfoComparator = instance.getHostName();
+        if (clientConfig.getTransportConfig().applicationsResolverUseIp()) {
+            myInfoComparator = instance.getIPAddr();
+        }
+        return hostName != null && hostName.equals(myInfoComparator);
     }
 
     public static String hostFromUrl(String url) {
