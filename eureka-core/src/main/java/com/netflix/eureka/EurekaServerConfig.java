@@ -408,6 +408,13 @@ public interface EurekaServerConfig {
      * @return maximum number of threads to be used for replication.
      */
     int getMaxThreadsForPeerReplication();
+    
+    /**
+     * Get the minimum number of available peer replication instances
+     * 
+     * @return minimum number of available peer replication instances
+     */
+    int getMinNumberOfAvailablePeers();
 
     /**
      * Get the time in milliseconds to try to replicate before dropping

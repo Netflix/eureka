@@ -29,8 +29,8 @@ public class StatusUtil {
 
     public StatusInfo getStatusInfo() {
         StatusInfo.Builder builder = StatusInfo.Builder.newBuilder();
-        builder.isHealthy(true);
         // Add application level status
+        int upReplicasCount = 0;
         StringBuilder upReplicas = new StringBuilder();
         StringBuilder downReplicas = new StringBuilder();
 
@@ -43,15 +43,20 @@ public class StatusUtil {
             replicaHostNames.append(node.getServiceUrl());
             if (isReplicaAvailable(node.getServiceUrl())) {
                 upReplicas.append(node.getServiceUrl()).append(',');
+                upReplicasCount++;
             } else {
                 downReplicas.append(node.getServiceUrl()).append(',');
-                builder.isHealthy(false);
             }
         }
 
         builder.add("registered-replicas", replicaHostNames.toString());
         builder.add("available-replicas", upReplicas.toString());
         builder.add("unavailable-replicas", downReplicas.toString());
+        
+        // Only set the healthy flag if a threshold has been configured.
+        if (peerEurekaNodes.getMinNumberOfAvailablePeers() > 0) {
+            builder.isHealthy(upReplicasCount >= peerEurekaNodes.getMinNumberOfAvailablePeers());
+        }
 
         return builder.build();
     }

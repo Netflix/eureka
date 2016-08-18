@@ -67,6 +67,10 @@ public class PeerEurekaNodes {
     public List<PeerEurekaNode> getPeerEurekaNodes() {
         return peerEurekaNodes;
     }
+    
+    public int getMinNumberOfAvailablePeers() {
+        return serverConfig.getMinNumberOfAvailablePeers();
+    }
 
     public void start() {
         taskExecutor = Executors.newSingleThreadScheduledExecutor(
