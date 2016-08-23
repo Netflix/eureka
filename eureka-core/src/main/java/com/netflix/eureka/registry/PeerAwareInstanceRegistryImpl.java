@@ -36,6 +36,11 @@ import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.eureka.registry.rule.DownOrStartingRule;
+import com.netflix.eureka.registry.rule.FirstMatchWinsCompositeRule;
+import com.netflix.eureka.registry.rule.InstanceStatusOverrideRule;
+import com.netflix.eureka.registry.rule.LeaseExistsRule;
+import com.netflix.eureka.registry.rule.OverrideExistsRule;
 import com.netflix.eureka.resources.CurrentRequestVersion;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.Version;
@@ -114,6 +119,8 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     protected final EurekaClient eurekaClient;
     protected volatile PeerEurekaNodes peerEurekaNodes;
 
+    private final InstanceStatusOverrideRule instanceStatusOverrideRule;
+
     private Timer timer = new Timer(
             "ReplicaAwareInstanceRegistry - RenewalThresholdUpdater", true);
 
@@ -127,6 +134,15 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         super(serverConfig, clientConfig, serverCodecs);
         this.eurekaClient = eurekaClient;
         this.numberOfReplicationsLastMin = new MeasuredRate(1000 * 60 * 1);
+        // We first check if the instance is STARTING or DOWN, then we check explicit overrides,
+        // then we check the status of a potentially existing lease.
+        this.instanceStatusOverrideRule = new FirstMatchWinsCompositeRule(new DownOrStartingRule(),
+                new OverrideExistsRule(overriddenInstanceStatusMap), new LeaseExistsRule());
+    }
+
+    @Override
+    protected InstanceStatusOverrideRule getInstanceInfoOverrideRule() {
+        return this.instanceStatusOverrideRule;
     }
 
     @Override
@@ -680,54 +696,5 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             description = "Current registry size", type = DataSourceType.GAUGE)
     public long getLocalRegistrySize() {
         return super.getLocalRegistrySize();
-    }
-
-    @Override
-    protected InstanceInfo.InstanceStatus getOverriddenInstanceStatus(InstanceInfo r,
-                                                                      Lease<InstanceInfo> existingLease,
-                                                                      boolean isReplication) {
-        // ReplicationInstance is DOWN or STARTING - believe that, but when the instance says UP, question that
-        // The client instance sends STARTING or DOWN (because of heartbeat failures), then we accept what
-        // the client says. The same is the case with replica as well.
-        // The OUT_OF_SERVICE from the client or replica needs to be confirmed as well since the service may be
-        // currently in SERVICE
-        if (
-                (!InstanceInfo.InstanceStatus.UP.equals(r.getStatus()))
-                        && (!InstanceInfo.InstanceStatus.OUT_OF_SERVICE.equals(r.getStatus()))) {
-            logger.debug("Trusting the instance status {} from replica or instance for instance {}",
-                    r.getStatus(), r.getId());
-            return r.getStatus();
-        }
-        // Overrides are the status like OUT_OF_SERVICE and UP set by NAC
-        InstanceInfo.InstanceStatus overridden = overriddenInstanceStatusMap.get(r.getId());
-        // If there are instance specific overrides, then they win - otherwise the ASG status
-        if (overridden != null) {
-            logger.debug("The instance specific override for instance {} and the value is {}",
-                    r.getId(), overridden.name());
-            return overridden;
-        }
-
-        // This is for backward compatibility until all applications have ASG
-        // names, otherwise while starting up
-        // the client status may override status replicated from other servers
-        if (!isReplication) {
-            InstanceInfo.InstanceStatus existingStatus = null;
-            if (existingLease != null) {
-                existingStatus = existingLease.getHolder().getStatus();
-            }
-            // Allow server to have its way when the status is UP or OUT_OF_SERVICE
-            if (
-                    (existingStatus != null)
-                            && (InstanceInfo.InstanceStatus.OUT_OF_SERVICE.equals(existingStatus)
-                            || InstanceInfo.InstanceStatus.UP.equals(existingStatus))) {
-                logger.debug("There is already an existing lease with status {}  for instance {}",
-                        existingLease.getHolder().getStatus().name(),
-                        existingLease.getHolder().getId());
-                return existingLease.getHolder().getStatus();
-            }
-        }
-        logger.debug("Returning the default instance status {} for instance {}",
-                r.getStatus(), r.getId());
-        return r.getStatus();
     }
 }

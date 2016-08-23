@@ -84,7 +84,7 @@ public interface EurekaInstanceConfig {
      * Get the <code>Secure port</code> on which the instance should receive
      * traffic.
      *
-     * @return the non-secure port on which the instance should receive traffic.
+     * @return the secure port on which the instance should receive traffic.
      */
     int getSecurePort();
 
