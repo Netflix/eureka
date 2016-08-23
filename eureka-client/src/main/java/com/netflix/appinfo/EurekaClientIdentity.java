@@ -8,14 +8,20 @@ public class EurekaClientIdentity extends AbstractEurekaIdentity {
 
     private final String clientVersion = "1.4";
     private final String id;
+    private final String clientName;
 
     public EurekaClientIdentity(String id) {
+        this(id, DEFAULT_CLIENT_NAME);
+    }
+    
+    public EurekaClientIdentity(String id, String clientName) {
         this.id = id;
+        this.clientName = clientName;
     }
 
     @Override
     public String getName() {
-        return DEFAULT_CLIENT_NAME;
+        return clientName;
     }
 
     @Override

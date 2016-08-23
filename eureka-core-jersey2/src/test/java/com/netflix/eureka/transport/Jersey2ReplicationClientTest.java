@@ -1,4 +1,4 @@
-package com.netflix.eureka.cluster;
+package com.netflix.eureka.transport;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
@@ -13,10 +13,10 @@ import com.netflix.discovery.shared.transport.ClusterSampleData;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfig;
+import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
 import com.netflix.eureka.resources.DefaultServerCodecs;
 import com.netflix.eureka.resources.ServerCodecs;
-import com.netflix.eureka.transport.JerseyReplicationClient;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -40,13 +40,13 @@ import static org.mockserver.model.HttpResponse.response;
  *
  * @author Tomasz Bak
  */
-public class JerseyReplicationClientTest {
+public class Jersey2ReplicationClientTest {
 
     @Rule
     public MockServerRule serverMockRule = new MockServerRule(this);
     private MockServerClient serverMockClient;
 
-    private JerseyReplicationClient replicationClient;
+    private Jersey2ReplicationClient replicationClient;
 
     private final EurekaServerConfig config = new DefaultEurekaServerConfig();
     private final ServerCodecs serverCodecs = new DefaultServerCodecs(config);
@@ -54,7 +54,7 @@ public class JerseyReplicationClientTest {
 
     @Before
     public void setUp() throws Exception {
-        replicationClient = JerseyReplicationClient.createReplicationClient(
+        replicationClient = Jersey2ReplicationClient.createReplicationClient(
                 config, serverCodecs, "http://localhost:" + serverMockRule.getHttpPort() + "/eureka/v2"
         );
     }

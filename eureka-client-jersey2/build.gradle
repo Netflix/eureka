@@ -24,7 +24,8 @@ configurations.all {
 
 dependencies {
     compile project(':eureka-client')
-    compile "org.glassfish.jersey.core:jersey-client:2.8"
+    compile 'org.glassfish.jersey.core:jersey-client:2.23.1'
+    compile 'org.glassfish.jersey.connectors:jersey-apache-connector:2.23.1'
     compile "javax.mail:mail:1.4.7"
 
     testCompile project(':eureka-test-utils')

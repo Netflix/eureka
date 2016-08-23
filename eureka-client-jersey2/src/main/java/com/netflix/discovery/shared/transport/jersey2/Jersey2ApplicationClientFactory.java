@@ -25,9 +25,13 @@ import javax.ws.rs.core.HttpHeaders;
 import java.io.FileInputStream;
 import java.security.KeyStore;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import com.netflix.appinfo.AbstractEurekaIdentity;
+import com.netflix.appinfo.InstanceInfo;
+import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.provider.DiscoveryJerseyProvider;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.transport.EurekaClientFactoryBuilder;
@@ -38,6 +42,8 @@ import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.client.JerseyClient;
 
 import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
+import com.netflix.discovery.shared.transport.jersey.JerseyEurekaHttpClientFactory;
+import com.netflix.discovery.shared.transport.jersey.JerseyEurekaHttpClientFactory.JerseyEurekaHttpClientFactoryBuilder;
 
 /**
  * @author Tomasz Bak
@@ -63,6 +69,31 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
     public void shutdown() {
         jersey2Client.close();
     }
+    
+    public static Jersey2ApplicationClientFactory create(EurekaClientConfig clientConfig,
+            Collection<ClientRequestFilter> additionalFilters,
+            InstanceInfo myInstanceInfo,
+            AbstractEurekaIdentity clientIdentity) {
+        Jersey2ApplicationClientFactoryBuilder clientBuilder = newBuilder();
+        clientBuilder.withAdditionalFilters(additionalFilters);
+        clientBuilder.withMyInstanceInfo(myInstanceInfo);
+        clientBuilder.withUserAgent("Java-EurekaClient");
+        clientBuilder.withClientConfig(clientConfig);
+        clientBuilder.withClientIdentity(clientIdentity);
+        
+        if ("true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
+            clientBuilder.withClientName("DiscoveryClient-HTTPClient-System").withSystemSSLConfiguration();
+        } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
+            clientBuilder.withClientName("Proxy-DiscoveryClient-HTTPClient")
+            .withProxy(
+                    clientConfig.getProxyHost(), Integer.parseInt(clientConfig.getProxyPort()),
+                    clientConfig.getProxyUserName(), clientConfig.getProxyPassword());
+        } else {
+            clientBuilder.withClientName("DiscoveryClient-HTTPClient");
+        }
+        
+        return clientBuilder.build();
+    }
 
     public static Jersey2ApplicationClientFactoryBuilder newBuilder() {
         return new Jersey2ApplicationClientFactoryBuilder();
@@ -71,9 +102,17 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
     public static class Jersey2ApplicationClientFactoryBuilder extends EurekaClientFactoryBuilder<Jersey2ApplicationClientFactory, Jersey2ApplicationClientFactoryBuilder> {
 
         private List<Feature> features = new ArrayList<>();
+        private List<ClientRequestFilter> additionalFilters = new ArrayList<>();
 
         public Jersey2ApplicationClientFactoryBuilder withFeature(Feature feature) {
             features.add(feature);
+            return this;
+        }
+
+        Jersey2ApplicationClientFactoryBuilder withAdditionalFilters(Collection<ClientRequestFilter> additionalFilters) {
+            if (additionalFilters != null) {
+                this.additionalFilters.addAll(additionalFilters);
+            }
             return this;
         }
 
@@ -81,11 +120,15 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
         public Jersey2ApplicationClientFactory build() {
             ClientBuilder clientBuilder = ClientBuilder.newBuilder();
             ClientConfig clientConfig = new ClientConfig();
+            
+            for (ClientRequestFilter filter : additionalFilters) {
+                clientBuilder.register(filter);
+            }
 
             for (Feature feature : features) {
                 clientConfig.register(feature);
             }
-
+            
             addProviders(clientConfig);
             addSSLConfiguration(clientBuilder);
             addProxyConfiguration(clientConfig);

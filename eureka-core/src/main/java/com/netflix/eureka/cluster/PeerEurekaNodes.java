@@ -35,10 +35,10 @@ public class PeerEurekaNodes {
 
     private static final Logger logger = LoggerFactory.getLogger(PeerEurekaNodes.class);
 
-    private final PeerAwareInstanceRegistry registry;
-    private final EurekaServerConfig serverConfig;
-    private final EurekaClientConfig clientConfig;
-    private final ServerCodecs serverCodecs;
+    protected final PeerAwareInstanceRegistry registry;
+    protected final EurekaServerConfig serverConfig;
+    protected final EurekaClientConfig clientConfig;
+    protected final ServerCodecs serverCodecs;
     private final ApplicationInfoManager applicationInfoManager;
 
     private volatile List<PeerEurekaNode> peerEurekaNodes = Collections.emptyList();

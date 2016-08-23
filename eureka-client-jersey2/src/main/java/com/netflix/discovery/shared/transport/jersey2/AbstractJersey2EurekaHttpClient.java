@@ -22,6 +22,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -29,6 +30,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import javax.ws.rs.client.Invocation.Builder;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.HttpHeaders;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
@@ -39,9 +44,6 @@ import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse.EurekaHttpResponseBuilder;
 import com.netflix.discovery.util.StringUtil;
-import org.glassfish.jersey.client.JerseyClient;
-import org.glassfish.jersey.client.JerseyInvocation.Builder;
-import org.glassfish.jersey.client.JerseyWebTarget;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,21 +53,21 @@ import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEureka
 /**
  * @author Tomasz Bak
  */
-public class Jersey2ApplicationClient implements EurekaHttpClient {
+public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClient {
 
-    private static final Logger logger = LoggerFactory.getLogger(Jersey2ApplicationClient.class);
+    private static final Logger logger = LoggerFactory.getLogger(AbstractJersey2EurekaHttpClient.class);
 
-    private final JerseyClient jerseyClient;
-    private final String serviceUrl;
+    protected final EurekaJersey2Client jerseyClient;
+    protected final String serviceUrl;
     private final boolean allowRedirect;
     private final String userName;
     private final String password;
 
-    public Jersey2ApplicationClient(JerseyClient jerseyClient, String serviceUrl, boolean allowRedirect) {
+    protected AbstractJersey2EurekaHttpClient(EurekaJersey2Client jerseyClient, String serviceUrl, boolean allowRedirect) {
         this.jerseyClient = jerseyClient;
         this.serviceUrl = serviceUrl;
         this.allowRedirect = allowRedirect;
-
+        
         // Jersey2 does not read credentials from the URI. We extract it here and enable authentication feature.
         String localUserName = null;
         String localPassword = null;
@@ -89,17 +91,18 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
         String urlPath = "apps/" + info.getAppName();
         Response response = null;
         try {
-            Builder resourceBuilder = jerseyClient.target(serviceUrl).path(urlPath).request();
+            Builder resourceBuilder = jerseyClient.getClient().target(serviceUrl).path(urlPath).request();
             addExtraProperties(resourceBuilder);
             addExtraHeaders(resourceBuilder);
             response = resourceBuilder
+                    .header(HttpHeaders.ACCEPT_ENCODING, "gzip")
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_TYPE)
                     .accept(MediaType.APPLICATION_JSON)
-                    .acceptEncoding("gzip")
-                    .post(Entity.entity(info, MediaType.APPLICATION_JSON_TYPE));
+                    .post(Entity.json(info));
             return anEurekaHttpResponse(response.getStatus()).headers(headersOf(response)).build();
         } finally {
             if (logger.isDebugEnabled()) {
-                logger.debug("Jersey2 HTTP POST {}/{} with instance {}; statusCode={}", serviceUrl, urlPath, info.getId(),
+                logger.debug("Jersey HTTP POST {}/{} with instance {}; statusCode={}", serviceUrl, urlPath, info.getId(),
                         response == null ? "N/A" : response.getStatus());
             }
             if (response != null) {
@@ -113,7 +116,7 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
         String urlPath = "apps/" + appName + '/' + id;
         Response response = null;
         try {
-            Builder resourceBuilder = jerseyClient.target(serviceUrl).path(urlPath).request();
+            Builder resourceBuilder = jerseyClient.getClient().target(serviceUrl).path(urlPath).request();
             addExtraProperties(resourceBuilder);
             addExtraHeaders(resourceBuilder);
             response = resourceBuilder.delete();
@@ -133,7 +136,7 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
         String urlPath = "apps/" + appName + '/' + id;
         Response response = null;
         try {
-            JerseyWebTarget webResource = jerseyClient.target(serviceUrl)
+            WebTarget webResource = jerseyClient.getClient().target(serviceUrl)
                     .path(urlPath)
                     .queryParam("status", info.getStatus().toString())
                     .queryParam("lastDirtyTimestamp", info.getLastDirtyTimestamp().toString());
@@ -144,7 +147,6 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
             addExtraProperties(requestBuilder);
             addExtraHeaders(requestBuilder);
             response = requestBuilder.put(Entity.entity("{}", MediaType.APPLICATION_JSON_TYPE)); // Jersey2 refuses to handle PUT with no body
-            requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE);
             EurekaHttpResponseBuilder<InstanceInfo> eurekaResponseBuilder = anEurekaHttpResponse(response.getStatus(), InstanceInfo.class).headers(headersOf(response));
             if (response.hasEntity()) {
                 eurekaResponseBuilder.entity(response.readEntity(InstanceInfo.class));
@@ -165,14 +167,14 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
         String urlPath = "apps/" + appName + '/' + id + "/status";
         Response response = null;
         try {
-            Builder requestBuilder = jerseyClient.target(serviceUrl)
+            Builder requestBuilder = jerseyClient.getClient().target(serviceUrl)
                     .path(urlPath)
                     .queryParam("value", newStatus.name())
                     .queryParam("lastDirtyTimestamp", info.getLastDirtyTimestamp().toString())
                     .request();
             addExtraProperties(requestBuilder);
             addExtraHeaders(requestBuilder);
-            response = requestBuilder.put(Entity.entity("{}", MediaType.APPLICATION_JSON_TYPE)); // Jersey2 refuses to handle PUT with no body
+            response = requestBuilder.put(Entity.text(""));
             return anEurekaHttpResponse(response.getStatus()).headers(headersOf(response)).build();
         } finally {
             if (logger.isDebugEnabled()) {
@@ -189,7 +191,7 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
         String urlPath = "apps/" + appName + '/' + id + "/status";
         Response response = null;
         try {
-            Builder requestBuilder = jerseyClient.target(serviceUrl)
+            Builder requestBuilder = jerseyClient.getClient().target(serviceUrl)
                     .path(urlPath)
                     .queryParam("lastDirtyTimestamp", info.getLastDirtyTimestamp().toString())
                     .request();
@@ -226,13 +228,13 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
     public EurekaHttpResponse<Applications> getSecureVip(String secureVipAddress, String... regions) {
         return getApplicationsInternal("svips/" + secureVipAddress, regions);
     }
-
+    
     @Override
     public EurekaHttpResponse<Application> getApplication(String appName) {
         String urlPath = "apps/" + appName;
         Response response = null;
         try {
-            Builder requestBuilder = jerseyClient.target(serviceUrl).path(urlPath).request();
+            Builder requestBuilder = jerseyClient.getClient().target(serviceUrl).path(urlPath).request();
             addExtraProperties(requestBuilder);
             addExtraHeaders(requestBuilder);
             response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).get();
@@ -244,7 +246,7 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
             return anEurekaHttpResponse(response.getStatus(), application).headers(headersOf(response)).build();
         } finally {
             if (logger.isDebugEnabled()) {
-                logger.debug("Jersey HTTP GET {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
+                logger.debug("Jersey2 HTTP GET {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
             }
             if (response != null) {
                 response.close();
@@ -254,8 +256,9 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
 
     private EurekaHttpResponse<Applications> getApplicationsInternal(String urlPath, String[] regions) {
         Response response = null;
+        String regionsParamValue = null;
         try {
-            JerseyWebTarget webTarget = jerseyClient.target(serviceUrl).path(urlPath);
+            WebTarget webTarget = jerseyClient.getClient().target(serviceUrl).path(urlPath);
             if (regions != null && regions.length > 0) {
                 webTarget = webTarget.queryParam("regions", StringUtil.join(regions));
             }
@@ -271,7 +274,7 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
             return anEurekaHttpResponse(response.getStatus(), applications).headers(headersOf(response)).build();
         } finally {
             if (logger.isDebugEnabled()) {
-                logger.debug("Jersey HTTP GET {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
+                logger.debug("Jersey2 HTTP GET {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
             }
             if (response != null) {
                 response.close();
@@ -292,7 +295,7 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
     private EurekaHttpResponse<InstanceInfo> getInstanceInternal(String urlPath) {
         Response response = null;
         try {
-            Builder requestBuilder = jerseyClient.target(serviceUrl).path(urlPath).request();
+            Builder requestBuilder = jerseyClient.getClient().target(serviceUrl).path(urlPath).request();
             addExtraProperties(requestBuilder);
             addExtraHeaders(requestBuilder);
             response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).get();
@@ -304,7 +307,7 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
             return anEurekaHttpResponse(response.getStatus(), infoFromPeer).headers(headersOf(response)).build();
         } finally {
             if (logger.isDebugEnabled()) {
-                logger.debug("Jersey HTTP GET {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
+                logger.debug("Jersey2 HTTP GET {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
             }
             if (response != null) {
                 response.close();
@@ -314,6 +317,7 @@ public class Jersey2ApplicationClient implements EurekaHttpClient {
 
     @Override
     public void shutdown() {
+        jerseyClient.destroyResources();
     }
 
     protected void addExtraProperties(Builder webResource) {

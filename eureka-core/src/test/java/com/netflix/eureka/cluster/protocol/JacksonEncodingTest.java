@@ -1,7 +1,8 @@
 package com.netflix.eureka.cluster.protocol;
 
 import com.netflix.discovery.converters.EurekaJacksonCodec;
-import com.netflix.eureka.cluster.ClusterSampleData;
+import com.netflix.discovery.shared.transport.ClusterSampleData;
+
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;

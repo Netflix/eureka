@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.discovery.DefaultEurekaClientConfig;
+import com.netflix.discovery.shared.transport.ClusterSampleData;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.resources.DefaultServerCodecs;

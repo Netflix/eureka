@@ -5,6 +5,7 @@ include 'eureka-client',
         'eureka-server',
         'eureka-server-governator',
         'eureka-core',
+        'eureka-core-jersey2',
         'eureka-resources',
         'eureka-examples',
         'eureka-test-utils'
