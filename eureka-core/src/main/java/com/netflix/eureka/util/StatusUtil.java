@@ -64,13 +64,12 @@ public class StatusUtil {
     private boolean isReplicaAvailable(String url) {
 
         try {
-            String givenHostName = new URI(url).getHost();
             Application app = registry.getApplication(myAppName, false);
             if (app == null) {
                 return false;
             }
             for (InstanceInfo info : app.getInstances()) {
-                if (info.getHostName().equals(givenHostName)) {
+                if (peerEurekaNodes.isInstanceURL(url, info)) {
                     return true;
                 }
             }
