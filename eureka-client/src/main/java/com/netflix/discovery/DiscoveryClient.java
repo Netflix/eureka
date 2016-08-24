@@ -48,6 +48,8 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.ws.rs.core.Response.Status;
 
+import com.netflix.discovery.shared.transport.jersey.Jersey1DiscoveryClientOptionalArgs;
+import com.netflix.discovery.shared.transport.jersey.Jersey1TransportClientFactories;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,13 +77,11 @@ import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
 import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
-import com.netflix.discovery.shared.transport.jersey.TransportClientFactoriesProvider;
 import com.netflix.discovery.util.ThresholdLevelsMetric;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
-import com.sun.jersey.api.client.filter.ClientFilter;
 
 /**
  * The class that is instrumental for interactions with <tt>Eureka Server</tt>.
@@ -218,6 +218,10 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
+    public static class DiscoveryClientOptionalArgs extends Jersey1DiscoveryClientOptionalArgs {
+
+    }
+
     /**
      * Assumes applicationInfoManager is already initialized
      *
@@ -234,12 +238,28 @@ public class DiscoveryClient implements EurekaClient {
      * @deprecated use constructor that takes ApplicationInfoManager instead of InstanceInfo directly
      */
     @Deprecated
+    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
+        this(ApplicationInfoManager.getInstance(), config, args);
+    }
+
+    /**
+     * @deprecated use constructor that takes ApplicationInfoManager instead of InstanceInfo directly
+     */
+    @Deprecated
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args) {
         this(ApplicationInfoManager.getInstance(), config, args);
     }
 
     public DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config) {
         this(applicationInfoManager, config, null);
+    }
+
+    /**
+     * @deprecated use the version that take {@link com.netflix.discovery.AbstractDiscoveryClientOptionalArgs} instead
+     */
+    @Deprecated
+    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
+        this(applicationInfoManager, config, (AbstractDiscoveryClientOptionalArgs) args);
     }
 
     public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args) {
@@ -423,12 +443,15 @@ public class DiscoveryClient implements EurekaClient {
         
         // Ignore the raw types warnings since the client filter interface changed between jersey 1/2
         @SuppressWarnings("rawtypes")
-        TransportClientFactories transportClientFactories = new TransportClientFactoriesProvider(argsTransportClientFactories).get();
+        TransportClientFactories transportClientFactories = argsTransportClientFactories == null
+                ? new Jersey1TransportClientFactories()
+                : argsTransportClientFactories;
+//        TransportClientFactories transportClientFactories = new TransportClientFactoriesProvider(argsTransportClientFactories).get();
         
         // If the transport factory was not supplied with args, assume they are using jersey 1 for passivity
         eurekaTransport.transportClientFactory = providedJerseyClient == null
-                ? transportClientFactories.newTransportClientFactory(clientConfig, (Collection<ClientFilter>) additionalFilters, applicationInfoManager.getInfo())
-                : transportClientFactories.newTransportClientFactory((Collection<ClientFilter>) additionalFilters, providedJerseyClient);
+                ? transportClientFactories.newTransportClientFactory(clientConfig, additionalFilters, applicationInfoManager.getInfo())
+                : transportClientFactories.newTransportClientFactory(additionalFilters, providedJerseyClient);
 
         ApplicationsResolver.ApplicationsSource applicationsSource = new ApplicationsResolver.ApplicationsSource() {
             @Override

@@ -1,2 +1,1 @@
-This is work in progress. DiscoveryClient has hard dependency on Jersey 1.x, and it must be removed first
-before Jersey 2.x transport can be injected.
+Please note that this jersey2 compatible Eureka client (eureka-client-jersey2) is created and maintained by the community.  Netflix does not currently use this library internally.

@@ -8,6 +8,6 @@ import com.sun.jersey.api.client.filter.ClientFilter;
  * 
  * @author Matt Nelson
  */
-public class DiscoveryClientOptionalArgs extends AbstractDiscoveryClientOptionalArgs<ClientFilter> {
+public class Jersey1DiscoveryClientOptionalArgs extends AbstractDiscoveryClientOptionalArgs<ClientFilter> {
 
 }

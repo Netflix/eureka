@@ -16,7 +16,7 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.SimpleEurekaHttpServer;
-import com.netflix.discovery.shared.transport.jersey.DiscoveryClientOptionalArgs;
+import com.netflix.discovery.shared.transport.jersey.Jersey1DiscoveryClientOptionalArgs;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.lifecycle.LifecycleManager;
@@ -84,7 +84,7 @@ public class EurekaClientLifecycleTest {
                             protected void configure() {
                                 bind(EurekaInstanceConfig.class).to(LocalEurekaInstanceConfig.class);
                                 bind(EurekaClientConfig.class).to(LocalEurekaClientConfig.class);
-                                bind(AbstractDiscoveryClientOptionalArgs.class).to(DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
+                                bind(AbstractDiscoveryClientOptionalArgs.class).to(Jersey1DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
                             }
                         }
                 )
@@ -120,7 +120,7 @@ public class EurekaClientLifecycleTest {
                                 bind(EurekaInstanceConfig.class).to(LocalEurekaInstanceConfig.class);
                                 bind(EurekaClientConfig.class).to(BadServerEurekaClientConfig.class);
                                 bind(BackupRegistry.class).toInstance(backupRegistry);
-                                bind(AbstractDiscoveryClientOptionalArgs.class).to(DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
+                                bind(AbstractDiscoveryClientOptionalArgs.class).to(Jersey1DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
                             }
                         }
                 )

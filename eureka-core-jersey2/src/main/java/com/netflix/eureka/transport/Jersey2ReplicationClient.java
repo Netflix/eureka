@@ -41,8 +41,11 @@ public class Jersey2ReplicationClient extends AbstractJersey2EurekaHttpClient im
 
     private static final Logger logger = LoggerFactory.getLogger(Jersey2ReplicationClient.class);
 
-    public Jersey2ReplicationClient(EurekaJersey2Client jerseyClient, String serviceUrl) {
-        super(jerseyClient, serviceUrl, true);
+    private final EurekaJersey2Client eurekaJersey2Client;
+
+    public Jersey2ReplicationClient(EurekaJersey2Client eurekaJersey2Client, String serviceUrl) {
+        super(eurekaJersey2Client.getClient(), serviceUrl);
+        this.eurekaJersey2Client = eurekaJersey2Client;
     }
 
     @Override
@@ -59,7 +62,7 @@ public class Jersey2ReplicationClient extends AbstractJersey2EurekaHttpClient im
         String urlPath = "apps/" + appName + '/' + id;
         Response response = null;
         try {
-            WebTarget webResource = jerseyClient.getClient().target(serviceUrl)
+            WebTarget webResource = jerseyClient.target(serviceUrl)
                     .path(urlPath)
                     .queryParam("status", info.getStatus().toString())
                     .queryParam("lastDirtyTimestamp", info.getLastDirtyTimestamp().toString());
@@ -89,7 +92,7 @@ public class Jersey2ReplicationClient extends AbstractJersey2EurekaHttpClient im
         Response response = null;
         try {
             String urlPath = "asg/" + asgName + "/status";
-            response = jerseyClient.getClient().target(serviceUrl)
+            response = jerseyClient.target(serviceUrl)
                     .path(urlPath)
                     .queryParam("value", newStatus.name())
                     .request()
@@ -107,7 +110,7 @@ public class Jersey2ReplicationClient extends AbstractJersey2EurekaHttpClient im
     public EurekaHttpResponse<ReplicationListResponse> submitBatchUpdates(ReplicationList replicationList) {
         Response response = null;
         try {
-            response = jerseyClient.getClient().target(serviceUrl)
+            response = jerseyClient.target(serviceUrl)
                     .path(PeerEurekaNode.BATCH_URL_PATH)
                     .request(MediaType.APPLICATION_JSON_TYPE)
                     .post(Entity.json(replicationList));
@@ -126,7 +129,7 @@ public class Jersey2ReplicationClient extends AbstractJersey2EurekaHttpClient im
     @Override
     public void shutdown() {
         super.shutdown();
-        jerseyClient.destroyResources();
+        eurekaJersey2Client.destroyResources();
     }
 
     public static Jersey2ReplicationClient createReplicationClient(EurekaServerConfig config, ServerCodecs serverCodecs, String serviceUrl) {

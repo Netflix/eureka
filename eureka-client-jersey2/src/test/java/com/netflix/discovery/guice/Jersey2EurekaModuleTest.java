@@ -14,6 +14,7 @@ import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
+import com.netflix.discovery.shared.transport.jersey2.Jersey2TransportClientFactories;
 import com.netflix.governator.InjectorBuilder;
 import com.netflix.governator.LifecycleInjector;
 import org.junit.After;
@@ -24,7 +25,7 @@ import org.junit.Test;
 /**
  * @author David Liu
  */
-public class EurekaModuleTest {
+public class Jersey2EurekaModuleTest {
 
     private LifecycleInjector injector;
 
@@ -36,7 +37,7 @@ public class EurekaModuleTest {
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default", "http://localhost:8080/eureka/v2");
 
         injector = InjectorBuilder
-                .fromModule(new EurekaModule())
+                .fromModule(new Jersey2EurekaModule())
                 .overrideWith(new AbstractModule() {
                     @Override
                     protected void configure() {
@@ -76,6 +77,9 @@ public class EurekaModuleTest {
         Assert.assertEquals(DiscoveryManager.getInstance().getEurekaInstanceConfig(), eurekaInstanceConfig);
 
         Binding<TransportClientFactories> binding = injector.getExistingBinding(Key.get(TransportClientFactories.class));
-        Assert.assertNull(binding);  // no bindings so defaulting to default of jersey1
+        Assert.assertNotNull(binding);  // has a binding for jersey2
+
+        TransportClientFactories transportClientFactories = injector.getInstance(TransportClientFactories.class);
+        Assert.assertTrue(transportClientFactories instanceof Jersey2TransportClientFactories);
     }
 }
