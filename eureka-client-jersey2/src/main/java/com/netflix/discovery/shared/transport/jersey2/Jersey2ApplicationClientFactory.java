@@ -28,7 +28,6 @@ import javax.ws.rs.core.MultivaluedMap;
 import java.io.FileInputStream;
 import java.security.KeyStore;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -165,10 +164,10 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
 
             MultivaluedMap<String, Object> additionalHeaders = new MultivaluedHashMap<>();
             if (allowRedirect) {
-                additionalHeaders.put(HTTP_X_DISCOVERY_ALLOW_REDIRECT, Arrays.<Object>asList("true"));
+                additionalHeaders.add(HTTP_X_DISCOVERY_ALLOW_REDIRECT, "true");
             }
             if (EurekaAccept.compact == eurekaAccept) {
-                additionalHeaders.put(EurekaAccept.HTTP_X_EUREKA_ACCEPT, Arrays.<Object>asList(eurekaAccept.name()));
+                additionalHeaders.add(EurekaAccept.HTTP_X_EUREKA_ACCEPT, eurekaAccept.name());
             }
 
             return new Jersey2ApplicationClientFactory(jersey2Client, additionalHeaders);
