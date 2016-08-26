@@ -83,6 +83,7 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
         return transportClientFactories;
     }
 
+    @Inject(optional = true)
     public void setTransportClientFactories(TransportClientFactories transportClientFactories) {
         this.transportClientFactories = transportClientFactories;
     }

@@ -29,9 +29,9 @@ import org.junit.After;
 /**
  * @author Tomasz Bak
  */
-public class Jersey2ApplicationClientTest extends EurekaHttpClientCompatibilityTestSuite {
+public class AbstractJersey2EurekaHttpClientTest extends EurekaHttpClientCompatibilityTestSuite {
 
-    private Jersey2ApplicationClient jersey2HttpClient;
+    private AbstractJersey2EurekaHttpClient jersey2HttpClient;
 
     @Override
     @After
@@ -49,7 +49,7 @@ public class Jersey2ApplicationClientTest extends EurekaHttpClientCompatibilityT
             factoryBuilder.withFeature(HttpAuthenticationFeature.basicBuilder().build());
         }
         TransportClientFactory clientFactory = factoryBuilder.build();
-        jersey2HttpClient = (Jersey2ApplicationClient) clientFactory.newClient(new DefaultEndpoint(serviceURI.toString()));
+        jersey2HttpClient = (AbstractJersey2EurekaHttpClient) clientFactory.newClient(new DefaultEndpoint(serviceURI.toString()));
         return jersey2HttpClient;
     }
 }

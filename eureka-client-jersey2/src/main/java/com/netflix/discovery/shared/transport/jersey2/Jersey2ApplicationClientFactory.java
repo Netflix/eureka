@@ -17,11 +17,14 @@
 package com.netflix.discovery.shared.transport.jersey2;
 
 import javax.net.ssl.SSLContext;
+import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
 import java.io.FileInputStream;
 import java.security.KeyStore;
 import java.util.ArrayList;
@@ -30,6 +33,8 @@ import java.util.Collections;
 import java.util.List;
 
 import com.netflix.appinfo.AbstractEurekaIdentity;
+import com.netflix.appinfo.EurekaAccept;
+import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.provider.DiscoveryJerseyProvider;
@@ -40,29 +45,29 @@ import com.netflix.discovery.shared.transport.TransportClientFactory;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.client.JerseyClient;
+import org.glassfish.jersey.message.GZipEncoder;
 
 import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
-import com.netflix.discovery.shared.transport.jersey.JerseyEurekaHttpClientFactory;
-import com.netflix.discovery.shared.transport.jersey.JerseyEurekaHttpClientFactory.JerseyEurekaHttpClientFactoryBuilder;
 
 /**
  * @author Tomasz Bak
  */
 public class Jersey2ApplicationClientFactory implements TransportClientFactory {
 
+    public static final String HTTP_X_DISCOVERY_ALLOW_REDIRECT = "X-Discovery-AllowRedirect";
     private static final String KEY_STORE_TYPE = "JKS";
 
-    private final JerseyClient jersey2Client;
-    private final boolean allowRedirect;
+    private final Client jersey2Client;
+    private final MultivaluedMap<String, Object> additionalHeaders;
 
-    public Jersey2ApplicationClientFactory(JerseyClient jersey2Client, boolean allowRedirect) {
+    public Jersey2ApplicationClientFactory(Client jersey2Client, MultivaluedMap<String, Object> additionalHeaders) {
         this.jersey2Client = jersey2Client;
-        this.allowRedirect = allowRedirect;
+        this.additionalHeaders = additionalHeaders;
     }
 
     @Override
     public EurekaHttpClient newClient(EurekaEndpoint endpoint) {
-        return new Jersey2ApplicationClient(jersey2Client, endpoint.getServiceUrl(), allowRedirect);
+        return new Jersey2ApplicationClient(jersey2Client, endpoint.getServiceUrl(), additionalHeaders);
     }
 
     @Override
@@ -146,9 +151,26 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
             clientConfig.property(ClientProperties.CONNECT_TIMEOUT, connectionTimeout);
 
             clientBuilder.withConfig(clientConfig);
+
+            // Add gzip content encoding support
+            clientBuilder.register(new GZipEncoder());
+
+            // always enable client identity headers
+            String ip = myInstanceInfo == null ? null : myInstanceInfo.getIPAddr();
+            final AbstractEurekaIdentity identity = clientIdentity == null ? new EurekaClientIdentity(ip) : clientIdentity;
+            clientBuilder.register(new Jersey2EurekaIdentityHeaderFilter(identity));
+
             JerseyClient jersey2Client = (JerseyClient) clientBuilder.build();
 
-            return new Jersey2ApplicationClientFactory(jersey2Client, this.allowRedirect);
+            MultivaluedMap<String, Object> additionalHeaders = new MultivaluedHashMap<>();
+            if (allowRedirect) {
+                additionalHeaders.add(HTTP_X_DISCOVERY_ALLOW_REDIRECT, "true");
+            }
+            if (EurekaAccept.compact == eurekaAccept) {
+                additionalHeaders.add(EurekaAccept.HTTP_X_EUREKA_ACCEPT, eurekaAccept.name());
+            }
+
+            return new Jersey2ApplicationClientFactory(jersey2Client, additionalHeaders);
         }
 
         private void addSSLConfiguration(ClientBuilder clientBuilder) {

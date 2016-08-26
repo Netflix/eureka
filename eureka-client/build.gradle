@@ -1,6 +1,11 @@
 apply plugin: 'nebula.test-jar'
 apply plugin: 'provided-base'
 
+configurations.all {
+    // jersey2
+    exclude group: 'org.glassfish.jersey'
+}
+
 dependencies {
     compile "com.netflix.netflix-commons:netflix-eventbus:0.3.0"
     compile 'com.thoughtworks.xstream:xstream:1.4.2'

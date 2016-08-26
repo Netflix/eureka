@@ -2,23 +2,23 @@ package com.netflix.discovery;
 
 import javax.inject.Provider;
 
+import com.netflix.discovery.shared.transport.jersey.Jersey1DiscoveryClientOptionalArgs;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.netflix.appinfo.HealthCheckCallback;
 import com.netflix.appinfo.HealthCheckHandler;
-import com.netflix.discovery.shared.transport.jersey.DiscoveryClientOptionalArgs;
 
 /**
  * @author Matt Nelson
  */
-public class DiscoveryClientOptionalArgsTest {
+public class Jersey1DiscoveryClientOptionalArgsTest {
     
-    private DiscoveryClientOptionalArgs args;
+    private Jersey1DiscoveryClientOptionalArgs args;
     
     @Before
     public void before() {
-        args = new DiscoveryClientOptionalArgs();
+        args = new Jersey1DiscoveryClientOptionalArgs();
     }
     
     @Test
