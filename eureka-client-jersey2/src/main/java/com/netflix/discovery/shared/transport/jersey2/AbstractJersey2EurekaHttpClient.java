@@ -92,7 +92,7 @@ public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClien
             response = resourceBuilder
                     .accept(MediaType.APPLICATION_JSON)
                     .acceptEncoding("gzip")
-                    .post(Entity.entity(info, MediaType.APPLICATION_JSON_TYPE));
+                    .post(Entity.json(info));
             return anEurekaHttpResponse(response.getStatus()).headers(headersOf(response)).build();
         } finally {
             if (logger.isDebugEnabled()) {
@@ -140,8 +140,8 @@ public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClien
             Builder requestBuilder = webResource.request();
             addExtraProperties(requestBuilder);
             addExtraHeaders(requestBuilder);
-            response = requestBuilder.put(Entity.entity("{}", MediaType.APPLICATION_JSON_TYPE)); // Jersey2 refuses to handle PUT with no body
             requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE);
+            response = requestBuilder.put(Entity.entity("{}", MediaType.APPLICATION_JSON_TYPE)); // Jersey2 refuses to handle PUT with no body
             EurekaHttpResponseBuilder<InstanceInfo> eurekaResponseBuilder = anEurekaHttpResponse(response.getStatus(), InstanceInfo.class).headers(headersOf(response));
             if (response.hasEntity()) {
                 eurekaResponseBuilder.entity(response.readEntity(InstanceInfo.class));

@@ -23,14 +23,15 @@ import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
 import java.io.FileInputStream;
 import java.security.KeyStore;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.appinfo.EurekaAccept;
@@ -58,9 +59,9 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
     private static final String KEY_STORE_TYPE = "JKS";
 
     private final Client jersey2Client;
-    private final Map<String, String> additionalHeaders;
+    private final MultivaluedMap<String, Object> additionalHeaders;
 
-    public Jersey2ApplicationClientFactory(Client jersey2Client, Map<String, String> additionalHeaders) {
+    public Jersey2ApplicationClientFactory(Client jersey2Client, MultivaluedMap<String, Object> additionalHeaders) {
         this.jersey2Client = jersey2Client;
         this.additionalHeaders = additionalHeaders;
     }
@@ -162,12 +163,12 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
 
             JerseyClient jersey2Client = (JerseyClient) clientBuilder.build();
 
-            Map<String, String> additionalHeaders = new HashMap<>();
+            MultivaluedMap<String, Object> additionalHeaders = new MultivaluedHashMap<>();
             if (allowRedirect) {
-                additionalHeaders.put(HTTP_X_DISCOVERY_ALLOW_REDIRECT, "true");
+                additionalHeaders.put(HTTP_X_DISCOVERY_ALLOW_REDIRECT, Arrays.<Object>asList("true"));
             }
             if (EurekaAccept.compact == eurekaAccept) {
-                additionalHeaders.put(EurekaAccept.HTTP_X_EUREKA_ACCEPT, eurekaAccept.name());
+                additionalHeaders.put(EurekaAccept.HTTP_X_EUREKA_ACCEPT, Arrays.<Object>asList(eurekaAccept.name()));
             }
 
             return new Jersey2ApplicationClientFactory(jersey2Client, additionalHeaders);
