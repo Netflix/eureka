@@ -1,9 +1,9 @@
 package com.netflix.appinfo.providers;
 
-import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
 
+import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.netflix.appinfo.CloudInstanceConfig;
 import com.netflix.appinfo.DataCenterInfo;
@@ -34,6 +34,9 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
 
     private InstanceInfo instanceInfo;
 
+    @Inject(optional = true)
+    private VipAddressResolver vipAddressResolver = null;
+
     @Inject
     public EurekaConfigBasedInstanceInfoProvider(EurekaInstanceConfig config) {
         this.config = config;
@@ -48,7 +51,9 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
                     .setDurationInSecs(config.getLeaseExpirationDurationInSeconds());
 
             // Builder the instance information to be registered with eureka server
-            InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
+            InstanceInfo.Builder builder = InstanceInfo.Builder
+                    .newBuilder()
+                    .withVipAddressResolver(vipAddressResolver);
 
             // set the appropriate id for the InstanceInfo, falling back to datacenter Id if applicable, else hostname
             String instanceId = config.getInstanceId();

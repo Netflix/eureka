@@ -25,12 +25,12 @@ import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.providers.CloudInstanceConfigProvider;
-import com.netflix.config.DynamicBooleanProperty;
-import com.netflix.config.DynamicPropertyFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
+
+import static com.netflix.appinfo.PropertyBasedInstanceConfigConstants.*;
 
 /**
  * An {@link InstanceInfo} configuration for AWS cloud deployments.
@@ -50,38 +50,44 @@ import javax.inject.Singleton;
 @ProvidedBy(CloudInstanceConfigProvider.class)
 public class CloudInstanceConfig extends PropertiesInstanceConfig {
     private static final Logger logger = LoggerFactory.getLogger(CloudInstanceConfig.class);
-    private static final DynamicPropertyFactory INSTANCE = DynamicPropertyFactory.getInstance();
 
     private static final String[] DEFAULT_AWS_ADDRESS_RESOLUTION_ORDER = new String[] {
             MetaDataKey.publicHostname.name(),
             MetaDataKey.localIpv4.name()
     };
 
-    private DynamicBooleanProperty propValidateInstanceId;
+    private final AmazonInfoConfig amazonInfoConfig;
+
     /* Visible for testing */ volatile AmazonInfo info;
 
-    /* For testing */ CloudInstanceConfig(AmazonInfo info) {
-        this.info = info;
-    }
-
     public CloudInstanceConfig() {
-        initCloudInstanceConfig(namespace);
+        this(Values.DEFAULT_NAMESPACE);
     }
 
     public CloudInstanceConfig(String namespace) {
-        super(namespace);
-        initCloudInstanceConfig(namespace);
+        this(namespace, new Archaius1AmazonInfoConfig(namespace), true);
     }
 
-    private void initCloudInstanceConfig(String namespace) {
-        propValidateInstanceId = INSTANCE.getBooleanProperty(namespace + "validateInstanceId", true);
-        info = initDataCenterInfo();
+    /* visible for testing */ CloudInstanceConfig(AmazonInfo info) {
+        this(Values.DEFAULT_NAMESPACE, new Archaius1AmazonInfoConfig(Values.DEFAULT_NAMESPACE), false);
+        this.info = info;
+    }
+
+    /* visible for testing */ CloudInstanceConfig(String namespace, AmazonInfoConfig amazonInfoConfig, boolean eagerInit) {
+        super(namespace);
+        this.amazonInfoConfig = amazonInfoConfig;
+        if (eagerInit) {
+            this.info = initDataCenterInfo();
+        }
     }
 
     private AmazonInfo initDataCenterInfo() {
         AmazonInfo info;
         try {
-            info = AmazonInfo.Builder.newBuilder().autoBuild(namespace);
+            info = AmazonInfo.Builder
+                    .newBuilder()
+                    .withAmazonInfoConfig(amazonInfoConfig)
+                    .autoBuild(namespace);
             logger.info("Datacenter is: " + Name.Amazon);
         } catch (Throwable e) {
             logger.error("Cannot initialize amazon info :", e);
@@ -89,7 +95,7 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
         }
         // Instance id being null means we could not get the amazon metadata
         if (info.get(MetaDataKey.instanceId) == null) {
-            if (propValidateInstanceId.get()) {
+            if (shouldValidateInstanceId()) {
                 throw new RuntimeException(
                         "Your datacenter is defined as cloud but we are not able to get the amazon metadata to "
                                 + "register. \nSet the property " + namespace + "validateInstanceId to false to "
@@ -111,6 +117,10 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
             info.getMetadata().put(MetaDataKey.publicHostname.getName(), (info.get(MetaDataKey.localIpv4)));
         }
         return info;
+    }
+
+    public boolean shouldValidateInstanceId() {
+        return configInstance.getBooleanProperty(namespace + "validateInstanceId", true).get();
     }
 
     /**
@@ -172,7 +182,11 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
      */
     public synchronized void refreshAmazonInfo() {
         try {
-            AmazonInfo newInfo = AmazonInfo.Builder.newBuilder().autoBuild(namespace);
+            AmazonInfo newInfo = AmazonInfo.Builder
+                    .newBuilder()
+                    .withAmazonInfoConfig(amazonInfoConfig)
+                    .autoBuild(namespace);
+
             if (shouldUpdate(newInfo, info)) {
                 // the datacenter info has changed, re-sync it
                 logger.info("The AmazonInfo changed from : {} => {}", info, newInfo);

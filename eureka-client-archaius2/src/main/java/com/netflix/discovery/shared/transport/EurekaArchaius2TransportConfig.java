@@ -2,16 +2,19 @@ package com.netflix.discovery.shared.transport;
 
 import com.google.inject.Inject;
 import com.netflix.archaius.api.Config;
-import com.netflix.archaius.api.annotations.Configuration;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
+
+import javax.inject.Singleton;
+
+import static com.netflix.discovery.shared.transport.PropertyBasedTransportConfigConstants.*;
 
 /**
  * @author David Liu
  */
-@Configuration(prefix = "eureka.transport")
-@ConfigurationSource("eureka-client")
+@Singleton
+@ConfigurationSource(Values.DEFAULT_CONFIG_FILE_NAME)
 public class EurekaArchaius2TransportConfig implements EurekaTransportConfig {
-    private static final String DEFAULT_NAMESPACE = "eureka.transport";
+    private static final String DEFAULT_NAMESPACE = "eureka." + TRANSPORT_CONFIG_PREFIX;
 
     private final Config config;
 
@@ -26,56 +29,56 @@ public class EurekaArchaius2TransportConfig implements EurekaTransportConfig {
 
     @Override
     public int getSessionedClientReconnectIntervalSeconds() {
-        return config.getInteger("sessionedClientReconnectIntervalSeconds", 20*60);
+        return config.getInteger(SESSION_RECONNECT_INTERVAL_KEY, Values.SESSION_RECONNECT_INTERVAL);
     }
 
     @Override
     public double getRetryableClientQuarantineRefreshPercentage() {
-        return config.getDouble("retryableClientQuarantineRefreshPercentage", 0.66);
+        return config.getDouble(QUARANTINE_REFRESH_PERCENTAGE_KEY, Values.QUARANTINE_REFRESH_PERCENTAGE);
     }
 
     @Override
     public int getApplicationsResolverDataStalenessThresholdSeconds() {
-        return config.getInteger("applicationsResolverDataStalenessThresholdSeconds", 5*60);
+        return config.getInteger(DATA_STALENESS_THRESHOLD_KEY, Values.DATA_STALENESS_TRHESHOLD);
     }
 
     @Override
     public boolean applicationsResolverUseIp() {
-        return config.getBoolean("applicationsResolverUseIp", false);
+        return config.getBoolean(APPLICATION_RESOLVER_USE_IP_KEY, false);
     }
 
     @Override
     public int getAsyncResolverRefreshIntervalMs() {
-        return config.getInteger("asyncResolverRefreshIntervalMs", 5 * 60 * 1000);
+        return config.getInteger(ASYNC_RESOLVER_REFRESH_INTERVAL_KEY, Values.ASYNC_RESOLVER_REFRESH_INTERVAL);
     }
 
     @Override
     public int getAsyncResolverWarmUpTimeoutMs() {
-        return config.getInteger("asyncResolverWarmupTimeoutMs", 5000);
+        return config.getInteger(ASYNC_RESOLVER_WARMUP_TIMEOUT_KEY, Values.ASYNC_RESOLVER_WARMUP_TIMEOUT);
     }
 
     @Override
     public int getAsyncExecutorThreadPoolSize() {
-        return config.getInteger("asyncExecutorThreadPoolSize", 5);
+        return config.getInteger(ASYNC_EXECUTOR_THREADPOOL_SIZE_KEY, Values.ASYNC_EXECUTOR_THREADPOOL_SIZE);
     }
 
     @Override
     public String getWriteClusterVip() {
-        return config.getString("writeClusterVip", null);
+        return config.getString(WRITE_CLUSTER_VIP_KEY, null);
     }
 
     @Override
     public String getReadClusterVip() {
-        return config.getString("readClusterVip", null);
+        return config.getString(READ_CLUSTER_VIP_KEY, null);
     }
 
     @Override
     public String getBootstrapResolverStrategy() {
-        return config.getString("bootstrapResolverStrategy", null);
+        return config.getString(BOOTSTRAP_RESOLVER_STRATEGY_KEY, null);
     }
 
     @Override
     public boolean useBootstrapResolverForQuery() {
-        return config.getBoolean("useBootstrapResolverForQuery", true);
+        return config.getBoolean(USE_BOOTSTRAP_RESOLVER_FOR_QUERY, true);
     }
 }

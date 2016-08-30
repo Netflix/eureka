@@ -143,8 +143,9 @@ public final class EurekaHttpClients {
 
         List<AwsEndpoint> initialValue = delegateResolver.getClusterEndpoints();
         if (initialValue.isEmpty()) {
-            String msg = "Initial resolution of Eureka endpoints failed. Check ConfigClusterResolver logs for more info";
+            String msg = "Initial resolution of Eureka server endpoints failed. Check ConfigClusterResolver logs for more info";
             logger.error(msg);
+//            throw new RuntimeException(msg);
         }
 
         return new AsyncResolver<>(

@@ -1,4 +1,4 @@
-package com.netflix.discovery;
+package com.netflix.appinfo;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -7,25 +7,26 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import com.google.common.collect.Sets;
-import com.netflix.appinfo.AbstractInstanceConfig;
-import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
+import com.netflix.discovery.DiscoveryManager;
+
+import static com.netflix.appinfo.PropertyBasedInstanceConfigConstants.*;
 
 @Singleton
-@ConfigurationSource("eureka-client")
+@ConfigurationSource(Values.DEFAULT_CONFIG_FILE_NAME)
 public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
-    private static final String UNKNOWN_APPLICATION = "unknown";
+
+    protected String namespace;
 
     private Config config;
-    private String namespace;
     private final DataCenterInfo dcInfo;
 
     private final String defaultAppGroup;
     
     @Inject
     public EurekaArchaius2InstanceConfig(Config config) {
-        this(config, DEFAULT_NAMESPACE);
+        this(config, Values.DEFAULT_NAMESPACE);
     }
     
     public EurekaArchaius2InstanceConfig(Config config, String namespace) {
@@ -38,88 +39,90 @@ public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
     }
     
     public EurekaArchaius2InstanceConfig(Config config, String namespace, DataCenterInfo dcInfo) {
-        this.defaultAppGroup = config.getString("NETFLIX_APP_GROUP", null);
+        this.defaultAppGroup = config.getString(FALLBACK_APP_GROUP_KEY, Values.UNKNOWN_APPLICATION);
         
         this.namespace = namespace;
         this.config = config.getPrefixedView(namespace);
         this.dcInfo = dcInfo;
-        
-        // TODO: archaius.deployment.environment=${env}?
+
+        // TODO: Remove this when DiscoveryManager is finally no longer used
+        DiscoveryManager.getInstance().setEurekaInstanceConfig(this);
     }
 
     @Override
     public String getInstanceId() {
-        return config.getString("instanceId", null);
+        String result = config.getString(INSTANCE_ID_KEY, null);
+        return result == null ? null : result.trim();
     }
 
     @Override
     public String getAppname() {
-        return config.getString("name", UNKNOWN_APPLICATION);
+        return config.getString(APP_NAME_KEY, Values.UNKNOWN_APPLICATION).trim();
     }
 
     @Override
     public String getAppGroupName() {
-        return config.getString("appGroup", defaultAppGroup);
+        return config.getString(APP_GROUP_KEY, defaultAppGroup).trim();
     }
 
     @Override
     public boolean isInstanceEnabledOnit() {
-        return config.getBoolean("traffic.enabled", super.isInstanceEnabledOnit());
+        return config.getBoolean(TRAFFIC_ENABLED_ON_INIT_KEY, super.isInstanceEnabledOnit());
     }
 
     @Override
     public int getNonSecurePort() {
-        return config.getInteger("port", super.getNonSecurePort());
+        return config.getInteger(PORT_KEY, super.getNonSecurePort());
     }
 
     @Override
     public int getSecurePort() {
-        return config.getInteger("securePort", super.getSecurePort());
+        return config.getInteger(SECURE_PORT_KEY, super.getSecurePort());
     }
 
     @Override
     public boolean isNonSecurePortEnabled() {
-        return config.getBoolean("port.enabled", super.isNonSecurePortEnabled());
+        return config.getBoolean(PORT_ENABLED_KEY, super.isNonSecurePortEnabled());
     }
 
     @Override
     public boolean getSecurePortEnabled() {
-        return config.getBoolean("securePort.enabled", super.getSecurePortEnabled());
+        return config.getBoolean(SECURE_PORT_ENABLED_KEY, super.getSecurePortEnabled());
     }
 
     @Override
     public int getLeaseRenewalIntervalInSeconds() {
-        return config.getInteger("lease.renewalInterval", super.getLeaseRenewalIntervalInSeconds());
+        return config.getInteger(LEASE_RENEWAL_INTERVAL_KEY, super.getLeaseRenewalIntervalInSeconds());
     }
 
     @Override
     public int getLeaseExpirationDurationInSeconds() {
-        return config.getInteger("lease.duration", super.getLeaseExpirationDurationInSeconds());
+        return config.getInteger(LEASE_EXPIRATION_DURATION_KEY, super.getLeaseExpirationDurationInSeconds());
     }
 
     @Override
     public String getVirtualHostName() {
         return this.isNonSecurePortEnabled()
-            ? config.getString("vipAddress", super.getVirtualHostName())
+            ? config.getString(VIRTUAL_HOSTNAME_KEY, super.getVirtualHostName())
             : null;
     }
 
     @Override
     public String getSecureVirtualHostName() {
         return this.getSecurePortEnabled()
-            ? config.getString("secureVipAddress", null)
+            ? config.getString(SECURE_VIRTUAL_HOSTNAME_KEY, super.getSecureVirtualHostName())
             : null;
     }
 
     @Override
     public String getASGName() {
-        return config.getString("asgName", super.getASGName());
+        return config.getString(ASG_NAME_KEY, super.getASGName());
     }
 
     @Override
     public Map<String, String> getMetadataMap() {
         Map<String, String> meta = new HashMap<>(); 
-        Config config = this.config.getPrefixedView("metadata");
+        Config config = this.config.getPrefixedView(INSTANCE_METADATA_PREFIX);
         for (String key : Sets.newHashSet(config.getKeys())) {
             meta.put(key, config.getString(key));
         }
@@ -133,42 +136,42 @@ public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
 
     @Override
     public String getStatusPageUrlPath() {
-        return config.getString("statusPageUrlPath", "/Status");
+        return config.getString(STATUS_PAGE_URL_PATH_KEY, Values.DEFAULT_STATUSPAGE_URLPATH);
     }
 
     @Override
     public String getStatusPageUrl() {
-        return config.getString("statusPageUrl", null);
+        return config.getString(STATUS_PAGE_URL_KEY, null);
     }
 
     @Override
     public String getHomePageUrlPath() {
-        return config.getString("homePageUrlPath", "/");
+        return config.getString(HOME_PAGE_URL_PATH_KEY, Values.DEFAULT_HOMEPAGE_URLPATH);
     }
 
     @Override
     public String getHomePageUrl() {
-        return config.getString("homePageUrl", null);
+        return config.getString(HOME_PAGE_URL_KEY, null);
     }
 
     @Override
     public String getHealthCheckUrlPath() {
-        return config.getString("healthCheckUrlPath", "/healthcheck");
+        return config.getString(HEALTHCHECK_URL_PATH_KEY, Values.DEFAULT_HEALTHCHECK_URLPATH);
     }
 
     @Override
     public String getHealthCheckUrl() {
-        return config.getString("healthCheckUr", null);
+        return config.getString(HEALTHCHECK_URL_KEY, null);
     }
 
     @Override
     public String getSecureHealthCheckUrl() {
-        return config.getString("secureHealthCheckUrl", null);
+        return config.getString(SECURE_HEALTHCHECK_URL_KEY, null);
     }
 
     @Override
     public String[] getDefaultAddressResolutionOrder() {
-        String result = config.getString(namespace + "defaultAddressResolutionOrder", null);
+        String result = config.getString(DEFAULT_ADDRESS_RESOLUTION_ORDER_KEY, null);
         return result == null ? new String[0] : result.split(",");
     }
 

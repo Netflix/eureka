@@ -27,16 +27,15 @@ if (JavaVersion.current().isJava8Compatible()) {
 allprojects {
     ext {
         githubProjectName = 'eureka'
-        awsVersion = '1.9.3'
+        awsVersion = '1.11.9'
         servletVersion = '2.5'
-        jerseyVersion = '1.19'
+        jerseyVersion = '1.19.1'
         jettisonVersion = '1.3.7'
         apacheHttpClientVersion = '4.3.4'
         guiceVersion = '4.0'
         servoVersion = '0.10.1'
         governatorVersion = '1.12.10'
         archaiusVersion = '0.7.3'
-        archaius2Version = '2.0.0'
         blitzVersion = '1.34'
         mockitoVersion = '1.10.19'
         junit_version = '4.11'
@@ -44,7 +43,6 @@ allprojects {
         jetty_version = '7.2.0.v20101020'
         jacksonVersion = '2.5.4'
         woodstoxVersion = '4.4.1'
-        karyon3Version = '3.0.1-rc.23'
     }
 }
 

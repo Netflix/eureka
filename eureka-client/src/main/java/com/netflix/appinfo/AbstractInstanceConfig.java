@@ -33,10 +33,13 @@ import org.slf4j.LoggerFactory;
  *
  */
 public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
-    private static final Logger logger = LoggerFactory
-            .getLogger(AbstractInstanceConfig.class);
+    private static final Logger logger = LoggerFactory.getLogger(AbstractInstanceConfig.class);
 
-    public static final String DEFAULT_NAMESPACE = "eureka";
+    /**
+     * @deprecated 2016-08-29 use {@link com.netflix.appinfo.PropertyBasedInstanceConfigConstants.Values#DEFAULT_NAMESPACE}
+     */
+    @Deprecated
+    public static final String DEFAULT_NAMESPACE = PropertyBasedInstanceConfigConstants.Values.DEFAULT_NAMESPACE;
     
     private static final int LEASE_EXPIRATION_DURATION_SECONDS = 90;
     private static final int LEASE_RENEWAL_INTERVAL_SECONDS = 30;
