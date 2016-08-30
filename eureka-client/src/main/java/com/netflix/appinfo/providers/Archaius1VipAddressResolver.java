@@ -15,11 +15,11 @@ public class Archaius1VipAddressResolver implements VipAddressResolver {
 
     @Override
     public String resolveDeploymentContextBasedVipAddresses(String vipAddressMacro) {
-        String result = vipAddressMacro;
-
         if (vipAddressMacro == null) {
             return null;
         }
+
+        String result = vipAddressMacro;
 
         Matcher matcher = VIP_ATTRIBUTES_PATTERN.matcher(result);
         while (matcher.find()) {

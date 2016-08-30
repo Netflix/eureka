@@ -50,10 +50,12 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
                     .setRenewalIntervalInSecs(config.getLeaseRenewalIntervalInSeconds())
                     .setDurationInSecs(config.getLeaseExpirationDurationInSeconds());
 
+            if (vipAddressResolver == null) {
+                vipAddressResolver = new Archaius1VipAddressResolver();
+            }
+
             // Builder the instance information to be registered with eureka server
-            InstanceInfo.Builder builder = InstanceInfo.Builder
-                    .newBuilder()
-                    .withVipAddressResolver(vipAddressResolver);
+            InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder(vipAddressResolver);
 
             // set the appropriate id for the InstanceInfo, falling back to datacenter Id if applicable, else hostname
             String instanceId = config.getInstanceId();

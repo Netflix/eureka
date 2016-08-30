@@ -6,7 +6,6 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import com.netflix.discovery.DiscoveryManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,9 +80,6 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
             amazonInfo.getMetadata().put(MetaDataKey.publicHostname.getName(),
                     (amazonInfo.get(MetaDataKey.localIpv4)));
         }
-
-        // TODO: Remove this when DiscoveryManager is finally no longer used
-        DiscoveryManager.getInstance().setEurekaInstanceConfig(this);
     }
     
     @Override

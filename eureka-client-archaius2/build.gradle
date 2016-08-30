@@ -3,10 +3,7 @@ apply plugin: 'nebula.test-jar'
 def archaius2Version = '2.1.4'
 
 dependencies {
-    compile (project(':eureka-client')) {
-        // archaius1
-        exclude group: 'com.netflix.archaius', module: 'archaius-core'
-    }
+    compile project(':eureka-client')
 
     // archaius2
     compile "com.netflix.archaius:archaius2-core:${archaius2Version}"

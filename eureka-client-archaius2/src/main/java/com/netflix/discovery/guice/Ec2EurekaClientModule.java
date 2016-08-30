@@ -29,23 +29,12 @@ import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 public final class Ec2EurekaClientModule extends AbstractModule {
     @Override
     protected void configure() {
-        // require binding for Config from archaius2
-        requireBinding(Config.class);
+        install(new InternalEurekaClientModule());
 
-        bind(ApplicationInfoManager.class).asEagerSingleton();
-
-        // Bindings for eureka
         bind(AmazonInfoConfig.class).to(Archaius2AmazonInfoConfig.class);
         bind(EurekaInstanceConfig.class).to(Ec2EurekaArchaius2InstanceConfig.class);
         bind(AbstractInstanceConfig.class).to(Ec2EurekaArchaius2InstanceConfig.class);
         bind(EurekaArchaius2InstanceConfig.class).to(Ec2EurekaArchaius2InstanceConfig.class);
-
-        bind(EurekaTransportConfig.class).to(EurekaArchaius2TransportConfig.class);
-        bind(EurekaClientConfig.class).to(EurekaArchaius2ClientConfig.class);
-
-        bind(VipAddressResolver.class).to(Archaius2VipAddressResolver.class);
-        bind(InstanceInfo.class).toProvider(EurekaConfigBasedInstanceInfoProvider.class);
-        bind(EurekaClient.class).to(DiscoveryClient.class);
     }
 
     @Override

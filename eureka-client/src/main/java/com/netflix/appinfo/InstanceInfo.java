@@ -364,25 +364,25 @@ public class InstanceInfo {
         private InstanceInfo result;
 
         @XStreamOmitField
-        private VipAddressResolver vipAddressResolver;
+        private final VipAddressResolver vipAddressResolver;
 
         private String namespace;
 
-        private Builder() {
-            result = new InstanceInfo();
+        private Builder(InstanceInfo result, VipAddressResolver vipAddressResolver) {
+            this.vipAddressResolver = vipAddressResolver;
+            this.result = result;
         }
 
         public Builder(InstanceInfo instanceInfo) {
-            result = instanceInfo;
+            this(instanceInfo, LazyHolder.DEFAULT_VIP_ADDRESS_RESOLVER);
         }
 
         public static Builder newBuilder() {
-            return new Builder();
+            return new Builder(new InstanceInfo(), LazyHolder.DEFAULT_VIP_ADDRESS_RESOLVER);
         }
 
-        public Builder withVipAddressResolver(VipAddressResolver vipAddressResolver) {
-            this.vipAddressResolver = vipAddressResolver;
-            return this;
+        public static Builder newBuilder(VipAddressResolver vipAddressResolver) {
+            return new Builder(new InstanceInfo(), vipAddressResolver);
         }
 
         public Builder setInstanceId(String instanceId) {
@@ -676,14 +676,8 @@ public class InstanceInfo {
          */
         public Builder setVIPAddress(final String vipAddress) {
             result.vipAddressUnresolved = StringCache.intern(vipAddress);
-
-            if (vipAddressResolver == null) {
-                result.vipAddress = StringCache.intern(
-                        LazyHolder.DEFAULT_VIP_ADDRESS_RESOLVER.resolveDeploymentContextBasedVipAddresses(vipAddress));
-            } else {
-                result.vipAddress = StringCache.intern(
-                        vipAddressResolver.resolveDeploymentContextBasedVipAddresses(vipAddress));
-            }
+            result.vipAddress = StringCache.intern(
+                    vipAddressResolver.resolveDeploymentContextBasedVipAddresses(vipAddress));
             return this;
         }
 
@@ -706,14 +700,8 @@ public class InstanceInfo {
          */
         public Builder setSecureVIPAddress(final String secureVIPAddress) {
             result.secureVipAddressUnresolved = StringCache.intern(secureVIPAddress);
-
-            if (vipAddressResolver == null) {
-                result.secureVipAddress = StringCache.intern(
-                        LazyHolder.DEFAULT_VIP_ADDRESS_RESOLVER.resolveDeploymentContextBasedVipAddresses(secureVIPAddress));
-            } else {
-                result.secureVipAddress = StringCache.intern(
-                        vipAddressResolver.resolveDeploymentContextBasedVipAddresses(secureVIPAddress));
-            }
+            result.secureVipAddress = StringCache.intern(
+                    vipAddressResolver.resolveDeploymentContextBasedVipAddresses(secureVIPAddress));
             return this;
         }
 

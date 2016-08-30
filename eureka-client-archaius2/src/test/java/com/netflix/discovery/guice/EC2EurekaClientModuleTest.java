@@ -39,13 +39,14 @@ public class EC2EurekaClientModuleTest {
                                                 .put("eureka.shouldFetchRegistry", "false")
                                                 .put("eureka.registration.enabled", "false")
                                                 .put("eureka.serviceUrl.default", "http://localhost:8080/eureka/v2")
-                                                .put("eureka.validateInstanceId", "false")
                                                 .put("eureka.vipAddress", "some-thing")
+                                                .put("eureka.validateInstanceId", "false")
+                                                .put("eureka.mt.num_retries", 0)
+                                                .put("eureka.mt.connect_timeout", 1000)
                                                 .build()
                                 );
                             }
                         },
-
                         new Ec2EurekaClientModule()
                 )
                 .createInjector();

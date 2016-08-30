@@ -9,7 +9,6 @@ import javax.inject.Singleton;
 import com.google.common.collect.Sets;
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
-import com.netflix.discovery.DiscoveryManager;
 
 import static com.netflix.appinfo.PropertyBasedInstanceConfigConstants.*;
 
@@ -44,9 +43,6 @@ public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
         this.namespace = namespace;
         this.config = config.getPrefixedView(namespace);
         this.dcInfo = dcInfo;
-
-        // TODO: Remove this when DiscoveryManager is finally no longer used
-        DiscoveryManager.getInstance().setEurekaInstanceConfig(this);
     }
 
     @Override
