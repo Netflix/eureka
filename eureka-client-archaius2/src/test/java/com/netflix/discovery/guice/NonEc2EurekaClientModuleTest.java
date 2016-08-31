@@ -1,10 +1,13 @@
 package com.netflix.discovery.guice;
 
+import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.ApplicationInfoManager;
+import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.Ec2EurekaArchaius2InstanceConfig;
 import com.netflix.appinfo.EurekaArchaius2InstanceConfig;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.MyDataCenterInfo;
 import com.netflix.appinfo.providers.Archaius2VipAddressResolver;
 import com.netflix.appinfo.providers.VipAddressResolver;
 import com.netflix.archaius.config.MapConfig;
@@ -23,7 +26,7 @@ import org.junit.Test;
 /**
  * @author David Liu
  */
-public class LocalDevEurekaClientModuleTest {
+public class NonEc2EurekaClientModuleTest {
 
     private LifecycleInjector injector;
 
@@ -40,12 +43,12 @@ public class LocalDevEurekaClientModuleTest {
                                                 .put("eureka.shouldFetchRegistry", "false")
                                                 .put("eureka.registration.enabled", "false")
                                                 .put("eureka.serviceUrl.default", "http://localhost:8080/eureka/v2")
+                                                .put("eureka.shouldInitAsEc2", "false")
                                                 .build()
                                 );
                             }
                         },
-
-                        new LocalDevEurekaClientModule()
+                        new EurekaClientModule()
                 )
                 .createInjector();
     }
@@ -79,6 +82,9 @@ public class LocalDevEurekaClientModuleTest {
         EurekaInstanceConfig eurekaInstanceConfig = injector.getInstance(EurekaInstanceConfig.class);
         Assert.assertEquals(DiscoveryManager.getInstance().getEurekaInstanceConfig(), eurekaInstanceConfig);
         Assert.assertTrue(eurekaInstanceConfig instanceof EurekaArchaius2InstanceConfig);
-        Assert.assertFalse(eurekaInstanceConfig instanceof Ec2EurekaArchaius2InstanceConfig);
+
+        ApplicationInfoManager applicationInfoManager = injector.getInstance(ApplicationInfoManager.class);
+        InstanceInfo myInfo = applicationInfoManager.getInfo();
+        Assert.assertEquals(DataCenterInfo.Name.MyOwn, myInfo.getDataCenterInfo().getName());
     }
 }

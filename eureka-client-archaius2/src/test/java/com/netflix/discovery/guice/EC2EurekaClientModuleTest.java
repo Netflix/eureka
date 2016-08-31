@@ -1,6 +1,8 @@
 package com.netflix.discovery.guice;
 
+import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.ApplicationInfoManager;
+import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.Ec2EurekaArchaius2InstanceConfig;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
@@ -22,7 +24,7 @@ import org.junit.Test;
 /**
  * @author David Liu
  */
-public class EC2EurekaClientModuleTest {
+public class Ec2EurekaClientModuleTest {
 
     private LifecycleInjector injector;
 
@@ -35,19 +37,25 @@ public class EC2EurekaClientModuleTest {
                             protected void configureArchaius() {
                                 bindApplicationConfigurationOverride().toInstance(
                                         MapConfig.builder()
-                                                .put("eureka.region", "default")
-                                                .put("eureka.shouldFetchRegistry", "false")
-                                                .put("eureka.registration.enabled", "false")
-                                                .put("eureka.serviceUrl.default", "http://localhost:8080/eureka/v2")
-                                                .put("eureka.vipAddress", "some-thing")
-                                                .put("eureka.validateInstanceId", "false")
-                                                .put("eureka.mt.num_retries", 0)
-                                                .put("eureka.mt.connect_timeout", 1000)
+                                                .put("eureka.new.region", "default")
+                                                .put("eureka.new.shouldFetchRegistry", "false")
+                                                .put("eureka.new.registration.enabled", "false")
+                                                .put("eureka.new.serviceUrl.default", "http://localhost:8080/eureka/v2")
+                                                .put("eureka.new.vipAddress", "some-thing")
+                                                .put("eureka.new.validateInstanceId", "false")
+                                                .put("eureka.new.mt.num_retries", 0)
+                                                .put("eureka.new.mt.connect_timeout", 1000)
+                                                .put("eureka.new.shouldInitAsEc2", true)
                                                 .build()
                                 );
                             }
                         },
-                        new Ec2EurekaClientModule()
+                        new EurekaClientModule() {
+                            @Override
+                            protected void configureEureka() {
+                                bindEurekaConfigNamespace().toInstance("eureka.new");
+                            }
+                        }
                 )
                 .createInjector();
     }
@@ -81,5 +89,10 @@ public class EC2EurekaClientModuleTest {
         EurekaInstanceConfig eurekaInstanceConfig = injector.getInstance(EurekaInstanceConfig.class);
         Assert.assertEquals(DiscoveryManager.getInstance().getEurekaInstanceConfig(), eurekaInstanceConfig);
         Assert.assertTrue(eurekaInstanceConfig instanceof Ec2EurekaArchaius2InstanceConfig);
+
+        ApplicationInfoManager applicationInfoManager = injector.getInstance(ApplicationInfoManager.class);
+        InstanceInfo myInfo = applicationInfoManager.getInfo();
+        Assert.assertTrue(myInfo.getDataCenterInfo() instanceof AmazonInfo);
+        Assert.assertEquals(DataCenterInfo.Name.Amazon, myInfo.getDataCenterInfo().getName());
     }
 }

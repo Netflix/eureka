@@ -1,10 +1,15 @@
 package com.netflix.discovery.guice;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Inject;
+import com.google.inject.Provides;
 import com.netflix.appinfo.ApplicationInfoManager;
+import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.providers.Archaius2VipAddressResolver;
+import com.netflix.appinfo.providers.CompositeInstanceConfigFactory;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
+import com.netflix.appinfo.providers.EurekaInstanceConfigFactory;
 import com.netflix.appinfo.providers.VipAddressResolver;
 import com.netflix.archaius.api.Config;
 import com.netflix.discovery.DiscoveryClient;
@@ -15,11 +20,9 @@ import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.transport.EurekaArchaius2TransportConfig;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 
-import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
-/**
- * @author David Liu
- */
 final class InternalEurekaClientModule extends AbstractModule {
 
     private static class DiscoveryManagerInitializer {
@@ -30,16 +33,46 @@ final class InternalEurekaClientModule extends AbstractModule {
     }
 
 
+    static final String INSTANCE_CONFIG_NAMESPACE_KEY = "eureka.instance.config.namespace";
+    static final String CLIENT_CONFIG_NAMESPACE_KEY = "eureka.client.config.namespace";
+
+    @Singleton
+    static class ModuleConfig {
+        @Inject
+        Config config;
+
+        @Inject(optional = true)
+        @Named(InternalEurekaClientModule.INSTANCE_CONFIG_NAMESPACE_KEY)
+        String instanceConfigNamespace;
+
+        @Inject(optional = true)
+        @Named(InternalEurekaClientModule.CLIENT_CONFIG_NAMESPACE_KEY)
+        String clientConfigNamespace;
+
+        @Inject(optional = true)
+        EurekaInstanceConfigFactory instanceConfigFactory;
+
+        String getInstanceConfigNamespace() {
+            return instanceConfigNamespace == null ? "eureka" : instanceConfigNamespace;
+        }
+
+        String getClientConfigNamespace() {
+            return clientConfigNamespace == null ? "eureka" : clientConfigNamespace;
+        }
+
+        EurekaInstanceConfigFactory getInstanceConfigProvider() {
+            return instanceConfigFactory == null
+                    ? new CompositeInstanceConfigFactory(config, getInstanceConfigNamespace())
+                    : instanceConfigFactory;
+        }
+    }
+
     @Override
     protected void configure() {
         // require binding for Config from archaius2
         requireBinding(Config.class);
 
         bind(ApplicationInfoManager.class).asEagerSingleton();
-
-        // Bindings for eureka
-        bind(EurekaTransportConfig.class).to(EurekaArchaius2TransportConfig.class);
-        bind(EurekaClientConfig.class).to(EurekaArchaius2ClientConfig.class);
 
         bind(VipAddressResolver.class).to(Archaius2VipAddressResolver.class);
         bind(InstanceInfo.class).toProvider(EurekaConfigBasedInstanceInfoProvider.class);
@@ -49,13 +82,31 @@ final class InternalEurekaClientModule extends AbstractModule {
         requestStaticInjection(DiscoveryManagerInitializer.class);
     }
 
+    @Provides
+    @Singleton
+    public EurekaTransportConfig getEurekaTransportConfig(Config config, ModuleConfig moduleConfig) {
+        return new EurekaArchaius2TransportConfig(config, moduleConfig.getClientConfigNamespace());
+    }
+
+    @Provides
+    @Singleton
+    public EurekaClientConfig getEurekaClientConfig(Config config, EurekaTransportConfig transportConfig, ModuleConfig moduleConfig) {
+        return new EurekaArchaius2ClientConfig(config, transportConfig, moduleConfig.getClientConfigNamespace());
+    }
+
+    @Provides
+    @Singleton
+    public EurekaInstanceConfig getEurekaInstanceConfigProvider(ModuleConfig moduleConfig) {
+        return moduleConfig.getInstanceConfigProvider().get();
+    }
+
     @Override
     public boolean equals(Object obj) {
-        return InternalEurekaClientModule.class.equals(obj.getClass());
+        return obj != null && getClass().equals(obj.getClass());
     }
 
     @Override
     public int hashCode() {
-        return InternalEurekaClientModule.class.hashCode();
+        return getClass().hashCode();
     }
 }
