@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
@@ -51,21 +52,32 @@ public class DiscoveryManager {
 
     private static volatile DiscoveryManager INSTANCE;
 
-    private volatile EurekaInstanceConfig eurekaInstanceConfig;
-    private volatile EurekaClientConfig eurekaClientConfig;
-    private volatile EurekaClient eurekaClient;
-
-    private DiscoveryManager() {
-        // static singleton hack
-        INSTANCE = this;
-    }
+    @Inject
+    private volatile Provider<EurekaInstanceConfig> eurekaInstanceConfig = new Provider<EurekaInstanceConfig>() {
+        @Override
+        public EurekaInstanceConfig get() {
+            return null;
+        }
+    };
 
     @Inject
-    DiscoveryManager(EurekaInstanceConfig eurekaInstanceConfig, EurekaClientConfig eurekaClientConfig, EurekaClient eurekaClient) {
-        this.eurekaInstanceConfig = eurekaInstanceConfig;
-        this.eurekaClientConfig = eurekaClientConfig;
-        this.eurekaClient = eurekaClient;
+    private volatile Provider<EurekaClientConfig> eurekaClientConfig = new Provider<EurekaClientConfig>() {
+        @Override
+        public EurekaClientConfig get() {
+            return null;
+        }
+    };
 
+    @Inject
+    private volatile Provider<EurekaClient> eurekaClient = new Provider<EurekaClient>() {
+        @Override
+        public EurekaClient get() {
+            return null;
+        }
+    };
+
+    @Inject
+    private DiscoveryManager() {
         // static singleton hack
         INSTANCE = this;
     }
@@ -77,21 +89,36 @@ public class DiscoveryManager {
         return INSTANCE;
     }
 
-    public synchronized void setDiscoveryClient(DiscoveryClient discoveryClient) {
-        if (this.eurekaClient == null) {
-            this.eurekaClient = discoveryClient;
+    public synchronized void setDiscoveryClient(final DiscoveryClient client) {
+        if (this.eurekaClient.get() == null) {
+            this.eurekaClient = new Provider<EurekaClient>() {
+                @Override
+                public EurekaClient get() {
+                    return client;
+                }
+            };
         }
     }
 
-    public synchronized void setEurekaClientConfig(EurekaClientConfig eurekaClientConfig) {
-        if (this.eurekaClientConfig == null) {
-            this.eurekaClientConfig = eurekaClientConfig;
+    public synchronized void setEurekaClientConfig(final EurekaClientConfig config) {
+        if (this.eurekaClientConfig.get() == null) {
+            this.eurekaClientConfig = new Provider<EurekaClientConfig>() {
+                @Override
+                public EurekaClientConfig get() {
+                    return config;
+                }
+            };
         }
     }
 
-    public synchronized void setEurekaInstanceConfig(EurekaInstanceConfig eurekaInstanceConfig) {
-        if (this.eurekaInstanceConfig == null) {
-            this.eurekaInstanceConfig = eurekaInstanceConfig;
+    public synchronized void setEurekaInstanceConfig(final EurekaInstanceConfig config) {
+        if (this.eurekaInstanceConfig.get() == null) {
+            this.eurekaInstanceConfig = new Provider<EurekaInstanceConfig>() {
+                @Override
+                public EurekaInstanceConfig get() {
+                    return config;
+                }
+            };
         }
     }
 
@@ -127,10 +154,9 @@ public class DiscoveryManager {
      * information about this instance from the <tt>Discovery Server</tt>.
      */
     public void shutdownComponent() {
-        if (eurekaClient != null) {
+        if (eurekaClient.get() != null) {
             try {
-                eurekaClient.shutdown();
-                eurekaClient = null;
+                eurekaClient.get().shutdown();
             } catch (Throwable th) {
                 logger.error("Error in shutting down client", th);
             }
@@ -138,7 +164,7 @@ public class DiscoveryManager {
     }
 
     public LookupService getLookupService() {
-        return eurekaClient;
+        return eurekaClient.get();
     }
 
     /**
@@ -149,7 +175,7 @@ public class DiscoveryManager {
      */
     @Deprecated
     public DiscoveryClient getDiscoveryClient() {
-        return (DiscoveryClient) eurekaClient;
+        return (DiscoveryClient) getEurekaClient();
     }
 
     /**
@@ -158,7 +184,7 @@ public class DiscoveryManager {
      * @return the client that is used to talk to eureka.
      */
     public EurekaClient getEurekaClient() {
-        return eurekaClient;
+        return eurekaClient.get();
     }
 
     /**
@@ -166,7 +192,7 @@ public class DiscoveryManager {
      * @return the instance of {@link EurekaClientConfig} this instance was initialized with.
      */
     public EurekaClientConfig getEurekaClientConfig() {
-        return eurekaClientConfig;
+        return eurekaClientConfig.get();
     }
 
     /**
@@ -174,6 +200,6 @@ public class DiscoveryManager {
      * @return the instance of {@link EurekaInstanceConfig} this instance was initialized with.
      */
     public EurekaInstanceConfig getEurekaInstanceConfig() {
-        return eurekaInstanceConfig;
+        return eurekaInstanceConfig.get();
     }
 }
