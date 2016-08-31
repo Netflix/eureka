@@ -53,7 +53,8 @@ public class Ec2EurekaClientModuleTest {
                         new EurekaClientModule() {
                             @Override
                             protected void configureEureka() {
-                                bindEurekaConfigNamespace().toInstance("eureka.new");
+                                bindEurekaInstanceConfigNamespace().toInstance("eureka.new");
+                                bindEurekaClientConfigNamespace().toInstance("eureka.new");
                             }
                         }
                 )
