@@ -7,6 +7,7 @@ import com.netflix.appinfo.EurekaArchaius2InstanceConfig;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
+import com.netflix.discovery.DiscoveryManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +56,9 @@ public class CompositeInstanceConfigFactory implements EurekaInstanceConfigFacto
 
                 logger.info("Creating generic instance config");
             }
+
+            // TODO: Remove this when DiscoveryManager is finally no longer used
+            DiscoveryManager.getInstance().setEurekaInstanceConfig(eurekaInstanceConfig);
         }
 
         return eurekaInstanceConfig;

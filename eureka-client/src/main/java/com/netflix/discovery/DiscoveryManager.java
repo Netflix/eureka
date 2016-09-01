@@ -24,14 +24,8 @@ import com.netflix.discovery.shared.LookupService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-
 /**
- * @deprecated Please install the appropriate modules (e.g. {@link com.netflix.discovery.guice.EurekaModule}
- * and use dependency injection. Alternatively, create {@link com.netflix.appinfo.ApplicationInfoManager} and
- * {@link com.netflix.discovery.DiscoveryClient} directly.
+ * @deprecated use EurekaModule and DI.
  *
  * <tt>Discovery Manager</tt> configures <tt>Discovery Client</tt> based on the
  * properties specified.
@@ -46,80 +40,31 @@ import javax.inject.Singleton;
  *
  */
 @Deprecated
-@Singleton
 public class DiscoveryManager {
     private static final Logger logger = LoggerFactory.getLogger(DiscoveryManager.class);
+    private DiscoveryClient discoveryClient;
 
-    private static volatile DiscoveryManager INSTANCE;
+    private EurekaInstanceConfig eurekaInstanceConfig;
+    private EurekaClientConfig eurekaClientConfig;
+    private static final DiscoveryManager s_instance = new DiscoveryManager();
 
-    @Inject
-    private volatile Provider<EurekaInstanceConfig> eurekaInstanceConfig = new Provider<EurekaInstanceConfig>() {
-        @Override
-        public EurekaInstanceConfig get() {
-            return null;
-        }
-    };
-
-    @Inject
-    private volatile Provider<EurekaClientConfig> eurekaClientConfig = new Provider<EurekaClientConfig>() {
-        @Override
-        public EurekaClientConfig get() {
-            return null;
-        }
-    };
-
-    @Inject
-    private volatile Provider<EurekaClient> eurekaClient = new Provider<EurekaClient>() {
-        @Override
-        public EurekaClient get() {
-            return null;
-        }
-    };
-
-    @Inject
     private DiscoveryManager() {
-        // static singleton hack
-        INSTANCE = this;
     }
 
-    public static synchronized DiscoveryManager getInstance() {
-        if (INSTANCE == null) {
-            INSTANCE = new DiscoveryManager();
-        }
-        return INSTANCE;
+    public static DiscoveryManager getInstance() {
+        return s_instance;
     }
 
-    public synchronized void setDiscoveryClient(final DiscoveryClient client) {
-        if (this.eurekaClient.get() == null) {
-            this.eurekaClient = new Provider<EurekaClient>() {
-                @Override
-                public EurekaClient get() {
-                    return client;
-                }
-            };
-        }
+    public void setDiscoveryClient(DiscoveryClient discoveryClient) {
+        this.discoveryClient = discoveryClient;
     }
 
-    public synchronized void setEurekaClientConfig(final EurekaClientConfig config) {
-        if (this.eurekaClientConfig.get() == null) {
-            this.eurekaClientConfig = new Provider<EurekaClientConfig>() {
-                @Override
-                public EurekaClientConfig get() {
-                    return config;
-                }
-            };
-        }
+    public void setEurekaClientConfig(EurekaClientConfig eurekaClientConfig) {
+        this.eurekaClientConfig = eurekaClientConfig;
     }
 
-    public synchronized void setEurekaInstanceConfig(final EurekaInstanceConfig config) {
-        if (this.eurekaInstanceConfig.get() == null) {
-            this.eurekaInstanceConfig = new Provider<EurekaInstanceConfig>() {
-                @Override
-                public EurekaInstanceConfig get() {
-                    return config;
-                }
-            };
-        }
+    public void setEurekaInstanceConfig(EurekaInstanceConfig eurekaInstanceConfig) {
+        this.eurekaInstanceConfig = eurekaInstanceConfig;
     }
 
     /**
@@ -130,22 +75,20 @@ public class DiscoveryManager {
      *            registration with Eureka.
      * @param eurekaConfig the eureka client configuration of the instance.
      */
-    public synchronized void initComponent(EurekaInstanceConfig config,
+    public void initComponent(EurekaInstanceConfig config,
                               EurekaClientConfig eurekaConfig, DiscoveryClientOptionalArgs args) {
-        setEurekaInstanceConfig(config);
-        setEurekaClientConfig(eurekaConfig);
-
+        this.eurekaInstanceConfig = config;
+        this.eurekaClientConfig = eurekaConfig;
         if (ApplicationInfoManager.getInstance().getInfo() == null) {
             // Initialize application info
             ApplicationInfoManager.getInstance().initComponent(config);
         }
         InstanceInfo info = ApplicationInfoManager.getInstance().getInfo();
-
-        setDiscoveryClient(new DiscoveryClient(info, eurekaConfig, args));
+        discoveryClient = new DiscoveryClient(info, eurekaConfig, args);
     }
-    
-    public synchronized void initComponent(EurekaInstanceConfig config,
-            EurekaClientConfig eurekaConfig) {
+
+    public void initComponent(EurekaInstanceConfig config,
+                              EurekaClientConfig eurekaConfig) {
         initComponent(config, eurekaConfig, null);
     }
 
@@ -154,9 +97,10 @@ public class DiscoveryManager {
      * information about this instance from the <tt>Discovery Server</tt>.
      */
     public void shutdownComponent() {
-        if (eurekaClient.get() != null) {
+        if (discoveryClient != null) {
             try {
-                eurekaClient.get().shutdown();
+                discoveryClient.shutdown();
+                discoveryClient = null;
             } catch (Throwable th) {
                 logger.error("Error in shutting down client", th);
             }
@@ -164,7 +108,7 @@ public class DiscoveryManager {
     }
 
     public LookupService getLookupService() {
-        return eurekaClient.get();
+        return discoveryClient;
     }
 
     /**
@@ -175,7 +119,7 @@ public class DiscoveryManager {
      */
     @Deprecated
     public DiscoveryClient getDiscoveryClient() {
-        return (DiscoveryClient) getEurekaClient();
+        return discoveryClient;
     }
 
     /**
@@ -184,7 +128,7 @@ public class DiscoveryManager {
      * @return the client that is used to talk to eureka.
      */
     public EurekaClient getEurekaClient() {
-        return eurekaClient.get();
+        return discoveryClient;
     }
 
     /**
@@ -192,7 +136,7 @@ public class DiscoveryManager {
      * @return the instance of {@link EurekaClientConfig} this instance was initialized with.
      */
     public EurekaClientConfig getEurekaClientConfig() {
-        return eurekaClientConfig.get();
+        return eurekaClientConfig;
     }
 
     /**
@@ -200,6 +144,6 @@ public class DiscoveryManager {
      * @return the instance of {@link EurekaInstanceConfig} this instance was initialized with.
      */
     public EurekaInstanceConfig getEurekaInstanceConfig() {
-        return eurekaInstanceConfig.get();
+        return eurekaInstanceConfig;
     }
 }

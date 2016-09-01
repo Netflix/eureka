@@ -8,25 +8,14 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.providers.CloudInstanceConfigProvider;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.discovery.DiscoveryClient;
-import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.providers.DefaultEurekaClientConfigProvider;
-
-import javax.inject.Inject;
 
 /**
  * @author David Liu
  */
 public final class EurekaModule extends AbstractModule {
-
-    private static class DiscoveryManagerInitializer {
-        @Inject
-        public static void initialize(DiscoveryManager discoveryManager) {
-
-        }
-    }
-
 
     @Override
     protected void configure() {
@@ -44,9 +33,6 @@ public final class EurekaModule extends AbstractModule {
         bind(InstanceInfo.class).toProvider(EurekaConfigBasedInstanceInfoProvider.class).in(Scopes.SINGLETON);
 
         bind(EurekaClient.class).to(DiscoveryClient.class).in(Scopes.SINGLETON);
-
-        // initialize the legacy DiscoveryManager
-        requestStaticInjection(DiscoveryManagerInitializer.class);
     }
 
     @Override

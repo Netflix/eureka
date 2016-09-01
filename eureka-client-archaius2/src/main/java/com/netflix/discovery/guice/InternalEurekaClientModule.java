@@ -13,7 +13,6 @@ import com.netflix.appinfo.providers.EurekaInstanceConfigFactory;
 import com.netflix.appinfo.providers.VipAddressResolver;
 import com.netflix.archaius.api.Config;
 import com.netflix.discovery.DiscoveryClient;
-import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaArchaius2ClientConfig;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
@@ -24,14 +23,6 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 final class InternalEurekaClientModule extends AbstractModule {
-
-    private static class DiscoveryManagerInitializer {
-        @Inject
-        public static void initialize(DiscoveryManager discoveryManager) {
-
-        }
-    }
-
 
     static final String INSTANCE_CONFIG_NAMESPACE_KEY = "eureka.instance.config.namespace";
     static final String CLIENT_CONFIG_NAMESPACE_KEY = "eureka.client.config.namespace";
@@ -77,9 +68,6 @@ final class InternalEurekaClientModule extends AbstractModule {
         bind(VipAddressResolver.class).to(Archaius2VipAddressResolver.class);
         bind(InstanceInfo.class).toProvider(EurekaConfigBasedInstanceInfoProvider.class);
         bind(EurekaClient.class).to(DiscoveryClient.class);
-
-        // legacy DiscoveryManager set up
-        requestStaticInjection(DiscoveryManagerInitializer.class);
     }
 
     @Provides
