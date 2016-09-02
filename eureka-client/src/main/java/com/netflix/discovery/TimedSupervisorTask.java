@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
  * Wrapped subtasks must be thread safe.
  *
  * @author David Qiang Liu
- *
  */
 public class TimedSupervisorTask extends TimerTask {
     private static final Logger logger = LoggerFactory.getLogger(TimedSupervisorTask.class);
@@ -73,16 +72,29 @@ public class TimedSupervisorTask extends TimerTask {
             delay.compareAndSet(currentDelay, newDelay);
 
         } catch (RejectedExecutionException e) {
-            logger.error("task supervisor rejected the task", e);
+            if (executor.isShutdown() || scheduler.isShutdown()) {
+                logger.warn("task supervisor shutting down, reject the task", e);
+            } else {
+                logger.error("task supervisor rejected the task", e);
+            }
+
             rejectedCounter.increment();
         } catch (Throwable e) {
-            logger.error("task supervisor threw an exception", e);
+            if (executor.isShutdown() || scheduler.isShutdown()) {
+                logger.warn("task supervisor shutting down, can't accept the task");
+            } else {
+                logger.error("task supervisor threw an exception", e);
+            }
+
             throwableCounter.increment();
         } finally {
             if (future != null) {
                 future.cancel(true);
             }
-            scheduler.schedule(this, delay.get(), TimeUnit.MILLISECONDS);
+
+            if (!scheduler.isShutdown()) {
+                scheduler.schedule(this, delay.get(), TimeUnit.MILLISECONDS);
+            }
         }
     }
 }
