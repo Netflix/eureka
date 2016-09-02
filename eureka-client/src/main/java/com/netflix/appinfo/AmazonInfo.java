@@ -20,7 +20,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
@@ -33,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.netflix.discovery.converters.jackson.builder.StringInterningAmazonInfoBuilder;
+import com.netflix.discovery.internal.util.AmazonInfoUtils;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +82,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
             // no need to use a json deserializer, do a custom regex parse
             @Override
-            protected String read(InputStream inputStream) throws IOException {
+            public String read(InputStream inputStream) throws IOException {
                 BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
                 try {
                     String toReturn = null;
@@ -123,7 +123,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
             return new URL(AWS_METADATA_URL + path + name);
         }
 
-        protected String read(InputStream inputStream) throws IOException {
+        public String read(InputStream inputStream) throws IOException {
             BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
             String toReturn;
             try {
@@ -204,24 +204,9 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
                             mac = result.metadata.get(MetaDataKey.mac.getName());  // mac should be read before vpcId due to declaration order
                         }
                         URL url = key.getURL(null, mac);
-                        HttpURLConnection uc = (HttpURLConnection) url.openConnection();
-                        uc.setConnectTimeout(config.getConnectTimeout());
-                        uc.setReadTimeout(config.getReadTimeout());
-
-                        if (uc.getResponseCode() != HttpURLConnection.HTTP_OK) {  // need to read the error for clean connection close
-                            BufferedReader br = new BufferedReader(new InputStreamReader(uc.getErrorStream()));
-                            try {
-                                while (br.readLine() != null) {
-                                    // do nothing but keep reading the line
-                                }
-                            } finally {
-                                br.close();
-                            }
-                        } else {
-                            String value = key.read(uc.getInputStream());
-                            if (value != null) {
-                                result.metadata.put(key.getName(), value);
-                            }
+                        String value = AmazonInfoUtils.readEc2MetadataUrl(key, url, config.getConnectTimeout(), config.getReadTimeout());
+                        if (value != null) {
+                            result.metadata.put(key.getName(), value);
                         }
 
                         break;

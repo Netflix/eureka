@@ -37,26 +37,23 @@ public class Ec2EurekaClientModuleTest {
                             protected void configureArchaius() {
                                 bindApplicationConfigurationOverride().toInstance(
                                         MapConfig.builder()
-                                                .put("eureka.new.region", "default")
-                                                .put("eureka.new.shouldFetchRegistry", "false")
-                                                .put("eureka.new.registration.enabled", "false")
-                                                .put("eureka.new.serviceUrl.default", "http://localhost:8080/eureka/v2")
-                                                .put("eureka.new.vipAddress", "some-thing")
-                                                .put("eureka.new.validateInstanceId", "false")
-                                                .put("eureka.new.mt.num_retries", 0)
-                                                .put("eureka.new.mt.connect_timeout", 1000)
-                                                .put("eureka.new.shouldInitAsEc2", true)
+                                                .put("eureka.region", "default")
+                                                .put("eureka.shouldFetchRegistry", "false")
+                                                .put("eureka.registration.enabled", "false")
+                                                .put("eureka.serviceUrl.default", "http://localhost:8080/eureka/v2")
+                                                .put("eureka.vipAddress", "some-thing")
+                                                .put("eureka.validateInstanceId", "false")
+                                                .put("eureka.mt.num_retries", 0)
+                                                .put("eureka.mt.connect_timeout", 1000)
+                                                .put("eureka.shouldInitAsEc2", true)
+                                                 // this override is required to force EC2 env as out tests may not
+                                                 // be executed in EC2
+                                                .put("eureka.instanceDeploymentEnvironment", "ec2")
                                                 .build()
                                 );
                             }
                         },
-                        new EurekaClientModule() {
-                            @Override
-                            protected void configureEureka() {
-                                bindEurekaInstanceConfigNamespace().toInstance("eureka.new");
-                                bindEurekaClientConfigNamespace().toInstance("eureka.new");
-                            }
-                        }
+                        new EurekaClientModule()
                 )
                 .createInjector();
     }
