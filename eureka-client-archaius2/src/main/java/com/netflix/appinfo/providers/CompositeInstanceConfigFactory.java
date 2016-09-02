@@ -61,14 +61,14 @@ public class CompositeInstanceConfigFactory implements EurekaInstanceConfigFacto
     @Override
     public synchronized EurekaInstanceConfig get() {
         if (eurekaInstanceConfig == null) {
-            if (isInEc2()) {
-                AmazonInfoConfig amazonInfoConfig = new Archaius2AmazonInfoConfig(config, namespace);
+            // create the config before we can determine if we are in EC2, as we want to use the config for
+            // that determination. This is just the config however so is cheap to do and does not have side effects.
+            AmazonInfoConfig amazonInfoConfig = new Archaius2AmazonInfoConfig(config, namespace);
+            if (isInEc2(amazonInfoConfig)) {
                 eurekaInstanceConfig = new Ec2EurekaArchaius2InstanceConfig(config, amazonInfoConfig, namespace);
-
                 logger.info("Creating EC2 specific instance config");
             } else {
                 eurekaInstanceConfig = new EurekaArchaius2InstanceConfig(config, namespace);
-
                 logger.info("Creating generic instance config");
             }
 
@@ -80,10 +80,10 @@ public class CompositeInstanceConfigFactory implements EurekaInstanceConfigFacto
     }
 
 
-    private boolean isInEc2() {
+    private boolean isInEc2(AmazonInfoConfig amazonInfoConfig) {
         String deploymentEnvironmentOverride = getDeploymentEnvironmentOverride();
         if (deploymentEnvironmentOverride == null) {
-            return autoDetectEc2();
+            return autoDetectEc2(amazonInfoConfig);
         } else if ("ec2".equalsIgnoreCase(deploymentEnvironmentOverride)) {
             logger.info("Assuming EC2 deployment environment due to config override");
             return true;
@@ -93,10 +93,16 @@ public class CompositeInstanceConfigFactory implements EurekaInstanceConfigFacto
     }
 
     // best effort try to determine if we are in ec2 by trying to read the instanceId from metadata url
-    private boolean autoDetectEc2() {
+    private boolean autoDetectEc2(AmazonInfoConfig amazonInfoConfig) {
         try {
             URL url = AmazonInfo.MetaDataKey.instanceId.getURL(null, null);
-            String id = AmazonInfoUtils.readEc2MetadataUrl(AmazonInfo.MetaDataKey.instanceId, url, 2000, 5000);
+            String id = AmazonInfoUtils.readEc2MetadataUrl(
+                    AmazonInfo.MetaDataKey.instanceId,
+                    url,
+                    amazonInfoConfig.getConnectTimeout(),
+                    amazonInfoConfig.getReadTimeout()
+            );
+
             if (id != null) {
                 logger.info("Auto detected EC2 deployment environment, instanceId = {}", id);
                 return true;
