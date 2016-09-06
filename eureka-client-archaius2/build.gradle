@@ -1,6 +1,6 @@
 apply plugin: 'nebula.test-jar'
 
-def archaius2Version = '2.0.6'
+def archaius2Version = '2.1.4'
 
 dependencies {
     compile project(':eureka-client')

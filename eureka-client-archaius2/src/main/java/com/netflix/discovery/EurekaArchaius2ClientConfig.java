@@ -15,7 +15,7 @@ import javax.inject.Singleton;
 import static com.netflix.discovery.PropertyBasedClientConfigConstants.*;
 
 @Singleton
-@ConfigurationSource(Values.DEFAULT_CONFIG_FILE_NAME)
+@ConfigurationSource(CommonConstants.CONFIG_FILE_NAME)
 public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
     public static final String DEFAULT_ZONE = "defaultZone";
 

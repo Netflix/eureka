@@ -3,6 +3,7 @@ package com.netflix.discovery.shared.transport;
 import com.google.inject.Inject;
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
+import com.netflix.discovery.CommonConstants;
 
 import javax.inject.Singleton;
 
@@ -12,18 +13,22 @@ import static com.netflix.discovery.shared.transport.PropertyBasedTransportConfi
  * @author David Liu
  */
 @Singleton
-@ConfigurationSource(Values.DEFAULT_CONFIG_FILE_NAME)
+@ConfigurationSource(CommonConstants.CONFIG_FILE_NAME)
 public class EurekaArchaius2TransportConfig implements EurekaTransportConfig {
-    private static final String DEFAULT_NAMESPACE = "eureka." + TRANSPORT_CONFIG_PREFIX;
-
+    private final String namespace;
     private final Config config;
 
     @Inject
     public EurekaArchaius2TransportConfig(Config config) {
-        this(config, DEFAULT_NAMESPACE);
+        this(config, CommonConstants.DEFAULT_CONFIG_NAMESPACE, TRANSPORT_CONFIG_SUB_NAMESPACE);
     }
 
-    public EurekaArchaius2TransportConfig(Config config, String namespace) {
+    public EurekaArchaius2TransportConfig(Config config, String parentNamespace) {
+        this(config, parentNamespace, TRANSPORT_CONFIG_SUB_NAMESPACE);
+    }
+
+    public EurekaArchaius2TransportConfig(Config config, String parentNamespace, String subNamespace) {
+        this.namespace = parentNamespace + "." + subNamespace;
         this.config = config.getPrefixedView(namespace);
     }
 

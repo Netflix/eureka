@@ -20,12 +20,10 @@ final class PropertyBasedTransportConfigConstants {
     static final String BOOTSTRAP_RESOLVER_STRATEGY_KEY = "bootstrapResolverStrategy";
     static final String USE_BOOTSTRAP_RESOLVER_FOR_QUERY = "useBootstrapResolverForQuery";
 
-    static final String TRANSPORT_CONFIG_PREFIX = "transport";
+    static final String TRANSPORT_CONFIG_SUB_NAMESPACE = "transport";
 
 
     static class Values {
-        static final String DEFAULT_CONFIG_FILE_NAME = "eureka-client";
-
         static final int SESSION_RECONNECT_INTERVAL = 20*60;
         static final double QUARANTINE_REFRESH_PERCENTAGE = 0.66;
         static final int DATA_STALENESS_TRHESHOLD = 5*60;

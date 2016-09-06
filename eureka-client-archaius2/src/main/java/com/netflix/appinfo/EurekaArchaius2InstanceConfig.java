@@ -9,11 +9,12 @@ import javax.inject.Singleton;
 import com.google.common.collect.Sets;
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
+import com.netflix.discovery.CommonConstants;
 
 import static com.netflix.appinfo.PropertyBasedInstanceConfigConstants.*;
 
 @Singleton
-@ConfigurationSource(Values.DEFAULT_CONFIG_FILE_NAME)
+@ConfigurationSource(CommonConstants.CONFIG_FILE_NAME)
 public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
 
     protected String namespace;
@@ -25,7 +26,7 @@ public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
     
     @Inject
     public EurekaArchaius2InstanceConfig(Config config) {
-        this(config, Values.DEFAULT_NAMESPACE);
+        this(config, CommonConstants.DEFAULT_CONFIG_NAMESPACE);
     }
     
     public EurekaArchaius2InstanceConfig(Config config, String namespace) {
@@ -39,7 +40,6 @@ public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
     
     public EurekaArchaius2InstanceConfig(Config config, String namespace, DataCenterInfo dcInfo) {
         this.defaultAppGroup = config.getString(FALLBACK_APP_GROUP_KEY, Values.UNKNOWN_APPLICATION);
-        
         this.namespace = namespace;
         this.config = config.getPrefixedView(namespace);
         this.dcInfo = dcInfo;

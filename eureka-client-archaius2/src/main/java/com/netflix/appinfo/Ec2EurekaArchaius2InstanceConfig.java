@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import com.netflix.discovery.CommonConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,7 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
 
     @Inject
     public Ec2EurekaArchaius2InstanceConfig(Config config, AmazonInfoConfig amazonInfoConfig) {
-        this(config, amazonInfoConfig, PropertyBasedInstanceConfigConstants.Values.DEFAULT_NAMESPACE);
+        this(config, amazonInfoConfig, CommonConstants.DEFAULT_CONFIG_NAMESPACE);
     }
 
     public Ec2EurekaArchaius2InstanceConfig(Config config, AmazonInfoConfig amazonInfoConfig, String namespace) {

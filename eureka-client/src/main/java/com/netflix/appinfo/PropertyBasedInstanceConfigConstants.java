@@ -40,9 +40,6 @@ final class PropertyBasedInstanceConfigConstants {
 
 
     static class Values {
-        static final String DEFAULT_CONFIG_FILE_NAME = "eureka-client";
-        static final String DEFAULT_NAMESPACE = "eureka";
-
         static final String UNKNOWN_APPLICATION = "unknown";
 
         static final String DEFAULT_STATUSPAGE_URLPATH = "/Status";

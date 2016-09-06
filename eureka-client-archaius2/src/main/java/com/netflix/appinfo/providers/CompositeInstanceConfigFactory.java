@@ -8,6 +8,7 @@ import com.netflix.appinfo.EurekaArchaius2InstanceConfig;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
+import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.internal.util.AmazonInfoUtils;
 import org.slf4j.Logger;
@@ -41,7 +42,7 @@ import java.net.URL;
  * @author David Liu
  */
 @Singleton
-@ConfigurationSource("eureka-client")
+@ConfigurationSource(CommonConstants.CONFIG_FILE_NAME)
 public class CompositeInstanceConfigFactory implements EurekaInstanceConfigFactory {
     private static final Logger logger = LoggerFactory.getLogger(CompositeInstanceConfigFactory.class);
 
@@ -107,11 +108,11 @@ public class CompositeInstanceConfigFactory implements EurekaInstanceConfigFacto
                 logger.info("Auto detected EC2 deployment environment, instanceId = {}", id);
                 return true;
             } else {
-                logger.info("Auto detected non-EC2 deployment environment, instanceId is null");
+                logger.info("Auto detected non-EC2 deployment environment, instanceId from metadata url is null");
                 return false;
             }
         } catch (SocketTimeoutException e) {
-            logger.info("Auto detected non-EC2 deployment environment, connection to metadata url failed.");
+            logger.info("Auto detected non-EC2 deployment environment, connection to ec2 instance metadata url failed.");
         } catch (Exception e) {
             logger.warn("Failed to auto-detect whether we are in EC2 due to unexpected exception", e);
         }

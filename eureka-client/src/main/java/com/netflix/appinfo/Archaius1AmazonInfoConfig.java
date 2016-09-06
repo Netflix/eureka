@@ -1,6 +1,7 @@
 package com.netflix.appinfo;
 
 import com.netflix.config.DynamicPropertyFactory;
+import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.internal.util.Archaius1Utils;
 
 import static com.netflix.appinfo.PropertyBasedAmazonInfoConfigConstants.*;
@@ -18,7 +19,7 @@ public class Archaius1AmazonInfoConfig implements AmazonInfoConfig {
                 ? namespace
                 : namespace + ".";
 
-        this.configInstance = Archaius1Utils.initConfig(Values.DEFAULT_CONFIG_FILE_NAME);
+        this.configInstance = Archaius1Utils.initConfig(CommonConstants.DEFAULT_CONFIG_NAMESPACE);
     }
 
 

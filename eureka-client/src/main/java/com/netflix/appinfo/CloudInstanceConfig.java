@@ -25,12 +25,11 @@ import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.appinfo.providers.CloudInstanceConfigProvider;
+import com.netflix.discovery.CommonConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
-
-import static com.netflix.appinfo.PropertyBasedInstanceConfigConstants.*;
 
 /**
  * An {@link InstanceInfo} configuration for AWS cloud deployments.
@@ -61,7 +60,7 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
     /* Visible for testing */ volatile AmazonInfo info;
 
     public CloudInstanceConfig() {
-        this(Values.DEFAULT_NAMESPACE);
+        this(CommonConstants.DEFAULT_CONFIG_NAMESPACE);
     }
 
     public CloudInstanceConfig(String namespace) {
@@ -69,7 +68,7 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
     }
 
     /* visible for testing */ CloudInstanceConfig(AmazonInfo info) {
-        this(Values.DEFAULT_NAMESPACE, new Archaius1AmazonInfoConfig(Values.DEFAULT_NAMESPACE), false);
+        this(CommonConstants.DEFAULT_CONFIG_NAMESPACE, new Archaius1AmazonInfoConfig(CommonConstants.DEFAULT_CONFIG_NAMESPACE), false);
         this.info = info;
     }
 

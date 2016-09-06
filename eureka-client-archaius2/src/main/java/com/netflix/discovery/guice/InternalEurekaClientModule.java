@@ -12,6 +12,8 @@ import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.appinfo.providers.EurekaInstanceConfigFactory;
 import com.netflix.appinfo.providers.VipAddressResolver;
 import com.netflix.archaius.api.Config;
+import com.netflix.archaius.api.annotations.ConfigurationSource;
+import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.EurekaArchaius2ClientConfig;
 import com.netflix.discovery.EurekaClient;
@@ -72,19 +74,19 @@ final class InternalEurekaClientModule extends AbstractModule {
 
     @Provides
     @Singleton
-    public EurekaTransportConfig getEurekaTransportConfig(Config config, ModuleConfig moduleConfig) {
+    public EurekaTransportConfig getEurekaTransportConfig(Config config, ModuleConfig moduleConfig, EurekaConfigLoader configLoader) {
         return new EurekaArchaius2TransportConfig(config, moduleConfig.getClientConfigNamespace());
     }
 
     @Provides
     @Singleton
-    public EurekaClientConfig getEurekaClientConfig(Config config, EurekaTransportConfig transportConfig, ModuleConfig moduleConfig) {
+    public EurekaClientConfig getEurekaClientConfig(Config config, EurekaTransportConfig transportConfig, ModuleConfig moduleConfig, EurekaConfigLoader configLoader) {
         return new EurekaArchaius2ClientConfig(config, transportConfig, moduleConfig.getClientConfigNamespace());
     }
 
     @Provides
     @Singleton
-    public EurekaInstanceConfig getEurekaInstanceConfigProvider(ModuleConfig moduleConfig) {
+    public EurekaInstanceConfig getEurekaInstanceConfigProvider(ModuleConfig moduleConfig, EurekaConfigLoader configLoader) {
         return moduleConfig.getInstanceConfigProvider().get();
     }
 
@@ -96,5 +98,12 @@ final class InternalEurekaClientModule extends AbstractModule {
     @Override
     public int hashCode() {
         return getClass().hashCode();
+    }
+
+
+    // need this internal class to ensure config file loading happens
+    @ConfigurationSource(CommonConstants.CONFIG_FILE_NAME)
+    private static class EurekaConfigLoader {
+
     }
 }

@@ -71,9 +71,6 @@ final class PropertyBasedClientConfigConstants {
 
 
     static class Values {
-        static final String DEFAULT_CONFIG_FILE_NAME = "eureka-client";
-        static final String DEFAULT_NAMESPACE = "eureka";
-
         static final String CONFIG_DOLLAR_REPLACEMENT = "_-";
         static final String CONFIG_ESCAPE_CHAR_REPLACEMENT = "__";
 

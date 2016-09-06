@@ -19,6 +19,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Map;
 
+import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.shared.Pair;
 
 import org.slf4j.Logger;
@@ -36,10 +37,10 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
     private static final Logger logger = LoggerFactory.getLogger(AbstractInstanceConfig.class);
 
     /**
-     * @deprecated 2016-08-29 use {@link com.netflix.appinfo.PropertyBasedInstanceConfigConstants.Values#DEFAULT_NAMESPACE}
+     * @deprecated 2016-08-29 use {@link CommonConstants#DEFAULT_CONFIG_NAMESPACE}
      */
     @Deprecated
-    public static final String DEFAULT_NAMESPACE = PropertyBasedInstanceConfigConstants.Values.DEFAULT_NAMESPACE;
+    public static final String DEFAULT_NAMESPACE = CommonConstants.DEFAULT_CONFIG_NAMESPACE;
     
     private static final int LEASE_EXPIRATION_DURATION_SECONDS = 90;
     private static final int LEASE_RENEWAL_INTERVAL_SECONDS = 30;

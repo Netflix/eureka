@@ -61,10 +61,10 @@ import static com.netflix.discovery.PropertyBasedClientConfigConstants.*;
 public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /**
-     * @deprecated 2016-08-29 use {@link com.netflix.discovery.PropertyBasedClientConfigConstants.Values#DEFAULT_NAMESPACE}
+     * @deprecated 2016-08-29 use {@link com.netflix.discovery.CommonConstants#DEFAULT_CONFIG_NAMESPACE}
      */
     @Deprecated
-    public static final String DEFAULT_NAMESPACE = Values.DEFAULT_NAMESPACE + ".";
+    public static final String DEFAULT_NAMESPACE = CommonConstants.DEFAULT_CONFIG_NAMESPACE + ".";
     public static final String DEFAULT_ZONE = "defaultZone";
 
     private final String namespace;
@@ -72,7 +72,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     private final EurekaTransportConfig transportConfig;
 
     public DefaultEurekaClientConfig() {
-        this(Values.DEFAULT_NAMESPACE);
+        this(CommonConstants.DEFAULT_CONFIG_NAMESPACE);
     }
 
     public DefaultEurekaClientConfig(String namespace) {
@@ -80,7 +80,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 ? namespace
                 : namespace + ".";
 
-        this.configInstance = Archaius1Utils.initConfig(Values.DEFAULT_CONFIG_FILE_NAME);
+        this.configInstance = Archaius1Utils.initConfig(CommonConstants.DEFAULT_CONFIG_NAMESPACE);
         this.transportConfig = new DefaultEurekaTransportConfig(namespace, configInstance);
     }
 

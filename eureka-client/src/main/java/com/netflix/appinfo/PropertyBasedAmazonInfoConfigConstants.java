@@ -13,9 +13,6 @@ final class PropertyBasedAmazonInfoConfigConstants {
 
 
     static class Values {
-        static final String DEFAULT_CONFIG_FILE_NAME = "eureka-client";
-        static final String DEFAULT_NAMESPACE = "eureka";
-
         static final int DEFAULT_READ_TIMEOUT = 5000;
         static final int DEFAULT_CONNECT_TIMEOUT = 2000;
         static final int DEFAULT_NUM_RETRIES = 3;

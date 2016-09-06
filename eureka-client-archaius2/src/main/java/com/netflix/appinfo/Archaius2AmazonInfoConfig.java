@@ -2,6 +2,7 @@ package com.netflix.appinfo;
 
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
+import com.netflix.discovery.CommonConstants;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -12,7 +13,7 @@ import static com.netflix.appinfo.PropertyBasedAmazonInfoConfigConstants.*;
  * @author David Liu
  */
 @Singleton
-@ConfigurationSource(Values.DEFAULT_CONFIG_FILE_NAME)
+@ConfigurationSource(CommonConstants.CONFIG_FILE_NAME)
 public class Archaius2AmazonInfoConfig implements AmazonInfoConfig {
 
     private final Config config;
@@ -20,7 +21,7 @@ public class Archaius2AmazonInfoConfig implements AmazonInfoConfig {
 
     @Inject
     public Archaius2AmazonInfoConfig(Config config) {
-        this(config, Values.DEFAULT_NAMESPACE);
+        this(config, CommonConstants.DEFAULT_CONFIG_NAMESPACE);
     }
 
 

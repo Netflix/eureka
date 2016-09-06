@@ -21,6 +21,7 @@ import java.util.Map;
 
 import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicPropertyFactory;
+import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.internal.util.Archaius1Utils;
 import org.apache.commons.configuration.Configuration;
 
@@ -48,13 +49,13 @@ import static com.netflix.appinfo.PropertyBasedInstanceConfigConstants.*;
  *
  */
 public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig implements EurekaInstanceConfig {
-    protected String namespace = Values.DEFAULT_NAMESPACE + ".";
 
+    protected final String namespace;
     protected final DynamicPropertyFactory configInstance;
     private String appGrpNameFromEnv;
 
     public PropertiesInstanceConfig() {
-        this(Values.DEFAULT_NAMESPACE);
+        this(CommonConstants.DEFAULT_CONFIG_NAMESPACE);
     }
 
     public PropertiesInstanceConfig(String namespace) {
@@ -76,7 +77,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
         appGrpNameFromEnv = ConfigurationManager.getConfigInstance()
                 .getString(FALLBACK_APP_GROUP_KEY, Values.UNKNOWN_APPLICATION);
 
-        this.configInstance = Archaius1Utils.initConfig(Values.DEFAULT_CONFIG_FILE_NAME);
+        this.configInstance = Archaius1Utils.initConfig(CommonConstants.DEFAULT_CONFIG_NAMESPACE);
     }
 
     /*
