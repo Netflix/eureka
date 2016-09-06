@@ -86,9 +86,9 @@ public class DiscoveryManager {
         InstanceInfo info = ApplicationInfoManager.getInstance().getInfo();
         discoveryClient = new DiscoveryClient(info, eurekaConfig, args);
     }
-    
+
     public void initComponent(EurekaInstanceConfig config,
-            EurekaClientConfig eurekaConfig) {
+                              EurekaClientConfig eurekaConfig) {
         initComponent(config, eurekaConfig, null);
     }
 

@@ -1,4 +1,4 @@
-package com.netflix.discovery;
+package com.netflix.appinfo;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -6,12 +6,11 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import com.netflix.discovery.CommonConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
-import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.archaius.api.Config;
 
@@ -33,18 +32,24 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
             MetaDataKey.localIpv4.name()
     };
 
+    private final AmazonInfoConfig amazonInfoConfig;
     private volatile AmazonInfo amazonInfo;
 
     @Inject
-    public Ec2EurekaArchaius2InstanceConfig(Config config) {
-        this(config, DEFAULT_NAMESPACE);
+    public Ec2EurekaArchaius2InstanceConfig(Config config, AmazonInfoConfig amazonInfoConfig) {
+        this(config, amazonInfoConfig, CommonConstants.DEFAULT_CONFIG_NAMESPACE);
     }
 
-    public Ec2EurekaArchaius2InstanceConfig(Config config, String namespace) {
+    public Ec2EurekaArchaius2InstanceConfig(Config config, AmazonInfoConfig amazonInfoConfig, String namespace) {
         super(config, namespace);
-        
+        this.amazonInfoConfig = amazonInfoConfig;
+
         try {
-            this.amazonInfo = AmazonInfo.Builder.newBuilder().autoBuild(namespace);
+            this.amazonInfo = AmazonInfo.Builder
+                    .newBuilder()
+                    .withAmazonInfoConfig(amazonInfoConfig)
+                    .autoBuild(namespace);
+
             LOG.info("Datacenter is: " + Name.Amazon);
         } 
         catch (Exception e) {
@@ -75,7 +80,7 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
             // public hostname might be null
             amazonInfo.getMetadata().put(MetaDataKey.publicHostname.getName(),
                     (amazonInfo.get(MetaDataKey.localIpv4)));
-        }        
+        }
     }
     
     @Override
@@ -103,7 +108,11 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
      */
     public synchronized void refreshAmazonInfo() {
         try {
-            AmazonInfo newInfo = AmazonInfo.Builder.newBuilder().autoBuild(DEFAULT_NAMESPACE);
+            AmazonInfo newInfo = AmazonInfo.Builder
+                    .newBuilder()
+                    .withAmazonInfoConfig(amazonInfoConfig)
+                    .autoBuild(namespace);
+
             if (!newInfo.equals(amazonInfo)) {
                 // the datacenter info has changed, re-sync it
                 LOG.warn("The AmazonInfo changed from : {} => {}", amazonInfo, newInfo);

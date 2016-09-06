@@ -15,17 +15,17 @@
  */
 package com.netflix.appinfo;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicPropertyFactory;
-import com.netflix.config.DynamicStringProperty;
+import com.netflix.discovery.CommonConstants;
+import com.netflix.discovery.internal.util.Archaius1Utils;
 import org.apache.commons.configuration.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static com.netflix.appinfo.PropertyBasedInstanceConfigConstants.*;
 
 /**
  * A properties based {@link InstanceInfo} configuration.
@@ -49,48 +49,35 @@ import org.slf4j.LoggerFactory;
  *
  */
 public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig implements EurekaInstanceConfig {
-    private static final String TEST = "test";
-    private static final String ARCHAIUS_DEPLOYMENT_ENVIRONMENT = "archaius.deployment.environment";
-    private static final String EUREKA_ENVIRONMENT = "eureka.environment";
-    private static final String APP_GROUP_ENV_VAR_NAME = "NETFLIX_APP_GROUP";
-    private static final Logger logger = LoggerFactory.getLogger(PropertiesInstanceConfig.class);
-    protected String namespace = "eureka.";
-    private static final DynamicStringProperty EUREKA_PROPS_FILE = DynamicPropertyFactory
-            .getInstance().getStringProperty("eureka.client.props", "eureka-client");
-    private static final DynamicPropertyFactory INSTANCE = com.netflix.config.DynamicPropertyFactory
-            .getInstance();
-    private static final String UNKNOWN_APPLICATION = "unknown";
 
-    private static final String DEFAULT_STATUSPAGE_URLPATH = "/Status";
-    private static final String DEFAULT_HOMEPAGE_URLPATH = "/";
-    private static final String DEFAULT_HEALTHCHECK_URLPATH = "/healthcheck";
-
-    private String propSecurePort = namespace + "securePort";
-    private String propSecurePortEnabled = propSecurePort + ".enabled";
-    private String propNonSecurePort;
-    private String idPropName;
-    private String propName;
-    private String propPortEnabled;
-    private String propLeaseRenewalIntervalInSeconds;
-    private String propLeaseExpirationDurationInSeconds;
-    private String propSecureVirtualHostname;
-    private String propVirtualHostname;
-    private String propMetadataNamespace;
-    private String propASGName;
-    private String propAppGroupName;
+    protected final String namespace;
+    protected final DynamicPropertyFactory configInstance;
     private String appGrpNameFromEnv;
 
     public PropertiesInstanceConfig() {
-        init(namespace);
+        this(CommonConstants.DEFAULT_CONFIG_NAMESPACE);
+    }
+
+    public PropertiesInstanceConfig(String namespace) {
+        this(namespace, new DataCenterInfo() {
+            @Override
+            public Name getName() {
+                return Name.MyOwn;
+            }
+        });
     }
 
     public PropertiesInstanceConfig(String namespace, DataCenterInfo info) {
         super(info);
-        init(namespace);
-    }
 
-    public PropertiesInstanceConfig(String namespace) {
-        init(namespace);
+        this.namespace = namespace.endsWith(".")
+                ? namespace
+                : namespace + ".";
+
+        appGrpNameFromEnv = ConfigurationManager.getConfigInstance()
+                .getString(FALLBACK_APP_GROUP_KEY, Values.UNKNOWN_APPLICATION);
+
+        this.configInstance = Archaius1Utils.initConfig(CommonConstants.CONFIG_FILE_NAME);
     }
 
     /*
@@ -100,7 +87,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
      */
     @Override
     public boolean isInstanceEnabledOnit() {
-        return INSTANCE.getBooleanProperty(namespace + "traffic.enabled",
+        return configInstance.getBooleanProperty(namespace + TRAFFIC_ENABLED_ON_INIT_KEY,
                 super.isInstanceEnabledOnit()).get();
     }
 
@@ -111,8 +98,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
      */
     @Override
     public int getNonSecurePort() {
-        return INSTANCE.getIntProperty(propNonSecurePort,
-                super.getNonSecurePort()).get();
+        return configInstance.getIntProperty(namespace + PORT_KEY, super.getNonSecurePort()).get();
     }
 
     /*
@@ -122,8 +108,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
      */
     @Override
     public int getSecurePort() {
-        return INSTANCE.getIntProperty(propSecurePort, super.getSecurePort())
-                .get();
+        return configInstance.getIntProperty(namespace + SECURE_PORT_KEY, super.getSecurePort()) .get();
     }
 
     /*
@@ -133,8 +118,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
      */
     @Override
     public boolean isNonSecurePortEnabled() {
-        return INSTANCE.getBooleanProperty(propPortEnabled,
-                super.isNonSecurePortEnabled()).get();
+        return configInstance.getBooleanProperty(namespace + PORT_ENABLED_KEY, super.isNonSecurePortEnabled()).get();
     }
 
     /*
@@ -144,7 +128,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
      */
     @Override
     public boolean getSecurePortEnabled() {
-        return INSTANCE.getBooleanProperty(propSecurePortEnabled,
+        return configInstance.getBooleanProperty(namespace + SECURE_PORT_ENABLED_KEY,
                 super.getSecurePortEnabled()).get();
     }
 
@@ -157,7 +141,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
      */
     @Override
     public int getLeaseRenewalIntervalInSeconds() {
-        return INSTANCE.getIntProperty(propLeaseRenewalIntervalInSeconds,
+        return configInstance.getIntProperty(namespace + LEASE_RENEWAL_INTERVAL_KEY,
                 super.getLeaseRenewalIntervalInSeconds()).get();
     }
 
@@ -169,7 +153,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
      */
     @Override
     public int getLeaseExpirationDurationInSeconds() {
-        return INSTANCE.getIntProperty(propLeaseExpirationDurationInSeconds,
+        return configInstance.getIntProperty(namespace + LEASE_EXPIRATION_DURATION_KEY,
                 super.getLeaseExpirationDurationInSeconds()).get();
     }
 
@@ -181,7 +165,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
     @Override
     public String getVirtualHostName() {
         if (this.isNonSecurePortEnabled()) {
-            return INSTANCE.getStringProperty(propVirtualHostname,
+            return configInstance.getStringProperty(namespace + VIRTUAL_HOSTNAME_KEY,
                     super.getVirtualHostName()).get();
         } else {
             return null;
@@ -197,7 +181,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
     @Override
     public String getSecureVirtualHostName() {
         if (this.getSecurePortEnabled()) {
-            return INSTANCE.getStringProperty(propSecureVirtualHostname,
+            return configInstance.getStringProperty(namespace + SECURE_VIRTUAL_HOSTNAME_KEY,
                     super.getSecureVirtualHostName()).get();
         } else {
             return null;
@@ -211,8 +195,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
      */
     @Override
     public String getASGName() {
-        return INSTANCE.getStringProperty(propASGName, super.getASGName())
-                .get();
+        return configInstance.getStringProperty(namespace + ASG_NAME_KEY, super.getASGName()).get();
     }
 
     /**
@@ -227,11 +210,12 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
      */
     @Override
     public Map<String, String> getMetadataMap() {
+        String metadataNamespace = namespace + INSTANCE_METADATA_PREFIX + ".";
         Map<String, String> metadataMap = new LinkedHashMap<String, String>();
-        Configuration config = (Configuration) INSTANCE.getBackingConfigurationSource();
-        String subsetPrefix = propMetadataNamespace.charAt(propMetadataNamespace.length() - 1) == '.'
-                ? propMetadataNamespace.substring(0, propMetadataNamespace.length() - 1)
-                : propMetadataNamespace;
+        Configuration config = (Configuration) configInstance.getBackingConfigurationSource();
+        String subsetPrefix = metadataNamespace.charAt(metadataNamespace.length() - 1) == '.'
+                ? metadataNamespace.substring(0, metadataNamespace.length() - 1)
+                : metadataNamespace;
         for (Iterator<String> iter = config.subset(subsetPrefix).getKeys(); iter.hasNext(); ) {
             String key = iter.next();
             String value = config.getString(subsetPrefix + "." + key);
@@ -242,18 +226,18 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
 
     @Override
     public String getInstanceId() {
-        String result = INSTANCE.getStringProperty(idPropName, null).get();
+        String result = configInstance.getStringProperty(namespace + INSTANCE_ID_KEY, null).get();
         return result == null ? null : result.trim();
     }
 
     @Override
     public String getAppname() {
-        return INSTANCE.getStringProperty(propName, UNKNOWN_APPLICATION).get().trim();
+        return configInstance.getStringProperty(namespace + APP_NAME_KEY, Values.UNKNOWN_APPLICATION).get().trim();
     }
 
     @Override
     public String getAppGroupName() {
-        return INSTANCE.getStringProperty(propAppGroupName, appGrpNameFromEnv).get().trim();
+        return configInstance.getStringProperty(namespace + APP_GROUP_KEY, appGrpNameFromEnv).get().trim();
     }
 
     public String getIpAddress() {
@@ -263,50 +247,50 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
 
     @Override
     public String getStatusPageUrlPath() {
-        return INSTANCE.getStringProperty(namespace + "statusPageUrlPath",
-                DEFAULT_STATUSPAGE_URLPATH).get();
+        return configInstance.getStringProperty(namespace + STATUS_PAGE_URL_PATH_KEY,
+                Values.DEFAULT_STATUSPAGE_URLPATH).get();
     }
 
     @Override
     public String getStatusPageUrl() {
-        return INSTANCE.getStringProperty(namespace + "statusPageUrl", null)
+        return configInstance.getStringProperty(namespace + STATUS_PAGE_URL_KEY, null)
                 .get();
     }
 
 
     @Override
     public String getHomePageUrlPath() {
-        return INSTANCE.getStringProperty(namespace + "homePageUrlPath",
-                DEFAULT_HOMEPAGE_URLPATH).get();
+        return configInstance.getStringProperty(namespace + HOME_PAGE_URL_PATH_KEY,
+                Values.DEFAULT_HOMEPAGE_URLPATH).get();
     }
 
     @Override
     public String getHomePageUrl() {
-        return INSTANCE.getStringProperty(namespace + "homePageUrl", null)
+        return configInstance.getStringProperty(namespace + HOME_PAGE_URL_KEY, null)
                 .get();
     }
 
     @Override
     public String getHealthCheckUrlPath() {
-        return INSTANCE.getStringProperty(namespace + "healthCheckUrlPath",
-                DEFAULT_HEALTHCHECK_URLPATH).get();
+        return configInstance.getStringProperty(namespace + HEALTHCHECK_URL_PATH_KEY,
+                Values.DEFAULT_HEALTHCHECK_URLPATH).get();
     }
 
     @Override
     public String getHealthCheckUrl() {
-        return INSTANCE.getStringProperty(namespace + "healthCheckUrl", null)
+        return configInstance.getStringProperty(namespace + HEALTHCHECK_URL_KEY, null)
                 .get();
     }
 
     @Override
     public String getSecureHealthCheckUrl() {
-        return INSTANCE.getStringProperty(namespace + "secureHealthCheckUrl",
+        return configInstance.getStringProperty(namespace + SECURE_HEALTHCHECK_URL_KEY,
                 null).get();
     }
 
     @Override
     public String[] getDefaultAddressResolutionOrder() {
-        String result = INSTANCE.getStringProperty(namespace + "defaultAddressResolutionOrder", null).get();
+        String result = configInstance.getStringProperty(namespace + DEFAULT_ADDRESS_RESOLUTION_ORDER_KEY, null).get();
         return result == null ? new String[0] : result.split(",");
     }
 
@@ -314,39 +298,4 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
     public String getNamespace() {
         return this.namespace;
     }
-
-
-    private void init(String namespace) {
-        this.namespace = namespace;
-        propSecurePort = namespace + "securePort";
-        propSecurePortEnabled = propSecurePort + ".enabled";
-        propNonSecurePort = namespace + "port";
-
-        idPropName = namespace + "instanceId";
-        propName = namespace + "name";
-        propPortEnabled = propNonSecurePort + ".enabled";
-        propLeaseRenewalIntervalInSeconds = namespace + "lease.renewalInterval";
-        propLeaseExpirationDurationInSeconds = namespace + "lease.duration";
-        propSecureVirtualHostname = namespace + "secureVipAddress";
-        propVirtualHostname = namespace + "vipAddress";
-        propMetadataNamespace = namespace + "metadata.";
-        propASGName = namespace + "asgName";
-        propAppGroupName = namespace + "appGroup";
-        appGrpNameFromEnv = ConfigurationManager.getConfigInstance()
-                .getString(APP_GROUP_ENV_VAR_NAME, UNKNOWN_APPLICATION);
-
-        String env = ConfigurationManager.getConfigInstance().getString(EUREKA_ENVIRONMENT, TEST);
-        ConfigurationManager.getConfigInstance().setProperty(ARCHAIUS_DEPLOYMENT_ENVIRONMENT, env);
-        String eurekaPropsFile = EUREKA_PROPS_FILE.get();
-        try {
-            ConfigurationManager.loadCascadedPropertiesFromResources(eurekaPropsFile);
-        } catch (IOException e) {
-            logger.warn(
-                    "Cannot find the properties specified : {}. This may be okay if there are other environment "
-                            + "specific properties or the configuration is installed with a different mechanism.",
-                    eurekaPropsFile);
-
-        }
-    }
-
 }
