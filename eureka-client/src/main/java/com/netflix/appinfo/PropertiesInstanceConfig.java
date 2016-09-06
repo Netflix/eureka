@@ -77,7 +77,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
         appGrpNameFromEnv = ConfigurationManager.getConfigInstance()
                 .getString(FALLBACK_APP_GROUP_KEY, Values.UNKNOWN_APPLICATION);
 
-        this.configInstance = Archaius1Utils.initConfig(CommonConstants.DEFAULT_CONFIG_NAMESPACE);
+        this.configInstance = Archaius1Utils.initConfig(CommonConstants.CONFIG_FILE_NAME);
     }
 
     /*

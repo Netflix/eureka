@@ -80,7 +80,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 ? namespace
                 : namespace + ".";
 
-        this.configInstance = Archaius1Utils.initConfig(CommonConstants.DEFAULT_CONFIG_NAMESPACE);
+        this.configInstance = Archaius1Utils.initConfig(CommonConstants.CONFIG_FILE_NAME);
         this.transportConfig = new DefaultEurekaTransportConfig(namespace, configInstance);
     }
 
