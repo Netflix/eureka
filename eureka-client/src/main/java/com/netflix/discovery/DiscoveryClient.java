@@ -379,6 +379,8 @@ public class DiscoveryClient implements EurekaClient {
             this.heartbeatStalenessMonitor = ThresholdLevelsMetric.NO_OP_METRIC;
         }
 
+        logger.info("Initializing Eureka in region {}", clientConfig.getRegion());
+
         if (!config.shouldRegisterWithEureka() && !config.shouldFetchRegistry()) {
             logger.info("Client configured to neither register nor query for data.");
             scheduler = null;
