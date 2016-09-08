@@ -3,6 +3,7 @@ package com.netflix.appinfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Provider;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -11,7 +12,7 @@ import java.util.Set;
 /**
  * A holder class for AmazonInfo that exposes some APIs to allow for refreshes.
  */
-public class RefreshableAmazonInfoHolder {
+public class RefreshableAmazonInfoProvider implements Provider<AmazonInfo> {
 
     /**
      * A fallback provider for a default set of IP and hostname if equivalent data are not available
@@ -23,16 +24,16 @@ public class RefreshableAmazonInfoHolder {
     }
 
 
-    private static final Logger logger = LoggerFactory.getLogger(RefreshableAmazonInfoHolder.class);
+    private static final Logger logger = LoggerFactory.getLogger(RefreshableAmazonInfoProvider.class);
 
     /* Visible for testing */ volatile AmazonInfo info;
     private final AmazonInfoConfig amazonInfoConfig;
 
-    public RefreshableAmazonInfoHolder(AmazonInfoConfig amazonInfoConfig, FallbackAddressProvider fallbackAddressProvider) {
+    public RefreshableAmazonInfoProvider(AmazonInfoConfig amazonInfoConfig, FallbackAddressProvider fallbackAddressProvider) {
         this(init(amazonInfoConfig, fallbackAddressProvider), amazonInfoConfig);
     }
 
-    /* visible for testing */ RefreshableAmazonInfoHolder(AmazonInfo initialInfo, AmazonInfoConfig amazonInfoConfig) {
+    /* visible for testing */ RefreshableAmazonInfoProvider(AmazonInfo initialInfo, AmazonInfoConfig amazonInfoConfig) {
         this.amazonInfoConfig = amazonInfoConfig;
         this.info = initialInfo;
     }
@@ -98,7 +99,8 @@ public class RefreshableAmazonInfoHolder {
     /**
      * @return the locally held version of {@link com.netflix.appinfo.AmazonInfo}
      */
-    public AmazonInfo getCurrent() {
+    @Override
+    public AmazonInfo get() {
         return info;
     }
 
@@ -106,7 +108,7 @@ public class RefreshableAmazonInfoHolder {
     /**
      * Rules of updating AmazonInfo:
      * - instanceId must exist
-     * - localIp/privateIp most exist
+     * - localIp/privateIp must exist
      * - publicHostname does not necessarily need to exist (e.g. in vpc)
      */
     /* visible for testing */ static boolean shouldUpdate(AmazonInfo newInfo, AmazonInfo oldInfo) {

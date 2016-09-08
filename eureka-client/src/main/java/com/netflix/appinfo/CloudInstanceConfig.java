@@ -50,7 +50,7 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
     };
 
     private final AmazonInfoConfig amazonInfoConfig;
-    private final RefreshableAmazonInfoHolder amazonInfoHolder;
+    private final RefreshableAmazonInfoProvider amazonInfoHolder;
 
     public CloudInstanceConfig() {
         this(CommonConstants.DEFAULT_CONFIG_NAMESPACE);
@@ -68,8 +68,8 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
         super(namespace);
         this.amazonInfoConfig = amazonInfoConfig;
         if (eagerInit) {
-            RefreshableAmazonInfoHolder.FallbackAddressProvider fallbackAddressProvider =
-                    new RefreshableAmazonInfoHolder.FallbackAddressProvider() {
+            RefreshableAmazonInfoProvider.FallbackAddressProvider fallbackAddressProvider =
+                    new RefreshableAmazonInfoProvider.FallbackAddressProvider() {
                         @Override
                         public String getFallbackIp() {
                             return CloudInstanceConfig.super.getIpAddress();
@@ -80,9 +80,9 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
                             return CloudInstanceConfig.super.getHostName(false);
                         }
             };
-            this.amazonInfoHolder = new RefreshableAmazonInfoHolder(amazonInfoConfig, fallbackAddressProvider);
+            this.amazonInfoHolder = new RefreshableAmazonInfoProvider(amazonInfoConfig, fallbackAddressProvider);
         } else {
-            this.amazonInfoHolder = new RefreshableAmazonInfoHolder(initialInfo, amazonInfoConfig);
+            this.amazonInfoHolder = new RefreshableAmazonInfoProvider(initialInfo, amazonInfoConfig);
         }
     }
 
@@ -101,7 +101,7 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
         for (String name : getDefaultAddressResolutionOrder()) {
             try {
                 AmazonInfo.MetaDataKey key = AmazonInfo.MetaDataKey.valueOf(name);
-                String address = amazonInfoHolder.getCurrent().get(key);
+                String address = amazonInfoHolder.get().get(key);
                 if (address != null && !address.isEmpty()) {
                     result = address;
                     break;
@@ -119,18 +119,18 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
         if (refresh) {
             amazonInfoHolder.refresh();
         }
-        return amazonInfoHolder.getCurrent().get(MetaDataKey.publicHostname);
+        return amazonInfoHolder.get().get(MetaDataKey.publicHostname);
     }
 
     @Override
     public String getIpAddress() {
-        String ipAddr = amazonInfoHolder.getCurrent().get(MetaDataKey.localIpv4);
+        String ipAddr = amazonInfoHolder.get().get(MetaDataKey.localIpv4);
         return ipAddr == null ? super.getIpAddress() : ipAddr;
     }
 
     @Override
     public DataCenterInfo getDataCenterInfo() {
-        return amazonInfoHolder.getCurrent();
+        return amazonInfoHolder.get();
     }
 
     @Override
@@ -155,6 +155,6 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
      */
     @Deprecated
     /* visible for testing */ static boolean shouldUpdate(AmazonInfo newInfo, AmazonInfo oldInfo) {
-        return RefreshableAmazonInfoHolder.shouldUpdate(newInfo, oldInfo);
+        return RefreshableAmazonInfoProvider.shouldUpdate(newInfo, oldInfo);
     }
 }

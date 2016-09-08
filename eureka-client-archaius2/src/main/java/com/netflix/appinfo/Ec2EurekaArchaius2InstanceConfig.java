@@ -29,7 +29,7 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
     };
 
     private final AmazonInfoConfig amazonInfoConfig;
-    private final RefreshableAmazonInfoHolder amazonInfoHolder;
+    private final RefreshableAmazonInfoProvider amazonInfoHolder;
 
     @Inject
     public Ec2EurekaArchaius2InstanceConfig(Config config, AmazonInfoConfig amazonInfoConfig) {
@@ -40,8 +40,8 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
         super(config, namespace);
         this.amazonInfoConfig = amazonInfoConfig;
 
-        RefreshableAmazonInfoHolder.FallbackAddressProvider fallbackAddressProvider =
-                new RefreshableAmazonInfoHolder.FallbackAddressProvider() {
+        RefreshableAmazonInfoProvider.FallbackAddressProvider fallbackAddressProvider =
+                new RefreshableAmazonInfoProvider.FallbackAddressProvider() {
                     @Override
                     public String getFallbackIp() {
                         return Ec2EurekaArchaius2InstanceConfig.super.getIpAddress();
@@ -52,7 +52,7 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
                         return Ec2EurekaArchaius2InstanceConfig.super.getHostName(false);
                     }
                 };
-        this.amazonInfoHolder = new RefreshableAmazonInfoHolder(amazonInfoConfig, fallbackAddressProvider);
+        this.amazonInfoHolder = new RefreshableAmazonInfoProvider(amazonInfoConfig, fallbackAddressProvider);
     }
     
     @Override
@@ -60,12 +60,12 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
         if (refresh) {
             amazonInfoHolder.refresh();
         }
-        return amazonInfoHolder.getCurrent().get(MetaDataKey.publicHostname);
+        return amazonInfoHolder.get().get(MetaDataKey.publicHostname);
     }
 
     @Override
     public DataCenterInfo getDataCenterInfo() {
-        return amazonInfoHolder.getCurrent();
+        return amazonInfoHolder.get();
     }
 
     @Override

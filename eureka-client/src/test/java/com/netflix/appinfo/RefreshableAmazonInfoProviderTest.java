@@ -14,7 +14,7 @@ import static org.junit.Assert.assertThat;
 /**
  * @author David Liu
  */
-public class RefreshableAmazonInfoHolderTest {
+public class RefreshableAmazonInfoProviderTest {
 
     private InstanceInfo instanceInfo;
 
@@ -28,7 +28,7 @@ public class RefreshableAmazonInfoHolderTest {
         AmazonInfo oldInfo = (AmazonInfo) instanceInfo.getDataCenterInfo();
 
         AmazonInfo newInfo = copyAmazonInfo(instanceInfo);
-        assertThat(RefreshableAmazonInfoHolder.shouldUpdate(newInfo, oldInfo), is(false));
+        assertThat(RefreshableAmazonInfoProvider.shouldUpdate(newInfo, oldInfo), is(false));
     }
 
     @Test
@@ -36,7 +36,7 @@ public class RefreshableAmazonInfoHolderTest {
         AmazonInfo oldInfo = (AmazonInfo) instanceInfo.getDataCenterInfo();
 
         AmazonInfo newInfo = new AmazonInfo();
-        assertThat(RefreshableAmazonInfoHolder.shouldUpdate(newInfo, oldInfo), is(false));
+        assertThat(RefreshableAmazonInfoProvider.shouldUpdate(newInfo, oldInfo), is(false));
     }
 
     @Test
@@ -52,7 +52,7 @@ public class RefreshableAmazonInfoHolderTest {
         newInfo.getMetadata().put(instanceId.getName(), "");
         assertThat(newInfo.getId(), is(""));
         assertThat(newInfo.get(instanceId), is(""));
-        assertThat(RefreshableAmazonInfoHolder.shouldUpdate(newInfo, oldInfo), is(false));
+        assertThat(RefreshableAmazonInfoProvider.shouldUpdate(newInfo, oldInfo), is(false));
     }
 
     @Test
@@ -66,7 +66,7 @@ public class RefreshableAmazonInfoHolderTest {
 
         newInfo.getMetadata().put(localIpv4.getName(), "");
         assertThat(newInfo.get(localIpv4), is(""));
-        assertThat(RefreshableAmazonInfoHolder.shouldUpdate(newInfo, oldInfo), is(false));
+        assertThat(RefreshableAmazonInfoProvider.shouldUpdate(newInfo, oldInfo), is(false));
     }
 
     @Test
@@ -76,12 +76,12 @@ public class RefreshableAmazonInfoHolderTest {
         AmazonInfo newInfo = copyAmazonInfo(instanceInfo);
         newInfo.getMetadata().remove(amiId.getName());
         assertThat(newInfo.getMetadata().size(), is(oldInfo.getMetadata().size() - 1));
-        assertThat(RefreshableAmazonInfoHolder.shouldUpdate(newInfo, oldInfo), is(true));
+        assertThat(RefreshableAmazonInfoProvider.shouldUpdate(newInfo, oldInfo), is(true));
 
         String newKey = "someNewKey";
         newInfo.getMetadata().put(newKey, "bar");
         assertThat(newInfo.getMetadata().size(), is(oldInfo.getMetadata().size()));
-        assertThat(RefreshableAmazonInfoHolder.shouldUpdate(newInfo, oldInfo), is(true));
+        assertThat(RefreshableAmazonInfoProvider.shouldUpdate(newInfo, oldInfo), is(true));
     }
 
     private static AmazonInfo copyAmazonInfo(InstanceInfo instanceInfo) {
