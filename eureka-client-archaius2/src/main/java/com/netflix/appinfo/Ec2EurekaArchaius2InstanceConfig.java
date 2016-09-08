@@ -1,8 +1,5 @@
 package com.netflix.appinfo;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -11,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
-import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.archaius.api.Config;
 
 /**
@@ -33,7 +29,7 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
     };
 
     private final AmazonInfoConfig amazonInfoConfig;
-    private volatile AmazonInfo amazonInfo;
+    private final RefreshableAmazonInfoProvider amazonInfoHolder;
 
     @Inject
     public Ec2EurekaArchaius2InstanceConfig(Config config, AmazonInfoConfig amazonInfoConfig) {
@@ -44,56 +40,32 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
         super(config, namespace);
         this.amazonInfoConfig = amazonInfoConfig;
 
-        try {
-            this.amazonInfo = AmazonInfo.Builder
-                    .newBuilder()
-                    .withAmazonInfoConfig(amazonInfoConfig)
-                    .autoBuild(namespace);
+        RefreshableAmazonInfoProvider.FallbackAddressProvider fallbackAddressProvider =
+                new RefreshableAmazonInfoProvider.FallbackAddressProvider() {
+                    @Override
+                    public String getFallbackIp() {
+                        return Ec2EurekaArchaius2InstanceConfig.super.getIpAddress();
+                    }
 
-            LOG.info("Datacenter is: " + Name.Amazon);
-        } 
-        catch (Exception e) {
-            LOG.error("Cannot initialize amazon info :", e);
-            throw new RuntimeException(e);
-        }
-        
-        // Instance id being null means we could not get the amazon metadata
-        if (amazonInfo.get(MetaDataKey.instanceId) == null) {
-            if (config.getBoolean(namespace + ".validateInstanceId", true)) {
-                throw new RuntimeException(
-                        "Your datacenter is defined as cloud but we are not able to get the amazon metadata to "
-                                + "register. \nSet the property 'eureka.validateInstanceId' to false to ignore the"
-                                + "metadata call");
-            } 
-            else {
-                // The property to not validate instance ids may be set for development and in that scenario,
-                // populate instance id and public hostname with the hostname of the machine
-                Map<String, String> metadataMap = new HashMap<>();
-                metadataMap.put(MetaDataKey.instanceId.getName(),     super.getIpAddress());
-                metadataMap.put(MetaDataKey.publicHostname.getName(), super.getHostName(false));
-                amazonInfo.setMetadata(metadataMap);
-            }
-        } 
-        else if ((amazonInfo.get(MetaDataKey.publicHostname) == null)
-                && (amazonInfo.get(MetaDataKey.localIpv4) != null)) {
-            // This might be a case of VPC where the instance id is not null, but
-            // public hostname might be null
-            amazonInfo.getMetadata().put(MetaDataKey.publicHostname.getName(),
-                    (amazonInfo.get(MetaDataKey.localIpv4)));
-        }
+                    @Override
+                    public String getFallbackHostname() {
+                        return Ec2EurekaArchaius2InstanceConfig.super.getHostName(false);
+                    }
+                };
+        this.amazonInfoHolder = new RefreshableAmazonInfoProvider(amazonInfoConfig, fallbackAddressProvider);
     }
     
     @Override
     public String getHostName(boolean refresh) {
         if (refresh) {
-            refreshAmazonInfo();
+            amazonInfoHolder.refresh();
         }
-        return amazonInfo.get(MetaDataKey.publicHostname);
+        return amazonInfoHolder.get().get(MetaDataKey.publicHostname);
     }
 
     @Override
     public DataCenterInfo getDataCenterInfo() {
-        return amazonInfo;
+        return amazonInfoHolder.get();
     }
 
     @Override
@@ -103,24 +75,13 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
     }
 
     /**
+     * @deprecated 2016-09-07
+     *
      * Refresh instance info - currently only used when in AWS cloud
      * as a public ip can change whenever an EIP is associated or dissociated.
      */
+    @Deprecated
     public synchronized void refreshAmazonInfo() {
-        try {
-            AmazonInfo newInfo = AmazonInfo.Builder
-                    .newBuilder()
-                    .withAmazonInfoConfig(amazonInfoConfig)
-                    .autoBuild(namespace);
-
-            if (!newInfo.equals(amazonInfo)) {
-                // the datacenter info has changed, re-sync it
-                LOG.warn("The AmazonInfo changed from : {} => {}", amazonInfo, newInfo);
-                this.amazonInfo = newInfo;
-            }
-        }
-        catch (Exception e) {
-            LOG.error("Cannot refresh the Amazon Info ", e);
-        }
+        amazonInfoHolder.refresh();
     }
 }

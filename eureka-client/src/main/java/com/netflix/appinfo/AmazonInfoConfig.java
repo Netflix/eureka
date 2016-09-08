@@ -42,4 +42,13 @@ public interface AmazonInfoConfig {
      * @return whether autoloading should fail fast if loading has failed for the first field (after all retries)
      */
     boolean shouldFailFastOnFirstLoad();
+
+    /**
+     * When AmazonInfo is specified, setting this to false allows progress on building the AmazonInfo even if
+     * the instanceId of the environment is not able to be validated.
+     *
+     * @return whether to progress with AmazonInfo construction if the instanceId cannot be validated.
+     */
+    boolean shouldValidateInstanceId();
+
 }

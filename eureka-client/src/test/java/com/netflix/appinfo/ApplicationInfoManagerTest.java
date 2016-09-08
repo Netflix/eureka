@@ -42,7 +42,7 @@ public class ApplicationInfoManagerTest {
         String newPublicHostname = "newValue";
         assertThat(instanceInfo.getHostName(), is(not(newPublicHostname)));
 
-        config.info.getMetadata().put(publicHostname.getName(), newPublicHostname);
+        ((AmazonInfo)config.getDataCenterInfo()).getMetadata().put(publicHostname.getName(), newPublicHostname);
         applicationInfoManager.refreshDataCenterInfoIfRequired();
 
         assertThat(instanceInfo.getHostName(), is(newPublicHostname));

@@ -60,4 +60,9 @@ public class Archaius2AmazonInfoConfig implements AmazonInfoConfig {
     public boolean shouldFailFastOnFirstLoad() {
         return config.getBoolean(FAIL_FAST_ON_FIRST_LOAD_KEY, true);
     }
+
+    @Override
+    public boolean shouldValidateInstanceId() {
+        return config.getBoolean(SHOULD_VALIDATE_INSTANCE_ID_KEY, true);
+    }
 }

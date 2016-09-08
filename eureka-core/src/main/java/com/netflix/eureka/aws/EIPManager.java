@@ -183,7 +183,7 @@ public class EIPManager implements AwsBinder {
      *     the EIP is bound to this instance.
      */
     public void bindEIP() {
-        InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
+        InstanceInfo myInfo = applicationInfoManager.getInfo();
         String myInstanceId = ((AmazonInfo) myInfo.getDataCenterInfo()).get(MetaDataKey.instanceId);
         String myZone = ((AmazonInfo) myInfo.getDataCenterInfo()).get(MetaDataKey.availabilityZone);
 

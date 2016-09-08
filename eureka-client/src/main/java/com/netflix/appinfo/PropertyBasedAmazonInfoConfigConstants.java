@@ -11,6 +11,8 @@ final class PropertyBasedAmazonInfoConfigConstants {
     static final String NUM_RETRIES_KEY = "mt.num_retries";
     static final String FAIL_FAST_ON_FIRST_LOAD_KEY = "mt.fail_fast_on_first_load";
 
+    static final String SHOULD_VALIDATE_INSTANCE_ID_KEY = "validateInstanceId";
+
 
     static class Values {
         static final int DEFAULT_READ_TIMEOUT = 5000;
