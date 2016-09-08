@@ -10,12 +10,15 @@ import com.google.common.collect.Sets;
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
 import com.netflix.discovery.CommonConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.netflix.appinfo.PropertyBasedInstanceConfigConstants.*;
 
 @Singleton
 @ConfigurationSource(CommonConstants.CONFIG_FILE_NAME)
 public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
+    private static final Logger logger = LoggerFactory.getLogger(EurekaArchaius2InstanceConfig.class);
 
     protected String namespace;
 
@@ -120,7 +123,13 @@ public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
         Map<String, String> meta = new HashMap<>(); 
         Config config = this.config.getPrefixedView(INSTANCE_METADATA_PREFIX);
         for (String key : Sets.newHashSet(config.getKeys())) {
-            meta.put(key, config.getString(key));
+            String value = config.getString(key);
+            // only add the metadata if the value is present
+            if (value != null && !value.isEmpty()) {
+                meta.put(key, config.getString(key));
+            } else {
+                logger.warn("Not adding metadata with key \"{}\" as it has null or empty value", key);
+            }
         }
         return meta;
     }

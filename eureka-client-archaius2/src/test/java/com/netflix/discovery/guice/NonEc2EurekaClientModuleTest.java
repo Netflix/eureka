@@ -1,13 +1,10 @@
 package com.netflix.discovery.guice;
 
-import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.DataCenterInfo;
-import com.netflix.appinfo.Ec2EurekaArchaius2InstanceConfig;
 import com.netflix.appinfo.EurekaArchaius2InstanceConfig;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.appinfo.MyDataCenterInfo;
 import com.netflix.appinfo.providers.Archaius2VipAddressResolver;
 import com.netflix.appinfo.providers.VipAddressResolver;
 import com.netflix.archaius.config.MapConfig;
