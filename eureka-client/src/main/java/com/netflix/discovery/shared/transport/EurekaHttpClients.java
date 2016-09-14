@@ -143,8 +143,9 @@ public final class EurekaHttpClients {
 
         List<AwsEndpoint> initialValue = delegateResolver.getClusterEndpoints();
         if (initialValue.isEmpty()) {
-            String msg = "Initial resolution of Eureka endpoints failed. Check ConfigClusterResolver logs for more info";
+            String msg = "Initial resolution of Eureka server endpoints failed. Check ConfigClusterResolver logs for more info";
             logger.error(msg);
+            failFastOnInitCheck(clientConfig, msg);
         }
 
         return new AsyncResolver<>(
@@ -205,6 +206,7 @@ public final class EurekaHttpClients {
         if (initialValue.isEmpty()) {
             String msg = "Initial resolution of Eureka endpoints failed. Check ConfigClusterResolver logs for more info";
             logger.error(msg);
+            failFastOnInitCheck(clientConfig, msg);
         }
 
         String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
@@ -314,5 +316,12 @@ public final class EurekaHttpClients {
                 return clusterResolver.getClusterEndpoints();
             }
         };
+    }
+
+    // potential future feature, guarding with experimental flag for now
+    private static void failFastOnInitCheck(EurekaClientConfig clientConfig, String msg) {
+        if ("true".equals(clientConfig.getExperimental("clientTransportFailFastOnInit"))) {
+            throw new RuntimeException(msg);
+        }
     }
 }

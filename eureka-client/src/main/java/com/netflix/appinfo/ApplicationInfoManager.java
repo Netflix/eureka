@@ -111,8 +111,12 @@ public class ApplicationInfoManager {
      * additional meta data that need to be accessed for other reasons.The data
      * will be periodically sent to the eureka server.
      *
-     * @param appMetadata
-     *            application specific meta data.
+     * Please Note that metadata added via this method is not guaranteed to be submitted
+     * to the eureka servers upon initial registration, and may be submitted as an update
+     * at a subsequent time. If you want guaranteed metadata for initial registration,
+     * please use the mechanism described in {@link EurekaInstanceConfig#getMetadataMap()}
+     *
+     * @param appMetadata application specific meta data.
      */
     public void registerAppMetadata(Map<String, String> appMetadata) {
         instanceInfo.registerRuntimeMetadata(appMetadata);

@@ -20,11 +20,13 @@ public class StatusUtil {
     private final String myAppName;
     private final PeerAwareInstanceRegistry registry;
     private final PeerEurekaNodes peerEurekaNodes;
+    private final InstanceInfo instanceInfo;
 
     public StatusUtil(EurekaServerContext server) {
         this.myAppName = server.getApplicationInfoManager().getInfo().getAppName();
         this.registry = server.getRegistry();
         this.peerEurekaNodes = server.getPeerEurekaNodes();
+        this.instanceInfo = server.getApplicationInfoManager().getInfo();
     }
 
     public StatusInfo getStatusInfo() {
@@ -50,6 +52,8 @@ public class StatusUtil {
         builder.add("registered-replicas", replicaHostNames.toString());
         builder.add("available-replicas", upReplicas.toString());
         builder.add("unavailable-replicas", downReplicas.toString());
+
+        builder.withInstanceInfo(this.instanceInfo);
 
         return builder.build();
     }

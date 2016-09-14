@@ -42,6 +42,11 @@ public class StatusInfo {
             return this;
         }
 
+        public Builder withInstanceInfo(InstanceInfo instanceInfo) {
+            result.instanceInfo = instanceInfo;
+            return this;
+        }
+
         /**
          * Add any application specific status data.
          */
@@ -58,6 +63,10 @@ public class StatusInfo {
          * built here too.
          */
         public StatusInfo build() {
+            if (result.instanceInfo == null) {
+                throw new IllegalStateException("instanceInfo can not be null");
+            }
+
             result.generalStats.put("server-uptime", getUpTime());
             result.generalStats.put("environment", ConfigurationManager
                     .getDeploymentContext().getDeploymentEnvironment());
