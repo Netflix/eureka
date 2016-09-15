@@ -32,12 +32,12 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
     private final RefreshableAmazonInfoProvider amazonInfoHolder;
 
     @Inject
-    public Ec2EurekaArchaius2InstanceConfig(Config config, AmazonInfoConfig amazonInfoConfig) {
-        this(config, amazonInfoConfig, CommonConstants.DEFAULT_CONFIG_NAMESPACE);
+    public Ec2EurekaArchaius2InstanceConfig(Config configInstance, AmazonInfoConfig amazonInfoConfig) {
+        this(configInstance, amazonInfoConfig, CommonConstants.DEFAULT_CONFIG_NAMESPACE);
     }
 
-    public Ec2EurekaArchaius2InstanceConfig(Config config, AmazonInfoConfig amazonInfoConfig, String namespace) {
-        super(config, namespace);
+    public Ec2EurekaArchaius2InstanceConfig(Config configInstance, AmazonInfoConfig amazonInfoConfig, String namespace) {
+        super(configInstance, namespace);
         this.amazonInfoConfig = amazonInfoConfig;
 
         RefreshableAmazonInfoProvider.FallbackAddressProvider fallbackAddressProvider =
