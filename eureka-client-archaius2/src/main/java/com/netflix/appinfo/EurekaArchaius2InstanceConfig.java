@@ -10,7 +10,7 @@ import com.google.common.collect.Sets;
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
 import com.netflix.discovery.CommonConstants;
-import com.netflix.discovery.internal.util.Archaius2PrefixedConfig;
+import com.netflix.discovery.internal.util.InternalPrefixedConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +24,7 @@ public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
     protected String namespace;
 
     private final Config configInstance;
-    private final Archaius2PrefixedConfig prefixedConfig;
+    private final InternalPrefixedConfig prefixedConfig;
     private final DataCenterInfo dcInfo;
 
     private final String defaultAppGroup;
@@ -47,7 +47,7 @@ public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
         this.defaultAppGroup = configInstance.getString(FALLBACK_APP_GROUP_KEY, Values.UNKNOWN_APPLICATION);
         this.namespace = namespace;
         this.configInstance = configInstance;
-        this.prefixedConfig = new Archaius2PrefixedConfig(configInstance, namespace);
+        this.prefixedConfig = new InternalPrefixedConfig(configInstance, namespace);
         this.dcInfo = dcInfo;
     }
 
@@ -124,7 +124,7 @@ public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
     @Override
     public Map<String, String> getMetadataMap() {
         Map<String, String> meta = new HashMap<>();
-        Archaius2PrefixedConfig metadataConfig = new Archaius2PrefixedConfig(configInstance, namespace, INSTANCE_METADATA_PREFIX);
+        InternalPrefixedConfig metadataConfig = new InternalPrefixedConfig(configInstance, namespace, INSTANCE_METADATA_PREFIX);
         for (String key : Sets.newHashSet(metadataConfig.getKeys())) {
             String value = metadataConfig.getString(key, null);
             // only add the metadata if the value is present

@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
 import com.netflix.discovery.CommonConstants;
-import com.netflix.discovery.internal.util.Archaius2PrefixedConfig;
+import com.netflix.discovery.internal.util.InternalPrefixedConfig;
 
 import javax.inject.Singleton;
 
@@ -17,7 +17,7 @@ import static com.netflix.discovery.shared.transport.PropertyBasedTransportConfi
 @ConfigurationSource(CommonConstants.CONFIG_FILE_NAME)
 public class EurekaArchaius2TransportConfig implements EurekaTransportConfig {
     private final Config configInstance;
-    private final Archaius2PrefixedConfig prefixedConfig;
+    private final InternalPrefixedConfig prefixedConfig;
 
     @Inject
     public EurekaArchaius2TransportConfig(Config configInstance) {
@@ -30,7 +30,7 @@ public class EurekaArchaius2TransportConfig implements EurekaTransportConfig {
 
     public EurekaArchaius2TransportConfig(Config configInstance, String parentNamespace, String subNamespace) {
         this.configInstance = configInstance;
-        this.prefixedConfig = new Archaius2PrefixedConfig(configInstance, parentNamespace, subNamespace);
+        this.prefixedConfig = new InternalPrefixedConfig(configInstance, parentNamespace, subNamespace);
     }
 
     @Override

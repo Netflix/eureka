@@ -11,7 +11,7 @@ import com.netflix.archaius.api.annotations.ConfigurationSource;
 import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.internal.util.AmazonInfoUtils;
-import com.netflix.discovery.internal.util.Archaius2PrefixedConfig;
+import com.netflix.discovery.internal.util.InternalPrefixedConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +25,7 @@ import java.net.URL;
  * {@link com.netflix.appinfo.Ec2EurekaArchaius2InstanceConfig} or
  * {@link com.netflix.appinfo.EurekaArchaius2InstanceConfig} based on some selection strategy.
  *
- * If no prefixedConfig based override is applied, this Factory will automatically detect whether the
+ * If no config based override is applied, this Factory will automatically detect whether the
  * current deployment environment is EC2 or not, and create the appropriate Config instances.
  *
  * Setting the property <b>eureka.instanceDeploymentEnvironment=ec2</b> will force the instantiation
@@ -51,7 +51,7 @@ public class CompositeInstanceConfigFactory implements EurekaInstanceConfigFacto
 
     private final String namespace;
     private final Config configInstance;
-    private final Archaius2PrefixedConfig prefixedConfig;
+    private final InternalPrefixedConfig prefixedConfig;
 
     private EurekaInstanceConfig eurekaInstanceConfig;
 
@@ -59,21 +59,21 @@ public class CompositeInstanceConfigFactory implements EurekaInstanceConfigFacto
     public CompositeInstanceConfigFactory(Config configInstance, String namespace) {
         this.configInstance = configInstance;
         this.namespace = namespace;
-        this.prefixedConfig = new Archaius2PrefixedConfig(configInstance, namespace);
+        this.prefixedConfig = new InternalPrefixedConfig(configInstance, namespace);
     }
 
     @Override
     public synchronized EurekaInstanceConfig get() {
         if (eurekaInstanceConfig == null) {
             // create the amazonInfoConfig before we can determine if we are in EC2, as we want to use the amazonInfoConfig for
-            // that determination. This is just the prefixedConfig however so is cheap to do and does not have side effects.
+            // that determination. This is just the config however so is cheap to do and does not have side effects.
             AmazonInfoConfig amazonInfoConfig = new Archaius2AmazonInfoConfig(configInstance, namespace);
             if (isInEc2(amazonInfoConfig)) {
                 eurekaInstanceConfig = new Ec2EurekaArchaius2InstanceConfig(configInstance, amazonInfoConfig, namespace);
-                logger.info("Creating EC2 specific instance prefixedConfig");
+                logger.info("Creating EC2 specific instance config");
             } else {
                 eurekaInstanceConfig = new EurekaArchaius2InstanceConfig(configInstance, namespace);
-                logger.info("Creating generic instance prefixedConfig");
+                logger.info("Creating generic instance config");
             }
 
             // TODO: Remove this when DiscoveryManager is finally no longer used
@@ -89,7 +89,7 @@ public class CompositeInstanceConfigFactory implements EurekaInstanceConfigFacto
         if (deploymentEnvironmentOverride == null) {
             return autoDetectEc2(amazonInfoConfig);
         } else if ("ec2".equalsIgnoreCase(deploymentEnvironmentOverride)) {
-            logger.info("Assuming EC2 deployment environment due to prefixedConfig override");
+            logger.info("Assuming EC2 deployment environment due to config override");
             return true;
         } else {
             return false;

@@ -10,11 +10,11 @@ import java.util.Iterator;
  *
  * @author David Liu
  */
-public final class Archaius2PrefixedConfig {
+public final class InternalPrefixedConfig {
     private final Config config;
     private final String namespace;
 
-    public Archaius2PrefixedConfig(Config config, String... namespaces) {
+    public InternalPrefixedConfig(Config config, String... namespaces) {
         this.config = config;
         String tempNamespace = "";
         for (String namespace : namespaces) {

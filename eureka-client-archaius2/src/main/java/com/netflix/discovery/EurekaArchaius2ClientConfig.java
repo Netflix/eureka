@@ -8,7 +8,7 @@ import com.google.inject.Inject;
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
-import com.netflix.discovery.internal.util.Archaius2PrefixedConfig;
+import com.netflix.discovery.internal.util.InternalPrefixedConfig;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 
 import javax.inject.Singleton;
@@ -23,7 +23,7 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
     private static final String DEFAULT_NAMESPACE = "eureka";
 
     private final Config configInstance;
-    private final Archaius2PrefixedConfig prefixedConfig;
+    private final InternalPrefixedConfig prefixedConfig;
     private final EurekaTransportConfig transportConfig;
 
     @Inject
@@ -34,7 +34,7 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
     public EurekaArchaius2ClientConfig(Config configInstance, EurekaTransportConfig transportConfig, String namespace) {
         this.transportConfig = transportConfig;
         this.configInstance = configInstance;
-        this.prefixedConfig = new Archaius2PrefixedConfig(configInstance, namespace);
+        this.prefixedConfig = new InternalPrefixedConfig(configInstance, namespace);
     }
 
     public int getRegistryFetchIntervalSeconds() {
