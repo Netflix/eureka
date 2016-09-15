@@ -37,7 +37,9 @@ public class ConfigClusterResolver implements ClusterResolver<AwsEndpoint> {
     @Override
     public List<AwsEndpoint> getClusterEndpoints() {
         if (clientConfig.shouldUseDnsForFetchingServiceUrls()) {
-            logger.info("Resolving eureka endpoints via DNS");
+            if (logger.isInfoEnabled()) {
+                logger.info("Resolving eureka endpoints via DNS: {}", getDNSName());
+            }
             return getClusterEndpointsFromDns();
         } else {
             logger.info("Resolving eureka endpoints via configuration");
@@ -46,13 +48,12 @@ public class ConfigClusterResolver implements ClusterResolver<AwsEndpoint> {
     }
 
     private List<AwsEndpoint> getClusterEndpointsFromDns() {
-        String region = getRegion();
-        String discoveryDnsName = "txt." + region + '.' + clientConfig.getEurekaServerDNSName();
+        String discoveryDnsName = getDNSName();
         int port = Integer.parseInt(clientConfig.getEurekaServerPort());
 
         // cheap enough so just re-use
         DnsTxtRecordClusterResolver dnsResolver = new DnsTxtRecordClusterResolver(
-                region,
+                getRegion(),
                 discoveryDnsName,
                 true,
                 port,
@@ -96,5 +97,9 @@ public class ConfigClusterResolver implements ClusterResolver<AwsEndpoint> {
         }
 
         return endpoints;
+    }
+
+    private String getDNSName() {
+        return "txt." + getRegion() + '.' + clientConfig.getEurekaServerDNSName();
     }
 }

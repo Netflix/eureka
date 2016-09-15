@@ -22,16 +22,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRootName;
 import com.google.inject.ProvidedBy;
+import com.netflix.appinfo.providers.Archaius1VipAddressResolver;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
-import com.netflix.config.DynamicPropertyFactory;
+import com.netflix.appinfo.providers.VipAddressResolver;
 import com.netflix.discovery.converters.Auto;
 import com.netflix.discovery.converters.EurekaJacksonCodec.InstanceInfoSerializer;
 import com.netflix.discovery.provider.Serializer;
@@ -81,7 +80,6 @@ public class InstanceInfo {
     }
 
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfo.class);
-    private static final Pattern VIP_ATTRIBUTES_PATTERN = Pattern.compile("\\$\\{(.*?)\\}");
 
     public static final int DEFAULT_PORT = 7001;
     public static final int DEFAULT_SECURE_PORT = 7002;
@@ -358,21 +356,33 @@ public class InstanceInfo {
         private static final String HTTPS_PROTOCOL = "https://";
         private static final String HTTP_PROTOCOL = "http://";
 
+        private static final class LazyHolder {
+            private static final VipAddressResolver DEFAULT_VIP_ADDRESS_RESOLVER = new Archaius1VipAddressResolver();
+        }
+
         @XStreamOmitField
         private InstanceInfo result;
 
+        @XStreamOmitField
+        private final VipAddressResolver vipAddressResolver;
+
         private String namespace;
 
-        private Builder() {
-            result = new InstanceInfo();
+        private Builder(InstanceInfo result, VipAddressResolver vipAddressResolver) {
+            this.vipAddressResolver = vipAddressResolver;
+            this.result = result;
         }
 
         public Builder(InstanceInfo instanceInfo) {
-            result = instanceInfo;
+            this(instanceInfo, LazyHolder.DEFAULT_VIP_ADDRESS_RESOLVER);
         }
 
         public static Builder newBuilder() {
-            return new Builder();
+            return new Builder(new InstanceInfo(), LazyHolder.DEFAULT_VIP_ADDRESS_RESOLVER);
+        }
+
+        public static Builder newBuilder(VipAddressResolver vipAddressResolver) {
+            return new Builder(new InstanceInfo(), vipAddressResolver);
         }
 
         public Builder setInstanceId(String instanceId) {
@@ -664,9 +674,10 @@ public class InstanceInfo {
          * @param vipAddress - The Virtual Internet Protocol address of this instance.
          * @return the instance builder.
          */
-        public Builder setVIPAddress(String vipAddress) {
+        public Builder setVIPAddress(final String vipAddress) {
             result.vipAddressUnresolved = StringCache.intern(vipAddress);
-            result.vipAddress = StringCache.intern(resolveDeploymentContextBasedVipAddresses(vipAddress));
+            result.vipAddress = StringCache.intern(
+                    vipAddressResolver.resolveDeploymentContextBasedVipAddresses(vipAddress));
             return this;
         }
 
@@ -687,9 +698,10 @@ public class InstanceInfo {
          * @param secureVIPAddress the secure VIP address of the instance.
          * @return - Builder instance
          */
-        public Builder setSecureVIPAddress(String secureVIPAddress) {
+        public Builder setSecureVIPAddress(final String secureVIPAddress) {
             result.secureVipAddressUnresolved = StringCache.intern(secureVIPAddress);
-            result.secureVipAddress = StringCache.intern(resolveDeploymentContextBasedVipAddresses(secureVIPAddress));
+            result.secureVipAddress = StringCache.intern(
+                    vipAddressResolver.resolveDeploymentContextBasedVipAddresses(secureVIPAddress));
             return this;
         }
 
@@ -1300,40 +1312,6 @@ public class InstanceInfo {
             Map<String, String> runtimeMetadata) {
         metadata.putAll(runtimeMetadata);
         setIsDirty();
-    }
-
-    /**
-     * Convert <code>VIPAddress</code> by substituting environment variables if
-     * necessary.
-     *
-     * @param vipAddressMacro
-     *            the macro for which the interpolation needs to be made.
-     * @return a string representing the final <code>VIPAddress</code> after
-     *         substitution.
-     */
-    private static String resolveDeploymentContextBasedVipAddresses(
-            String vipAddressMacro) {
-        String result = vipAddressMacro;
-
-        if (vipAddressMacro == null) {
-            return null;
-        }
-
-        Matcher matcher = VIP_ATTRIBUTES_PATTERN.matcher(result);
-        while (matcher.find()) {
-            String key = matcher.group(1);
-            String value = DynamicPropertyFactory.getInstance()
-                    .getStringProperty(key, "").get();
-
-            logger.debug("att:" + matcher.group());
-            logger.debug(", att key:" + key);
-            logger.debug(", att value:" + value);
-            logger.debug("");
-            result = result.replaceAll("\\$\\{" + key + "\\}", value);
-            matcher = VIP_ATTRIBUTES_PATTERN.matcher(result);
-        }
-
-        return result;
     }
 
     /**

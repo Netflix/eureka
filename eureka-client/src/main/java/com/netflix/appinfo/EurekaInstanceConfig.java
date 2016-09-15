@@ -68,6 +68,8 @@ public interface EurekaInstanceConfig {
      * soon as it is registered with eureka. Sometimes the application might
      * need to do some pre-processing before it is ready to take traffic.
      *
+     * :( public API typos are the worst. I think this was meant to be "OnInit".
+     *
      * @return true to immediately start taking traffic, false otherwise.
      */
     boolean isInstanceEnabledOnit();

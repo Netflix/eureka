@@ -8,10 +8,10 @@ import com.google.common.base.Supplier;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.governator.annotations.binding.DownStatus;
-import com.netflix.governator.annotations.binding.UpStatus;
 
 /**
+ * @deprecated 2016-09-06 this class will be deleted soon. This is also an internal class.
+ *
  * Specific bindings for eureka status checker.
  *
  * Note that this is an internal modules and ASSUMES that a binding for
@@ -26,6 +26,7 @@ import com.netflix.governator.annotations.binding.UpStatus;
  * @author elandau
  *
  */
+@Deprecated
 @Singleton
 public class InternalEurekaStatusModule extends AbstractModule {
     @Singleton
@@ -66,12 +67,10 @@ public class InternalEurekaStatusModule extends AbstractModule {
     protected void configure() {
         bind(new TypeLiteral<Supplier<Boolean>>() {
         })
-                .annotatedWith(UpStatus.class)
                 .toProvider(UpStatusProvider.class);
 
         bind(new TypeLiteral<Supplier<Boolean>>() {
         })
-                .annotatedWith(DownStatus.class)
                 .toProvider(DownStatusProvider.class);
     }
 }
