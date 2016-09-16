@@ -36,13 +36,13 @@ public class StatusUtilTest {
     
     @Test
     public void testGetStatusInfoUnsetHealth() {
-        StatusUtil statusUtil = getStatusUtil(5, 3, 0);
+        StatusUtil statusUtil = getStatusUtil(5, 3, -1);
         StatusInfo statusInfo = statusUtil.getStatusInfo();
         
         try {
             statusInfo.isHealthy();
         } catch (NullPointerException e) {
-            // Expected that the healthy flag is not set when the minimum value is 0
+            // Expected that the healthy flag is not set when the minimum value is -1
             return;
         }
         

@@ -669,12 +669,9 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
         return configInstance.getStringProperty(namespace + "experimental." + name, null).get();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public int getMinNumberOfAvailablePeers() {
+    public int getHealthStatusMinNumberOfAvailablePeers() {
         return configInstance.getIntProperty(
-                namespace + "minAvailableInstancesForPeerReplication", 0).get();
+                namespace + "minAvailableInstancesForPeerReplication", -1).get();
     }
 }

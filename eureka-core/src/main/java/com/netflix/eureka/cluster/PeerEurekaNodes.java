@@ -69,7 +69,7 @@ public class PeerEurekaNodes {
     }
     
     public int getMinNumberOfAvailablePeers() {
-        return serverConfig.getMinNumberOfAvailablePeers();
+        return serverConfig.getHealthStatusMinNumberOfAvailablePeers();
     }
 
     public void start() {

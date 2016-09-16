@@ -411,10 +411,18 @@ public interface EurekaServerConfig {
     
     /**
      * Get the minimum number of available peer replication instances
+     * for this instance to be considered healthy. The design of eureka allows
+     * for an instance to continue operating with zero peers, but that would not
+     * be ideal.
+     * <p>
+     * The default value of -1 is interpreted as a marker to not compare
+     * the number of replicas. This would be done to either disable this check
+     * or to run eureka in a single node configuration.
      * 
      * @return minimum number of available peer replication instances
+     *         for this instance to be considered healthy.
      */
-    int getMinNumberOfAvailablePeers();
+    int getHealthStatusMinNumberOfAvailablePeers();
 
     /**
      * Get the time in milliseconds to try to replicate before dropping
