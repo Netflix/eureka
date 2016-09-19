@@ -47,33 +47,68 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class ApplicationInfoManager {
     private static final Logger logger = LoggerFactory.getLogger(ApplicationInfoManager.class);
-    private static ApplicationInfoManager instance = new ApplicationInfoManager();
+
+    private static final InstanceStatusMapper NO_OP_MAPPER = new InstanceStatusMapper() {
+        @Override
+        public InstanceStatus map(InstanceStatus prev) {
+            return prev;
+        }
+    };
+
+    private static ApplicationInfoManager instance = new ApplicationInfoManager(null, null, null);
+
+    protected final Map<String, StatusChangeListener> listeners;
+    private final InstanceStatusMapper instanceStatusMapper;
 
     private InstanceInfo instanceInfo;
     private EurekaInstanceConfig config;
 
-    protected Map<String, StatusChangeListener> listeners;
+    public static class OptionalArgs {
+        private InstanceStatusMapper instanceStatusMapper;
 
-    private ApplicationInfoManager() {
-        listeners = new ConcurrentHashMap<String, StatusChangeListener>();
+        @com.google.inject.Inject(optional = true)
+        public void setInstanceStatusMapper(InstanceStatusMapper instanceStatusMapper) {
+            this.instanceStatusMapper = instanceStatusMapper;
+        }
+
+        InstanceStatusMapper getInstanceStatusMapper() {
+            return instanceStatusMapper == null ? NO_OP_MAPPER : instanceStatusMapper;
+        }
     }
 
     /**
-     * public for spring DI use. This class should be in singleton scope so do not create explicitly.
-     * Either use DI or use getInstance().initComponent() if not using DI
+     * public for DI use. This class should be in singleton scope so do not create explicitly.
+     * Either use DI or create this explicitly using one of the other public constructors.
      */
     @Inject
-    public ApplicationInfoManager(EurekaInstanceConfig config, InstanceInfo instanceInfo) {
+    public ApplicationInfoManager(EurekaInstanceConfig config, InstanceInfo instanceInfo, OptionalArgs optionalArgs) {
         this.config = config;
         this.instanceInfo = instanceInfo;
         this.listeners = new ConcurrentHashMap<String, StatusChangeListener>();
+        if (optionalArgs != null) {
+            this.instanceStatusMapper = optionalArgs.getInstanceStatusMapper();
+        } else {
+            this.instanceStatusMapper = NO_OP_MAPPER;
+        }
 
         // Hack to allow for getInstance() to use the DI'd ApplicationInfoManager
         instance = this;
     }
 
+    public ApplicationInfoManager(EurekaInstanceConfig config, /* nullable */ OptionalArgs optionalArgs) {
+        this(config, new EurekaConfigBasedInstanceInfoProvider(config).get(), optionalArgs);
+    }
+
+    public ApplicationInfoManager(EurekaInstanceConfig config, InstanceInfo instanceInfo) {
+        this(config, instanceInfo, null);
+    }
+
+    /**
+     * @deprecated 2016-09-19 prefer {@link #ApplicationInfoManager(EurekaInstanceConfig, com.netflix.appinfo.ApplicationInfoManager.OptionalArgs)}
+     */
+    @Deprecated
     public ApplicationInfoManager(EurekaInstanceConfig config) {
-        this(config, new EurekaConfigBasedInstanceInfoProvider(config).get());
+        this(config, (OptionalArgs) null);
     }
 
     /**
@@ -130,11 +165,16 @@ public class ApplicationInfoManager {
      * @param status Status of the instance
      */
     public synchronized void setInstanceStatus(InstanceStatus status) {
-        InstanceStatus prev = instanceInfo.setStatus(status);
+        InstanceStatus next = instanceStatusMapper.map(status);
+        if (next == null) {
+            return;
+        }
+
+        InstanceStatus prev = instanceInfo.setStatus(next);
         if (prev != null) {
             for (StatusChangeListener listener : listeners.values()) {
                 try {
-                    listener.notify(new StatusChangeEvent(prev, status));
+                    listener.notify(new StatusChangeEvent(prev, next));
                 } catch (Exception e) {
                     logger.warn("failed to notify listener: {}", listener.getId(), e);
                 }
@@ -203,4 +243,16 @@ public class ApplicationInfoManager {
 
         void notify(StatusChangeEvent statusChangeEvent);
     }
+
+    public static interface InstanceStatusMapper {
+
+        /**
+         * given a starting {@link com.netflix.appinfo.InstanceInfo.InstanceStatus}, apply a mapping to return
+         * the follow up status, if applicable.
+         *
+         * @return the mapped instance status, or null if the mapping is not applicable.
+         */
+        InstanceStatus map(InstanceStatus prev);
+    }
+
 }
