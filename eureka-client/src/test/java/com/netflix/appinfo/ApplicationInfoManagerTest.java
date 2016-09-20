@@ -3,7 +3,6 @@ package com.netflix.appinfo;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.junit.Before;
 import org.junit.Test;
-import org.omg.CORBA.UNKNOWN;
 
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.localIpv4;
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.publicHostname;
@@ -12,7 +11,6 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
