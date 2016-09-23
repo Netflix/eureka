@@ -41,7 +41,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @ProvidedBy(CloudInstanceConfigProvider.class)
-public class CloudInstanceConfig extends PropertiesInstanceConfig {
+public class CloudInstanceConfig extends PropertiesInstanceConfig implements RefreshableInstanceConfig {
     private static final Logger logger = LoggerFactory.getLogger(CloudInstanceConfig.class);
 
     private static final String[] DEFAULT_AWS_ADDRESS_RESOLUTION_ORDER = new String[] {
@@ -94,6 +94,7 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig {
         return this.resolveDefaultAddress(true);
     }
 
+    @Override
     public String resolveDefaultAddress(boolean refresh) {
         // In this method invocation data center info will be refreshed.
         String result = getHostName(refresh);

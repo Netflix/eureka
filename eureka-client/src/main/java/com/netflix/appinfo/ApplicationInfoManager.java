@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * The information required for registration is provided by the user by passing
  * the configuration defined by the contract in {@link EurekaInstanceConfig}
  * }.AWS clients can either use or extend {@link CloudInstanceConfig
- * }.Other non-AWS clients can use or extend either
+ * }. Other non-AWS clients can use or extend either
  * {@link MyDataCenterInstanceConfig} or very basic
  * {@link AbstractInstanceConfig}.
  * </p>
@@ -201,9 +201,9 @@ public class ApplicationInfoManager {
         String existingAddress = instanceInfo.getHostName();
 
         String newAddress;
-        if (config instanceof CloudInstanceConfig) {
+        if (config instanceof RefreshableInstanceConfig) {
             // Refresh data center info, and return up to date address
-            newAddress = ((CloudInstanceConfig) config).resolveDefaultAddress(true);
+            newAddress = ((RefreshableInstanceConfig) config).resolveDefaultAddress(true);
         } else {
             newAddress = config.getHostName(true);
         }
