@@ -20,7 +20,7 @@ import com.netflix.archaius.api.Config;
  *
  */
 @Singleton
-public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceConfig {
+public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceConfig implements RefreshableInstanceConfig {
     private static final Logger LOG = LoggerFactory.getLogger(Ec2EurekaArchaius2InstanceConfig.class);
 
     private static final String[] DEFAULT_AWS_ADDRESS_RESOLUTION_ORDER = new String[] {
@@ -36,23 +36,39 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
         this(configInstance, amazonInfoConfig, CommonConstants.DEFAULT_CONFIG_NAMESPACE);
     }
 
+    /* visible for testing */ Ec2EurekaArchaius2InstanceConfig(Config configInstance, AmazonInfo info) {
+        this(configInstance, new Archaius2AmazonInfoConfig(configInstance), CommonConstants.DEFAULT_CONFIG_NAMESPACE, info, false);
+    }
+
     public Ec2EurekaArchaius2InstanceConfig(Config configInstance, AmazonInfoConfig amazonInfoConfig, String namespace) {
+        this(configInstance, amazonInfoConfig, namespace, null, true);
+    }
+
+    /* visible for testing */ Ec2EurekaArchaius2InstanceConfig(Config configInstance,
+                                                               AmazonInfoConfig amazonInfoConfig,
+                                                               String namespace,
+                                                               AmazonInfo initialInfo,
+                                                               boolean eagerInit) {
         super(configInstance, namespace);
         this.amazonInfoConfig = amazonInfoConfig;
 
-        RefreshableAmazonInfoProvider.FallbackAddressProvider fallbackAddressProvider =
-                new RefreshableAmazonInfoProvider.FallbackAddressProvider() {
-                    @Override
-                    public String getFallbackIp() {
-                        return Ec2EurekaArchaius2InstanceConfig.super.getIpAddress();
-                    }
+        if (eagerInit) {
+            RefreshableAmazonInfoProvider.FallbackAddressProvider fallbackAddressProvider =
+                    new RefreshableAmazonInfoProvider.FallbackAddressProvider() {
+                        @Override
+                        public String getFallbackIp() {
+                            return Ec2EurekaArchaius2InstanceConfig.super.getIpAddress();
+                        }
 
-                    @Override
-                    public String getFallbackHostname() {
-                        return Ec2EurekaArchaius2InstanceConfig.super.getHostName(false);
-                    }
-                };
-        this.amazonInfoHolder = new RefreshableAmazonInfoProvider(amazonInfoConfig, fallbackAddressProvider);
+                        @Override
+                        public String getFallbackHostname() {
+                            return Ec2EurekaArchaius2InstanceConfig.super.getHostName(false);
+                        }
+                    };
+            this.amazonInfoHolder = new RefreshableAmazonInfoProvider(amazonInfoConfig, fallbackAddressProvider);
+        } else {
+            this.amazonInfoHolder = new RefreshableAmazonInfoProvider(initialInfo, amazonInfoConfig);
+        }
     }
     
     @Override
@@ -83,5 +99,26 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
     @Deprecated
     public synchronized void refreshAmazonInfo() {
         amazonInfoHolder.refresh();
+    }
+
+    @Override
+    public String resolveDefaultAddress(boolean refresh) {
+        // In this method invocation data center info will be refreshed.
+        String result = getHostName(refresh);
+
+        for (String name : getDefaultAddressResolutionOrder()) {
+            try {
+                AmazonInfo.MetaDataKey key = AmazonInfo.MetaDataKey.valueOf(name);
+                String address = amazonInfoHolder.get().get(key);
+                if (address != null && !address.isEmpty()) {
+                    result = address;
+                    break;
+                }
+            } catch (Exception e) {
+                LOG.error("failed to resolve default address for key {}, skipping", name, e);
+            }
+        }
+
+        return result;
     }
 }

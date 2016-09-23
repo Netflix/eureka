@@ -839,7 +839,9 @@ public class InstanceInfo {
         }
 
         public Builder setNamespace(String namespace) {
-            this.namespace = namespace;
+            this.namespace = namespace.endsWith(".")
+                    ? namespace
+                    : namespace + ".";
             return this;
         }
     }
