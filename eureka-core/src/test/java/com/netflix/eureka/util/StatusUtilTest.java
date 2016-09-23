@@ -1,10 +1,10 @@
 package com.netflix.eureka.util;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -14,7 +14,10 @@ import org.junit.Test;
 
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Application;
+import com.netflix.discovery.shared.transport.EurekaTransportConfig;
+import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerContext;
 import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.eureka.cluster.PeerEurekaNodes;
@@ -62,19 +65,29 @@ public class StatusUtilTest {
         Application mockApplication = mock(Application.class);
         when(mockApplication.getInstances()).thenReturn(mockInstanceInfos);
         
+        ApplicationInfoManager mockAppInfoManager = mock(ApplicationInfoManager.class);
+        when(mockAppInfoManager.getInfo()).thenReturn(mockInstanceInfos.get(0));
+        when(mockEurekaServerContext.getApplicationInfoManager()).thenReturn(mockAppInfoManager);
+        
         PeerAwareInstanceRegistry mockRegistry = mock(PeerAwareInstanceRegistry.class);
         when(mockRegistry.getApplication("stuff", false)).thenReturn(mockApplication);
         when(mockEurekaServerContext.getRegistry()).thenReturn(mockRegistry);
         
         List<PeerEurekaNode> mockNodes = getMockNodes(replicas);
-        PeerEurekaNodes mockPeerEurekaNodes = mock(PeerEurekaNodes.class);
-        when(mockPeerEurekaNodes.getMinNumberOfAvailablePeers()).thenReturn(minimum);
-        when(mockPeerEurekaNodes.getPeerEurekaNodes()).thenReturn(mockNodes);
-        when(mockEurekaServerContext.getPeerEurekaNodes()).thenReturn(mockPeerEurekaNodes);
         
-        ApplicationInfoManager mockAppInfoManager = mock(ApplicationInfoManager.class);
-        when(mockAppInfoManager.getInfo()).thenReturn(mockInstanceInfos.get(0));
-        when(mockEurekaServerContext.getApplicationInfoManager()).thenReturn(mockAppInfoManager);
+        EurekaTransportConfig mockTransportConfig = mock(EurekaTransportConfig.class);
+        when(mockTransportConfig.applicationsResolverUseIp()).thenReturn(false);
+        EurekaClientConfig mockClientConfig = mock(EurekaClientConfig.class);
+        when(mockClientConfig.getTransportConfig()).thenReturn(mockTransportConfig);
+        
+        EurekaServerConfig mockServerConfig = mock(EurekaServerConfig.class);
+        when(mockServerConfig.getHealthStatusMinNumberOfAvailablePeers()).thenReturn(minimum);
+        
+        PeerEurekaNodes peerEurekaNodes = new PeerEurekaNodes(mockRegistry, mockServerConfig, mockClientConfig, null, mockAppInfoManager);
+        PeerEurekaNodes spyPeerEurekaNodes = spy(peerEurekaNodes);
+        when(spyPeerEurekaNodes.getPeerEurekaNodes()).thenReturn(mockNodes);
+        
+        when(mockEurekaServerContext.getPeerEurekaNodes()).thenReturn(spyPeerEurekaNodes);
         
         return new StatusUtil(mockEurekaServerContext);
     }
