@@ -102,7 +102,7 @@ public class DiscoveryClientRegisterUpdateTest {
 
     public class TestApplicationInfoManager extends ApplicationInfoManager {
         TestApplicationInfoManager() {
-            super(null, null);
+            super(null, null, null);
         }
 
         public Map<String, StatusChangeListener> getStatusChangeListeners() {

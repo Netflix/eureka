@@ -12,6 +12,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.InstanceInfo.PortType;
 import com.netflix.appinfo.LeaseInfo;
+import com.netflix.appinfo.RefreshableInstanceConfig;
 import com.netflix.appinfo.UniqueIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,9 +70,9 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
             }
 
             String defaultAddress;
-            if (config instanceof CloudInstanceConfig) {
+            if (config instanceof RefreshableInstanceConfig) {
                 // Refresh AWS data center info, and return up to date address
-                defaultAddress = ((CloudInstanceConfig) config).resolveDefaultAddress(false);
+                defaultAddress = ((RefreshableInstanceConfig) config).resolveDefaultAddress(false);
             } else {
                 defaultAddress = config.getHostName(false);
             }

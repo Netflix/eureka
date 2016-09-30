@@ -11,6 +11,7 @@ import com.netflix.archaius.api.annotations.ConfigurationSource;
 import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.internal.util.AmazonInfoUtils;
+import com.netflix.discovery.internal.util.InternalPrefixedConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,27 +50,29 @@ public class CompositeInstanceConfigFactory implements EurekaInstanceConfigFacto
     private static final String DEPLOYMENT_ENVIRONMENT_OVERRIDE_KEY = "instanceDeploymentEnvironment";
 
     private final String namespace;
-    private final Config config;
+    private final Config configInstance;
+    private final InternalPrefixedConfig prefixedConfig;
 
     private EurekaInstanceConfig eurekaInstanceConfig;
 
     @Inject
-    public CompositeInstanceConfigFactory(Config config, String namespace) {
-        this.config = config;
+    public CompositeInstanceConfigFactory(Config configInstance, String namespace) {
+        this.configInstance = configInstance;
         this.namespace = namespace;
+        this.prefixedConfig = new InternalPrefixedConfig(configInstance, namespace);
     }
 
     @Override
     public synchronized EurekaInstanceConfig get() {
         if (eurekaInstanceConfig == null) {
-            // create the config before we can determine if we are in EC2, as we want to use the config for
+            // create the amazonInfoConfig before we can determine if we are in EC2, as we want to use the amazonInfoConfig for
             // that determination. This is just the config however so is cheap to do and does not have side effects.
-            AmazonInfoConfig amazonInfoConfig = new Archaius2AmazonInfoConfig(config, namespace);
+            AmazonInfoConfig amazonInfoConfig = new Archaius2AmazonInfoConfig(configInstance, namespace);
             if (isInEc2(amazonInfoConfig)) {
-                eurekaInstanceConfig = new Ec2EurekaArchaius2InstanceConfig(config, amazonInfoConfig, namespace);
+                eurekaInstanceConfig = new Ec2EurekaArchaius2InstanceConfig(configInstance, amazonInfoConfig, namespace);
                 logger.info("Creating EC2 specific instance config");
             } else {
-                eurekaInstanceConfig = new EurekaArchaius2InstanceConfig(config, namespace);
+                eurekaInstanceConfig = new EurekaArchaius2InstanceConfig(configInstance, namespace);
                 logger.info("Creating generic instance config");
             }
 
@@ -120,6 +123,6 @@ public class CompositeInstanceConfigFactory implements EurekaInstanceConfigFacto
     }
 
     private String getDeploymentEnvironmentOverride() {
-        return config.getPrefixedView(namespace).getString(DEPLOYMENT_ENVIRONMENT_OVERRIDE_KEY, null);
+        return prefixedConfig.getString(DEPLOYMENT_ENVIRONMENT_OVERRIDE_KEY, null);
     }
 }
