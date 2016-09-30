@@ -1,0 +1,24 @@
+configurations.all {
+    exclude module: 'jsr311-api'
+    exclude group: 'com.sun.jersey'
+    exclude group: 'com.sun.jersey.contribs'
+}
+
+dependencies {
+    compile project(':eureka-core')
+    compile project(':eureka-client-jersey2')
+    compile 'org.glassfish.jersey.core:jersey-client:2.23.1'
+    compile 'org.glassfish.jersey.connectors:jersey-apache-connector:2.23.1'
+
+    testCompile (project(':eureka-test-utils')) {
+        // exclude all transitives to avoid bringing in jersey1 eureka-core
+        transitive = false
+    }
+    // bring in jersey2 compatible eureka-core-jersey2 directly
+    testCompile project(':eureka-core-jersey2')
+
+    testCompile "junit:junit:${junit_version}"
+    testCompile "org.mock-server:mockserver-netty:${mockserverVersion}"
+    testCompile "org.mockito:mockito-core:${mockitoVersion}"
+    testRuntime 'org.slf4j:slf4j-simple:1.7.10'
+}

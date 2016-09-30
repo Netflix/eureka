@@ -23,7 +23,7 @@ import com.sun.jersey.api.client.WebResource.Builder;
 import java.util.Map;
 
 /**
- * A version of Jersey {@link EurekaHttpClient} to be used by applications.
+ * A version of Jersey1 {@link EurekaHttpClient} to be used by applications.
  *
  * @author Tomasz Bak
  */

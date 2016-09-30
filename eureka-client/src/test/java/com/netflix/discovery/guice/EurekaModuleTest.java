@@ -1,6 +1,8 @@
 package com.netflix.discovery.guice;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Binding;
+import com.google.inject.Key;
 import com.google.inject.Scopes;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.EurekaInstanceConfig;
@@ -11,6 +13,7 @@ import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import com.netflix.governator.InjectorBuilder;
 import com.netflix.governator.LifecycleInjector;
 import org.junit.After;
@@ -71,5 +74,8 @@ public class EurekaModuleTest {
 
         EurekaInstanceConfig eurekaInstanceConfig = injector.getInstance(EurekaInstanceConfig.class);
         Assert.assertEquals(DiscoveryManager.getInstance().getEurekaInstanceConfig(), eurekaInstanceConfig);
+
+        Binding<TransportClientFactories> binding = injector.getExistingBinding(Key.get(TransportClientFactories.class));
+        Assert.assertNull(binding);  // no bindings so defaulting to default of jersey1
     }
 }

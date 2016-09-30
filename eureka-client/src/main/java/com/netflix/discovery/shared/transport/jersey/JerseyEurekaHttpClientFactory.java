@@ -117,15 +117,7 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
                 .withAdditionalFilters(additionalFilters)
                 .withMyInstanceInfo(myInstanceInfo)
                 .withUserAgent("Java-EurekaClient")
-                .withClientAccept(EurekaAccept.fromString(clientConfig.getClientDataAccept()))
-                .withAllowRedirect(clientConfig.allowRedirects())
-                .withConnectionTimeout(clientConfig.getEurekaServerConnectTimeoutSeconds() * 1000)
-                .withReadTimeout(clientConfig.getEurekaServerReadTimeoutSeconds() * 1000)
-                .withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost())
-                .withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections())
-                .withConnectionIdleTimeout(clientConfig.getEurekaConnectionIdleTimeoutSeconds() * 1000)
-                .withEncoder(clientConfig.getEncoderName())
-                .withDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept())
+                .withClientConfig(clientConfig)
                 .withClientIdentity(clientIdentity);
 
         if ("true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {

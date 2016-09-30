@@ -48,6 +48,8 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.ws.rs.core.Response.Status;
 
+import com.netflix.discovery.shared.transport.jersey.Jersey1DiscoveryClientOptionalArgs;
+import com.netflix.discovery.shared.transport.jersey.Jersey1TransportClientFactories;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,12 +78,10 @@ import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
 import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import com.netflix.discovery.util.ThresholdLevelsMetric;
-import com.netflix.eventbus.spi.EventBus;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
-import com.sun.jersey.api.client.filter.ClientFilter;
 
 /**
  * The class that is instrumental for interactions with <tt>Eureka Server</tt>.
@@ -218,62 +218,8 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
-    public static class DiscoveryClientOptionalArgs {
-        private Provider<HealthCheckCallback> healthCheckCallbackProvider;
+    public static class DiscoveryClientOptionalArgs extends Jersey1DiscoveryClientOptionalArgs {
 
-        private Provider<HealthCheckHandler> healthCheckHandlerProvider;
-
-        private Collection<ClientFilter> additionalFilters;
-
-        private EurekaJerseyClient eurekaJerseyClient;
-        
-        private Set<EurekaEventListener> eventListeners;
-
-        @Inject(optional = true)
-        public void setEventListeners(Set<EurekaEventListener> listeners) {
-            if (eventListeners == null) {
-                eventListeners = new HashSet<>();
-            }
-            eventListeners.addAll(listeners);
-        }
-        
-        @Inject(optional = true)
-        public void setEventBus(final EventBus eventBus) {
-            if (eventListeners == null) {
-                eventListeners = new HashSet<>();
-            }
-            
-            eventListeners.add(new EurekaEventListener() {
-                @Override
-                public void onEvent(EurekaEvent event) {
-                    eventBus.publish(event);
-                }
-            });
-        }
-
-        @Inject(optional = true) 
-        public void setHealthCheckCallbackProvider(Provider<HealthCheckCallback> healthCheckCallbackProvider) {
-            this.healthCheckCallbackProvider = healthCheckCallbackProvider;
-        }
-
-        @Inject(optional = true) 
-        public void setHealthCheckHandlerProvider(Provider<HealthCheckHandler> healthCheckHandlerProvider) {
-            this.healthCheckHandlerProvider = healthCheckHandlerProvider;
-        }
-
-        @Inject(optional = true) 
-        public void setAdditionalFilters(Collection<ClientFilter> additionalFilters) {
-            this.additionalFilters = additionalFilters;
-        }
-
-        @Inject(optional = true) 
-        public void setEurekaJerseyClient(EurekaJerseyClient eurekaJerseyClient) {
-            this.eurekaJerseyClient = eurekaJerseyClient;
-        }
-        
-        Set<EurekaEventListener> getEventListeners() {
-            return eventListeners == null ? Collections.<EurekaEventListener>emptySet() : eventListeners;
-        }
     }
 
     /**
@@ -296,11 +242,27 @@ public class DiscoveryClient implements EurekaClient {
         this(ApplicationInfoManager.getInstance(), config, args);
     }
 
+    /**
+     * @deprecated use constructor that takes ApplicationInfoManager instead of InstanceInfo directly
+     */
+    @Deprecated
+    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args) {
+        this(ApplicationInfoManager.getInstance(), config, args);
+    }
+
     public DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config) {
         this(applicationInfoManager, config, null);
     }
 
+    /**
+     * @deprecated use the version that take {@link com.netflix.discovery.AbstractDiscoveryClientOptionalArgs} instead
+     */
+    @Deprecated
     public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
+        this(applicationInfoManager, config, (AbstractDiscoveryClientOptionalArgs) args);
+    }
+
+    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args) {
         this(applicationInfoManager, config, args, new Provider<BackupRegistry>() {
             private volatile BackupRegistry backupRegistryInstance;
 
@@ -333,7 +295,7 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     @Inject
-    DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, DiscoveryClientOptionalArgs args,
+    DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args,
                     Provider<BackupRegistry> backupRegistryProvider) {
         if (args != null) {
             this.healthCheckHandlerProvider = args.healthCheckHandlerProvider;
@@ -465,19 +427,32 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     private void scheduleServerEndpointTask(EurekaTransport eurekaTransport,
-                                            DiscoveryClientOptionalArgs args) {
+                                            AbstractDiscoveryClientOptionalArgs args) {
 
-        Collection<ClientFilter> additionalFilters = args == null
-                ? Collections.<ClientFilter>emptyList()
+            
+        Collection<?> additionalFilters = args == null
+                ? Collections.emptyList()
                 : args.additionalFilters;
 
         EurekaJerseyClient providedJerseyClient = args == null
                 ? null
                 : args.eurekaJerseyClient;
+        
+        TransportClientFactories argsTransportClientFactories = null;
+        if (args != null && args.getTransportClientFactories() != null) {
+            argsTransportClientFactories = args.getTransportClientFactories();
+        }
+        
+        // Ignore the raw types warnings since the client filter interface changed between jersey 1/2
+        @SuppressWarnings("rawtypes")
+        TransportClientFactories transportClientFactories = argsTransportClientFactories == null
+                ? new Jersey1TransportClientFactories()
+                : argsTransportClientFactories;
 
+        // If the transport factory was not supplied with args, assume they are using jersey 1 for passivity
         eurekaTransport.transportClientFactory = providedJerseyClient == null
-                ? TransportClientFactories.newTransportClientFactory(clientConfig, additionalFilters, applicationInfoManager.getInfo())
-                : TransportClientFactories.newTransportClientFactory(additionalFilters, providedJerseyClient);
+                ? transportClientFactories.newTransportClientFactory(clientConfig, additionalFilters, applicationInfoManager.getInfo())
+                : transportClientFactories.newTransportClientFactory(additionalFilters, providedJerseyClient);
 
         ApplicationsResolver.ApplicationsSource applicationsSource = new ApplicationsResolver.ApplicationsSource() {
             @Override
@@ -542,8 +517,14 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
+    @Override
     public EurekaClientConfig getEurekaClientConfig() {
         return clientConfig;
+    }
+    
+    @Override
+    public ApplicationInfoManager getApplicationInfoManager() {
+        return applicationInfoManager;
     }
 
     /*

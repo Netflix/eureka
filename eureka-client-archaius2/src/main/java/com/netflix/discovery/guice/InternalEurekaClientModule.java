@@ -3,6 +3,7 @@ package com.netflix.discovery.guice;
 import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
@@ -13,6 +14,7 @@ import com.netflix.appinfo.providers.EurekaInstanceConfigFactory;
 import com.netflix.appinfo.providers.VipAddressResolver;
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
+import com.netflix.discovery.AbstractDiscoveryClientOptionalArgs;
 import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.EurekaArchaius2ClientConfig;
@@ -20,6 +22,7 @@ import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.transport.EurekaArchaius2TransportConfig;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
+import com.netflix.discovery.shared.transport.jersey.Jersey1DiscoveryClientOptionalArgs;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -70,6 +73,10 @@ final class InternalEurekaClientModule extends AbstractModule {
         bind(VipAddressResolver.class).to(Archaius2VipAddressResolver.class);
         bind(InstanceInfo.class).toProvider(EurekaConfigBasedInstanceInfoProvider.class);
         bind(EurekaClient.class).to(DiscoveryClient.class);
+
+
+        // Default to the jersey1 discovery client optional args
+        bind(AbstractDiscoveryClientOptionalArgs.class).to(Jersey1DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
     }
 
     @Provides
