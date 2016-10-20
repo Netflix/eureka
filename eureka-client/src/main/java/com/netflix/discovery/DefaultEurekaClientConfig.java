@@ -112,7 +112,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     @Override
     public int getInitialInstanceInfoReplicationIntervalSeconds() {
         return configInstance.getIntProperty(
-                namespace + INITIAL_REGISTRATION_REPLCIATION_DELAY_KEY, 40).get();
+                namespace + INITIAL_REGISTRATION_REPLICATION_DELAY_KEY, 40).get();
     }
 
     /*

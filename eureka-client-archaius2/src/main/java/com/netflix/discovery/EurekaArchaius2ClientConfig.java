@@ -46,7 +46,7 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
     }
 
     public int getInitialInstanceInfoReplicationIntervalSeconds() {
-        return prefixedConfig.getInteger(INITIAL_REGISTRATION_REPLCIATION_DELAY_KEY, 40);
+        return prefixedConfig.getInteger(INITIAL_REGISTRATION_REPLICATION_DELAY_KEY, 40);
     }
 
     public int getEurekaServiceUrlPollIntervalSeconds() {
