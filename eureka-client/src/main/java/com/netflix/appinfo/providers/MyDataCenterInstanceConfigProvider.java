@@ -1,7 +1,8 @@
 package com.netflix.appinfo.providers;
 
+import javax.inject.Provider;
+
 import com.google.inject.Inject;
-import com.google.inject.Provider;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.discovery.DiscoveryManager;
