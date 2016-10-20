@@ -1,11 +1,10 @@
 package com.netflix.appinfo.providers;
 
 import javax.inject.Singleton;
+import javax.inject.Provider;
 import java.util.Map;
 
 import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.netflix.appinfo.CloudInstanceConfig;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;

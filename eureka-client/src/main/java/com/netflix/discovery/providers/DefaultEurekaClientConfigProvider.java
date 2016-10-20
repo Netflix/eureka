@@ -1,7 +1,8 @@
 package com.netflix.discovery.providers;
 
+import javax.inject.Provider;
+
 import com.google.inject.Inject;
-import com.google.inject.Provider;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClientConfig;
