@@ -16,7 +16,7 @@ final class PropertyBasedClientConfigConstants {
 
     static final String REGISTRY_REFRESH_INTERVAL_KEY = "client.refresh.interval";
     static final String REGISTRATION_REPLICATION_INTERVAL_KEY = "appinfo.replicate.interval";
-    static final String INITIAL_REGISTRATION_REPLCIATION_DELAY_KEY = "appinfo.initial.replicate.time";
+    static final String INITIAL_REGISTRATION_REPLICATION_DELAY_KEY = "appinfo.initial.replicate.time";
     static final String HEARTBEAT_THREADPOOL_SIZE_KEY = "client.heartbeat.threadPoolSize";
     static final String HEARTBEAT_BACKOFF_BOUND_KEY = "client.heartbeat.exponentialBackOffBound";
     static final String CACHEREFRESH_THREADPOOL_SIZE_KEY = "client.cacheRefresh.threadPoolSize";
