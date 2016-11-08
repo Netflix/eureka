@@ -84,9 +84,6 @@ public class StatusInfo {
                     String.valueOf(totalMem - freeMem) + "mb" + " ("
                             + usedPercent + "%)");
 
-            result.instanceInfo = ApplicationInfoManager.getInstance()
-                    .getInfo();
-
             return result;
         }
     }
