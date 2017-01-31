@@ -7,8 +7,6 @@ import com.netflix.discovery.shared.resolver.ClusterResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -79,11 +77,11 @@ public class ConfigClusterResolver implements ClusterResolver<AwsEndpoint> {
 
         List<AwsEndpoint> endpoints = new ArrayList<>();
         for (String zone : serviceUrls.keySet()) {
-            for(String url : serviceUrls.get(zone)) {
+            for (String url : serviceUrls.get(zone)) {
                 try {
                     endpoints.add(new AwsEndpoint(url, getRegion(), zone));
                 } catch (Exception ignore) {
-                    logger.warn("Invalid eureka server URI: ; removing from the server pool", url);
+                    logger.warn("Invalid eureka server URI: {}; removing from the server pool", url);
                 }
             }
         }
