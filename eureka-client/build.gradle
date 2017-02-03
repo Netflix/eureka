@@ -34,4 +34,5 @@ dependencies {
     testCompile 'org.mortbay.jetty:jetty:6.1H.22'
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
     testCompile "org.mock-server:mockserver-netty:${mockserverVersion}"
+    testCompile "com.netflix.governator:governator:${governatorVersion}"
 }
