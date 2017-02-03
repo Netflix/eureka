@@ -147,7 +147,9 @@ public class Application {
      */
     @JsonIgnore
     public List<InstanceInfo> getInstancesAsIsFromEureka() {
-        return new ArrayList<InstanceInfo>(this.instances);
+        synchronized (instances) {
+           return new ArrayList<InstanceInfo>(this.instances);
+        }
     }
 
 
