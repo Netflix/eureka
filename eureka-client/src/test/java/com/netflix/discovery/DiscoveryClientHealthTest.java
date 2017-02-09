@@ -4,6 +4,7 @@ import com.netflix.appinfo.HealthCheckCallback;
 import com.netflix.appinfo.HealthCheckHandler;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.config.ConfigurationManager;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -34,7 +35,7 @@ public class DiscoveryClientHealthTest extends AbstractDiscoveryClientTester {
         DiscoveryClient clientImpl = (DiscoveryClient) client;
 
         InstanceInfoReplicator instanceInfoReplicator = clientImpl.getInstanceInfoReplicator();
-        instanceInfoReplicator.run();
+        instanceInfoReplicator.refresh();
 
         Assert.assertEquals("Instance info status not as expected.", InstanceInfo.InstanceStatus.STARTING,
                 clientImpl.getInstanceInfo().getStatus());
@@ -45,14 +46,14 @@ public class DiscoveryClientHealthTest extends AbstractDiscoveryClientTester {
                 clientImpl.getInstanceInfo().getStatus());
 
         myCallback.reset();
-        instanceInfoReplicator.run();
+        instanceInfoReplicator.refresh();
         Assert.assertFalse("Healthcheck callback invoked when status is OOS.", myCallback.isInvoked());
 
         clientImpl.getInstanceInfo().setStatus(InstanceInfo.InstanceStatus.DOWN);
         Assert.assertEquals("Instance info status not as expected.", InstanceInfo.InstanceStatus.DOWN,
                 clientImpl.getInstanceInfo().getStatus());
         myCallback.reset();
-        instanceInfoReplicator.run();
+        instanceInfoReplicator.refresh();
 
         Assert.assertTrue("Healthcheck callback not invoked.", myCallback.isInvoked());
         Assert.assertEquals("Instance info status not as expected.", InstanceInfo.InstanceStatus.UP,
@@ -71,7 +72,7 @@ public class DiscoveryClientHealthTest extends AbstractDiscoveryClientTester {
 
         Assert.assertEquals("Instance info status not as expected.", InstanceInfo.InstanceStatus.STARTING,
                 clientImpl.getInstanceInfo().getStatus());
-        instanceInfoReplicator.run();
+        instanceInfoReplicator.refresh();
 
         Assert.assertTrue("Healthcheck callback not invoked when status is STARTING.", myHealthCheckHandler.isInvoked());
         Assert.assertEquals("Instance info status not as expected post healthcheck.", InstanceInfo.InstanceStatus.UP,
@@ -81,7 +82,7 @@ public class DiscoveryClientHealthTest extends AbstractDiscoveryClientTester {
         Assert.assertEquals("Instance info status not as expected.", InstanceInfo.InstanceStatus.OUT_OF_SERVICE,
                 clientImpl.getInstanceInfo().getStatus());
         myHealthCheckHandler.reset();
-        instanceInfoReplicator.run();
+        instanceInfoReplicator.refresh();
 
         Assert.assertTrue("Healthcheck callback not invoked when status is OUT_OF_SERVICE.", myHealthCheckHandler.isInvoked());
         Assert.assertEquals("Instance info status not as expected post healthcheck.", InstanceInfo.InstanceStatus.UP,
@@ -91,7 +92,7 @@ public class DiscoveryClientHealthTest extends AbstractDiscoveryClientTester {
         Assert.assertEquals("Instance info status not as expected.", InstanceInfo.InstanceStatus.DOWN,
                 clientImpl.getInstanceInfo().getStatus());
         myHealthCheckHandler.reset();
-        instanceInfoReplicator.run();
+        instanceInfoReplicator.refresh();
 
         Assert.assertTrue("Healthcheck callback not invoked when status is DOWN.", myHealthCheckHandler.isInvoked());
         Assert.assertEquals("Instance info status not as expected post healthcheck.", InstanceInfo.InstanceStatus.UP,
@@ -100,7 +101,7 @@ public class DiscoveryClientHealthTest extends AbstractDiscoveryClientTester {
         clientImpl.getInstanceInfo().setStatus(InstanceInfo.InstanceStatus.UP);
         myHealthCheckHandler.reset();
         myHealthCheckHandler.shouldException = true;
-        instanceInfoReplicator.run();
+        instanceInfoReplicator.refresh();
 
         Assert.assertTrue("Healthcheck callback not invoked when status is UP.", myHealthCheckHandler.isInvoked());
         Assert.assertEquals("Instance info status not as expected post healthcheck.", InstanceInfo.InstanceStatus.DOWN,
