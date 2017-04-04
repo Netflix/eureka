@@ -135,7 +135,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     protected void initRemoteRegionRegistry() throws MalformedURLException {
         Map<String, String> remoteRegionUrlsWithName = serverConfig.getRemoteRegionUrlsWithName();
-        if (remoteRegionUrlsWithName != null) {
+        if (remoteRegionUrlsWithName.size() > 0) {
             allKnownRemoteRegions = new String[remoteRegionUrlsWithName.size()];
             int remoteRegionArrayIndex = 0;
             for (Map.Entry<String, String> remoteRegionUrlWithName : remoteRegionUrlsWithName.entrySet()) {
