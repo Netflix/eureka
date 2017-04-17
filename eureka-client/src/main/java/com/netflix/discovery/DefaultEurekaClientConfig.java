@@ -424,6 +424,12 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 namespace + FETCH_SINGLE_VIP_ONLY_KEY, null).get();
     }
 
+    @Override
+    public int getSchedulerExecutorThreadPoolSize() {
+        return configInstance.getIntProperty(
+                namespace + SCHEDULER_THREADPOOL_SIZE_KEY, Values.DEFAULT_SCHEDULER_EXECUTOR_THREAD_POOL_SIZE).get();
+    }
+
     /**
      * (non-Javadoc)
      *

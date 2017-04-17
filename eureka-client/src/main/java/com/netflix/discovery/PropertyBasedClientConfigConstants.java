@@ -17,6 +17,7 @@ final class PropertyBasedClientConfigConstants {
     static final String REGISTRY_REFRESH_INTERVAL_KEY = "client.refresh.interval";
     static final String REGISTRATION_REPLICATION_INTERVAL_KEY = "appinfo.replicate.interval";
     static final String INITIAL_REGISTRATION_REPLICATION_DELAY_KEY = "appinfo.initial.replicate.time";
+    static final String SCHEDULER_THREADPOOL_SIZE_KEY = "client.scheduler.threadPoolSize";
     static final String HEARTBEAT_THREADPOOL_SIZE_KEY = "client.heartbeat.threadPoolSize";
     static final String HEARTBEAT_BACKOFF_BOUND_KEY = "client.heartbeat.exponentialBackOffBound";
     static final String CACHEREFRESH_THREADPOOL_SIZE_KEY = "client.cacheRefresh.threadPoolSize";
@@ -76,6 +77,7 @@ final class PropertyBasedClientConfigConstants {
 
         static final String DEFAULT_CLIENT_REGION = "us-east-1";
 
+        static final int DEFAULT_SCHEDULER_EXECUTOR_THREAD_POOL_SIZE = 3;
         static final int DEFAULT_EXECUTOR_THREAD_POOL_SIZE = 5;
         static final int DEFAULT_EXECUTOR_THREAD_POOL_BACKOFF_BOUND = 10;
     }
