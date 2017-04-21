@@ -1,6 +1,7 @@
 package com.netflix.eureka.resources;
 
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.transport.ClusterSampleData;
@@ -80,6 +81,16 @@ public class PeerReplicationResourceTest {
                 Long.toString(replicationInstance.getLastDirtyTimestamp())
         );
     }
+    
+    @Test
+    public void testConflictResponseReturnsTheInstanceInfoInTheResponseEntity() throws Exception {
+        when(instanceResource.renewLease(anyString(), anyString(), anyString(), anyString())).thenReturn(Response.status(Status.CONFLICT).entity(instanceInfo).build());
+
+        ReplicationInstance replicationInstance = newReplicationInstanceOf(Action.Heartbeat, instanceInfo);
+        Response response = peerReplicationResource.batchReplication(new ReplicationList(replicationInstance));
+
+        assertStatusIsConflict(response);
+    }
 
     @Test
     public void testStatusUpdate() throws Exception {
@@ -112,9 +123,17 @@ public class PeerReplicationResourceTest {
     }
 
     private static void assertStatusOkReply(Response httpResponse) {
+        assertStatus(httpResponse, 200);
+    }
+    
+    private static void assertStatusIsConflict(Response httpResponse) {
+        assertStatus(httpResponse, 409);
+    }
+
+    private static void assertStatus(Response httpResponse, int expectedStatusCode) {
         ReplicationListResponse entity = (ReplicationListResponse) httpResponse.getEntity();
         assertThat(entity, is(notNullValue()));
         ReplicationInstanceResponse replicationResponse = entity.getResponseList().get(0);
-        assertThat(replicationResponse.getStatusCode(), is(equalTo(200)));
+        assertThat(replicationResponse.getStatusCode(), is(equalTo(expectedStatusCode)));
     }
 }
