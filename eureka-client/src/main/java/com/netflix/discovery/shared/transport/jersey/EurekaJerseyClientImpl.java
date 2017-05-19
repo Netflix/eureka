@@ -93,6 +93,7 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
         private int connectionIdleTimeout;
         private EncoderWrapper encoderWrapper;
         private DecoderWrapper decoderWrapper;
+        private SSLContext sslContext;
 
         public EurekaJerseyClientBuilder withClientName(String clientName) {
             this.clientName = clientName;
@@ -165,6 +166,11 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
             this.decoderWrapper = decoderWrapper;
             return this;
         }
+        
+        public EurekaJerseyClientBuilder withCustomSSL(SSLContext sslContext) {
+            this.sslContext = sslContext;
+            return this;
+        }
 
         public EurekaJerseyClient build() {
             MyDefaultApacheHttpClient4Config config = new MyDefaultApacheHttpClient4Config();
@@ -181,7 +187,7 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
 
                 if (systemSSL) {
                     cm = createSystemSslCM();
-                } else if (trustStoreFileName != null) {
+                } else if (sslContext != null || trustStoreFileName != null) {
                     cm = createCustomSslCM();
                 } else {
                     cm = createDefaultSslCM();
@@ -234,18 +240,20 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
             private MonitoredConnectionManager createCustomSslCM() {
                 FileInputStream fin = null;
                 try {
-                    SSLContext sslContext = SSLContext.getInstance(PROTOCOL_SCHEME);
-                    KeyStore sslKeyStore = KeyStore.getInstance(KEYSTORE_TYPE);
+                    if (sslContext == null) {
+                        sslContext = SSLContext.getInstance(PROTOCOL_SCHEME);
+                        KeyStore sslKeyStore = KeyStore.getInstance(KEYSTORE_TYPE);
 
-                    fin = new FileInputStream(trustStoreFileName);
-                    sslKeyStore.load(fin, trustStorePassword.toCharArray());
+                        fin = new FileInputStream(trustStoreFileName);
+                        sslKeyStore.load(fin, trustStorePassword.toCharArray());
 
-                    TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-                    factory.init(sslKeyStore);
+                        TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+                        factory.init(sslKeyStore);
 
-                    TrustManager[] trustManagers = factory.getTrustManagers();
+                        TrustManager[] trustManagers = factory.getTrustManagers();
 
-                    sslContext.init(null, trustManagers, null);
+                        sslContext.init(null, trustManagers, null);
+                    }
                     X509HostnameVerifier hostnameVerifier = SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER;
                     SSLConnectionSocketFactory customSslSocketFactory = new SSLConnectionSocketFactory(sslContext, hostnameVerifier);
                     SSLSocketFactory sslSocketFactory = new SSLSocketFactoryAdapter(customSslSocketFactory);
