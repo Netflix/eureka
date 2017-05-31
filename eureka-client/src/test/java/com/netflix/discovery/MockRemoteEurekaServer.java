@@ -5,10 +5,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
@@ -46,6 +46,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
     private final AtomicBoolean sentDelta = new AtomicBoolean();
     private final AtomicBoolean sentRegistry = new AtomicBoolean();
 
+    public final BlockingQueue<String> registrationStatusesQueue = new LinkedBlockingQueue<>();
     public final List<String> registrationStatuses = new ArrayList<String>();
 
     public final AtomicLong registerCount = new AtomicLong(0);
@@ -84,6 +85,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
         server = null;
         port = 0;
 
+        registrationStatusesQueue.clear();
         registrationStatuses.clear();
 
         applicationMap.clear();
@@ -233,6 +235,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
                             }
                         }
                         System.out.println("Matched status to: " + statusStr);
+                        registrationStatusesQueue.add(statusStr);
                         registrationStatuses.add(statusStr);
 
                         String appName = pathInfo.substring(5);

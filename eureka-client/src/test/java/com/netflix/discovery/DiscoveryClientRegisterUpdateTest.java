@@ -2,8 +2,10 @@ package com.netflix.discovery;
 
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.LeaseInfo;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.config.ConfigurationManager;
+import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -12,6 +14,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author David Liu
@@ -35,9 +38,31 @@ public class DiscoveryClientRegisterUpdateTest {
                 "http://localhost:" + mockLocalEurekaServer.getPort() +
                         MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
 
-        applicationInfoManager = new TestApplicationInfoManager();
-        applicationInfoManager.initComponent(new MyDataCenterInstanceConfig());
+        InstanceInfo seed = InstanceInfoGenerator.takeOne();
+        LeaseInfo leaseSeed = seed.getLeaseInfo();
+        LeaseInfo leaseInfo = LeaseInfo.Builder.newBuilder()
+                .setDurationInSecs(leaseSeed.getDurationInSecs())
+                .setEvictionTimestamp(leaseSeed.getEvictionTimestamp())
+                .setRegistrationTimestamp(leaseSeed.getRegistrationTimestamp())
+                .setServiceUpTimestamp(leaseSeed.getServiceUpTimestamp())
+                .setRenewalTimestamp(leaseSeed.getRenewalTimestamp())
+                .setRenewalIntervalInSecs(2) // make this more frequent for testing
+                .build();
+        InstanceInfo instanceInfo = new InstanceInfo.Builder(seed)
+                .setStatus(InstanceInfo.InstanceStatus.STARTING)
+                .setLeaseInfo(leaseInfo)
+                .build();
+        applicationInfoManager = new TestApplicationInfoManager(instanceInfo);
         client = new DiscoveryClient(applicationInfoManager, new DefaultEurekaClientConfig());
+
+        // force the initial registration to eagerly run
+        InstanceInfoReplicator instanceInfoReplicator = ((DiscoveryClient) client).getInstanceInfoReplicator();
+        instanceInfoReplicator.run();
+
+        // give some execution time for the initial registration to process
+        expectStatuses(1, 4000, TimeUnit.MILLISECONDS);
+        mockLocalEurekaServer.registrationStatuses.clear();  // and then clear the validation list
+        mockLocalEurekaServer.registerCount.set(0l);
     }
 
     @After
@@ -49,14 +74,15 @@ public class DiscoveryClientRegisterUpdateTest {
 
     @Test
     public void registerUpdateLifecycleTest() throws Exception {
-        Thread.sleep(1200);  // give some execution time (the allowed on-demand interval is 60/min)
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.UP);
-        Thread.sleep(1200);  // give some execution time
+        // give some execution time
+        expectStatuses(1, 1200, TimeUnit.MILLISECONDS);
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.UNKNOWN);
-        Thread.sleep(1200);  // give some execution time
+        // give some execution time
+        expectStatuses(1, 1200, TimeUnit.MILLISECONDS);
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.DOWN);
-
-        Thread.sleep(2400);
+        // give some execution time
+        expectStatuses(1, 2400, TimeUnit.MILLISECONDS);
 
         Assert.assertEquals(Arrays.asList("UP", "UNKNOWN", "DOWN"), mockLocalEurekaServer.registrationStatuses);
         Assert.assertEquals(3, mockLocalEurekaServer.registerCount.get());
@@ -67,13 +93,15 @@ public class DiscoveryClientRegisterUpdateTest {
      */
     @Test
     public void registerUpdateQuickLifecycleTest() throws Exception {
+
+
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.UP);
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.UNKNOWN);
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.DOWN);
-        Thread.sleep(400);
+        expectStatuses(1, 400, TimeUnit.MILLISECONDS);
         // this call will be rate limited, but will be transmitted by the automatic update after 10s
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.UP);
-        Thread.sleep(2400);
+        expectStatuses(1, 2400, TimeUnit.MILLISECONDS);
 
         Assert.assertEquals(Arrays.asList("DOWN", "UP"), mockLocalEurekaServer.registrationStatuses);
         Assert.assertEquals(2, mockLocalEurekaServer.registerCount.get());
@@ -101,12 +129,19 @@ public class DiscoveryClientRegisterUpdateTest {
     }
 
     public class TestApplicationInfoManager extends ApplicationInfoManager {
-        TestApplicationInfoManager() {
-            super(null, null, null);
+        TestApplicationInfoManager(InstanceInfo instanceInfo) {
+            super(new MyDataCenterInstanceConfig(), instanceInfo, null);
         }
 
         public Map<String, StatusChangeListener> getStatusChangeListeners() {
             return this.listeners;
+        }
+    }
+
+    private void expectStatuses(int n, long timeout, TimeUnit timeUnit) throws InterruptedException {
+        for (int i = 0; i < n; i++) {
+            String status = mockLocalEurekaServer.registrationStatusesQueue.poll(timeout, timeUnit);
+            Assert.assertNotNull(status);
         }
     }
 }
