@@ -5,12 +5,14 @@ import javax.ws.rs.core.Response.Status;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.transport.ClusterSampleData;
+import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerContext;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 import com.netflix.eureka.cluster.protocol.ReplicationInstance;
 import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
+import org.junit.Before;
 import org.junit.Test;
 
 import static com.netflix.discovery.shared.transport.ClusterSampleData.newReplicationInstanceOf;
@@ -32,19 +34,27 @@ public class PeerReplicationResourceTest {
     private final ApplicationResource applicationResource = mock(ApplicationResource.class);
     private final InstanceResource instanceResource = mock(InstanceResource.class);
 
-    private final PeerReplicationResource peerReplicationResource = new PeerReplicationResource(mock(EurekaServerContext.class)) {
-        @Override
-        ApplicationResource createApplicationResource(ReplicationInstance instanceInfo) {
-            return applicationResource;
-        }
-
-        @Override
-        InstanceResource createInstanceResource(ReplicationInstance instanceInfo, ApplicationResource applicationResource) {
-            return instanceResource;
-        }
-    };
+    private EurekaServerContext serverContext;
+    private PeerReplicationResource peerReplicationResource;
 
     private final InstanceInfo instanceInfo = ClusterSampleData.newInstanceInfo(0);
+
+    @Before
+    public void setUp() {
+        serverContext = mock(EurekaServerContext.class);
+        when(serverContext.getServerConfig()).thenReturn(mock(EurekaServerConfig.class));
+        peerReplicationResource = new PeerReplicationResource(serverContext) {
+            @Override
+            ApplicationResource createApplicationResource(ReplicationInstance instanceInfo) {
+                return applicationResource;
+            }
+
+            @Override
+            InstanceResource createInstanceResource(ReplicationInstance instanceInfo, ApplicationResource applicationResource) {
+                return instanceResource;
+            }
+        };
+    }
 
     @Test
     public void testRegisterBatching() throws Exception {
