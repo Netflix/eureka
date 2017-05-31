@@ -84,8 +84,8 @@ public class DiscoveryClientRegisterUpdateTest {
         // give some execution time
         expectStatuses(1, 2400, TimeUnit.MILLISECONDS);
 
-        Assert.assertEquals(Arrays.asList("UP", "UNKNOWN", "DOWN"), mockLocalEurekaServer.registrationStatuses);
-        Assert.assertEquals(3, mockLocalEurekaServer.registerCount.get());
+        Assert.assertEquals(Arrays.asList("STARTING", "UP", "UNKNOWN", "DOWN"), mockLocalEurekaServer.registrationStatuses);
+        Assert.assertEquals(4, mockLocalEurekaServer.registerCount.get());
     }
 
     /**
