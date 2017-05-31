@@ -146,8 +146,10 @@ public class PeerReplicationResource {
 
     private static Builder handleHeartbeat(InstanceResource resource, String lastDirtyTimestamp, String overriddenStatus, String instanceStatus) {
         Response response = resource.renewLease(REPLICATION, overriddenStatus, instanceStatus, lastDirtyTimestamp);
-        Builder responseBuilder = new Builder().setStatusCode(response.getStatus());
-        if (response.getStatus() == Status.OK.getStatusCode() && response.getEntity() != null) {
+        int responseStatus = response.getStatus();
+        Builder responseBuilder = new Builder().setStatusCode(responseStatus);
+        if ((responseStatus == Status.OK.getStatusCode() || responseStatus == Status.CONFLICT.getStatusCode()) 
+                && response.getEntity() != null) {
             responseBuilder.setResponseEntity((InstanceInfo) response.getEntity());
         }
         return responseBuilder;
