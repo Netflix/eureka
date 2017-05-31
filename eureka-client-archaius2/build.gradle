@@ -21,5 +21,5 @@ dependencies {
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
     testCompile "org.mock-server:mockserver-netty:${mockserverVersion}"
     testCompile "com.netflix.archaius:archaius2-guice:${archaius2Version}"
-
+    testCompile "com.netflix.governator:governator:${governatorVersion}"
 }

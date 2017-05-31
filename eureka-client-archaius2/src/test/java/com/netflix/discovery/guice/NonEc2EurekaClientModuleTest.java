@@ -41,6 +41,7 @@ public class NonEc2EurekaClientModuleTest {
                                                 .put("eureka.registration.enabled", "false")
                                                 .put("eureka.serviceUrl.default", "http://localhost:8080/eureka/v2")
                                                 .put("eureka.shouldInitAsEc2", "false")
+                                                .put("eureka.instanceDeploymentEnvironment", "non-ec2")
                                                 .build()
                                 );
                             }

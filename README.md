@@ -25,9 +25,9 @@ The build requires java8 because of some required libraries that are java8 (serv
 
 Support
 ----------
-[Eureka Google Group] (https://groups.google.com/forum/?fromgroups#!forum/eureka_netflix)
+[Eureka Google Group](https://groups.google.com/forum/?fromgroups#!forum/eureka_netflix)
 
 
 Documentation
 --------------
-Please see [wiki] (https://github.com/Netflix/eureka/wiki) for detailed documentation.
+Please see [wiki](https://github.com/Netflix/eureka/wiki) for detailed documentation.

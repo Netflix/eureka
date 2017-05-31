@@ -17,9 +17,13 @@ import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import com.sun.jersey.client.apache4.config.ApacheHttpClient4Config;
 import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
 import org.apache.http.client.params.ClientPNames;
+import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLSocketFactory;
+import org.apache.http.conn.ssl.X509HostnameVerifier;
+import org.apache.http.impl.conn.SchemeRegistryFactory;
 import org.apache.http.params.CoreProtocolPNames;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
@@ -89,6 +93,7 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
         private int connectionIdleTimeout;
         private EncoderWrapper encoderWrapper;
         private DecoderWrapper decoderWrapper;
+        private SSLContext sslContext;
 
         public EurekaJerseyClientBuilder withClientName(String clientName) {
             this.clientName = clientName;
@@ -161,6 +166,11 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
             this.decoderWrapper = decoderWrapper;
             return this;
         }
+        
+        public EurekaJerseyClientBuilder withCustomSSL(SSLContext sslContext) {
+            this.sslContext = sslContext;
+            return this;
+        }
 
         public EurekaJerseyClient build() {
             MyDefaultApacheHttpClient4Config config = new MyDefaultApacheHttpClient4Config();
@@ -177,10 +187,10 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
 
                 if (systemSSL) {
                     cm = createSystemSslCM();
-                } else if (trustStoreFileName != null) {
+                } else if (sslContext != null || trustStoreFileName != null) {
                     cm = createCustomSslCM();
                 } else {
-                    cm = new MonitoredConnectionManager(clientName);
+                    cm = createDefaultSslCM();
                 }
 
                 if (proxyHost != null) {
@@ -219,7 +229,8 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
 
             private MonitoredConnectionManager createSystemSslCM() {
                 MonitoredConnectionManager cm;
-                SSLSocketFactory sslSocketFactory = SSLSocketFactory.getSystemSocketFactory();
+                SSLConnectionSocketFactory systemSocketFactory = SSLConnectionSocketFactory.getSystemSocketFactory();
+                SSLSocketFactory sslSocketFactory = new SSLSocketFactoryAdapter(systemSocketFactory);
                 SchemeRegistry sslSchemeRegistry = new SchemeRegistry();
                 sslSchemeRegistry.register(new Scheme(PROTOCOL, HTTPS_PORT, sslSocketFactory));
                 cm = new MonitoredConnectionManager(clientName, sslSchemeRegistry);
@@ -229,20 +240,23 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
             private MonitoredConnectionManager createCustomSslCM() {
                 FileInputStream fin = null;
                 try {
-                    SSLContext sslContext = SSLContext.getInstance(PROTOCOL_SCHEME);
-                    KeyStore sslKeyStore = KeyStore.getInstance(KEYSTORE_TYPE);
+                    if (sslContext == null) {
+                        sslContext = SSLContext.getInstance(PROTOCOL_SCHEME);
+                        KeyStore sslKeyStore = KeyStore.getInstance(KEYSTORE_TYPE);
 
-                    fin = new FileInputStream(trustStoreFileName);
-                    sslKeyStore.load(fin, trustStorePassword.toCharArray());
+                        fin = new FileInputStream(trustStoreFileName);
+                        sslKeyStore.load(fin, trustStorePassword.toCharArray());
 
-                    TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-                    factory.init(sslKeyStore);
+                        TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+                        factory.init(sslKeyStore);
 
-                    TrustManager[] trustManagers = factory.getTrustManagers();
+                        TrustManager[] trustManagers = factory.getTrustManagers();
 
-                    sslContext.init(null, trustManagers, null);
-                    SSLSocketFactory sslSocketFactory = new SSLSocketFactory(sslContext);
-                    sslSocketFactory.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+                        sslContext.init(null, trustManagers, null);
+                    }
+                    X509HostnameVerifier hostnameVerifier = SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER;
+                    SSLConnectionSocketFactory customSslSocketFactory = new SSLConnectionSocketFactory(sslContext, hostnameVerifier);
+                    SSLSocketFactory sslSocketFactory = new SSLSocketFactoryAdapter(customSslSocketFactory);
                     SchemeRegistry sslSchemeRegistry = new SchemeRegistry();
                     sslSchemeRegistry.register(new Scheme(PROTOCOL, HTTPS_PORT, sslSocketFactory));
 
@@ -257,6 +271,18 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
                         }
                     }
                 }
+            }
+
+            /**
+             * @see SchemeRegistryFactory#createDefault()
+             */
+            private MonitoredConnectionManager createDefaultSslCM() {
+                final SchemeRegistry registry = new SchemeRegistry();
+                registry.register(
+                        new Scheme("http", 80, PlainSocketFactory.getSocketFactory()));
+                registry.register(
+                        new Scheme("https", 443, new SSLSocketFactoryAdapter(SSLConnectionSocketFactory.getSocketFactory())));
+                return new MonitoredConnectionManager(clientName, registry);
             }
         }
     }

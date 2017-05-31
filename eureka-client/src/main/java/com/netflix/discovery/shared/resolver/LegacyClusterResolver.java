@@ -115,7 +115,7 @@ public class LegacyClusterResolver implements ClusterResolver<AwsEndpoint> {
                             myZone
                     ));
                 } catch (URISyntaxException ignore) {
-                    logger.warn("Invalid eureka server URI: ; removing from the server pool", serviceUrl);
+                    logger.warn("Invalid eureka server URI: {}; removing from the server pool", serviceUrl);
                 }
             }
             return endpoints;
