@@ -7,7 +7,7 @@ buildscript {
 }
 
 plugins {
-    id 'nebula.netflixoss' version '3.2.3'
+    id 'nebula.netflixoss' version '3.3.0'
 }
 
 idea {
