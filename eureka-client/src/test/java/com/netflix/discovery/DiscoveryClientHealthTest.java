@@ -16,6 +16,10 @@ public class DiscoveryClientHealthTest extends AbstractDiscoveryClientTester {
     protected void setupProperties() {
         super.setupProperties();
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "true");
+        // as the tests in this class triggers the instanceInfoReplicator explicitly, set the below config
+        // so that it does not run as a background task
+        ConfigurationManager.getConfigInstance().setProperty("eureka.appinfo.initial.replicate.time", Integer.MAX_VALUE);
+        ConfigurationManager.getConfigInstance().setProperty("eureka.appinfo.replicate.interval", Integer.MAX_VALUE);
     }
 
     @Override
