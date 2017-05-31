@@ -8,6 +8,8 @@ import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.MyDataCenterInfo;
 
+import java.io.IOException;
+
 /**
  * @author Tomasz Bak
  */
@@ -24,7 +26,7 @@ public class DataCenterTypeInfoResolver extends ClassNameIdResolver {
     }
 
     @Override
-    public JavaType typeFromId(DatabindContext context, String id) {
+    public JavaType typeFromId(DatabindContext context, String id) throws IOException {
         if (MY_DATA_CENTER_INFO_TYPE_MARKER.equals(id)) {
             return context.getTypeFactory().constructType(MyDataCenterInfo.class);
         }

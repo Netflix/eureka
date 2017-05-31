@@ -364,7 +364,8 @@ public class DiscoveryClient implements EurekaClient {
         }
 
         try {
-            scheduler = Executors.newScheduledThreadPool(3,
+            // default size of 2 - 1 each for heartbeat and cacheRefresh
+            scheduler = Executors.newScheduledThreadPool(2,
                     new ThreadFactoryBuilder()
                             .setNameFormat("DiscoveryClient-%d")
                             .setDaemon(true)
