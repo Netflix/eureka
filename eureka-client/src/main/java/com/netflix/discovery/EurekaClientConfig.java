@@ -455,6 +455,13 @@ public interface EurekaClientConfig {
     String getRegistryRefreshSingleVipAddress();
 
     /**
+     * The thread pool size for the schedulerExecutor to initialise with
+     *
+     * @return the schedulerExecutor thread pool size
+     */
+    int getSchedulerExecutorThreadPoolSize();
+
+    /**
      * The thread pool size for the heartbeatExecutor to initialise with
      *
      * @return the heartbeatExecutor thread pool size

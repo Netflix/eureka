@@ -177,6 +177,11 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
         return prefixedConfig.getString(FETCH_SINGLE_VIP_ONLY_KEY, null);
     }
 
+    @Override
+    public int getSchedulerExecutorThreadPoolSize() {
+        return prefixedConfig.getInteger(SCHEDULER_THREADPOOL_SIZE_KEY, Values.DEFAULT_SCHEDULER_EXECUTOR_THREAD_POOL_SIZE);
+    }
+
     public int getHeartbeatExecutorThreadPoolSize() {
         return prefixedConfig.getInteger(HEARTBEAT_THREADPOOL_SIZE_KEY, Values.DEFAULT_EXECUTOR_THREAD_POOL_SIZE);
     }
