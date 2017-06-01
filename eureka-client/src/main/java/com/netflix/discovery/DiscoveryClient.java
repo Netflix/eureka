@@ -419,10 +419,6 @@ public class DiscoveryClient implements EurekaClient {
         }
         initScheduledTasks();
 
-        initTimestampMs = System.currentTimeMillis();
-        logger.info("Discovery Client initialized at timestamp {} with initial instances count: {}",
-                initTimestampMs, this.getApplications().size());
-
         try {
             Monitors.registerObject(this);
         } catch (Throwable e) {
@@ -433,6 +429,10 @@ public class DiscoveryClient implements EurekaClient {
         // to work with DI'd DiscoveryClient
         DiscoveryManager.getInstance().setDiscoveryClient(this);
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
+
+        initTimestampMs = System.currentTimeMillis();
+        logger.info("Discovery Client initialized at timestamp {} with initial instances count: {}",
+                initTimestampMs, this.getApplications().size());
     }
 
     private void scheduleServerEndpointTask(EurekaTransport eurekaTransport,
