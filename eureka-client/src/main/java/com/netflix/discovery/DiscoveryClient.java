@@ -357,9 +357,8 @@ public class DiscoveryClient implements EurekaClient {
             DiscoveryManager.getInstance().setEurekaClientConfig(config);
 
             initTimestampMs = System.currentTimeMillis();
+            setUpInitTime(applicationInfoManager, getApplications(), initTimestampMs);
 
-            logger.info("Discovery Client initialized at timestamp {} with initial instances count: {}",
-                    initTimestampMs, this.getApplications().size());
             return;  // no need to setup up an network tasks and we are done
         }
 
@@ -410,21 +409,30 @@ public class DiscoveryClient implements EurekaClient {
             fetchRegistryFromBackup();
         }
 
-        initScheduledTasks();
         try {
             Monitors.registerObject(this);
         } catch (Throwable e) {
             logger.warn("Cannot register timers", e);
         }
 
+        // compute the initTimestampMs 'before' initScheduledTasks as we want to ensure that this timestamp
+        // is also transmitted to the remote server with the very first registration.
+        initTimestampMs = System.currentTimeMillis();
+        setUpInitTime(applicationInfoManager, getApplications(), initTimestampMs);
+
+        initScheduledTasks();
+
         // This is a bit of hack to allow for existing code using DiscoveryManager.getInstance()
         // to work with DI'd DiscoveryClient
         DiscoveryManager.getInstance().setDiscoveryClient(this);
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
+    }
 
-        initTimestampMs = System.currentTimeMillis();
+    private static void setUpInitTime(ApplicationInfoManager applicationInfoManager, Applications applications, long initTime) {
         logger.info("Discovery Client initialized at timestamp {} with initial instances count: {}",
-                initTimestampMs, this.getApplications().size());
+                initTime, applications.size());
+        applicationInfoManager.getInfo().getMetadata()
+                .put(CommonConstants.Metadata.EUREKA_CLIENT_INIT_TIME, initTime + "");
     }
 
     private void scheduleServerEndpointTask(EurekaTransport eurekaTransport,
