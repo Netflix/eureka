@@ -144,6 +144,7 @@ public class DiscoveryClient implements EurekaClient {
 
     private final Provider<HealthCheckHandler> healthCheckHandlerProvider;
     private final Provider<HealthCheckCallback> healthCheckCallbackProvider;
+    private final PreRegistrationHandler preRegistrationHandler;
     private final AtomicReference<Applications> localRegionApps = new AtomicReference<Applications>();
     private final Lock fetchRegistryUpdateLock = new ReentrantLock();
     // monotonically increasing generation counter to ensure stale threads do not reset registry to an older version
@@ -301,9 +302,11 @@ public class DiscoveryClient implements EurekaClient {
             this.healthCheckHandlerProvider = args.healthCheckHandlerProvider;
             this.healthCheckCallbackProvider = args.healthCheckCallbackProvider;
             this.eventListeners.addAll(args.getEventListeners());
+            this.preRegistrationHandler = args.preRegistrationHandler;
         } else {
             this.healthCheckCallbackProvider = null;
             this.healthCheckHandlerProvider = null;
+            this.preRegistrationHandler = null;
         }
         
         this.applicationInfoManager = applicationInfoManager;
@@ -357,7 +360,8 @@ public class DiscoveryClient implements EurekaClient {
             DiscoveryManager.getInstance().setEurekaClientConfig(config);
 
             initTimestampMs = System.currentTimeMillis();
-            setUpInitTime(applicationInfoManager, getApplications(), initTimestampMs);
+            logger.info("Discovery Client initialized at timestamp {} with initial instances count: {}",
+                    initTimestampMs, this.getApplications().size());
 
             return;  // no need to setup up an network tasks and we are done
         }
@@ -409,30 +413,26 @@ public class DiscoveryClient implements EurekaClient {
             fetchRegistryFromBackup();
         }
 
+        // call and execute the pre registration handler before all background tasks (inc registration) is started
+        if (this.preRegistrationHandler != null) {
+            this.preRegistrationHandler.beforeRegistration();
+        }
+        initScheduledTasks();
+
+        initTimestampMs = System.currentTimeMillis();
+        logger.info("Discovery Client initialized at timestamp {} with initial instances count: {}",
+                initTimestampMs, this.getApplications().size());
+
         try {
             Monitors.registerObject(this);
         } catch (Throwable e) {
             logger.warn("Cannot register timers", e);
         }
 
-        // compute the initTimestampMs 'before' initScheduledTasks as we want to ensure that this timestamp
-        // is also transmitted to the remote server with the very first registration.
-        initTimestampMs = System.currentTimeMillis();
-        setUpInitTime(applicationInfoManager, getApplications(), initTimestampMs);
-
-        initScheduledTasks();
-
         // This is a bit of hack to allow for existing code using DiscoveryManager.getInstance()
         // to work with DI'd DiscoveryClient
         DiscoveryManager.getInstance().setDiscoveryClient(this);
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
-    }
-
-    private static void setUpInitTime(ApplicationInfoManager applicationInfoManager, Applications applications, long initTime) {
-        logger.info("Discovery Client initialized at timestamp {} with initial instances count: {}",
-                initTime, applications.size());
-        applicationInfoManager.getInfo().getMetadata()
-                .put(CommonConstants.Metadata.EUREKA_CLIENT_INIT_TIME, initTime + "");
     }
 
     private void scheduleServerEndpointTask(EurekaTransport eurekaTransport,
