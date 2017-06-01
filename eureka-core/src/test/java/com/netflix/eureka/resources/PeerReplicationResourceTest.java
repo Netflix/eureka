@@ -100,6 +100,7 @@ public class PeerReplicationResourceTest {
         Response response = peerReplicationResource.batchReplication(new ReplicationList(replicationInstance));
 
         assertStatusIsConflict(response);
+        assertResponseEntityExist(response);
     }
 
     @Test
@@ -146,4 +147,12 @@ public class PeerReplicationResourceTest {
         ReplicationInstanceResponse replicationResponse = entity.getResponseList().get(0);
         assertThat(replicationResponse.getStatusCode(), is(equalTo(expectedStatusCode)));
     }
+
+    private static void assertResponseEntityExist(Response httpResponse) {
+        ReplicationListResponse entity = (ReplicationListResponse) httpResponse.getEntity();
+        assertThat(entity, is(notNullValue()));
+        ReplicationInstanceResponse replicationResponse = entity.getResponseList().get(0);
+        assertThat(replicationResponse.getResponseEntity(), is(notNullValue()));
+    }
+
 }
