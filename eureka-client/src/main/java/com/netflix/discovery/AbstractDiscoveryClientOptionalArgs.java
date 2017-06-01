@@ -23,6 +23,8 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
 
     Provider<HealthCheckHandler> healthCheckHandlerProvider;
 
+    PreRegistrationHandler preRegistrationHandler;
+
     Collection<T> additionalFilters;
 
     EurekaJerseyClient eurekaJerseyClient;
@@ -64,6 +66,12 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
     public void setHealthCheckHandlerProvider(Provider<HealthCheckHandler> healthCheckHandlerProvider) {
         this.healthCheckHandlerProvider = healthCheckHandlerProvider;
     }
+
+    @Inject(optional = true)
+    public void setPreRegistrationHandler(PreRegistrationHandler preRegistrationHandler) {
+        this.preRegistrationHandler = preRegistrationHandler;
+    }
+
 
     @Inject(optional = true) 
     public void setAdditionalFilters(Collection<T> additionalFilters) {

@@ -144,6 +144,7 @@ public class DiscoveryClient implements EurekaClient {
 
     private final Provider<HealthCheckHandler> healthCheckHandlerProvider;
     private final Provider<HealthCheckCallback> healthCheckCallbackProvider;
+    private final PreRegistrationHandler preRegistrationHandler;
     private final AtomicReference<Applications> localRegionApps = new AtomicReference<Applications>();
     private final Lock fetchRegistryUpdateLock = new ReentrantLock();
     // monotonically increasing generation counter to ensure stale threads do not reset registry to an older version
@@ -301,9 +302,11 @@ public class DiscoveryClient implements EurekaClient {
             this.healthCheckHandlerProvider = args.healthCheckHandlerProvider;
             this.healthCheckCallbackProvider = args.healthCheckCallbackProvider;
             this.eventListeners.addAll(args.getEventListeners());
+            this.preRegistrationHandler = args.preRegistrationHandler;
         } else {
             this.healthCheckCallbackProvider = null;
             this.healthCheckHandlerProvider = null;
+            this.preRegistrationHandler = null;
         }
         
         this.applicationInfoManager = applicationInfoManager;
@@ -357,9 +360,9 @@ public class DiscoveryClient implements EurekaClient {
             DiscoveryManager.getInstance().setEurekaClientConfig(config);
 
             initTimestampMs = System.currentTimeMillis();
-
             logger.info("Discovery Client initialized at timestamp {} with initial instances count: {}",
                     initTimestampMs, this.getApplications().size());
+
             return;  // no need to setup up an network tasks and we are done
         }
 
@@ -410,7 +413,12 @@ public class DiscoveryClient implements EurekaClient {
             fetchRegistryFromBackup();
         }
 
+        // call and execute the pre registration handler before all background tasks (inc registration) is started
+        if (this.preRegistrationHandler != null) {
+            this.preRegistrationHandler.beforeRegistration();
+        }
         initScheduledTasks();
+
         try {
             Monitors.registerObject(this);
         } catch (Throwable e) {
