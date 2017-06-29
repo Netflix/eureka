@@ -44,6 +44,7 @@ public class XmlXStream extends XStream {
     public XmlXStream() {
         super(new DomDriver(null, initializeNameCoder()));
 
+        denyTypes(new Class[]{ void.class, Void.class });
         registerConverter(new Converters.ApplicationConverter());
         registerConverter(new Converters.ApplicationsConverter());
         registerConverter(new Converters.DataCenterInfoConverter());

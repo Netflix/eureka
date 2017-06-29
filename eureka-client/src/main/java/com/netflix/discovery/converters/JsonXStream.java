@@ -50,6 +50,7 @@ public class JsonXStream extends XStream {
             }
         });
 
+        denyTypes(new Class[]{ void.class, Void.class });
         registerConverter(new Converters.ApplicationConverter());
         registerConverter(new Converters.ApplicationsConverter());
         registerConverter(new Converters.DataCenterInfoConverter());
