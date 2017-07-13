@@ -56,18 +56,15 @@ public class StringInterningAmazonInfoBuilder {
     }
 
     public StringInterningAmazonInfoBuilder withMetadata(HashMap<String, String> metadata) {
+        this.metadata = metadata;
         if (metadata.isEmpty()) {
-            this.metadata = metadata;
             return this;
         }
-        this.metadata = new HashMap<>();
         for (Map.Entry<String, String> entry : metadata.entrySet()) {
             String key = entry.getKey().intern();
-            String value = entry.getValue();
             if (VALUE_INTERN_KEYS.contains(key)) {
-                value = StringCache.intern(value);
+                entry.setValue(StringCache.intern(entry.getValue()));
             }
-            this.metadata.put(key, value);
         }
         return this;
     }

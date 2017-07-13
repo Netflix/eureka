@@ -10,12 +10,23 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -27,7 +38,6 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.DataCenterInfo.Name;
@@ -40,9 +50,7 @@ import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.discovery.util.StringCache;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.netflix.discovery.util.DeserializerStringCache;
 
 /**
  * @author Tomasz Bak
@@ -60,7 +68,7 @@ public class EurekaJacksonCodec {
     public static final String NODE_APP = "application";
 
     protected static final String ELEM_INSTANCE = "instance";
-    protected static final String ELEM_OVERRIDDEN_STATUS = "overriddenstatus";
+    protected static final String ELEM_OVERRIDDEN_STATUS = "overriddenStatus";
     protected static final String ELEM_HOST = "hostName";
     protected static final String ELEM_INSTANCE_ID = "instanceId";
     protected static final String ELEM_APP = "app";
@@ -102,7 +110,7 @@ public class EurekaJacksonCodec {
 
     private final ObjectMapper mapper;
 
-    private final Map<Class<?>, ObjectReader> objectReaderByClass;
+    private final Map<Class<?>, Supplier<ObjectReader>> objectReaderByClass;
     private final Map<Class<?>, ObjectWriter> objectWriterByClass;
 
     public EurekaJacksonCodec() {
@@ -123,19 +131,18 @@ public class EurekaJacksonCodec {
         module.addDeserializer(InstanceInfo.class, new InstanceInfoDeserializer(this.mapper));
         module.addDeserializer(Application.class, new ApplicationDeserializer(this.mapper));
         module.addDeserializer(Applications.class, new ApplicationsDeserializer(this.mapper, this.versionDeltaKey, this.appHashCodeKey));
-
         this.mapper.registerModule(module);
 
-        HashMap<Class<?>, ObjectReader> readers = new HashMap<>();
-        readers.put(InstanceInfo.class, mapper.reader().withType(InstanceInfo.class).withRootName("instance"));
-        readers.put(Application.class, mapper.reader().withType(Application.class).withRootName("application"));
-        readers.put(Applications.class, mapper.reader().withType(Applications.class).withRootName("applications"));
+        HashMap<Class<?>, Supplier<ObjectReader>> readers = new HashMap<>();
+        readers.put(InstanceInfo.class, ()->mapper.reader().forType(InstanceInfo.class).withRootName("instance"));
+        readers.put(Application.class, ()->mapper.reader().forType(Application.class).withRootName("application"));
+        readers.put(Applications.class, ()->mapper.reader().forType(Applications.class).withRootName("applications"));
         this.objectReaderByClass = readers;
 
         HashMap<Class<?>, ObjectWriter> writers = new HashMap<>();
-        writers.put(InstanceInfo.class, mapper.writer().withType(InstanceInfo.class).withRootName("instance"));
-        writers.put(Application.class, mapper.writer().withType(Application.class).withRootName("application"));
-        writers.put(Applications.class, mapper.writer().withType(Applications.class).withRootName("applications"));
+        writers.put(InstanceInfo.class, mapper.writer().forType(InstanceInfo.class).withRootName("instance"));
+        writers.put(Application.class, mapper.writer().forType(Application.class).withRootName("application"));
+        writers.put(Applications.class, mapper.writer().forType(Applications.class).withRootName("applications"));
         this.objectWriterByClass = writers;
     }
 
@@ -171,19 +178,27 @@ public class EurekaJacksonCodec {
     }
 
     public <T> T readValue(Class<T> type, InputStream entityStream) throws IOException {
-        ObjectReader reader = objectReaderByClass.get(type);
-        if (reader == null) {
-            return mapper.readValue(entityStream, type);
+        ObjectReader reader = DeserializerStringCache.init(
+                Optional.ofNullable(objectReaderByClass.get(type)).map(Supplier::get).orElseGet(()->mapper.readerFor(type))
+                );
+        try {
+            return reader.readValue(entityStream);
         }
-        return reader.readValue(entityStream);
+        finally {
+            DeserializerStringCache.clear(reader);
+        }
     }
 
     public <T> T readValue(Class<T> type, String text) throws IOException {
-        ObjectReader reader = objectReaderByClass.get(type);
-        if (reader == null) {
-            return mapper.readValue(text, type);
+        ObjectReader reader = DeserializerStringCache.init(
+                Optional.ofNullable(objectReaderByClass.get(type)).map(Supplier::get).orElseGet(()->mapper.readerFor(type))
+                );
+        try {
+            return reader.readValue(text);
         }
-        return reader.readValue(text);
+        finally {
+            DeserializerStringCache.clear(reader);
+        }
     }
 
     public <T> void writeTo(T object, OutputStream entityStream) throws IOException {
@@ -258,18 +273,16 @@ public class EurekaJacksonCodec {
                     }
                 };
             }
+            
 
+            Function<String,String> intern = DeserializerStringCache.from(context);
             Map<String, String> metaData = new HashMap<String, String>();
             JsonNode metaNode = node.get(DATACENTER_METADATA);
-            Iterator<String> metaNamesIt = metaNode.fieldNames();
-            while (metaNamesIt.hasNext()) {
-                String key = metaNamesIt.next();
-                String value = metaNode.get(key).asText();
-                metaData.put(StringCache.intern(key), StringCache.intern(value));
-            }
-
+            metaNode.fieldNames().forEachRemaining(fieldName->{
+                metaData.put(intern.apply(fieldName), intern.apply(metaNode.get(fieldName).asText()));
+            });
             AmazonInfo amazonInfo = new AmazonInfo();
-            amazonInfo.setMetadata(metaData);
+            amazonInfo.setMetadata(metaData); 
 
             return amazonInfo;
         }
@@ -283,32 +296,26 @@ public class EurekaJacksonCodec {
         protected static final String ELEM_LAST_RENEW_TIMESTAMP = "lastRenewalTimestamp";
         protected static final String ELEM_EVICTION_TIMESTAMP = "evictionTimestamp";
         protected static final String ELEM_SERVICE_UP_TIMESTAMP = "serviceUpTimestamp";
+        private static Map<String, BiConsumer<LeaseInfo.Builder, JsonNode>> mappingActions = new HashMap<>();        
+        static {
+            mappingActions.put(ELEM_DURATION, (builder,node)->builder.setDurationInSecs(node.asInt()));
+            mappingActions.put(ELEM_EVICTION_TIMESTAMP, (builder,node)->builder.setEvictionTimestamp(node.asLong()));
+            mappingActions.put(ELEM_LAST_RENEW_TIMESTAMP, (builder,node)->builder.setRenewalTimestamp(node.asLong()));
+            mappingActions.put(ELEM_REG_TIMESTAMP, (builder,node)->builder.setRegistrationTimestamp(node.asLong()));
+            mappingActions.put(ELEM_RENEW_INT, (builder,node)->builder.setRenewalIntervalInSecs(node.asInt()));
+            mappingActions.put(ELEM_SERVICE_UP_TIMESTAMP, (builder,node)->builder.setServiceUpTimestamp(node.asLong()));
+        }
 
         @Override
         public LeaseInfo deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
             LeaseInfo.Builder builder = LeaseInfo.Builder.newBuilder();
 
             JsonNode node = jp.getCodec().readTree(jp);
-            Iterator<String> fieldNames = node.fieldNames();
-            while (fieldNames.hasNext()) {
-                String nodeName = fieldNames.next();
-                if (!node.get(nodeName).isNull()) {
-                    long longValue = node.get(nodeName).asLong();
-                    if (ELEM_DURATION.equals(nodeName)) {
-                        builder.setDurationInSecs((int) longValue);
-                    } else if (ELEM_EVICTION_TIMESTAMP.equals(nodeName)) {
-                        builder.setEvictionTimestamp(longValue);
-                    } else if (ELEM_LAST_RENEW_TIMESTAMP.equals(nodeName)) {
-                        builder.setRenewalTimestamp(longValue);
-                    } else if (ELEM_REG_TIMESTAMP.equals(nodeName)) {
-                        builder.setRegistrationTimestamp(longValue);
-                    } else if (ELEM_RENEW_INT.equals(nodeName)) {
-                        builder.setRenewalIntervalInSecs((int) longValue);
-                    } else if (ELEM_SERVICE_UP_TIMESTAMP.equals(nodeName)) {
-                        builder.setServiceUpTimestamp(longValue);
-                    }
+            node.fieldNames().forEachRemaining( fieldName -> {
+                if (node.has(fieldName)) {
+                    Optional.ofNullable(mappingActions.get(fieldName)).ifPresent(f->f.accept(builder, node.get(fieldName)));
                 }
-            }
+            }    );           
             return builder.build();
         }
     }
@@ -393,152 +400,167 @@ public class EurekaJacksonCodec {
     }
 
     public static class InstanceInfoDeserializer extends JsonDeserializer<InstanceInfo> {
+        static class RuntimeJsonProcessingException extends RuntimeException {
+            private static final long serialVersionUID = 1L;
+            RuntimeJsonProcessingException(JsonProcessingException jpe) {
+                super(jpe);
+            }
+        }
+        
         protected ObjectMapper mapper;
+        private ConcurrentMap<String, BiConsumer<Object, String>> autoUnmarshalActions = new ConcurrentHashMap<>();
+        private Map<String, BiConsumer<InstanceInfo.Builder, JsonNode>> mapping = new HashMap<>();        
+        {
+            mapping.put(ELEM_HOST, (builder,node)->builder.setHostName(node.asText()));
+            mapping.put(ELEM_INSTANCE_ID, (builder,node)->builder.setInstanceId(node.asText()));
+            mapping.put(ELEM_APP, (builder,node)->builder.setAppName(node.asText()));
+            mapping.put(ELEM_IP, (builder,node)->builder.setIPAddr(node.asText()));
+            mapping.put(ELEM_SID, (builder,node)->builder.setSID(node.asText()));
+            mapping.put(ELEM_IDENTIFYING_ATTR, (builder,node)->{});// nothing 
+            mapping.put(ELEM_STATUS, (builder,node)->builder.setStatus(InstanceStatus.toEnum(node.asText())));
+            mapping.put(ELEM_OVERRIDDEN_STATUS, (builder,node)-> builder.setOverriddenStatus(InstanceStatus.toEnum(node.asText())));
+            mapping.put(ELEM_PORT, (builder,node)->{
+                int port = node.get("$").asInt();
+                boolean enabled = node.get("@enabled").asBoolean();
+                builder.setPort(port);
+                builder.enablePort(PortType.UNSECURE, enabled); 
+            });
+            mapping.put(ELEM_SECURE_PORT, (builder,node)->{
+                int port = node.get("$").asInt();
+                boolean enabled = node.get("@enabled").asBoolean();
+                builder.setSecurePort(port);
+                builder.enablePort(PortType.SECURE, enabled);                
+            });
+            mapping.put(ELEM_COUNTRY_ID, (builder,node)->builder.setCountryId(node.asInt()));
+            mapping.put(NODE_DATACENTER, (builder,node)->{
+                try {
+                    builder.setDataCenterInfo(mapper.treeToValue(node, DataCenterInfo.class)); 
+                }
+                catch (JsonProcessingException jpe) {
+                    throw new RuntimeJsonProcessingException(jpe);
+                }
+            });
+            mapping.put(NODE_LEASE, (builder,node)->{
+                try {
+                    builder.setLeaseInfo(mapper.treeToValue(node, LeaseInfo.class));
+                }
+                catch (JsonProcessingException jpe) {
+                    throw new RuntimeJsonProcessingException(jpe);
+                }
+            });
+            mapping.put(ELEM_HEALTHCHECKURL, (builder,node)->builder.setHealthCheckUrlsForDeser(node.asText(), null));
+            mapping.put(ELEM_SECHEALTHCHECKURL, (builder,node)->builder.setHealthCheckUrlsForDeser(null, node.asText()));
+            mapping.put(ELEM_APPGROUPNAME, (builder,node)-> builder.setAppGroupName(node.asText()));
+            mapping.put(ELEM_HOMEPAGEURL, (builder,node)->builder.setHomePageUrlForDeser(node.asText()));
+            mapping.put(ELEM_STATUSPAGEURL, (builder,node)->builder.setStatusPageUrlForDeser(node.asText()));
+            mapping.put(ELEM_VIPADDRESS, (builder,node)->builder.setVIPAddressDeser(node.asText()));
+            mapping.put(ELEM_SECVIPADDRESS, (builder,node)->builder.setSecureVIPAddressDeser(node.asText()));
+            mapping.put(ELEM_ISCOORDINATINGDISCSOERVER, (builder,node)->builder.setIsCoordinatingDiscoveryServer(node.asBoolean()));
+            mapping.put(ELEM_LASTUPDATEDTS, (builder,node)->builder.setLastUpdatedTimestamp(node.asLong()));
+            mapping.put(ELEM_LASTDIRTYTS, (builder,node)->builder.setLastDirtyTimestamp(node.asLong()));
+            mapping.put(ELEM_ACTIONTYPE, (builder,node)->builder.setActionType(ActionType.valueOf(node.asText())));
+            mapping.put(ELEM_ASGNAME, (builder,node)->builder.setASGName(node.asText()));
+        }
 
         protected InstanceInfoDeserializer(ObjectMapper mapper) {
             this.mapper = mapper;
         }
-
+        
         @Override
         public InstanceInfo deserialize(JsonParser jp, DeserializationContext context) throws IOException {
-            InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
-
+            if (Thread.currentThread().isInterrupted()) {
+                throw new JsonParseException(jp, "processing aborted");
+            }
+            Function<String,String> intern = DeserializerStringCache.from(context);
+            InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder(intern);
             JsonNode node = jp.getCodec().readTree(jp);
-
-            /**
-             * These are set via single call to
-             * {@link com.netflix.appinfo.InstanceInfo.Builder#setHealthCheckUrlsForDeser(String, String, String)}.
-             */
-            String healthChecUrl = null;
-            String healthCheckSecureUrl = null;
-
             Iterator<String> fieldNames = node.fieldNames();
             while (fieldNames.hasNext()) {
                 String fieldName = fieldNames.next();
-                JsonNode fieldNode = node.get(fieldName);
-
-                if (!fieldNode.isNull()) {
-                    if (ELEM_HOST.equals(fieldName)) {
-                        builder.setHostName(fieldNode.asText());
-                    } else if (ELEM_INSTANCE_ID.equals(fieldName)) {
-                        builder.setInstanceId(fieldNode.asText());
-                    } else if (ELEM_APP.equals(fieldName)) {
-                        builder.setAppName(fieldNode.asText());
-                    } else if (ELEM_IP.equals(fieldName)) {
-                        builder.setIPAddr(fieldNode.asText());
-                    } else if (ELEM_SID.equals(fieldName)) {
-                        builder.setSID(fieldNode.asText());
-                    } else if (ELEM_IDENTIFYING_ATTR.equals(fieldName)) {
-                        // nothing;
-                    } else if (ELEM_STATUS.equals(fieldName)) {
-                        builder.setStatus(InstanceStatus.toEnum(fieldNode.asText()));
-                    } else if (ELEM_OVERRIDDEN_STATUS.equals(fieldName)) {
-                        builder.setOverriddenStatus(InstanceStatus.toEnum(fieldNode.asText()));
-                    } else if (ELEM_PORT.equals(fieldName)) {
-                        int port = fieldNode.get("$").asInt();
-                        boolean enabled = fieldNode.get("@enabled").asBoolean();
-                        builder.setPort(port);
-                        builder.enablePort(PortType.UNSECURE, enabled);
-                    } else if (ELEM_SECURE_PORT.equals(fieldName)) {
-                        int port = fieldNode.get("$").asInt();
-                        boolean enabled = fieldNode.get("@enabled").asBoolean();
-                        builder.setSecurePort(port);
-                        builder.enablePort(PortType.SECURE, enabled);
-                    } else if (ELEM_COUNTRY_ID.equals(fieldName)) {
-                        builder.setCountryId(Integer.valueOf(fieldNode.asText()).intValue());
-                    } else if (NODE_DATACENTER.equals(fieldName)) {
-                        builder.setDataCenterInfo(mapper.treeToValue(fieldNode, DataCenterInfo.class));
-                    } else if (NODE_LEASE.equals(fieldName)) {
-                        builder.setLeaseInfo(mapper.treeToValue(fieldNode, LeaseInfo.class));
-                    } else if (NODE_METADATA.equals(fieldName)) {
-                        Map<String, String> meta = null;
-                        Iterator<String> metaNameIt = fieldNode.fieldNames();
-                        while (metaNameIt.hasNext()) {
-                            String key = StringCache.intern(metaNameIt.next());
-                            if (key.equals("@class")) { // For backwards compatibility
-                                if (meta == null && !metaNameIt.hasNext()) { // Optimize for empty maps
-                                    meta = Collections.emptyMap();
+                if (node.has(fieldName)) {
+                    BiConsumer<InstanceInfo.Builder, JsonNode> consumer = mapping.getOrDefault(
+                            fieldName, 
+                            (b, n) -> {
+                                if (NODE_METADATA.equals(fieldName)) {
+                                    b.setMetadata(unmarshalMetadata(n, intern));
                                 }
-                            } else {
-                                if (meta == null) {
-                                    meta = new ConcurrentHashMap<String, String>();
+                                else {
+                                    autoUnmarshalEligible(fieldName, n.asText(), b.getRawInstance());
                                 }
-                                String value = StringCache.intern(fieldNode.get(key).asText());
-                                meta.put(key, value);
                             }
-                        }
-                        if (meta == null) {
-                            meta = Collections.emptyMap();
-                        }
-                        builder.setMetadata(meta);
-                    } else if (ELEM_HEALTHCHECKURL.equals(fieldName)) {
-                        healthChecUrl = fieldNode.asText();
-                    } else if (ELEM_SECHEALTHCHECKURL.equals(fieldName)) {
-                        healthCheckSecureUrl = fieldNode.asText();
-                    } else if (ELEM_APPGROUPNAME.equals(fieldName)) {
-                        builder.setAppGroupName(fieldNode.asText());
-                    } else if (ELEM_HOMEPAGEURL.equals(fieldName)) {
-                        builder.setHomePageUrlForDeser(fieldNode.asText());
-                    } else if (ELEM_STATUSPAGEURL.equals(fieldName)) {
-                        builder.setStatusPageUrlForDeser(fieldNode.asText());
-                    } else if (ELEM_VIPADDRESS.equals(fieldName)) {
-                        builder.setVIPAddressDeser(fieldNode.asText());
-                    } else if (ELEM_SECVIPADDRESS.equals(fieldName)) {
-                        builder.setSecureVIPAddressDeser(fieldNode.asText());
-                    } else if (ELEM_ISCOORDINATINGDISCSOERVER.equals(fieldName)) {
-                        builder.setIsCoordinatingDiscoveryServer(fieldNode.asBoolean());
-                    } else if (ELEM_LASTUPDATEDTS.equals(fieldName)) {
-                        builder.setLastUpdatedTimestamp(fieldNode.asLong());
-                    } else if (ELEM_LASTDIRTYTS.equals(fieldName)) {
-                        builder.setLastDirtyTimestamp(fieldNode.asLong());
-                    } else if (ELEM_ACTIONTYPE.equals(fieldName)) {
-                        builder.setActionType(ActionType.valueOf(fieldNode.asText()));
-                    } else if (ELEM_ASGNAME.equals(fieldName)) {
-                        builder.setASGName(fieldNode.asText());
-                    } else {
-                        autoUnmarshalEligible(fieldName, fieldNode.asText(), builder.getRawInstance());
+                    );
+                    try {
+                        consumer.accept(builder, node.get(fieldName));
+                    }
+                    catch (RuntimeJsonProcessingException rjpe) {
+                        throw (JsonProcessingException)rjpe.getCause();
                     }
                 }
             }
-            builder.setHealthCheckUrlsForDeser(healthChecUrl, healthCheckSecureUrl);
-
             return builder.build();
+        }
+        
+        protected Map<String,String> unmarshalMetadata(JsonNode node, Function<String,String> intern) {
+            Map<String, String> meta = null;
+            Iterator<String> fields = node.fieldNames();
+            while (fields.hasNext()) {
+                String fieldName = fields.next();
+                if (!"@class".equals(fieldName)) { // For backwards compatibility
+                    String key = intern.apply(fieldName);
+                    String value = intern.apply(node.get(fieldName).asText());
+                    if (meta == null) {
+                        meta = new ConcurrentHashMap<String, String>();
+                    }
+                    meta.put(key, value);
+                }
+            };
+            return (meta == null) ? Collections.emptyMap() : meta;         
         }
 
         protected void autoUnmarshalEligible(String fieldName, String value, Object o) {
-            try {
-                Class c = o.getClass();
-                Field f = null;
+            if (value == null) return; // early out
+            Class<?> c = o.getClass();
+            String cacheKey = c.getName() + ":" + fieldName;
+            BiConsumer<Object, String> action = autoUnmarshalActions.computeIfAbsent(cacheKey, k-> {
                 try {
-                    f = c.getDeclaredField(fieldName);
-                } catch (NoSuchFieldException e) {
-                    // TODO XStream version increments metrics counter here
-                }
-                if (f == null) {
-                    return;
-                }
-                Annotation annotation = f.getAnnotation(Auto.class);
-                if (annotation == null) {
-                    return;
-                }
-                f.setAccessible(true);
-
-                Class returnClass = f.getType();
-                if (value != null) {
+                    Field f = null;
+                    try {
+                        f = c.getDeclaredField(fieldName);
+                    } catch (NoSuchFieldException e) {
+                        // TODO XStream version increments metrics counter here
+                    }
+                    if (f == null) {
+                        return (t,v)->{};
+                    }
+                    Annotation annotation = f.getAnnotation(Auto.class);
+                    if (annotation == null) {
+                        return (t,v)->{};
+                    }
+                    f.setAccessible(true);
+    
+                    final Field setterField = f;
+                    Class<?> returnClass = setterField.getType();
                     if (!String.class.equals(returnClass)) {
                         Method method = returnClass.getDeclaredMethod("valueOf", java.lang.String.class);
-                        Object valueObject = method.invoke(returnClass, value);
-                        f.set(o, valueObject);
+                        return (t, v) -> tryCatchLog(()->{ setterField.set(t, method.invoke(returnClass, v)); return null; });
                     } else {
-                        f.set(o, value);
-
-                    }
-                }
-            } catch (Throwable th) {
-                logger.error("Error in unmarshalling the object:", th);
-            }
+                        return (t, v) -> tryCatchLog(()->{ setterField.set(t, v); return null; });
+                    }  
+                } catch (Throwable th) {
+                    logger.error("Error in unmarshalling the object:", th);   
+                    return null;
+                }                
+            });
+            action.accept(o, value);
         }
-
+    }
+    
+    private static void tryCatchLog(Callable<Void> callable) {
+        try {    
+            callable.call();
+        } catch (Throwable th) {
+            logger.error("Error in unmarshalling the object:", th);
+        }
     }
 
     public static class ApplicationSerializer extends JsonSerializer<Application> {
@@ -560,25 +582,35 @@ public class EurekaJacksonCodec {
         }
 
         @Override
-        public Application deserialize(JsonParser jp, DeserializationContext context) throws IOException {
-            JsonNode node = jp.getCodec().readTree(jp);
+        public Application deserialize(JsonParser jp, DeserializationContext context) throws IOException {            
+            if (Thread.currentThread().isInterrupted()) {
+                throw new JsonParseException(jp, "processing aborted");
+            }
+            Application application = new Application();
+            JsonToken jsonToken;
+            while((jsonToken = jp.nextToken()) != JsonToken.END_OBJECT){                
+                if(JsonToken.FIELD_NAME == jsonToken){
+                    String fieldName = jp.getCurrentName();
+                    jsonToken = jp.nextToken();
 
-            Application application = new Application(node.get(ELEM_NAME).asText());
-
-            JsonNode instanceNode = node.get(ELEM_INSTANCE);
-            if (instanceNode != null) {
-                if (instanceNode instanceof ArrayNode) {
-                    ArrayNode instancesNode = (ArrayNode) instanceNode;
-                    if (instancesNode != null) {
-                        for (JsonNode nextNode : instancesNode) {
-                            application.addInstance(mapper.treeToValue(nextNode, InstanceInfo.class));
+                    if(ELEM_NAME.equals(fieldName)){
+                        application.setName(jp.getValueAsString());
+                    }
+                    else if (ELEM_INSTANCE.equals(fieldName)) {
+                        ObjectReader instanceInfoReader = DeserializerStringCache.init(mapper.readerFor(InstanceInfo.class));
+                        if (jsonToken == JsonToken.START_ARRAY) {
+                            // messages is array, loop until token equal to "]"
+                            while (jp.nextToken() != JsonToken.END_ARRAY) {
+                                application.addInstance(instanceInfoReader.readValue(jp));
+                            }                            
+                        }
+                        else if (jsonToken == JsonToken.START_OBJECT) {
+                            application.addInstance(instanceInfoReader.readValue(jp));
                         }
                     }
-                } else {
-                    application.addInstance(mapper.treeToValue(instanceNode, InstanceInfo.class));
                 }
-            }
-            return application;
+            }           
+            return application;            
         }
     }
 
@@ -613,27 +645,36 @@ public class EurekaJacksonCodec {
 
         @Override
         public Applications deserialize(JsonParser jp, DeserializationContext context) throws IOException {
+            if (Thread.currentThread().isInterrupted()) {
+                throw new JsonParseException(jp, "processing aborted");
+            }
             Applications apps = new Applications();
+            JsonToken jsonToken;
+            while((jsonToken = jp.nextToken()) != JsonToken.END_OBJECT){
+                
+                if(JsonToken.FIELD_NAME == jsonToken){
+                    String fieldName = jp.getCurrentName();
+                    jsonToken = jp.nextToken();
 
-            JsonNode node = jp.getCodec().readTree(jp);
-
-            if (node.get(versionDeltaKey) != null) {
-                apps.setVersion(node.get(versionDeltaKey).asLong());
-            }
-            if (node.get(appHashCodeKey) != null) {
-                apps.setAppsHashCode(node.get(appHashCodeKey).asText());
-            }
-            JsonNode appNode = node.get(NODE_APP);
-            if (appNode != null) {
-                if (appNode instanceof ArrayNode) {
-                    ArrayNode appsNode = (ArrayNode) appNode;
-                    for (JsonNode item : appsNode) {
-                        apps.addApplication(mapper.treeToValue(item, Application.class));
+                    if(versionDeltaKey.equals(fieldName)){
+                        apps.setVersion(jp.getValueAsLong());
+                    } else if (appHashCodeKey.equals(fieldName)){
+                        apps.setAppsHashCode(jp.getValueAsString());
                     }
-                } else {
-                    apps.addApplication(mapper.treeToValue(appNode, Application.class));
+                    else if (NODE_APP.equals(fieldName)) {
+                        ObjectReader applicationReader = DeserializerStringCache.init(mapper.readerFor(Application.class));
+                        if (jsonToken == JsonToken.START_ARRAY) {
+                            while (jp.nextToken() != JsonToken.END_ARRAY) {                                
+                                apps.addApplication(applicationReader.readValue(jp));
+                            }                            
+                        }
+                        else if (jsonToken == JsonToken.START_OBJECT) {
+                            apps.addApplication(applicationReader.readValue(jp));
+                        }
+                    }
                 }
             }
+            DeserializerStringCache.clear(context);
             return apps;
         }
     }

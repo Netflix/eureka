@@ -1,5 +1,5 @@
 apply plugin: 'nebula.test-jar'
-apply plugin: 'provided-base'
+apply plugin: 'nebula.provided-base'
 
 configurations.all {
     // jersey2

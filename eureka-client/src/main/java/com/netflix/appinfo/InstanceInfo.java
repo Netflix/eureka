@@ -22,6 +22,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -308,9 +309,11 @@ public class InstanceInfo {
         UNKNOWN;
 
         public static InstanceStatus toEnum(String s) {
-            for (InstanceStatus e : InstanceStatus.values()) {
-                if (e.name().equalsIgnoreCase(s)) {
-                    return e;
+            if (s != null) {
+                try {
+                    return InstanceStatus.valueOf(s.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    // ignore and fall through to unknown
                 }
             }
             return UNKNOWN;
@@ -355,6 +358,7 @@ public class InstanceInfo {
         private static final String COLON = ":";
         private static final String HTTPS_PROTOCOL = "https://";
         private static final String HTTP_PROTOCOL = "http://";
+        private final Function<String,String> intern;
 
         private static final class LazyHolder {
             private static final VipAddressResolver DEFAULT_VIP_ADDRESS_RESOLVER = new Archaius1VipAddressResolver();
@@ -368,21 +372,26 @@ public class InstanceInfo {
 
         private String namespace;
 
-        private Builder(InstanceInfo result, VipAddressResolver vipAddressResolver) {
+        private Builder(InstanceInfo result, VipAddressResolver vipAddressResolver, Function<String,String> intern) {
             this.vipAddressResolver = vipAddressResolver;
             this.result = result;
+            this.intern = intern != null ? intern : StringCache::intern;
         }
 
         public Builder(InstanceInfo instanceInfo) {
-            this(instanceInfo, LazyHolder.DEFAULT_VIP_ADDRESS_RESOLVER);
+            this(instanceInfo, LazyHolder.DEFAULT_VIP_ADDRESS_RESOLVER, null);
         }
 
         public static Builder newBuilder() {
-            return new Builder(new InstanceInfo(), LazyHolder.DEFAULT_VIP_ADDRESS_RESOLVER);
+            return new Builder(new InstanceInfo(), LazyHolder.DEFAULT_VIP_ADDRESS_RESOLVER, null);
+        }
+
+        public static Builder newBuilder(Function<String,String> intern) {
+            return new Builder(new InstanceInfo(), LazyHolder.DEFAULT_VIP_ADDRESS_RESOLVER, intern);
         }
 
         public static Builder newBuilder(VipAddressResolver vipAddressResolver) {
-            return new Builder(new InstanceInfo(), vipAddressResolver);
+            return new Builder(new InstanceInfo(), vipAddressResolver, null);
         }
 
         public Builder setInstanceId(String instanceId) {
@@ -398,13 +407,13 @@ public class InstanceInfo {
          * @return the instance info builder.
          */
         public Builder setAppName(String appName) {
-            result.appName = StringCache.intern(appName.toUpperCase(Locale.ROOT));
+            result.appName = intern.apply(appName.toUpperCase(Locale.ROOT));
             return this;
         }
 
         public Builder setAppGroupName(String appGroupName) {
             if (appGroupName != null) {
-                result.appGroupName = appGroupName.toUpperCase(Locale.ROOT);
+                result.appGroupName = intern.apply(appGroupName.toUpperCase(Locale.ROOT));
             } else {
                 result.appGroupName = null;
             }
@@ -675,8 +684,8 @@ public class InstanceInfo {
          * @return the instance builder.
          */
         public Builder setVIPAddress(final String vipAddress) {
-            result.vipAddressUnresolved = StringCache.intern(vipAddress);
-            result.vipAddress = StringCache.intern(
+            result.vipAddressUnresolved = intern.apply(vipAddress);
+            result.vipAddress = intern.apply(
                     vipAddressResolver.resolveDeploymentContextBasedVipAddresses(vipAddress));
             return this;
         }
@@ -685,7 +694,7 @@ public class InstanceInfo {
          * Setter used during deserialization process, that does not do macro expansion on the provided value.
          */
         public Builder setVIPAddressDeser(String vipAddress) {
-            result.vipAddress = StringCache.intern(vipAddress);
+            result.vipAddress = intern.apply(vipAddress);
             return this;
         }
 
@@ -699,8 +708,8 @@ public class InstanceInfo {
          * @return - Builder instance
          */
         public Builder setSecureVIPAddress(final String secureVIPAddress) {
-            result.secureVipAddressUnresolved = StringCache.intern(secureVIPAddress);
-            result.secureVipAddress = StringCache.intern(
+            result.secureVipAddressUnresolved = intern.apply(secureVIPAddress);
+            result.secureVipAddress = intern.apply(
                     vipAddressResolver.resolveDeploymentContextBasedVipAddresses(secureVIPAddress));
             return this;
         }
@@ -709,7 +718,7 @@ public class InstanceInfo {
          * Setter used during deserialization process, that does not do macro expansion on the provided value.
          */
         public Builder setSecureVIPAddressDeser(String secureVIPAddress) {
-            result.secureVipAddress = StringCache.intern(secureVIPAddress);
+            result.secureVipAddress = intern.apply(secureVIPAddress);
             return this;
         }
 
@@ -791,7 +800,7 @@ public class InstanceInfo {
          * @return the instance info builder.
          */
         public Builder setASGName(String asgName) {
-            result.asgName = StringCache.intern(asgName);
+            result.asgName = intern.apply(asgName);
             return this;
         }
 
