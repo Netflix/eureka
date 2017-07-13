@@ -1,5 +1,5 @@
 apply plugin: 'nebula.test-jar'
-apply plugin: 'provided-base'
+apply plugin: 'nebula.provided-base'
 
 configurations.all {
     // jersey2
@@ -18,6 +18,8 @@ dependencies {
     compile "org.apache.httpcomponents:httpclient:${apacheHttpClientVersion}"
     compile "com.google.inject:guice:${guiceVersion}"
 
+    compile "com.github.vlsi.compactmap:compactmap:1.2.1"
+    
     compile "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
     compile "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"

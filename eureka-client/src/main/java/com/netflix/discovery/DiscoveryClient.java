@@ -768,7 +768,7 @@ public class DiscoveryClient implements EurekaClient {
                     + virtualHostname);
         }
         Applications apps = this.localRegionApps.get();
-        int index = (int) (apps.getNextIndex(virtualHostname.toUpperCase(Locale.ROOT),
+        int index = (int) (apps.getNextIndex(virtualHostname,
                 secure).incrementAndGet() % instanceInfoList.size());
         return instanceInfoList.get(index);
     }
@@ -1133,24 +1133,6 @@ public class DiscoveryClient implements EurekaClient {
         if (serverApps == null) {
             logger.warn("Cannot fetch full registry from the server; reconciliation failure");
             return;
-        }
-
-        if (logger.isDebugEnabled()) {
-            try {
-                Map<String, List<String>> reconcileDiffMap = getApplications().getReconcileMapDiff(serverApps);
-                StringBuilder reconcileBuilder = new StringBuilder("");
-                for (Map.Entry<String, List<String>> mapEntry : reconcileDiffMap.entrySet()) {
-                    reconcileBuilder.append(mapEntry.getKey()).append(": ");
-                    for (String displayString : mapEntry.getValue()) {
-                        reconcileBuilder.append(displayString);
-                    }
-                    reconcileBuilder.append('\n');
-                }
-                String reconcileString = reconcileBuilder.toString();
-                logger.debug("The reconcile string is {}", reconcileString);
-            } catch (Throwable e) {
-                logger.error("Could not calculate reconcile string ", e);
-            }
         }
 
         if (fetchRegistryGeneration.compareAndSet(currentUpdateGeneration, currentUpdateGeneration + 1)) {

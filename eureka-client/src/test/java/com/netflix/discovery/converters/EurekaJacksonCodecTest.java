@@ -1,11 +1,16 @@
 package com.netflix.discovery.converters;
 
-import javax.ws.rs.core.MediaType;
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Iterator;
+
+import javax.ws.rs.core.MediaType;
+
+import org.junit.Test;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
@@ -13,9 +18,6 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
-import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
 
 /**
  * @author Tomasz Bak
@@ -183,7 +185,7 @@ public class EurekaJacksonCodecTest {
         ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
         new EntityBodyConverter().write(original, captureStream, MediaType.APPLICATION_JSON_TYPE);
         byte[] encoded = captureStream.toByteArray();
-
+        String encodedString = new String(encoded);
         // Decode
         InputStream source = new ByteArrayInputStream(encoded);
         Applications decoded = codec.readValue(Applications.class, source);
@@ -226,4 +228,5 @@ public class EurekaJacksonCodecTest {
 
         assertTrue(EurekaEntityComparators.equal(decoded, INSTANCE_INFO_1_A1));
     }
+    
 }

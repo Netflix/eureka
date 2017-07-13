@@ -43,8 +43,7 @@ public final class EurekaEntityComparators {
         if (first == null || first == null && second != null) {
             return false;
         }
-
-        return first.getMetadata().equals(second.getMetadata());
+        return equal(first.getMetadata(), second.getMetadata());
     }
 
     public static boolean subsetOf(DataCenterInfo first, DataCenterInfo second) {
