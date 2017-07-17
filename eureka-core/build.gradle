@@ -7,7 +7,7 @@ dependencies {
     compile "com.amazonaws:aws-java-sdk-sts:${awsVersion}"
     compile "com.amazonaws:aws-java-sdk-route53:${awsVersion}"
     compile "javax.servlet:servlet-api:${servletVersion}"
-    compile 'com.thoughtworks.xstream:xstream:1.4.9'
+    compile 'com.thoughtworks.xstream:xstream:1.4.10'
     compile 'javax.ws.rs:jsr311-api:1.1.1'
 
     // These dependencies are marked 'provided' in the client, but we need them always on the server

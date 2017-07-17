@@ -1,18 +1,19 @@
 package com.netflix.discovery.converters;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.converters.ConversionException;
 import org.junit.Test;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 
 /**
  * @author Tomasz Bak
  */
-public class XmlCodecTest {
+public class XmlXStreamTest {
 
     @Test
     public void testEncodingDecodingWithoutMetaData() throws Exception {
@@ -36,5 +37,23 @@ public class XmlCodecTest {
         Applications decodedApplications = (Applications) xstream.fromXML(xmlDocument);
 
         assertThat(EurekaEntityComparators.equal(decodedApplications, applications), is(true));
+    }
+
+    /**
+     * Tests: http://x-stream.github.io/CVE-2017-7957.html
+     */
+    @Test(expected=ConversionException.class, timeout=5000)
+    public void testVoidElementUnmarshalling() throws Exception {
+        XStream xstream = XmlXStream.getInstance();
+        xstream.fromXML("<void/>");
+    }
+
+    /**
+     * Tests: http://x-stream.github.io/CVE-2017-7957.html
+     */
+    @Test(expected=ConversionException.class, timeout=5000)
+    public void testVoidAttributeUnmarshalling() throws Exception {
+        XStream xstream = XmlXStream.getInstance();
+        xstream.fromXML("<string class='void'>Hello, world!</string>");
     }
 }
