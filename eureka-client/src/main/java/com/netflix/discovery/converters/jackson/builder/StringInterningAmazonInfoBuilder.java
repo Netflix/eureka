@@ -16,14 +16,24 @@
 
 package com.netflix.discovery.converters.jackson.builder;
 
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.nio.CharBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.DataCenterInfo.Name;
+import com.netflix.discovery.util.DeserializerStringCache;
+import com.netflix.discovery.util.DeserializerStringCache.CacheScope;
 import com.netflix.discovery.util.StringCache;
 
 /**
@@ -35,17 +45,18 @@ import com.netflix.discovery.util.StringCache;
  *
  * @author Tomasz Bak
  */
-public class StringInterningAmazonInfoBuilder {
+public class StringInterningAmazonInfoBuilder extends JsonDeserializer<AmazonInfo>{
 
-    private static final Set<String> VALUE_INTERN_KEYS;
+    private static final Map<String, CacheScope> VALUE_INTERN_KEYS;
+    private static final CharBuffer BUF_METADATA = CharBuffer.wrap("metadata");
 
     static {
-        HashSet<String> keys = new HashSet<>();
-        keys.add(MetaDataKey.accountId.getName());
-        keys.add(MetaDataKey.amiId.getName());
-        keys.add(MetaDataKey.availabilityZone.getName());
-        keys.add(MetaDataKey.instanceType.getName());
-        keys.add(MetaDataKey.vpcId.getName());
+        HashMap<String, CacheScope> keys = new HashMap<>();
+        keys.put(MetaDataKey.accountId.getName(), CacheScope.GLOBAL_SCOPE);
+        keys.put(MetaDataKey.amiId.getName(), CacheScope.GLOBAL_SCOPE);
+        keys.put(MetaDataKey.availabilityZone.getName(), CacheScope.GLOBAL_SCOPE);
+        keys.put(MetaDataKey.instanceType.getName(), CacheScope.GLOBAL_SCOPE);
+        keys.put(MetaDataKey.vpcId.getName(), CacheScope.APPLICATION_SCOPE);
         VALUE_INTERN_KEYS = keys;
     }
 
@@ -62,7 +73,7 @@ public class StringInterningAmazonInfoBuilder {
         }
         for (Map.Entry<String, String> entry : metadata.entrySet()) {
             String key = entry.getKey().intern();
-            if (VALUE_INTERN_KEYS.contains(key)) {
+            if (VALUE_INTERN_KEYS.containsKey(key)) {
                 entry.setValue(StringCache.intern(entry.getValue()));
             }
         }
@@ -72,4 +83,33 @@ public class StringInterningAmazonInfoBuilder {
     public AmazonInfo build() {
         return new AmazonInfo(Name.Amazon.name(), metadata);
     }
+
+    @Override
+    public AmazonInfo deserialize(JsonParser jp, DeserializationContext context)
+            throws IOException {
+        HashMap<String,String> metadata = new HashMap<>();
+        DeserializerStringCache intern = DeserializerStringCache.from(context);        
+        
+        JsonToken jsonToken;
+        while((jsonToken = jp.nextToken()) != JsonToken.END_OBJECT){
+          jsonToken = jp.nextToken();
+          CharBuffer fieldName = CharBuffer.wrap(jp.getTextCharacters(), jp.getTextOffset(), jp.getTextLength());            
+            
+            if (BUF_METADATA.equals(fieldName)) {
+                jsonToken = jp.nextToken();                
+                while((jsonToken = jp.nextToken()) != JsonToken.END_OBJECT) {
+                    String metadataKey = intern.apply(jp, CacheScope.GLOBAL_SCOPE);
+                    jp.nextToken();
+                    CacheScope scope = VALUE_INTERN_KEYS.get(metadataKey);
+                    String metadataValue =  (scope != null) ? intern.apply(jp, scope) : jp.getValueAsString();                    
+                    metadata.put(metadataKey, metadataValue);
+                }
+            }
+            else {
+                jsonToken = jp.nextToken();                
+            }
+        }
+        return new AmazonInfo(Name.Amazon.name(), metadata);
+    }
+  
 }

@@ -6,9 +6,9 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.CharBuffer;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -30,11 +30,11 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.RuntimeJsonMappingException;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -46,11 +46,13 @@ import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.InstanceInfo.PortType;
 import com.netflix.appinfo.LeaseInfo;
+import com.netflix.appinfo.LeaseInfo.Builder;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.DeserializerStringCache;
+import com.netflix.discovery.util.DeserializerStringCache.CacheScope;
 
 /**
  * @author Tomasz Bak
@@ -102,7 +104,7 @@ public class EurekaJacksonCodec {
     /**
      * XStream codec supports character replacement in field names to generate XML friendly
      * names. This feature is also configurable, and replacement strings can be provided by a user.
-     * To obey these rules, version and apppsHash key field names must be formatted according to the provided
+     * To obey these rules, version and appsHash key field names must be formatted according to the provided
      * configuration, which by default replaces '_' with '__' (double underscores).
      */
     private final String versionDeltaKey;
@@ -113,9 +115,18 @@ public class EurekaJacksonCodec {
     private final Map<Class<?>, Supplier<ObjectReader>> objectReaderByClass;
     private final Map<Class<?>, ObjectWriter> objectWriterByClass;
 
+    static EurekaClientConfig loadConfig() {
+        return DiscoveryManager.getInstance().getEurekaClientConfig();
+    }
+    
     public EurekaJacksonCodec() {
-        this.versionDeltaKey = formatKey(VERSIONS_DELTA_TEMPLATE);
-        this.appHashCodeKey = formatKey(APPS_HASHCODE_TEMPTE);
+        this(formatKey(loadConfig(), VERSIONS_DELTA_TEMPLATE), formatKey(loadConfig(), APPS_HASHCODE_TEMPTE));
+        
+    }
+    
+    public EurekaJacksonCodec(String versionDeltaKey, String appsHashCodeKey) {
+        this.versionDeltaKey = versionDeltaKey;
+        this.appHashCodeKey = appsHashCodeKey;
         this.mapper = new ObjectMapper();
 
         this.mapper.setSerializationInclusion(Include.NON_NULL);
@@ -126,7 +137,6 @@ public class EurekaJacksonCodec {
         module.addSerializer(Application.class, new ApplicationSerializer());
         module.addSerializer(Applications.class, new ApplicationsSerializer(this.versionDeltaKey, this.appHashCodeKey));
 
-        module.addDeserializer(DataCenterInfo.class, new DataCenterInfoDeserializer());
         module.addDeserializer(LeaseInfo.class, new LeaseInfoDeserializer());
         module.addDeserializer(InstanceInfo.class, new InstanceInfoDeserializer(this.mapper));
         module.addDeserializer(Application.class, new ApplicationDeserializer(this.mapper));
@@ -158,8 +168,7 @@ public class EurekaJacksonCodec {
         return appHashCodeKey;
     }
 
-    protected static String formatKey(String keyTemplate) {
-        EurekaClientConfig clientConfig = DiscoveryManager.getInstance().getEurekaClientConfig();
+    protected static String formatKey(EurekaClientConfig clientConfig, String keyTemplate) {
         String replacement;
         if (clientConfig == null) {
             replacement = "__";
@@ -185,7 +194,7 @@ public class EurekaJacksonCodec {
             return reader.readValue(entityStream);
         }
         finally {
-            DeserializerStringCache.clear(reader);
+            DeserializerStringCache.clear(reader, CacheScope.GLOBAL_SCOPE);
         }
     }
 
@@ -197,7 +206,7 @@ public class EurekaJacksonCodec {
             return reader.readValue(text);
         }
         finally {
-            DeserializerStringCache.clear(reader);
+            DeserializerStringCache.clear(reader, CacheScope.GLOBAL_SCOPE);
         }
     }
 
@@ -259,63 +268,38 @@ public class EurekaJacksonCodec {
         }
     }
 
-    public static class DataCenterInfoDeserializer extends JsonDeserializer<DataCenterInfo> {
-
-        @Override
-        public DataCenterInfo deserialize(JsonParser jp, DeserializationContext context) throws IOException {
-            JsonNode node = jp.getCodec().readTree(jp);
-            final Name name = Name.valueOf(node.get(ELEM_NAME).asText());
-            if (name != Name.Amazon) {
-                return new DataCenterInfo() {
-                    @Override
-                    public Name getName() {
-                        return name;
-                    }
-                };
-            }
-            
-
-            Function<String,String> intern = DeserializerStringCache.from(context);
-            Map<String, String> metaData = new HashMap<String, String>();
-            JsonNode metaNode = node.get(DATACENTER_METADATA);
-            metaNode.fieldNames().forEachRemaining(fieldName->{
-                metaData.put(intern.apply(fieldName), intern.apply(metaNode.get(fieldName).asText()));
-            });
-            AmazonInfo amazonInfo = new AmazonInfo();
-            amazonInfo.setMetadata(metaData); 
-
-            return amazonInfo;
-        }
-    }
-
     public static class LeaseInfoDeserializer extends JsonDeserializer<LeaseInfo> {
 
-        protected static final String ELEM_RENEW_INT = "renewalIntervalInSecs";
-        protected static final String ELEM_DURATION = "durationInSecs";
-        protected static final String ELEM_REG_TIMESTAMP = "registrationTimestamp";
-        protected static final String ELEM_LAST_RENEW_TIMESTAMP = "lastRenewalTimestamp";
-        protected static final String ELEM_EVICTION_TIMESTAMP = "evictionTimestamp";
-        protected static final String ELEM_SERVICE_UP_TIMESTAMP = "serviceUpTimestamp";
-        private static Map<String, BiConsumer<LeaseInfo.Builder, JsonNode>> mappingActions = new HashMap<>();        
+        protected static final CharBuffer ELEM_RENEW_INT = CharBuffer.wrap("renewalIntervalInSecs");
+        protected static final CharBuffer ELEM_DURATION = CharBuffer.wrap("durationInSecs");
+        protected static final CharBuffer ELEM_REG_TIMESTAMP = CharBuffer.wrap("registrationTimestamp");
+        protected static final CharBuffer ELEM_LAST_RENEW_TIMESTAMP = CharBuffer.wrap("lastRenewalTimestamp");
+        protected static final CharBuffer ELEM_EVICTION_TIMESTAMP = CharBuffer.wrap("evictionTimestamp");
+        protected static final CharBuffer ELEM_SERVICE_UP_TIMESTAMP = CharBuffer.wrap("serviceUpTimestamp");
+        private static Map<CharBuffer, ParserAction<LeaseInfo.Builder, JsonParser, DeserializerStringCache>> mappingActions = new HashMap<>();        
         static {
-            mappingActions.put(ELEM_DURATION, (builder,node)->builder.setDurationInSecs(node.asInt()));
-            mappingActions.put(ELEM_EVICTION_TIMESTAMP, (builder,node)->builder.setEvictionTimestamp(node.asLong()));
-            mappingActions.put(ELEM_LAST_RENEW_TIMESTAMP, (builder,node)->builder.setRenewalTimestamp(node.asLong()));
-            mappingActions.put(ELEM_REG_TIMESTAMP, (builder,node)->builder.setRegistrationTimestamp(node.asLong()));
-            mappingActions.put(ELEM_RENEW_INT, (builder,node)->builder.setRenewalIntervalInSecs(node.asInt()));
-            mappingActions.put(ELEM_SERVICE_UP_TIMESTAMP, (builder,node)->builder.setServiceUpTimestamp(node.asLong()));
+            mappingActions.put(ELEM_DURATION, (builder,jp, dsc)->builder.setDurationInSecs(jp.getValueAsInt()));
+            mappingActions.put(ELEM_EVICTION_TIMESTAMP, (builder,jp, sc)->builder.setEvictionTimestamp(jp.getValueAsLong()));
+            mappingActions.put(ELEM_LAST_RENEW_TIMESTAMP, (builder,jp, dsc)->builder.setRenewalTimestamp(jp.getValueAsLong()));
+            mappingActions.put(ELEM_REG_TIMESTAMP, (builder,jp, dsc)->builder.setRegistrationTimestamp(jp.getValueAsLong()));
+            mappingActions.put(ELEM_RENEW_INT, (builder,jp, dsc)->builder.setRenewalIntervalInSecs(jp.getValueAsInt()));
+            mappingActions.put(ELEM_SERVICE_UP_TIMESTAMP, (builder,jp, dsc)->builder.setServiceUpTimestamp(jp.getValueAsLong()));
         }
 
         @Override
         public LeaseInfo deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
             LeaseInfo.Builder builder = LeaseInfo.Builder.newBuilder();
-
-            JsonNode node = jp.getCodec().readTree(jp);
-            node.fieldNames().forEachRemaining( fieldName -> {
-                if (node.has(fieldName)) {
-                    Optional.ofNullable(mappingActions.get(fieldName)).ifPresent(f->f.accept(builder, node.get(fieldName)));
+            JsonToken jsonToken;
+            while ((jsonToken = jp.nextToken()) != JsonToken.END_OBJECT) {
+                CharBuffer fieldName = CharBuffer.wrap(jp.getTextCharacters(), jp.getTextOffset(), jp.getTextLength());
+                jsonToken = jp.nextToken();
+                if (jsonToken != JsonToken.VALUE_NULL) {
+                    ParserAction<Builder, JsonParser, DeserializerStringCache> action = mappingActions.get(fieldName);
+                    if (action != null) {
+                        action.accept(builder, jp, null); // no caching of lease info
+                    }
                 }
-            }    );           
+            }
             return builder.build();
         }
     }
@@ -398,6 +382,10 @@ public class EurekaJacksonCodec {
             }
         }
     }
+    
+    static interface ParserAction<T1, T2, T3> {
+        void accept(T1 t1, T2 t2, T3 t3) throws IOException;
+    }
 
     public static class InstanceInfoDeserializer extends JsonDeserializer<InstanceInfo> {
         static class RuntimeJsonProcessingException extends RuntimeException {
@@ -409,116 +397,155 @@ public class EurekaJacksonCodec {
         
         protected ObjectMapper mapper;
         private ConcurrentMap<String, BiConsumer<Object, String>> autoUnmarshalActions = new ConcurrentHashMap<>();
-        private Map<String, BiConsumer<InstanceInfo.Builder, JsonNode>> mapping = new HashMap<>();        
+        private Map<CharBuffer, ParserAction<InstanceInfo.Builder, JsonParser, DeserializerStringCache>> mapping = new HashMap<>();        
         {
-            mapping.put(ELEM_HOST, (builder,node)->builder.setHostName(node.asText()));
-            mapping.put(ELEM_INSTANCE_ID, (builder,node)->builder.setInstanceId(node.asText()));
-            mapping.put(ELEM_APP, (builder,node)->builder.setAppName(node.asText()));
-            mapping.put(ELEM_IP, (builder,node)->builder.setIPAddr(node.asText()));
-            mapping.put(ELEM_SID, (builder,node)->builder.setSID(node.asText()));
-            mapping.put(ELEM_IDENTIFYING_ATTR, (builder,node)->{});// nothing 
-            mapping.put(ELEM_STATUS, (builder,node)->builder.setStatus(InstanceStatus.toEnum(node.asText())));
-            mapping.put(ELEM_OVERRIDDEN_STATUS, (builder,node)-> builder.setOverriddenStatus(InstanceStatus.toEnum(node.asText())));
-            mapping.put(ELEM_PORT, (builder,node)->{
-                int port = node.get("$").asInt();
-                boolean enabled = node.get("@enabled").asBoolean();
-                builder.setPort(port);
-                builder.enablePort(PortType.UNSECURE, enabled); 
+            mapping.put(CharBuffer.wrap(ELEM_HOST), (builder,jp,dsc)->builder.setHostName(jp.getValueAsString()));
+            mapping.put(CharBuffer.wrap(ELEM_INSTANCE_ID), (builder,jp,dsc)->builder.setInstanceId(jp.getValueAsString()));
+            mapping.put(CharBuffer.wrap(ELEM_APP), (builder,jp,dsc)->builder.setAppNameForDeser(dsc.apply(jp, CacheScope.APPLICATION_SCOPE, 
+                    c->{
+                        try {
+                            return jp.getValueAsString().toUpperCase();
+                        } catch (IOException e) {
+                            throw new RuntimeJsonMappingException(e.getMessage());
+                        }
+                  })                    
+                    )
+                    );
+            mapping.put(CharBuffer.wrap(ELEM_IP), (builder,jp,dsc)->builder.setIPAddr(jp.getValueAsString()));
+            mapping.put(CharBuffer.wrap(ELEM_SID), (builder,jp,dsc)->builder.setSID(dsc.apply(jp)));
+            mapping.put(CharBuffer.wrap(ELEM_IDENTIFYING_ATTR), (builder,jp,dsc)->{});// nothing 
+            mapping.put(CharBuffer.wrap(ELEM_STATUS), (builder,jp,dsc)->builder.setStatus(InstanceStatus.toEnum(jp.getValueAsString())));
+            mapping.put(CharBuffer.wrap(ELEM_OVERRIDDEN_STATUS), (builder,jp,dsc)-> builder.setOverriddenStatus(InstanceStatus.toEnum(jp.getValueAsString())));
+            mapping.put(CharBuffer.wrap(ELEM_PORT), (builder,jp,dsc)->{
+                JsonToken token ; // begin object
+                while ((token = jp.nextToken()) != JsonToken.END_OBJECT) {
+                    CharBuffer fieldName = CharBuffer.wrap(jp.getTextCharacters(), jp.getTextOffset(), jp.getTextLength());
+                    if (BUF_$.equals(fieldName)) {
+                        if (token == JsonToken.FIELD_NAME) jp.nextToken();
+                        builder.setPort(jp.getValueAsInt());
+                    }
+                    else if (BUF_AT_ENABLED.equals(fieldName)) {
+                        if (token == JsonToken.FIELD_NAME) jp.nextToken();
+                        builder.enablePort(PortType.UNSECURE, jp.getValueAsBoolean());
+                    }
+                }
             });
-            mapping.put(ELEM_SECURE_PORT, (builder,node)->{
-                int port = node.get("$").asInt();
-                boolean enabled = node.get("@enabled").asBoolean();
-                builder.setSecurePort(port);
-                builder.enablePort(PortType.SECURE, enabled);                
+            mapping.put(CharBuffer.wrap(ELEM_SECURE_PORT), (builder,jp,dsc)->{
+                JsonToken token; // begin object
+                while ((token = jp.nextToken()) != JsonToken.END_OBJECT) {
+                    CharBuffer fieldName = CharBuffer.wrap(jp.getTextCharacters(), jp.getTextOffset(), jp.getTextLength());
+                    if (BUF_$.equals(fieldName)) {
+                        if (token == JsonToken.FIELD_NAME) jp.nextToken();
+                        builder.setSecurePort(jp.getValueAsInt());
+                    }
+                    else if (BUF_AT_ENABLED.equals(fieldName)) {
+                        if (token == JsonToken.FIELD_NAME) jp.nextToken();
+                        builder.enablePort(PortType.SECURE, jp.getValueAsBoolean());
+                    }
+                }
             });
-            mapping.put(ELEM_COUNTRY_ID, (builder,node)->builder.setCountryId(node.asInt()));
-            mapping.put(NODE_DATACENTER, (builder,node)->{
+            mapping.put(CharBuffer.wrap(ELEM_COUNTRY_ID), (builder,jp,dsc)->builder.setCountryId(jp.getValueAsInt()));
+            mapping.put(CharBuffer.wrap(NODE_DATACENTER), (builder,jp,dsc)->{
                 try {
-                    builder.setDataCenterInfo(mapper.treeToValue(node, DataCenterInfo.class)); 
+                    builder.setDataCenterInfo(dsc.initReader(mapper.readerFor(DataCenterInfo.class)).readValue(jp));
                 }
                 catch (JsonProcessingException jpe) {
                     throw new RuntimeJsonProcessingException(jpe);
                 }
             });
-            mapping.put(NODE_LEASE, (builder,node)->{
+            mapping.put(CharBuffer.wrap(NODE_LEASE), (builder,jp,dsc)->{
                 try {
-                    builder.setLeaseInfo(mapper.treeToValue(node, LeaseInfo.class));
+                    builder.setLeaseInfo(mapper.readerFor(LeaseInfo.class).readValue(jp));
                 }
                 catch (JsonProcessingException jpe) {
                     throw new RuntimeJsonProcessingException(jpe);
                 }
             });
-            mapping.put(ELEM_HEALTHCHECKURL, (builder,node)->builder.setHealthCheckUrlsForDeser(node.asText(), null));
-            mapping.put(ELEM_SECHEALTHCHECKURL, (builder,node)->builder.setHealthCheckUrlsForDeser(null, node.asText()));
-            mapping.put(ELEM_APPGROUPNAME, (builder,node)-> builder.setAppGroupName(node.asText()));
-            mapping.put(ELEM_HOMEPAGEURL, (builder,node)->builder.setHomePageUrlForDeser(node.asText()));
-            mapping.put(ELEM_STATUSPAGEURL, (builder,node)->builder.setStatusPageUrlForDeser(node.asText()));
-            mapping.put(ELEM_VIPADDRESS, (builder,node)->builder.setVIPAddressDeser(node.asText()));
-            mapping.put(ELEM_SECVIPADDRESS, (builder,node)->builder.setSecureVIPAddressDeser(node.asText()));
-            mapping.put(ELEM_ISCOORDINATINGDISCSOERVER, (builder,node)->builder.setIsCoordinatingDiscoveryServer(node.asBoolean()));
-            mapping.put(ELEM_LASTUPDATEDTS, (builder,node)->builder.setLastUpdatedTimestamp(node.asLong()));
-            mapping.put(ELEM_LASTDIRTYTS, (builder,node)->builder.setLastDirtyTimestamp(node.asLong()));
-            mapping.put(ELEM_ACTIONTYPE, (builder,node)->builder.setActionType(ActionType.valueOf(node.asText())));
-            mapping.put(ELEM_ASGNAME, (builder,node)->builder.setASGName(node.asText()));
+            mapping.put(CharBuffer.wrap(ELEM_HEALTHCHECKURL), (builder,jp,dsc)->builder.setHealthCheckUrlsForDeser(jp.getValueAsString(), null));
+            mapping.put(CharBuffer.wrap(ELEM_SECHEALTHCHECKURL), (builder,jp,dsc)->builder.setHealthCheckUrlsForDeser(null, jp.getValueAsString()));
+            mapping.put(CharBuffer.wrap(ELEM_APPGROUPNAME), (builder,jp,dsc)->builder.setAppGroupNameForDeser(dsc.apply(jp, CacheScope.APPLICATION_SCOPE, 
+                    c->{
+                        try {
+                            return jp.getValueAsString().toUpperCase();
+                        } catch (IOException e) {
+                            throw new RuntimeJsonMappingException(e.getMessage());
+                        }
+                  })                    
+                    )
+                    );            
+            mapping.put(CharBuffer.wrap(ELEM_HOMEPAGEURL), (builder,jp,dsc)->builder.setHomePageUrlForDeser(jp.getValueAsString()));
+            mapping.put(CharBuffer.wrap(ELEM_STATUSPAGEURL), (builder,jp,dsc)->builder.setStatusPageUrlForDeser(jp.getValueAsString()));
+            mapping.put(CharBuffer.wrap(ELEM_VIPADDRESS), (builder,jp,dsc)->builder.setVIPAddressDeser(dsc.apply(jp)));
+            mapping.put(CharBuffer.wrap(ELEM_SECVIPADDRESS), (builder,jp,dsc)->builder.setSecureVIPAddressDeser(dsc.apply(jp)));
+            mapping.put(CharBuffer.wrap(ELEM_ISCOORDINATINGDISCSOERVER), (builder,jp,dsc)->builder.setIsCoordinatingDiscoveryServer(jp.getValueAsBoolean()));
+            mapping.put(CharBuffer.wrap(ELEM_LASTUPDATEDTS), (builder,jp,dsc)->builder.setLastUpdatedTimestamp(jp.getValueAsLong()));
+            mapping.put(CharBuffer.wrap(ELEM_LASTDIRTYTS), (builder,jp,dsc)->builder.setLastDirtyTimestamp(jp.getValueAsLong()));
+            mapping.put(CharBuffer.wrap(ELEM_ACTIONTYPE), (builder,jp,dsc)->{
+                builder.setActionType(ActionType.valueOf(jp.getValueAsString()));   
+            });
+            mapping.put(CharBuffer.wrap(ELEM_ASGNAME), (builder,jp,dsc)->builder.setASGName(dsc.apply(jp)));
         }
 
         protected InstanceInfoDeserializer(ObjectMapper mapper) {
             this.mapper = mapper;
         }
         
+        final static CharBuffer BUF_NODE_METADATA = CharBuffer.wrap(NODE_METADATA);
+        final static Function<String,String> self = s->s;
         @Override
         public InstanceInfo deserialize(JsonParser jp, DeserializationContext context) throws IOException {
             if (Thread.currentThread().isInterrupted()) {
                 throw new JsonParseException(jp, "processing aborted");
             }
-            Function<String,String> intern = DeserializerStringCache.from(context);
-            InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder(intern);
-            JsonNode node = jp.getCodec().readTree(jp);
-            Iterator<String> fieldNames = node.fieldNames();
-            while (fieldNames.hasNext()) {
-                String fieldName = fieldNames.next();
-                if (node.has(fieldName)) {
-                    BiConsumer<InstanceInfo.Builder, JsonNode> consumer = mapping.getOrDefault(
-                            fieldName, 
-                            (b, n) -> {
-                                if (NODE_METADATA.equals(fieldName)) {
-                                    b.setMetadata(unmarshalMetadata(n, intern));
-                                }
-                                else {
-                                    autoUnmarshalEligible(fieldName, n.asText(), b.getRawInstance());
-                                }
+            DeserializerStringCache intern = DeserializerStringCache.from(context);
+            InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder(self);
+            JsonToken jsonToken;
+            while ((jsonToken = jp.nextToken()) != JsonToken.END_OBJECT) {
+                CharBuffer fieldName = CharBuffer.wrap(jp.getTextCharacters(), jp.getTextOffset(), jp.getTextLength());
+                jsonToken = jp.nextToken();
+                ParserAction<InstanceInfo.Builder, JsonParser, DeserializerStringCache> consumer = mapping.getOrDefault(
+                        fieldName, 
+                        (b, n, dsc) -> {
+                            if (BUF_NODE_METADATA.equals(fieldName)) {
+                                unmarshalMetadata(b, n, intern);
                             }
-                    );
-                    try {
-                        consumer.accept(builder, node.get(fieldName));
-                    }
-                    catch (RuntimeJsonProcessingException rjpe) {
-                        throw (JsonProcessingException)rjpe.getCause();
-                    }
+                            else {
+                                autoUnmarshalEligible(fieldName.toString(), jp.getText(), b.getRawInstance());
+                            }
+                        }
+                );
+                try {
+                    consumer.accept(builder, jp, intern);
+                }
+                catch (RuntimeJsonProcessingException rjpe) {
+                    throw (JsonProcessingException)rjpe.getCause();
                 }
             }
             return builder.build();
         }
         
-        protected Map<String,String> unmarshalMetadata(JsonNode node, Function<String,String> intern) {
-            Map<String, String> meta = null;
-            Iterator<String> fields = node.fieldNames();
-            while (fields.hasNext()) {
-                String fieldName = fields.next();
-                if (!"@class".equals(fieldName)) { // For backwards compatibility
-                    String key = intern.apply(fieldName);
-                    String value = intern.apply(node.get(fieldName).asText());
-                    if (meta == null) {
-                        meta = new ConcurrentHashMap<String, String>();
-                    }
-                    meta.put(key, value);
+        final static CharBuffer BUF_AT_CLASS = CharBuffer.wrap("@class");
+        final static CharBuffer BUF_AT_ENABLED = CharBuffer.wrap("@enabled");
+        final static CharBuffer BUF_$ = CharBuffer.wrap("$");
+        
+        void unmarshalMetadata(InstanceInfo.Builder builder, JsonParser jp, DeserializerStringCache intern) throws IOException {
+            JsonToken jsonToken;
+            while ((jsonToken = jp.nextToken()) != JsonToken.END_OBJECT) {
+                CharBuffer fieldName = CharBuffer.wrap(jp.getTextCharacters(), jp.getTextOffset(), jp.getTextLength());
+                if (BUF_AT_CLASS.equals(fieldName)) {
+                    // skip this
+                    jsonToken = jp.nextToken();
+                }
+                else { // For backwards compatibility
+                    String key = intern.apply(fieldName, CacheScope.GLOBAL_SCOPE);
+                    jsonToken = jp.nextToken();
+                    builder.add(key, intern.apply(jp, CacheScope.APPLICATION_SCOPE));
                 }
             };
-            return (meta == null) ? Collections.emptyMap() : meta;         
         }
 
-        protected void autoUnmarshalEligible(String fieldName, String value, Object o) {
-            if (value == null) return; // early out
+        void autoUnmarshalEligible(String fieldName, String value, Object o) {
+            if (value == null || o == null) return; // early out
             Class<?> c = o.getClass();
             String cacheKey = c.getName() + ":" + fieldName;
             BiConsumer<Object, String> action = autoUnmarshalActions.computeIfAbsent(cacheKey, k-> {
@@ -546,8 +573,8 @@ public class EurekaJacksonCodec {
                     } else {
                         return (t, v) -> tryCatchLog(()->{ setterField.set(t, v); return null; });
                     }  
-                } catch (Throwable th) {
-                    logger.error("Error in unmarshalling the object:", th);   
+                } catch (Exception ex) {
+                    logger.error("Error in unmarshalling the object:", ex);   
                     return null;
                 }                
             });
@@ -558,8 +585,8 @@ public class EurekaJacksonCodec {
     private static void tryCatchLog(Callable<Void> callable) {
         try {    
             callable.call();
-        } catch (Throwable th) {
-            logger.error("Error in unmarshalling the object:", th);
+        } catch (Exception ex) {
+            logger.error("Error in unmarshalling the object:", ex);
         }
     }
 
@@ -580,6 +607,9 @@ public class EurekaJacksonCodec {
         public ApplicationDeserializer(ObjectMapper mapper) {
             this.mapper = mapper;
         }
+        
+        private static final CharBuffer BUF_ELEM_NAME = CharBuffer.wrap(ELEM_NAME);
+        private static final CharBuffer BUF_ELEM_INSTANCE = CharBuffer.wrap(ELEM_INSTANCE);
 
         @Override
         public Application deserialize(JsonParser jp, DeserializationContext context) throws IOException {            
@@ -590,14 +620,14 @@ public class EurekaJacksonCodec {
             JsonToken jsonToken;
             while((jsonToken = jp.nextToken()) != JsonToken.END_OBJECT){                
                 if(JsonToken.FIELD_NAME == jsonToken){
-                    String fieldName = jp.getCurrentName();
+                    CharBuffer fieldName = CharBuffer.wrap(jp.getTextCharacters(), jp.getTextOffset(), jp.getTextLength());
                     jsonToken = jp.nextToken();
 
-                    if(ELEM_NAME.equals(fieldName)){
+                    if(BUF_ELEM_NAME.equals(fieldName)){
                         application.setName(jp.getValueAsString());
                     }
-                    else if (ELEM_INSTANCE.equals(fieldName)) {
-                        ObjectReader instanceInfoReader = DeserializerStringCache.init(mapper.readerFor(InstanceInfo.class));
+                    else if (BUF_ELEM_INSTANCE.equals(fieldName)) {
+                        ObjectReader instanceInfoReader = DeserializerStringCache.init(mapper.readerFor(InstanceInfo.class), context);
                         if (jsonToken == JsonToken.START_ARRAY) {
                             // messages is array, loop until token equal to "]"
                             while (jp.nextToken() != JsonToken.END_ARRAY) {
@@ -609,7 +639,8 @@ public class EurekaJacksonCodec {
                         }
                     }
                 }
-            }           
+            }
+            DeserializerStringCache.clear(context, CacheScope.APPLICATION_SCOPE);            
             return application;            
         }
     }
@@ -662,7 +693,7 @@ public class EurekaJacksonCodec {
                         apps.setAppsHashCode(jp.getValueAsString());
                     }
                     else if (NODE_APP.equals(fieldName)) {
-                        ObjectReader applicationReader = DeserializerStringCache.init(mapper.readerFor(Application.class));
+                        ObjectReader applicationReader = DeserializerStringCache.init(mapper.readerFor(Application.class), context);
                         if (jsonToken == JsonToken.START_ARRAY) {
                             while (jp.nextToken() != JsonToken.END_ARRAY) {                                
                                 apps.addApplication(applicationReader.readValue(jp));
@@ -674,7 +705,6 @@ public class EurekaJacksonCodec {
                     }
                 }
             }
-            DeserializerStringCache.clear(context);
             return apps;
         }
     }

@@ -57,6 +57,8 @@ import org.slf4j.LoggerFactory;
 @JsonRootName("instance")
 public class InstanceInfo {
 
+    private static final String VERSION_UNKNOWN = "unknown";
+
     /**
      * {@link InstanceInfo} JSON and XML format for port information does not follow the usual conventions, which
      * makes its mapping complicated. This class represents the wire format for port information.
@@ -142,18 +144,21 @@ public class InstanceInfo {
     @Auto
     private volatile Boolean isCoordinatingDiscoveryServer = Boolean.FALSE;
     @XStreamAlias("metadata")
-    private volatile Map<String, String> metadata = new ConcurrentHashMap<String, String>();
+    private volatile Map<String, String> metadata;
     @Auto
-    private volatile Long lastUpdatedTimestamp = System.currentTimeMillis();
+    private volatile Long lastUpdatedTimestamp;
     @Auto
-    private volatile Long lastDirtyTimestamp = System.currentTimeMillis();
+    private volatile Long lastDirtyTimestamp;
     @Auto
     private volatile ActionType actionType;
     @Auto
     private volatile String asgName;
-    private String version = "unknown";
+    private String version = VERSION_UNKNOWN;
 
     private InstanceInfo() {
+        this.metadata = new ConcurrentHashMap<String, String>();
+        this.lastUpdatedTimestamp = System.currentTimeMillis();
+        this.lastDirtyTimestamp = lastUpdatedTimestamp;
     }
 
     @JsonCreator
@@ -314,6 +319,7 @@ public class InstanceInfo {
                     return InstanceStatus.valueOf(s.toUpperCase());
                 } catch (IllegalArgumentException e) {
                     // ignore and fall through to unknown
+                    if (logger.isDebugEnabled()) logger.debug("illegal argument supplied to InstanceStatus.valueOf: {}, defaulting to {}", s, UNKNOWN);
                 }
             }
             return UNKNOWN;
@@ -322,10 +328,8 @@ public class InstanceInfo {
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((getId() == null) ? 0 : getId().hashCode());
-        return result;
+        String id = getId();
+        return (id == null) ? 31 : (id.hashCode() + 31);
     }
 
     @Override
@@ -340,11 +344,12 @@ public class InstanceInfo {
             return false;
         }
         InstanceInfo other = (InstanceInfo) obj;
-        if (getId() == null) {
+        String id = getId();
+        if (id == null) {
             if (other.getId() != null) {
                 return false;
             }
-        } else if (!getId().equals(other.getId())) {
+        } else if (!id.equals(other.getId())) {
             return false;
         }
         return true;
@@ -410,6 +415,12 @@ public class InstanceInfo {
             result.appName = intern.apply(appName.toUpperCase(Locale.ROOT));
             return this;
         }
+        
+        public Builder setAppNameForDeser(String appName) {
+            result.appName = appName;
+            return this;
+        }
+        
 
         public Builder setAppGroupName(String appGroupName) {
             if (appGroupName != null) {
@@ -417,6 +428,10 @@ public class InstanceInfo {
             } else {
                 result.appGroupName = null;
             }
+            return this;
+        }
+        public Builder setAppGroupNameForDeser(String appGroupName) {
+            result.appGroupName = appGroupName;
             return this;
         }
 

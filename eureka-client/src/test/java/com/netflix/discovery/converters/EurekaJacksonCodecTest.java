@@ -25,7 +25,6 @@ import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.EurekaEntityComparators;
-import com.netflix.discovery.util.InstanceInfoGenerator;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -242,62 +241,4 @@ public class EurekaJacksonCodecTest {
         assertTrue(EurekaEntityComparators.equal(decoded, INSTANCE_INFO_1_A1));
     }
     
-    @Test
-    public void testRealDecode() throws Exception {
-        Applications applications;
-        File localDiscovery = downloadRegistration(System.getProperty("discovery.url"));
-        for (int i=0; i < 30; i++) {
-            try (InputStream is = new FileInputStream(localDiscovery)) {
-                long start = System.currentTimeMillis();
-                applications = codec.readValue(Applications.class, is);
-                System.out.println("found some applications: " + applications.getRegisteredApplications().size() + " et: " + (System.currentTimeMillis() - start));
-            }
-            Thread.sleep(1000);
-        }
-    }
-    
-    @Test
-    public void testDecodeTimeout() throws Exception {
-        ExecutorService executor = Executors.newFixedThreadPool(5);
-        File localDiscovery = downloadRegistration(System.getProperty("discovery.url"));
-        Callable<Applications> task = ()-> {
-            try (InputStream is = new FileInputStream(localDiscovery)) {
-                return codec.readValue(Applications.class, is);
-            }
-        };
-        
-        for (int i=0; i < 30; i++) {
-            Future<Applications> appsFuture = executor.submit(task);
-            if (i%3 < 2) {
-                Thread.sleep(500);
-                System.out.println("cancelling..." + " i: " + i + " - " + (i%3));
-                appsFuture.cancel(true);
-            }
-            try {
-                Applications apps = appsFuture.get();
-               System.out.println("found some applications: " + apps.toString() + ":" + apps.getRegisteredApplications().size() + " i: " + i + " - " + (i%3));
-            }
-            catch (Exception e) {
-                System.out.println(e + " cause: " + " i: " + i + " - " + (i%3));
-            }
-        }
-    }
-    
-    private static File downloadRegistration(String discoveryUrl) throws IOException{
-        if (discoveryUrl == null) {
-            throw new IllegalArgumentException("null value not allowed for parameter discoveryUrl");
-        } 
-       File localFile = File.createTempFile("discovery-data-", ".json");
-        URL url = new URL(discoveryUrl);
-        System.out.println("downloading registration data from " + url + " to " + localFile);
-        HttpURLConnection hurlConn = (HttpURLConnection)url.openConnection();
-        hurlConn.setDoOutput(true);
-        hurlConn.setRequestProperty("accept", "application/json");
-        hurlConn.connect();
-        try (InputStream is = hurlConn.getInputStream()) {
-            java.nio.file.Files.copy(is, localFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        }
-        return localFile;
-        
-    }
 }
