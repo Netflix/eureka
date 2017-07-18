@@ -21,10 +21,10 @@ import java.util.AbstractQueue;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -73,7 +74,7 @@ public class Applications {
     private Long versionDelta = Long.valueOf(-1);
 
     @XStreamImplicit
-    private AbstractQueue<Application> applications;
+    private final AbstractQueue<Application> applications;
 
     private Map<String, Application> appNameApplicationMap = new ConcurrentHashMap<String, Application>();
     private Map<String, AbstractQueue<InstanceInfo>> virtualHostNameAppMap = new ConcurrentHashMap<String, AbstractQueue<InstanceInfo>>();
@@ -140,9 +141,7 @@ public class Applications {
      */
     @JsonProperty("application")
     public List<Application> getRegisteredApplications() {
-        List<Application> list = new ArrayList<Application>();
-        list.addAll(this.applications);
-        return list;
+        return new ArrayList<Application>(this.applications);
     }
 
     /**
@@ -259,11 +258,7 @@ public class Applications {
     public void populateInstanceCountMap(TreeMap<String, AtomicInteger> instanceCountMap) {
         for (Application app : this.getRegisteredApplications()) {
             for (InstanceInfo info : app.getInstancesAsIsFromEureka()) {
-                AtomicInteger instanceCount = instanceCountMap.get(info.getStatus().name());
-                if (instanceCount == null) {
-                    instanceCount = new AtomicInteger(0);
-                    instanceCountMap.put(info.getStatus().name(), instanceCount);
-                }
+                AtomicInteger instanceCount = instanceCountMap.computeIfAbsent(info.getStatus().name(), k->new AtomicInteger(0));
                 instanceCount.incrementAndGet();
             }
         }
@@ -276,13 +271,11 @@ public class Applications {
      * @return the hash code for this instance
      */
     public static String getReconcileHashCode(TreeMap<String, AtomicInteger> instanceCountMap) {
-        String reconcileHashCode = "";
+        StringBuilder reconcileHashCode = new StringBuilder(17 * instanceCountMap.size() );
         for (Map.Entry<String, AtomicInteger> mapEntry : instanceCountMap.entrySet()) {
-            reconcileHashCode = reconcileHashCode + mapEntry.getKey()
-                    + STATUS_DELIMITER + mapEntry.getValue().get()
-                    + STATUS_DELIMITER;
+            reconcileHashCode.append(mapEntry.getKey()).append(STATUS_DELIMITER).append( mapEntry.getValue().get()).append(STATUS_DELIMITER);
         }
-        return reconcileHashCode;
+        return reconcileHashCode.toString();
     }
 
     /**
@@ -315,8 +308,7 @@ public class Applications {
                         diffMap.put(ActionType.DELETED.name(), diffList);
                     }
                     diffList.add(otherInstanceInfo.getId());
-                } else if (!thisInstanceInfo.getStatus().name()
-                        .equalsIgnoreCase(otherInstanceInfo.getStatus().name())) {
+                } else if (thisInstanceInfo.getStatus() != otherInstanceInfo.getStatus()) {
                     List<String> diffList = diffMap.get(ActionType.MODIFIED.name());
                     if (diffList == null) {
                         diffList = new ArrayList<String>();
@@ -350,15 +342,21 @@ public class Applications {
     private static final class Pair {
         private final String item1;
         private final String item2;
+        private final int hashCode;
 
         public Pair(String item1, String item2) {
             super();
             this.item1 = item1;
             this.item2 = item2;
+            this.hashCode = computeHashCode();
         }
 
         @Override
         public int hashCode() {
+            return hashCode;
+        }
+        
+        private int computeHashCode() {
             final int prime = 31;
             int result = 1;
             result = prime * result
@@ -477,27 +475,26 @@ public class Applications {
             Map<String, AbstractQueue<InstanceInfo>> srcMap,
             Map<String, AtomicReference<List<InstanceInfo>>> destMap,
             Map<String, AtomicLong> vipIndexMap, boolean filterUpInstances) {
+        
+        Random shuffleRandom = new Random();
         for (Map.Entry<String, AbstractQueue<InstanceInfo>> entries : srcMap.entrySet()) {
-            AbstractQueue<InstanceInfo> instanceInfoQueue = entries.getValue();
-            List<InstanceInfo> l = new ArrayList<InstanceInfo>(instanceInfoQueue);
+            AbstractQueue<InstanceInfo> instanceInfoQueue = entries.getValue();            
+            final List<InstanceInfo> l;
             if (filterUpInstances) {
-                Iterator<InstanceInfo> it = l.iterator();
-
-                while (it.hasNext()) {
-                    InstanceInfo instanceInfo = it.next();
-                    if (!InstanceStatus.UP.equals(instanceInfo.getStatus())) {
-                        it.remove();
-                    }
-                }
+               l = instanceInfoQueue.stream()
+                       .filter(ii -> ii.getStatus() == InstanceStatus.UP)
+                       .collect(Collectors.toCollection(()->new ArrayList<>(instanceInfoQueue.size())));
             }
-            Collections.shuffle(l);
-            AtomicReference<List<InstanceInfo>> instanceInfoList = destMap.get(entries.getKey());
-            if (instanceInfoList == null) {
-                instanceInfoList = new AtomicReference<List<InstanceInfo>>(l);
-                destMap.put(entries.getKey(), instanceInfoList);
-            }
+            else {
+               l = new ArrayList<InstanceInfo>(instanceInfoQueue);
+            }            
+            Collections.shuffle(l, shuffleRandom);
+            
+            String entryKey = entries.getKey();
+            AtomicReference<List<InstanceInfo>> instanceInfoList = destMap.computeIfAbsent(
+                    entryKey, key -> new AtomicReference<List<InstanceInfo>>(l));
             instanceInfoList.set(l);
-            vipIndexMap.put(entries.getKey(), new AtomicLong(0));
+            vipIndexMap.put(entryKey, new AtomicLong(0));
         }
 
         // finally remove all vips that are completed deleted (i.e. missing) from the srcSet
@@ -515,14 +512,9 @@ public class Applications {
     private void addInstanceToMap(InstanceInfo info, String vipAddresses,
                                   Map<String, AbstractQueue<InstanceInfo>> vipMap) {
         if (vipAddresses != null) {
-            String[] vipAddressArray = vipAddresses.split(",");
+            String[] vipAddressArray = vipAddresses.toUpperCase(Locale.ROOT).split(",");
             for (String vipAddress : vipAddressArray) {
-                String vipName = vipAddress.toUpperCase(Locale.ROOT);
-                AbstractQueue<InstanceInfo> instanceInfoList = vipMap.get(vipName);
-                if (instanceInfoList == null) {
-                    instanceInfoList = new ConcurrentLinkedQueue<InstanceInfo>();
-                    vipMap.put(vipName, instanceInfoList);
-                }
+                AbstractQueue<InstanceInfo> instanceInfoList = vipMap.computeIfAbsent(vipAddress, k->new ConcurrentLinkedQueue<>());
                 instanceInfoList.add(info);
             }
         }

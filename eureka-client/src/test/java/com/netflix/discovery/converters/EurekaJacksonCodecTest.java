@@ -3,16 +3,30 @@ package com.netflix.discovery.converters;
 import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Iterator;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.stream.StreamSupport;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.EurekaEntityComparators;
-import com.netflix.discovery.util.InstanceInfoGenerator;
+
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
@@ -183,7 +197,7 @@ public class EurekaJacksonCodecTest {
         ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
         new EntityBodyConverter().write(original, captureStream, MediaType.APPLICATION_JSON_TYPE);
         byte[] encoded = captureStream.toByteArray();
-
+        String encodedString = new String(encoded);
         // Decode
         InputStream source = new ByteArrayInputStream(encoded);
         Applications decoded = codec.readValue(Applications.class, source);
@@ -226,4 +240,5 @@ public class EurekaJacksonCodecTest {
 
         assertTrue(EurekaEntityComparators.equal(decoded, INSTANCE_INFO_1_A1));
     }
+    
 }
