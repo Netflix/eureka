@@ -420,7 +420,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
     /**
      * Reconciles the delta information fetched to see if the hashcodes match.
      *
-     * @param delta - the delta information fetched previously for reconcililation.
+     * @param delta - the delta information fetched previously for reconciliation.
      * @param reconcileHashCode - the hashcode for comparison.
      * @return - response
      * @throws Throwable
