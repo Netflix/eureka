@@ -63,9 +63,7 @@ public class ZoneAffinityClusterResolver implements ClusterResolver<AwsEndpoint>
             Collections.reverse(randomizedList);
         }
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("Local zone={}; resolved to: {}", myZone, randomizedList);
-        }
+        logger.debug("Local zone={}; resolved to: {}", myZone, randomizedList);
 
         return randomizedList;
     }
