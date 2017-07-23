@@ -233,7 +233,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
             }
             logTotalInstances();
         } catch (Throwable e) {
-            logger.error("Unable to fetch registry information from the remote registry " + this.remoteRegionURL.toString(), e);
+            logger.error("Unable to fetch registry information from the remote registry {}", this.remoteRegionURL, e);
             return false;
         } finally {
             if (tracer != null) {
@@ -392,7 +392,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
                 }
                 logger.warn("Cannot get the data from {} : {}", this.remoteRegionURL, httpStatus);
             } catch (Throwable t) {
-                logger.error("Can't get a response from " + this.remoteRegionURL, t);
+                logger.error("Can't get a response from {}", this.remoteRegionURL, t);
             }
         } else {
             ClientResponse response = null;
@@ -409,7 +409,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
                 }
                 logger.warn("Cannot get the data from {} : {}", this.remoteRegionURL, httpStatus);
             } catch (Throwable t) {
-                logger.error("Can't get a response from " + this.remoteRegionURL, t);
+                logger.error("Can't get a response from {}", this.remoteRegionURL, t);
             } finally {
                 closeResponse(response);
             }

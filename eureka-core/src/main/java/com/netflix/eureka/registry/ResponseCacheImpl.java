@@ -356,7 +356,7 @@ public class ResponseCacheImpl implements ResponseCache {
                 payload = readWriteCacheMap.get(key);
             }
         } catch (Throwable t) {
-            logger.error("Cannot get value for key :" + key, t);
+            logger.error("Cannot get value for key : {}", key, t);
         }
         return payload;
     }
@@ -439,7 +439,7 @@ public class ResponseCacheImpl implements ResponseCache {
                     payload = getPayLoad(key, getApplicationsForVip(key, registry));
                     break;
                 default:
-                    logger.error("Unidentified entity type: " + key.getEntityType() + " found in the cache key.");
+                    logger.error("Unidentified entity type: {} found in the cache key.", key.getEntityType());
                     payload = "";
                     break;
             }

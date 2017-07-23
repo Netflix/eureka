@@ -874,8 +874,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         try {
             write.lock();
             Iterator<RecentlyChangedItem> iter = this.recentlyChangedQueue.iterator();
-            logger.debug("The number of elements in the delta queue is :"
-                    + this.recentlyChangedQueue.size());
+            logger.debug("The number of elements in the delta queue is : {}",
+                    this.recentlyChangedQueue.size());
             while (iter.hasNext()) {
                 Lease<InstanceInfo> lease = iter.next().getLeaseInfo();
                 InstanceInfo instanceInfo = lease.getHolder();

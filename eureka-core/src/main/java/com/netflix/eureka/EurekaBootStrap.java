@@ -239,7 +239,7 @@ public class EurekaBootStrap implements ServletContextListener {
     @Override
     public void contextDestroyed(ServletContextEvent event) {
         try {
-            logger.info("{} Shutting down Eureka Server..", new Date().toString());
+            logger.info("{} Shutting down Eureka Server..", new Date());
             ServletContext sc = event.getServletContext();
             sc.removeAttribute(EurekaServerContext.class.getName());
 
@@ -249,7 +249,7 @@ public class EurekaBootStrap implements ServletContextListener {
         } catch (Throwable e) {
             logger.error("Error shutting down eureka", e);
         }
-        logger.info("{} Eureka Service is now shutdown...", new Date().toString());
+        logger.info("{} Eureka Service is now shutdown...", new Date());
     }
 
     /**

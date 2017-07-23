@@ -57,7 +57,8 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
                 logNetworkErrorSample(task, e);
                 return ProcessingResult.TransientError;
             } else {
-                logger.error(peerId + ": " + task.getTaskName() + "Not re-trying this exception because it does not seem to be a network exception", e);
+                logger.error("{}: {} Not re-trying this exception because it does not seem to be a network exception",
+                        peerId, task.getTaskName(), e);
                 return ProcessingResult.PermanentError;
             }
         }
@@ -135,7 +136,7 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
         try {
             task.handleFailure(response.getStatusCode(), response.getResponseEntity());
         } catch (Throwable e) {
-            logger.error("Replication task " + task.getTaskName() + " error handler failure", e);
+            logger.error("Replication task {} error handler failure", task.getTaskName(), e);
         }
     }
 

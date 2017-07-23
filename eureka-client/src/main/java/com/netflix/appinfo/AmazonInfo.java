@@ -210,7 +210,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
                         break;
                     } catch (Throwable e) {
                         if (config.shouldLogAmazonMetadataErrors()) {
-                            logger.warn("Cannot get the value for the metadata key :" + key + " Reason :", e);
+                            logger.warn("Cannot get the value for the metadata key: {} Reason :", key, e);
                         }
                         if (numOfRetries >= 0) {
                             try {

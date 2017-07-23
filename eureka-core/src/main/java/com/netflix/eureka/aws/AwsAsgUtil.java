@@ -267,7 +267,7 @@ public class AwsAsgUtil {
     }
 
     private AutoScalingGroup retrieveAutoScalingGroupCrossAccount(String asgAccount, String asgName) {
-        logger.debug("Getting cross account ASG for asgName: " + asgName + ", asgAccount: " + asgAccount);
+        logger.debug("Getting cross account ASG for asgName: {}, asgAccount: {}", asgName, asgAccount);
 
         Credentials credentials = stsCredentials.get(asgAccount);
 

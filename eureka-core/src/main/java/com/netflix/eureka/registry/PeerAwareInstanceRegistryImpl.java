@@ -239,8 +239,8 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         this.expectedNumberOfRenewsPerMin = count * 2;
         this.numberOfRenewsPerMinThreshold =
                 (int) (this.expectedNumberOfRenewsPerMin * serverConfig.getRenewalPercentThreshold());
-        logger.info("Got " + count + " instances from neighboring DS node");
-        logger.info("Renew threshold is: " + numberOfRenewsPerMinThreshold);
+        logger.info("Got {} instances from neighboring DS node", count);
+        logger.info("Renew threshold is: {}", numberOfRenewsPerMinThreshold);
         this.startupTime = System.currentTimeMillis();
         if (count > 0) {
             this.peerInstancesTransferEmptyOnStartup = false;
@@ -311,7 +311,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                 }
                 areAllPeerNodesPrimed = true;
             } catch (Throwable e) {
-                logger.error("Could not contact " + peerHostName, e);
+                logger.error("Could not contact {}", peerHostName, e);
                 try {
                     Thread.sleep(PRIME_PEER_NODES_RETRY_MS);
                 } catch (InterruptedException e1) {

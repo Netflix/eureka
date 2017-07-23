@@ -131,7 +131,7 @@ public class InstanceResource {
         } else {
             response = Response.ok().build();
         }
-        logger.debug("Found (Renew): {} - {}; reply status={}" + app.getName(), id, response.getStatus());
+        logger.debug("Found (Renew): {} - {}; reply status={}", app.getName(), id, response.getStatus());
         return response;
     }
 
@@ -171,12 +171,10 @@ public class InstanceResource {
                     "true".equals(isReplication));
 
             if (isSuccess) {
-                logger.info("Status updated: " + app.getName() + " - " + id
-                        + " - " + newStatus);
+                logger.info("Status updated: {} - {} - {}", app.getName(), id, newStatus);
                 return Response.ok().build();
             } else {
-                logger.warn("Unable to update status: " + app.getName() + " - "
-                        + id + " - " + newStatus);
+                logger.warn("Unable to update status: {} - {} - {}", app.getName(), id, newStatus);
                 return Response.serverError().build();
             }
         } catch (Throwable e) {
@@ -215,10 +213,10 @@ public class InstanceResource {
                     newStatus, lastDirtyTimestamp, "true".equals(isReplication));
 
             if (isSuccess) {
-                logger.info("Status override removed: " + app.getName() + " - " + id);
+                logger.info("Status override removed: {} - {}", app.getName(), id);
                 return Response.ok().build();
             } else {
-                logger.warn("Unable to remove status override: " + app.getName() + " - " + id);
+                logger.warn("Unable to remove status override: {} - {}", app.getName(), id);
                 return Response.serverError().build();
             }
         } catch (Throwable e) {
@@ -261,7 +259,7 @@ public class InstanceResource {
             registry.register(instanceInfo, false);
             return Response.ok().build();
         } catch (Throwable e) {
-            logger.error("Error updating metadata for instance " + id, e);
+            logger.error("Error updating metadata for instance {}", id, e);
             return Response.serverError().build();
         }
 
@@ -283,10 +281,10 @@ public class InstanceResource {
                 "true".equals(isReplication));
 
         if (isSuccess) {
-            logger.debug("Found (Cancel): " + app.getName() + " - " + id);
+            logger.debug("Found (Cancel): {} - {}", app.getName(), id);
             return Response.ok().build();
         } else {
-            logger.info("Not Found (Cancel): " + app.getName() + " - " + id);
+            logger.info("Not Found (Cancel): {} - {}", app.getName(), id);
             return Response.status(Status.NOT_FOUND).build();
         }
     }

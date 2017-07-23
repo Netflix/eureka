@@ -117,8 +117,8 @@ public class EndpointUtils {
                 }
             }
             if (zoneFound) {
-                Object[] args = {zones, instanceZone, zoneIndex};
-                logger.debug("The zone index from the list {} that matches the instance zone {} is {}", args);
+                logger.debug("The zone index from the list {} that matches the instance zone {} is {}",
+                        zones, instanceZone, zoneIndex);
                 break;
             }
             zoneIndex++;
@@ -362,7 +362,7 @@ public class EndpointUtils {
             }
         }
         logger.warn("DISCOVERY: Could not pick a zone based on preferred zone settings. My zone - {}," +
-                " preferSameZone- {}. Defaulting to " + availZones[0], myZone, preferSameZone);
+                " preferSameZone - {}. Defaulting to {}", myZone, preferSameZone, availZones[0]);
 
         return 0;
     }

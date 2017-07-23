@@ -104,7 +104,7 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
             // Start off with the STARTING state to avoid traffic
             if (!config.isInstanceEnabledOnit()) {
                 InstanceStatus initialStatus = InstanceStatus.STARTING;
-                LOG.info("Setting initial instance status as: " + initialStatus);
+                LOG.info("Setting initial instance status as: {}", initialStatus);
                 builder.setStatus(initialStatus);
             } else {
                 LOG.info("Setting initial instance status as: {}. This may be too early for the instance to advertise "

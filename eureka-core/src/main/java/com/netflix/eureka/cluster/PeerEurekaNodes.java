@@ -107,7 +107,7 @@ public class PeerEurekaNodes {
             throw new IllegalStateException(e);
         }
         for (PeerEurekaNode node : peerEurekaNodes) {
-            logger.info("Replica node URL:  " + node.getServiceUrl());
+            logger.info("Replica node URL:  {}", node.getServiceUrl());
         }
     }
 
@@ -257,7 +257,7 @@ public class PeerEurekaNodes {
         try {
             uri = new URI(url);
         } catch (URISyntaxException e) {
-            logger.warn("Cannot parse service URI " + url, e);
+            logger.warn("Cannot parse service URI {}", url, e);
             return null;
         }
         return uri.getHost();
