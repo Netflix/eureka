@@ -212,13 +212,13 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
     }
 
     private static Pair<String, String> getHostInfo() {
-        Pair<String, String> pair = new Pair<String, String>("", "");
+        Pair<String, String> pair;
         try {
-            pair.setFirst(InetAddress.getLocalHost().getHostAddress());
-            pair.setSecond(InetAddress.getLocalHost().getHostName());
-
+            InetAddress localHost = InetAddress.getLocalHost();
+            pair = new Pair<String, String>(localHost.getHostAddress(), localHost.getHostName());
         } catch (UnknownHostException e) {
             logger.error("Cannot get host info", e);
+            pair = new Pair<String, String>("", "");
         }
         return pair;
     }

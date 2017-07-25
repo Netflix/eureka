@@ -55,8 +55,9 @@ public class TimedSupervisorTask extends TimerTask {
         Monitors.registerObject(name, this);
     }
 
+    @Override
     public void run() {
-        Future future = null;
+        Future<?> future = null;
         try {
             future = executor.submit(task);
             threadPoolLevelGauge.set((long) executor.getActiveCount());

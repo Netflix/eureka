@@ -57,7 +57,7 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
             for (String remoteRegion : regionsToFetch) {
                 Set<String> availabilityZones = getZonesForARegion(remoteRegion);
                 if (null == availabilityZones
-                        || (availabilityZones.size() == 1 && availabilityZones.iterator().next().equals(DEFAULT_ZONE))
+                        || (availabilityZones.size() == 1 && availabilityZones.contains(DEFAULT_ZONE))
                         || availabilityZones.isEmpty()) {
                     logger.info("No availability zone information available for remote region: " + remoteRegion
                             + ". Now checking in the default mapping.");

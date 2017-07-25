@@ -415,18 +415,6 @@ public class RemoteRegionRegistry implements LookupService<String> {
                 reconcileHashCode, delta.getAppsHashCode());
 
         Applications serverApps = this.fetchRemoteRegistry(false);
-
-        Map<String, List<String>> reconcileDiffMap = getApplications().getReconcileMapDiff(serverApps);
-        String reconcileString = "";
-        for (Map.Entry<String, List<String>> mapEntry : reconcileDiffMap
-                .entrySet()) {
-            reconcileString = reconcileString + mapEntry.getKey() + ": ";
-            for (String displayString : mapEntry.getValue()) {
-                reconcileString = reconcileString + displayString;
-            }
-            reconcileString = reconcileString + "\n";
-        }
-        logger.warn("The reconcile string is {}", reconcileString);
         applications.set(serverApps);
         applicationsDelta.set(serverApps);
         logger.warn("The Reconcile hashcodes after complete sync up, client : {}, server : {}.",
