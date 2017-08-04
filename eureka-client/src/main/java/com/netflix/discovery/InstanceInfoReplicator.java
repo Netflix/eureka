@@ -68,7 +68,11 @@ class InstanceInfoReplicator implements Runnable {
     }
 
     public void stop() {
-        scheduler.shutdownNow();
+        try {
+            scheduler.awaitTermination(3, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            logger.warn("Scheduler stop interrupted");
+        }
         started.set(false);
     }
 
