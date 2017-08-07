@@ -38,13 +38,21 @@ public class AwsBinderDelegate implements AwsBinder {
 
     @Override
     @PostConstruct
-    public void start() throws Exception {
-        delegate.start();
+    public void start() {
+        try {
+            delegate.start();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     @PreDestroy
-    public void shutdown() throws Exception {
-        delegate.shutdown();
+    public void shutdown()  {
+        try {
+            delegate.shutdown();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

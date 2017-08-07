@@ -59,16 +59,20 @@ public class DefaultEurekaServerContext implements EurekaServerContext {
 
     @PostConstruct
     @Override
-    public void initialize() throws Exception {
+    public void initialize() {
         logger.info("Initializing ...");
         peerEurekaNodes.start();
-        registry.init(peerEurekaNodes);
+        try {
+            registry.init(peerEurekaNodes);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         logger.info("Initialized");
     }
 
     @PreDestroy
     @Override
-    public void shutdown() throws Exception {
+    public void shutdown() {
         logger.info("Shutting down ...");
         registry.shutdown();
         peerEurekaNodes.shutdown();

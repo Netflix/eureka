@@ -82,7 +82,7 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
     }
 
     @PostConstruct
-    public void start() throws Exception {
+    public void start()  {
         int retries = serverConfig.getEIPBindRebindRetries();
         for (int i = 0; i < retries; i++) {
             try {
@@ -93,7 +93,11 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
                 }
             } catch (Throwable e) {
                 logger.error("Cannot bind to IP", e);
-                Thread.sleep(IP_BIND_SLEEP_TIME_MS);
+                try {
+                    Thread.sleep(IP_BIND_SLEEP_TIME_MS);
+                } catch (InterruptedException e1) {
+                    throw new RuntimeException(e);
+                }
             }
         }
         // Schedule a timer which periodically checks for IP binding.
@@ -101,7 +105,7 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
     }
 
     @PreDestroy
-    public void shutdown() throws Exception {
+    public void shutdown() {
         timer.cancel();
         for (int i = 0; i < serverConfig.getEIPBindRebindRetries(); i++) {
             try {
@@ -109,7 +113,11 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
                 break;
             } catch (Exception e) {
                 logger.warn("Cannot unbind the IP from the instance");
-                Thread.sleep(IP_BIND_SLEEP_TIME_MS);
+                try {
+                    Thread.sleep(IP_BIND_SLEEP_TIME_MS);
+                } catch (InterruptedException e1) {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }

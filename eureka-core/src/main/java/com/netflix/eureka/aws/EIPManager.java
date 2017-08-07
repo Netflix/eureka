@@ -101,12 +101,16 @@ public class EIPManager implements AwsBinder {
     }
 
     @PostConstruct
-    public void start() throws Exception {
-        handleEIPBinding();
+    public void start() {
+        try {
+            handleEIPBinding();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @PreDestroy
-    public void shutdown() throws Exception {
+    public void shutdown() {
         timer.cancel();
         for (int i = 0; i < serverConfig.getEIPBindRebindRetries(); i++) {
             try {
@@ -114,7 +118,11 @@ public class EIPManager implements AwsBinder {
                 break;
             } catch (Exception e) {
                 logger.warn("Cannot unbind the EIP from the instance");
-                Thread.sleep(1000);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e1) {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
