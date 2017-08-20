@@ -45,7 +45,7 @@ public class RefreshableAmazonInfoProvider implements Provider<AmazonInfo> {
                     .newBuilder()
                     .withAmazonInfoConfig(amazonInfoConfig)
                     .autoBuild(amazonInfoConfig.getNamespace());
-            logger.info("Datacenter is: " + DataCenterInfo.Name.Amazon);
+            logger.info("Datacenter is: {}", DataCenterInfo.Name.Amazon);
         } catch (Throwable e) {
             logger.error("Cannot initialize amazon info :", e);
             throw new RuntimeException(e);
