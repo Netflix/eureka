@@ -78,9 +78,7 @@ public class JerseyReplicationClient extends AbstractJerseyEurekaHttpClient impl
             }
             return anEurekaHttpResponse(response.getStatus(), infoFromPeer).type(MediaType.APPLICATION_JSON_TYPE).build();
         } finally {
-            if (logger.isDebugEnabled()) {
-                logger.debug("[heartbeat] Jersey HTTP PUT {}; statusCode={}", urlPath, response == null ? "N/A" : response.getStatus());
-            }
+            logger.debug("[heartbeat] Jersey HTTP PUT {}; statusCode={}", urlPath, response == null ? "N/A" : response.getStatus());
             if (response != null) {
                 response.close();
             }
