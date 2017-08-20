@@ -173,8 +173,8 @@ public class ResponseCacheImpl implements ResponseCache {
                 logger.debug("Updating the client cache from response cache");
                 for (Key key : readOnlyCacheMap.keySet()) {
                     if (logger.isDebugEnabled()) {
-                        Object[] args = {key.getEntityType(), key.getName(), key.getVersion(), key.getType()};
-                        logger.debug("Updating the client cache from response cache for key : {} {} {} {}", args);
+                        logger.debug("Updating the client cache from response cache for key : {} {} {} {}",
+                                key.getEntityType(), key.getName(), key.getVersion(), key.getType());
                     }
                     try {
                         CurrentRequestVersion.set(key.getVersion());
@@ -452,10 +452,9 @@ public class ResponseCacheImpl implements ResponseCache {
     }
 
     private static Applications getApplicationsForVip(Key key, AbstractInstanceRegistry registry) {
-        Object[] args = {key.getEntityType(), key.getName(), key.getVersion(), key.getType()};
         logger.debug(
                 "Retrieving applications from registry for key : {} {} {} {}",
-                args);
+                key.getEntityType(), key.getName(), key.getVersion(), key.getType());
         Applications toReturn = new Applications();
         Applications applications = registry.getApplications();
         for (Application application : applications.getRegisteredApplications()) {
@@ -485,11 +484,10 @@ public class ResponseCacheImpl implements ResponseCache {
             }
         }
         toReturn.setAppsHashCode(toReturn.getReconcileHashCode());
-        args = new Object[]{key.getEntityType(), key.getName(), key.getVersion(), key.getType(),
-                toReturn.getReconcileHashCode()};
         logger.debug(
                 "Retrieved applications from registry for key : {} {} {} {}, reconcile hashcode: {}",
-                args);
+                key.getEntityType(), key.getName(), key.getVersion(), key.getType(),
+                toReturn.getReconcileHashCode());
         return toReturn;
     }
 
