@@ -487,6 +487,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     // replica start up
                     info.setOverriddenStatus(newStatus);
                     long replicaDirtyTimestamp = 0;
+                    info.setStatusWithoutDirty(newStatus);
                     if (lastDirtyTimestamp != null) {
                         replicaDirtyTimestamp = Long.valueOf(lastDirtyTimestamp);
                     }
@@ -494,9 +495,6 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     // it to the replica's.
                     if (replicaDirtyTimestamp > info.getLastDirtyTimestamp()) {
                         info.setLastDirtyTimestamp(replicaDirtyTimestamp);
-                        info.setStatusWithoutDirty(newStatus);
-                    } else {
-                        info.setStatus(newStatus);
                     }
                     info.setActionType(ActionType.MODIFIED);
                     recentlyChangedQueue.add(new RecentlyChangedItem(lease));
@@ -549,7 +547,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 InstanceStatus currentOverride = overriddenInstanceStatusMap.remove(id);
                 if (currentOverride != null && info != null) {
                     info.setOverriddenStatus(InstanceStatus.UNKNOWN);
-                    info.setStatus(newStatus);
+                    info.setStatusWithoutDirty(newStatus);
                     long replicaDirtyTimestamp = 0;
                     if (lastDirtyTimestamp != null) {
                         replicaDirtyTimestamp = Long.valueOf(lastDirtyTimestamp);

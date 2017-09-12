@@ -125,28 +125,34 @@ public class InstanceRegistryTest extends AbstractTester {
 
     @Test
     public void testStatusOverrideSetAndRemoval() throws Exception {
+        InstanceInfo seed = createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
+
         // Regular registration first
-        InstanceInfo myInstance = createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
-        registerInstanceLocally(myInstance);
-        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.UP);
+        InstanceInfo myInstance1 = new InstanceInfo(seed);
+        registerInstanceLocally(myInstance1);
+        verifyLocalInstanceStatus(myInstance1.getId(), InstanceStatus.UP);
 
         // Override status
-        boolean statusResult = registry.statusUpdate(LOCAL_REGION_APP_NAME, myInstance.getId(), InstanceStatus.OUT_OF_SERVICE, "0", false);
+        boolean statusResult = registry.statusUpdate(LOCAL_REGION_APP_NAME, seed.getId(), InstanceStatus.OUT_OF_SERVICE, "0", false);
         assertThat("Couldn't override instance status", statusResult, is(true));
-        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.OUT_OF_SERVICE);
+        verifyLocalInstanceStatus(seed.getId(), InstanceStatus.OUT_OF_SERVICE);
 
-        // Register again with status UP (this is what health check is doing)
-        registry.register(createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME), 10000000, false);
-        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.OUT_OF_SERVICE);
+        // Register again with status UP to verify that the override is still in place even if the dirtytimestamp is higher
+        InstanceInfo myInstance2 = new InstanceInfo(seed);  // clone to avoid object state in this test
+        myInstance2.setLastDirtyTimestamp(seed.getLastDirtyTimestamp() + 1);
+        registry.register(myInstance2, 10000000, false);
+        verifyLocalInstanceStatus(seed.getId(), InstanceStatus.OUT_OF_SERVICE);
 
         // Now remove override
-        statusResult = registry.deleteStatusOverride(LOCAL_REGION_APP_NAME, myInstance.getId(), InstanceStatus.DOWN, "0", false);
+        statusResult = registry.deleteStatusOverride(LOCAL_REGION_APP_NAME, seed.getId(), InstanceStatus.DOWN, "0", false);
         assertThat("Couldn't remove status override", statusResult, is(true));
-        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.DOWN);
+        verifyLocalInstanceStatus(seed.getId(), InstanceStatus.DOWN);
 
-        // Register again with status UP (this is what health check is doing)
-        registry.register(createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME), 10000000, false);
-        verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.UP);
+        // Register again with status UP after the override deletion, keeping myInstance2's dirtyTimestamp (== no client side change)
+        InstanceInfo myInstance3 = new InstanceInfo(seed);  // clone to avoid object state in this test
+        myInstance3.setLastDirtyTimestamp(seed.getLastDirtyTimestamp() + 1);  // clone to avoid object state in this test
+        registry.register(myInstance3, 10000000, false);
+        verifyLocalInstanceStatus(seed.getId(), InstanceStatus.UP);
     }
 
     @Test
