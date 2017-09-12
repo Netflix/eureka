@@ -126,6 +126,7 @@ public class InstanceRegistryTest extends AbstractTester {
     @Test
     public void testStatusOverrideSetAndRemoval() throws Exception {
         InstanceInfo seed = createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
+        seed.setLastDirtyTimestamp(100l);
 
         // Regular registration first
         InstanceInfo myInstance1 = new InstanceInfo(seed);
@@ -139,7 +140,7 @@ public class InstanceRegistryTest extends AbstractTester {
 
         // Register again with status UP to verify that the override is still in place even if the dirtytimestamp is higher
         InstanceInfo myInstance2 = new InstanceInfo(seed);  // clone to avoid object state in this test
-        myInstance2.setLastDirtyTimestamp(seed.getLastDirtyTimestamp() + 1);
+        myInstance2.setLastDirtyTimestamp(200l);  // use a later 'client side' dirty timestamp
         registry.register(myInstance2, 10000000, false);
         verifyLocalInstanceStatus(seed.getId(), InstanceStatus.OUT_OF_SERVICE);
 
@@ -150,7 +151,45 @@ public class InstanceRegistryTest extends AbstractTester {
 
         // Register again with status UP after the override deletion, keeping myInstance2's dirtyTimestamp (== no client side change)
         InstanceInfo myInstance3 = new InstanceInfo(seed);  // clone to avoid object state in this test
-        myInstance3.setLastDirtyTimestamp(seed.getLastDirtyTimestamp() + 1);  // clone to avoid object state in this test
+        myInstance3.setLastDirtyTimestamp(200l);  // use a later 'client side' dirty timestamp
+        registry.register(myInstance3, 10000000, false);
+        verifyLocalInstanceStatus(seed.getId(), InstanceStatus.UP);
+    }
+
+    @Test
+    public void testStatusOverrideWithRenewAppliedToAReplica() throws Exception {
+        InstanceInfo seed = createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
+        seed.setLastDirtyTimestamp(100l);
+
+        // Regular registration first
+        InstanceInfo myInstance1 = new InstanceInfo(seed);
+        registerInstanceLocally(myInstance1);
+        verifyLocalInstanceStatus(myInstance1.getId(), InstanceStatus.UP);
+
+        // Override status
+        boolean statusResult = registry.statusUpdate(LOCAL_REGION_APP_NAME, seed.getId(), InstanceStatus.OUT_OF_SERVICE, "0", false);
+        assertThat("Couldn't override instance status", statusResult, is(true));
+        verifyLocalInstanceStatus(seed.getId(), InstanceStatus.OUT_OF_SERVICE);
+
+        // Send a renew to ensure timestamps are consistent even with the override in existence.
+        // To do this, we get hold of the registry local InstanceInfo and reset its status to before an override
+        // has been applied
+        //  (this is to simulate a case in a replica server where the override has been replicated, but not yet
+        //   applied to the local InstanceInfo)
+        InstanceInfo registeredInstance = registry.getInstanceByAppAndId(seed.getAppName(), seed.getId());
+        registeredInstance.setStatusWithoutDirty(InstanceStatus.UP);
+        verifyLocalInstanceStatus(seed.getId(), InstanceStatus.UP);
+        registry.renew(seed.getAppName(), seed.getId(), false);
+        verifyLocalInstanceStatus(seed.getId(), InstanceStatus.OUT_OF_SERVICE);
+
+        // Now remove override
+        statusResult = registry.deleteStatusOverride(LOCAL_REGION_APP_NAME, seed.getId(), InstanceStatus.DOWN, "0", false);
+        assertThat("Couldn't remove status override", statusResult, is(true));
+        verifyLocalInstanceStatus(seed.getId(), InstanceStatus.DOWN);
+
+        // Register again with status UP after the override deletion, keeping myInstance2's dirtyTimestamp (== no client side change)
+        InstanceInfo myInstance3 = new InstanceInfo(seed);  // clone to avoid object state in this test
+        myInstance3.setLastDirtyTimestamp(200l);  // use a later 'client side' dirty timestamp
         registry.register(myInstance3, 10000000, false);
         verifyLocalInstanceStatus(seed.getId(), InstanceStatus.UP);
     }

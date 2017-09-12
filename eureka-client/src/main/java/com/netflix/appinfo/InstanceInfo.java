@@ -1237,6 +1237,16 @@ public class InstanceInfo {
         lastDirtyTimestamp = System.currentTimeMillis();
     }
 
+    /**
+     * Set the dirty flag, and also return the timestamp of the isDirty event
+     *
+     * @return the timestamp when the isDirty flag is set
+     */
+    public synchronized long setIsDirtyWithTime() {
+        setIsDirty();
+        return lastDirtyTimestamp;
+    }
+
 
     /**
      * Unset the dirty flag iff the unsetDirtyTimestamp matches the lastDirtyTimestamp. No-op if

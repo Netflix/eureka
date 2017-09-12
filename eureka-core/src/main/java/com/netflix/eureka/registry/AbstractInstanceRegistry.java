@@ -207,6 +207,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 Long existingLastDirtyTimestamp = existingLease.getHolder().getLastDirtyTimestamp();
                 Long registrationLastDirtyTimestamp = registrant.getLastDirtyTimestamp();
                 logger.debug("Existing lease found (existing={}, provided={}", existingLastDirtyTimestamp, registrationLastDirtyTimestamp);
+
+                // this is a > instead of a >= because if the timestamps are equal, we still take the remote transmitted
+                // InstanceInfo instead of the server local copy.
                 if (existingLastDirtyTimestamp > registrationLastDirtyTimestamp) {
                     logger.warn("There is an existing lease and the existing lease's dirty timestamp {} is greater" +
                             " than the one that is being registered {}", existingLastDirtyTimestamp, registrationLastDirtyTimestamp);
@@ -374,7 +377,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     logger.info(
                             "The instance status {} is different from overridden instance status {} for instance {}. "
                                     + "Hence setting the status to overridden status", args);
-                    instanceInfo.setStatus(overriddenInstanceStatus);
+                    instanceInfo.setStatusWithoutDirty(overriddenInstanceStatus);
                 }
             }
             renewsLastMin.increment();

@@ -826,7 +826,10 @@ public class DiscoveryClient implements EurekaClient {
             if (httpResponse.getStatusCode() == 404) {
                 REREGISTER_COUNTER.increment();
                 logger.info("{} - Re-registering apps/{}", PREFIX + appPathIdentifier, instanceInfo.getAppName());
-                return register();
+                long timestamp = instanceInfo.setIsDirtyWithTime();
+                boolean result = register();
+                instanceInfo.unsetIsDirty(timestamp);
+                return result;
             }
             return httpResponse.getStatusCode() == 200;
         } catch (Throwable e) {
