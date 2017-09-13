@@ -176,6 +176,7 @@ public class AbstractTester {
 
     private static InstanceInfo createLocalInstanceWithStatus(String hostname, InstanceInfo.InstanceStatus status) {
         InstanceInfo.Builder instanceBuilder = InstanceInfo.Builder.newBuilder();
+        instanceBuilder.setInstanceId("foo");
         instanceBuilder.setAppName(LOCAL_REGION_APP_NAME);
         instanceBuilder.setHostName(hostname);
         instanceBuilder.setIPAddr("10.10.101.1");

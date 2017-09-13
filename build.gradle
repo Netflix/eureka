@@ -12,7 +12,7 @@ plugins {
 
 idea {
     project {
-        languageLevel = '1.7'
+        languageLevel = '1.8'
     }
 }
 
