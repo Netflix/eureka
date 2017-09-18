@@ -440,10 +440,13 @@ public class ResponseCacheImpl implements ResponseCache {
                     break;
                 default:
                     logger.error("Unidentified entity type: " + key.getEntityType() + " found in the cache key.");
-                    payload = "";
+                    payload = EMPTY_PAYLOAD;
                     break;
             }
             return new Value(payload);
+        } catch (Exception e) {
+            logger.error("Error generating payload for key {}", key, e);
+            return new Value(EMPTY_PAYLOAD);
         } finally {
             if (tracer != null) {
                 tracer.stop();
@@ -498,6 +501,7 @@ public class ResponseCacheImpl implements ResponseCache {
      *
      */
     public class Value {
+
         private final String payload;
         private byte[] gzipped;
 
