@@ -10,8 +10,8 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -24,7 +24,7 @@ public class DiscoveryClientRegisterUpdateTest {
 
     private TestApplicationInfoManager applicationInfoManager;
     private MockRemoteEurekaServer mockLocalEurekaServer;
-    private EurekaClient client;
+    private TestClient client;
 
     @Before
     public void setUp() throws Exception {
@@ -54,7 +54,7 @@ public class DiscoveryClientRegisterUpdateTest {
                 .setLeaseInfo(leaseInfo)
                 .build();
         applicationInfoManager = new TestApplicationInfoManager(instanceInfo);
-        client = new DiscoveryClient(applicationInfoManager, new DefaultEurekaClientConfig());
+        client = Mockito.spy(new TestClient(applicationInfoManager, new DefaultEurekaClientConfig()));
 
         // force the initial registration to eagerly run
         InstanceInfoReplicator instanceInfoReplicator = ((DiscoveryClient) client).getInstanceInfoReplicator();
@@ -109,6 +109,7 @@ public class DiscoveryClientRegisterUpdateTest {
         Assert.assertEquals(1, applicationInfoManager.getStatusChangeListeners().size());
         client.shutdown();
         Assert.assertEquals(0, applicationInfoManager.getStatusChangeListeners().size());
+        Mockito.verify(client, Mockito.times(1)).unregister();
     }
 
     @Test
@@ -116,13 +117,23 @@ public class DiscoveryClientRegisterUpdateTest {
         client.shutdown();  // shutdown the default @Before client first
 
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
-        client = new DiscoveryClient(applicationInfoManager.getInfo(), new DefaultEurekaClientConfig());
+        client = new TestClient(applicationInfoManager, new DefaultEurekaClientConfig());
         Assert.assertEquals(0, applicationInfoManager.getStatusChangeListeners().size());
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.DOWN);
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.UP);
         Thread.sleep(400);
         client.shutdown();
         Assert.assertEquals(0, applicationInfoManager.getStatusChangeListeners().size());
+    }
+
+    @Test
+    public void testDoNotUnregisterOnShutdown() throws Exception {
+        client.shutdown();  // shutdown the default @Before client first
+
+        ConfigurationManager.getConfigInstance().setProperty("eureka.shouldUnregisterOnShutdown", "false");
+        client = Mockito.spy(new TestClient(applicationInfoManager, new DefaultEurekaClientConfig()));
+        client.shutdown();
+        Mockito.verify(client, Mockito.never()).unregister();
     }
 
     public class TestApplicationInfoManager extends ApplicationInfoManager {
@@ -142,5 +153,17 @@ public class DiscoveryClientRegisterUpdateTest {
 
     private static <T> T getLast(List<T> list) {
         return list.get(list.size() - 1);
+    }
+
+    private static class TestClient extends DiscoveryClient {
+
+        public TestClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config) {
+            super(applicationInfoManager, config);
+        }
+
+        @Override
+        public void unregister() {
+            super.unregister();
+        }
     }
 }
