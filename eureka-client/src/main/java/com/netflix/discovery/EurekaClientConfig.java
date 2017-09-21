@@ -284,6 +284,14 @@ public interface EurekaClientConfig {
     boolean shouldRegisterWithEureka();
 
     /**
+     * Indicates whether the client should explicitly unregister itself from the remote server
+     * on client shutdown.
+     * 
+     * @return true if this instance should unregister with eureka on client shutdown, false otherwise
+     */
+    boolean shouldUnregisterOnShutdown();
+
+    /**
      * Indicates whether or not this instance should try to use the eureka
      * server in the same zone for latency and/or other reason.
      *

@@ -22,6 +22,7 @@ final class PropertyBasedClientConfigConstants {
     static final String CACHEREFRESH_THREADPOOL_SIZE_KEY = "client.cacheRefresh.threadPoolSize";
     static final String CACHEREFRESH_BACKOFF_BOUND_KEY = "client.cacheRefresh.exponentialBackOffBound";
 
+    static final String SHOULD_UNREGISTER_ON_SHUTDOWN_KEY = "shouldUnregisterOnShutdown";
     static final String SHOULD_ONDEMAND_UPDATE_STATUS_KEY = "shouldOnDemandUpdateStatusChange";
     static final String SHOULD_DISABLE_DELTA_KEY = "disableDelta";
     static final String SHOULD_FETCH_REMOTE_REGION_KEY = "fetchRemoteRegionsRegistry";

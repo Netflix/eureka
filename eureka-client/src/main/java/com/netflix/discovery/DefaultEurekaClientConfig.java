@@ -283,13 +283,24 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
      * (non-Javadoc)
      *
      * @see
-     * com.netflix.discovery.EurekaClientConfig#getDiscoveryRegistrationEnabled
-     * ()
+     * com.netflix.discovery.EurekaClientConfig#getDiscoveryRegistrationEnabled()
      */
     @Override
     public boolean shouldRegisterWithEureka() {
         return configInstance.getBooleanProperty(
                 namespace + REGISTRATION_ENABLED_KEY, true).get();
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see
+     * com.netflix.discovery.EurekaClientConfig#shouldUnregisterOnShutdown()
+     */
+    @Override
+    public boolean shouldUnregisterOnShutdown() {
+        return configInstance.getBooleanProperty(
+              namespace + SHOULD_UNREGISTER_ON_SHUTDOWN_KEY, true).get();
     }
 
     /*
