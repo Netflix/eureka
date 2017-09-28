@@ -431,13 +431,13 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     @Override
     public int getRemoteRegionConnectTimeoutMs() {
         return configInstance.getIntProperty(
-                namespace + "remoteRegionConnectTimeoutMs", 1000).get();
+                namespace + "remoteRegionConnectTimeoutMs", 5000).get();
     }
 
     @Override
     public int getRemoteRegionReadTimeoutMs() {
         return configInstance.getIntProperty(
-                namespace + "remoteRegionReadTimeoutMs", 1000).get();
+                namespace + "remoteRegionReadTimeoutMs", 10000).get();
     }
 
     @Override
