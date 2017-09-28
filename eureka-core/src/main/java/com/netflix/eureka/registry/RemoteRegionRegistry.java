@@ -270,7 +270,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
                     fetchRegistryUpdateLock.unlock();
                 }
             } else {
-                logger.warn("Cannot acquire update lock, aborting getAndUpdateDelta");
+                logger.warn("Cannot acquire update lock, aborting updateDelta operation of fetchAndStoreDelta");
             }
 
             // There is a diff in number of instances for some reason
@@ -431,15 +431,15 @@ public class RemoteRegionRegistry implements LookupService<String> {
 
         long currentGeneration = fetchRegistryGeneration.get();
 
-        Applications serverApps = this.fetchRemoteRegistry(false);
-        if (serverApps == null) {
+        Applications apps = this.fetchRemoteRegistry(false);
+        if (apps == null) {
             logger.error("The application is null for some reason. Not storing this information");
             return false;
         }
 
         if (fetchRegistryGeneration.compareAndSet(currentGeneration, currentGeneration + 1)) {
-            applications.set(serverApps);
-            applicationsDelta.set(serverApps);
+            applications.set(apps);
+            applicationsDelta.set(apps);
             logger.warn("The Reconcile hashcodes after complete sync up, client : {}, server : {}.",
                     getApplications().getReconcileHashCode(),
                     delta.getAppsHashCode());
