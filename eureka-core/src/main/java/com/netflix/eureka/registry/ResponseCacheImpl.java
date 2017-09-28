@@ -184,7 +184,7 @@ public class ResponseCacheImpl implements ResponseCache {
                             readOnlyCacheMap.put(key, cacheValue);
                         }
                     } catch (Throwable th) {
-                        logger.error("Error while updating the client cache from response cache", th);
+                        logger.error("Error while updating the client cache from response cache for key {}", key.toStringCompact(), th);
                     }
                 }
             }
