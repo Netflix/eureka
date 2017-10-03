@@ -251,7 +251,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     @Override
     public int getPeerNodeConnectTimeoutMs() {
         return configInstance.getIntProperty(
-                namespace + "peerNodeConnectTimeoutMs", 2000).get();
+                namespace + "peerNodeConnectTimeoutMs", 1000).get();
     }
 
     @Override
@@ -431,13 +431,13 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     @Override
     public int getRemoteRegionConnectTimeoutMs() {
         return configInstance.getIntProperty(
-                namespace + "remoteRegionConnectTimeoutMs", 5000).get();
+                namespace + "remoteRegionConnectTimeoutMs", 2000).get();
     }
 
     @Override
     public int getRemoteRegionReadTimeoutMs() {
         return configInstance.getIntProperty(
-                namespace + "remoteRegionReadTimeoutMs", 10000).get();
+                namespace + "remoteRegionReadTimeoutMs", 5000).get();
     }
 
     @Override
