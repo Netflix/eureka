@@ -124,8 +124,10 @@ public class EndpointUtils {
             zoneIndex++;
         }
         if (zoneIndex >= zones.size()) {
-            logger.warn("No match for the zone {} in the list of available zones {}",
-                    instanceZone, Arrays.toString(zones.toArray()));
+            if (logger.isWarnEnabled()) {
+                logger.warn("No match for the zone {} in the list of available zones {}",
+                        instanceZone, Arrays.toString(zones.toArray()));
+            }
         } else {
             // Rearrange the zones with the instance zone first
             for (int i = 0; i < zoneIndex; i++) {
@@ -159,8 +161,10 @@ public class EndpointUtils {
         randomizer.randomize(serviceUrls);
         serviceUrls.add(0, primaryServiceUrl);
 
-        logger.debug("This client will talk to the following serviceUrls in order : {} ",
-                Arrays.toString(serviceUrls.toArray()));
+        if (logger.isDebugEnabled()) {
+            logger.debug("This client will talk to the following serviceUrls in order : {} ",
+                    Arrays.toString(serviceUrls.toArray()));
+        }
         return serviceUrls;
     }
 
@@ -180,7 +184,9 @@ public class EndpointUtils {
             availZones = new String[1];
             availZones[0] = DEFAULT_ZONE;
         }
-        logger.debug("The availability zone for the given region {} are {}", region, Arrays.toString(availZones));
+        if (logger.isDebugEnabled()) {
+            logger.debug("The availability zone for the given region {} are {}", region, Arrays.toString(availZones));
+        }
         int myZoneOffset = getZoneOffset(instanceZone, preferSameZone, availZones);
 
         List<String> serviceUrls = clientConfig.getEurekaServerServiceUrls(availZones[myZoneOffset]);
@@ -222,7 +228,9 @@ public class EndpointUtils {
             availZones = new String[1];
             availZones[0] = DEFAULT_ZONE;
         }
-        logger.debug("The availability zone for the given region {} are {}", region, Arrays.toString(availZones));
+        if (logger.isDebugEnabled()) {
+            logger.debug("The availability zone for the given region {} are {}", region, Arrays.toString(availZones));
+        }
         int myZoneOffset = getZoneOffset(instanceZone, preferSameZone, availZones);
 
         String zone = availZones[myZoneOffset];

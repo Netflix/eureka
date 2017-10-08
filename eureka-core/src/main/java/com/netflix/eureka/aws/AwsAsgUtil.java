@@ -373,7 +373,9 @@ public class AwsAsgUtil {
                 try {
                     // First get the active ASG names
                     Set<CacheKey> cacheKeys = getCacheKeys();
-                    logger.debug("Trying to  refresh the keys for {}", Arrays.toString(cacheKeys.toArray()));
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Trying to  refresh the keys for {}", Arrays.toString(cacheKeys.toArray()));
+                    }
                     for (CacheKey key : cacheKeys) {
                         try {
                             asgCache.refresh(key);

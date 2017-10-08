@@ -52,7 +52,9 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
     public synchronized void setRegionsToFetch(String[] regionsToFetch) {
         if (null != regionsToFetch) {
             this.regionsToFetch = regionsToFetch;
-            logger.info("Fetching availability zone to region mapping for regions {}", Arrays.toString(regionsToFetch));
+            if (logger.isInfoEnabled()) {
+                logger.info("Fetching availability zone to region mapping for regions {}", Arrays.toString(regionsToFetch));
+            }
             availabilityZoneVsRegion.clear();
             for (String remoteRegion : regionsToFetch) {
                 Set<String> availabilityZones = getZonesForARegion(remoteRegion);

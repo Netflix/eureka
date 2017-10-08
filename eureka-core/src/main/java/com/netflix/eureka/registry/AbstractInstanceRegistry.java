@@ -149,8 +149,10 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 allKnownRemoteRegions[remoteRegionArrayIndex++] = remoteRegionUrlWithName.getKey();
             }
         }
-        logger.info("Finished initializing remote region registries. All known remote regions: {}",
-                Arrays.toString(allKnownRemoteRegions));
+        if (logger.isInfoEnabled()) {
+            logger.info("Finished initializing remote region registries. All known remote regions: {}",
+                    Arrays.toString(allKnownRemoteRegions));
+        }
     }
 
     @Override
@@ -733,8 +735,10 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
         boolean includeRemoteRegion = null != remoteRegions && remoteRegions.length != 0;
 
-        logger.debug("Fetching applications registry with remote regions: {}, Regions argument {}",
-                includeRemoteRegion, Arrays.toString(remoteRegions));
+        if (logger.isDebugEnabled()) {
+            logger.debug("Fetching applications registry with remote regions: {}, Regions argument {}",
+                    includeRemoteRegion, Arrays.toString(remoteRegions));
+        }
 
         if (includeRemoteRegion) {
             GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS.increment();
