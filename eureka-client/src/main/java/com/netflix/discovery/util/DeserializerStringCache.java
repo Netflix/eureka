@@ -149,7 +149,7 @@ public class DeserializerStringCache implements Function<String, String> {
         withCache(context, cache -> {
             if (scope == CacheScope.GLOBAL_SCOPE) {
                 if (logEnabled)
-                    logger.debug("clearing global-level serialization cache", cache.globalCache.size());
+                    logger.debug("clearing global-level serialization cache with size {}", cache.globalCache.size());
                 cache.globalCache.clear();
             }
             if (logEnabled)
