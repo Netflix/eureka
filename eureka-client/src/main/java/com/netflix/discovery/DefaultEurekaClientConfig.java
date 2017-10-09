@@ -488,6 +488,12 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     }
 
     @Override
+    public boolean shouldEnforceRegistrationAtInit() {
+        return configInstance.getBooleanProperty(
+                namespace + SHOULD_ENFORCE_REGISTRATION_AT_INIT, false).get();
+    }
+
+    @Override
     public String getEncoderName() {
         return configInstance.getStringProperty(
                 namespace + CLIENT_ENCODER_NAME_KEY, null).get();

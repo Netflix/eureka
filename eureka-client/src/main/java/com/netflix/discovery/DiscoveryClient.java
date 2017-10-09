@@ -417,6 +417,19 @@ public class DiscoveryClient implements EurekaClient {
         if (this.preRegistrationHandler != null) {
             this.preRegistrationHandler.beforeRegistration();
         }
+
+        if (clientConfig.shouldRegisterWithEureka() && clientConfig.shouldEnforceRegistrationAtInit()) {
+            try {
+                if (!register() ) {
+                    throw new IllegalStateException("Registration error at startup. Invalid server response.");
+                }
+            } catch (Throwable th) {
+                logger.error("Registration error at startup.", th.getMessage());
+                throw new IllegalStateException(th);
+            }
+        }
+
+        // finally, init the schedule tasks (e.g. cluster resolvers, heartbeat, instanceInfo replicator, fetch
         initScheduledTasks();
 
         try {
