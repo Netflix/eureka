@@ -518,6 +518,16 @@ public interface EurekaClientConfig {
     boolean shouldOnDemandUpdateStatusChange();
 
     /**
+     * If set to true, the {@link EurekaClient} initialization should throw an exception at constructor time
+     * if an initial registration to the remote servers is unsuccessful.
+     *
+     * Note that if {@link #shouldRegisterWithEureka()} is set to false, then this config is a no-op
+     *
+     * @return true or false for whether the client initialization should enforce an initial registration
+     */
+    boolean shouldEnforceRegistrationAtInit();
+
+    /**
      * This is a transient config and once the latest codecs are stable, can be removed (as there will only be one)
      *
      * @return the class name of the encoding codec to use for the client. If none set a default codec will be used

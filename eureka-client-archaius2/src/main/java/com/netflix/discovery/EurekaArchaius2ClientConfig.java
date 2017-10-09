@@ -209,6 +209,10 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
         return prefixedConfig.getBoolean(SHOULD_ONDEMAND_UPDATE_STATUS_KEY, true);
     }
 
+    public boolean shouldEnforceRegistrationAtInit() {
+        return prefixedConfig.getBoolean(SHOULD_ENFORCE_REGISTRATION_AT_INIT, false);
+    }
+
     @Override
     public String getEncoderName() {
         return prefixedConfig.getString(CLIENT_ENCODER_NAME_KEY, null);

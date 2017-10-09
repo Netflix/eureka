@@ -24,6 +24,7 @@ final class PropertyBasedClientConfigConstants {
 
     static final String SHOULD_UNREGISTER_ON_SHUTDOWN_KEY = "shouldUnregisterOnShutdown";
     static final String SHOULD_ONDEMAND_UPDATE_STATUS_KEY = "shouldOnDemandUpdateStatusChange";
+    static final String SHOULD_ENFORCE_REGISTRATION_AT_INIT = "shouldEnforceRegistrationAtInit";
     static final String SHOULD_DISABLE_DELTA_KEY = "disableDelta";
     static final String SHOULD_FETCH_REMOTE_REGION_KEY = "fetchRemoteRegionsRegistry";
     static final String SHOULD_FILTER_ONLY_UP_INSTANCES_KEY = "shouldFilterOnlyUpInstances";
