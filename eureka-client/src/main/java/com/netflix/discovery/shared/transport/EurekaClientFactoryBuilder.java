@@ -1,5 +1,6 @@
 package com.netflix.discovery.shared.transport;
 
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 
 import com.netflix.appinfo.AbstractEurekaIdentity;
@@ -40,6 +41,7 @@ public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactor
     protected EncoderWrapper encoderWrapper;
     protected DecoderWrapper decoderWrapper;
     protected AbstractEurekaIdentity clientIdentity;
+    protected HostnameVerifier hostnameVerifier;
     
     public B withClientConfig(EurekaClientConfig clientConfig) {
         withClientAccept(EurekaAccept.fromString(clientConfig.getClientDataAccept()));
@@ -114,6 +116,11 @@ public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactor
 
     public B withSSLContext(SSLContext sslContext) {
         this.sslContext = sslContext;
+        return self();
+    }
+    
+    public B withHostnameVerifier(HostnameVerifier hostnameVerifier) {
+        this.hostnameVerifier = hostnameVerifier;
         return self();
     }
 

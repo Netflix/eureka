@@ -7,6 +7,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.security.cert.X509Certificate;
 
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
@@ -34,6 +35,11 @@ public class SSLSocketFactoryAdapter extends SSLSocketFactory {
         // super's dependencies are dummies, and will delegate all calls to the
         // to the overridden methods
         super(DummySSLSocketFactory.INSTANCE, DummyX509HostnameVerifier.INSTANCE);
+        this.factory = factory;
+    }
+    
+    public SSLSocketFactoryAdapter(SSLConnectionSocketFactory factory, HostnameVerifier hostnameVerifier) {
+        super(DummySSLSocketFactory.INSTANCE, new WrappedX509HostnameVerifier(hostnameVerifier));
         this.factory = factory;
     }
 
@@ -126,6 +132,18 @@ public class SSLSocketFactoryAdapter extends SSLSocketFactory {
             throw new UnsupportedOperationException();
         }
 
+    }
+    
+    private static class WrappedX509HostnameVerifier extends DummyX509HostnameVerifier {
+        HostnameVerifier hostnameVerifier;
+        private WrappedX509HostnameVerifier(HostnameVerifier hostnameVerifier) {
+            this.hostnameVerifier = hostnameVerifier;
+        }
+
+        @Override
+        public boolean verify(String hostname, SSLSession session) {
+            return hostnameVerifier.verify(hostname, session);
+        }
     }
 
 }
