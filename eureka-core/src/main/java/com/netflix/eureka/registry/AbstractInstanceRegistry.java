@@ -959,7 +959,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 Lease<InstanceInfo> lease = iter.next().getLeaseInfo();
                 InstanceInfo instanceInfo = lease.getHolder();
                 logger.debug("The instance id {} is found with status {} and actiontype {}",
-                        instanceInfo.getStatus().name(), instanceInfo.getActionType().name());
+                        instanceInfo.getId(), instanceInfo.getStatus().name(), instanceInfo.getActionType().name());
                 Application app = applicationInstancesMap.get(instanceInfo.getAppName());
                 if (app == null) {
                     app = new Application(instanceInfo.getAppName());

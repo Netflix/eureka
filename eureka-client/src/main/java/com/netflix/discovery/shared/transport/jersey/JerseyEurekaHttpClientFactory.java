@@ -112,6 +112,13 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
             apacheClient.destroy();
         }
     }
+    
+    public static JerseyEurekaHttpClientFactory create(EurekaClientConfig clientConfig,
+            Collection<ClientFilter> additionalFilters,
+            InstanceInfo myInstanceInfo,
+            AbstractEurekaIdentity clientIdentity) {
+        return create(clientConfig, additionalFilters, myInstanceInfo, clientIdentity, Optional.empty(), Optional.empty());
+    }
 
     public static JerseyEurekaHttpClientFactory create(EurekaClientConfig clientConfig,
                                                        Collection<ClientFilter> additionalFilters,

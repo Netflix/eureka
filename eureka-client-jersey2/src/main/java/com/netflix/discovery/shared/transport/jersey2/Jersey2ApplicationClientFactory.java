@@ -80,6 +80,13 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
     public static Jersey2ApplicationClientFactory create(EurekaClientConfig clientConfig,
             Collection<ClientRequestFilter> additionalFilters,
             InstanceInfo myInstanceInfo,
+            AbstractEurekaIdentity clientIdentity) {
+        return create(clientConfig, additionalFilters, myInstanceInfo, clientIdentity, Optional.empty(), Optional.empty());
+    }
+    
+    public static Jersey2ApplicationClientFactory create(EurekaClientConfig clientConfig,
+            Collection<ClientRequestFilter> additionalFilters,
+            InstanceInfo myInstanceInfo,
             AbstractEurekaIdentity clientIdentity,
             Optional<SSLContext> sslContext,
             Optional<HostnameVerifier> hostnameVerifier) {
