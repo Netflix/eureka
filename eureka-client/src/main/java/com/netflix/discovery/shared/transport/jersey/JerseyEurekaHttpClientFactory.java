@@ -47,6 +47,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
 
 import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
 
@@ -108,17 +112,29 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
             apacheClient.destroy();
         }
     }
+    
+    public static JerseyEurekaHttpClientFactory create(EurekaClientConfig clientConfig,
+            Collection<ClientFilter> additionalFilters,
+            InstanceInfo myInstanceInfo,
+            AbstractEurekaIdentity clientIdentity) {
+        return create(clientConfig, additionalFilters, myInstanceInfo, clientIdentity, Optional.empty(), Optional.empty());
+    }
 
     public static JerseyEurekaHttpClientFactory create(EurekaClientConfig clientConfig,
                                                        Collection<ClientFilter> additionalFilters,
                                                        InstanceInfo myInstanceInfo,
-                                                       AbstractEurekaIdentity clientIdentity) {
+                                                       AbstractEurekaIdentity clientIdentity,
+                                                       Optional<SSLContext> sslContext,
+                                                       Optional<HostnameVerifier> hostnameVerifier) {
         JerseyEurekaHttpClientFactoryBuilder clientBuilder = newBuilder()
                 .withAdditionalFilters(additionalFilters)
                 .withMyInstanceInfo(myInstanceInfo)
                 .withUserAgent("Java-EurekaClient")
                 .withClientConfig(clientConfig)
                 .withClientIdentity(clientIdentity);
+        
+        sslContext.ifPresent(clientBuilder::withSSLContext);
+        hostnameVerifier.ifPresent(clientBuilder::withHostnameVerifier);
 
         if ("true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
             clientBuilder.withClientName("DiscoveryClient-HTTPClient-System").withSystemSSLConfiguration();
@@ -192,6 +208,12 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
 
             if (systemSSL) {
                 clientBuilder.withSystemSSLConfiguration();
+            } else if (sslContext != null) {
+                clientBuilder.withCustomSSL(sslContext);
+            }
+            
+            if (hostnameVerifier != null) {
+                clientBuilder.withHostnameVerifier(hostnameVerifier);
             }
 
             EurekaJerseyClient jerseyClient = clientBuilder.build();

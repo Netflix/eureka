@@ -31,7 +31,7 @@ allprojects {
         servletVersion = '2.5'
         jerseyVersion = '1.19.1'
         jettisonVersion = '1.3.7'
-        apacheHttpClientVersion = '4.3.4'
+        apacheHttpClientVersion = '4.4.1'
         guiceVersion = '4.1.0'
         servoVersion = '0.10.1'
         governatorVersion = '1.12.10'

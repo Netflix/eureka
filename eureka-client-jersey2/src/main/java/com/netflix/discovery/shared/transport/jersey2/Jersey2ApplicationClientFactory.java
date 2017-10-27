@@ -16,6 +16,7 @@
 
 package com.netflix.discovery.shared.transport.jersey2;
 
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.appinfo.EurekaAccept;
@@ -79,12 +81,24 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
             Collection<ClientRequestFilter> additionalFilters,
             InstanceInfo myInstanceInfo,
             AbstractEurekaIdentity clientIdentity) {
+        return create(clientConfig, additionalFilters, myInstanceInfo, clientIdentity, Optional.empty(), Optional.empty());
+    }
+    
+    public static Jersey2ApplicationClientFactory create(EurekaClientConfig clientConfig,
+            Collection<ClientRequestFilter> additionalFilters,
+            InstanceInfo myInstanceInfo,
+            AbstractEurekaIdentity clientIdentity,
+            Optional<SSLContext> sslContext,
+            Optional<HostnameVerifier> hostnameVerifier) {
         Jersey2ApplicationClientFactoryBuilder clientBuilder = newBuilder();
         clientBuilder.withAdditionalFilters(additionalFilters);
         clientBuilder.withMyInstanceInfo(myInstanceInfo);
         clientBuilder.withUserAgent("Java-EurekaClient");
         clientBuilder.withClientConfig(clientConfig);
         clientBuilder.withClientIdentity(clientIdentity);
+        
+        sslContext.ifPresent(clientBuilder::withSSLContext);
+        hostnameVerifier.ifPresent(clientBuilder::withHostnameVerifier);
         
         if ("true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
             clientBuilder.withClientName("DiscoveryClient-HTTPClient-System").withSystemSSLConfiguration();
@@ -137,6 +151,10 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
             addProviders(clientConfig);
             addSSLConfiguration(clientBuilder);
             addProxyConfiguration(clientConfig);
+            
+            if (hostnameVerifier != null) {
+                clientBuilder.hostnameVerifier(hostnameVerifier);
+            }
 
             // Common properties to all clients
             final String fullUserAgentName = (userAgent == null ? clientName : userAgent) + "/v" + buildVersion();
@@ -182,6 +200,8 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
                     FileInputStream fin = new FileInputStream(trustStoreFileName);
                     trustStore.load(fin, trustStorePassword.toCharArray());
                     clientBuilder.trustStore(trustStore);
+                } else if (sslContext != null) {
+                    clientBuilder.sslContext(sslContext);
                 }
             } catch (Exception ex) {
                 throw new IllegalArgumentException("Cannot setup SSL for Jersey2 client", ex);

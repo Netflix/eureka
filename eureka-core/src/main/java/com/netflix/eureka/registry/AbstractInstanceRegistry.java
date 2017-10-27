@@ -369,15 +369,13 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     return false;
                 }
                 if (!instanceInfo.getStatus().equals(overriddenInstanceStatus)) {
-                    Object[] args = {
-                            instanceInfo.getStatus().name(),
-                            instanceInfo.getOverriddenStatus().name(),
-                            instanceInfo.getId()
-                    };
                     logger.info(
                             "The instance status {} is different from overridden instance status {} for instance {}. "
-                                    + "Hence setting the status to overridden status", args);
+                                    + "Hence setting the status to overridden status", instanceInfo.getStatus().name(),
+                                    instanceInfo.getOverriddenStatus().name(),
+                                    instanceInfo.getId());
                     instanceInfo.setStatusWithoutDirty(overriddenInstanceStatus);
+
                 }
             }
             renewsLastMin.increment();
@@ -881,12 +879,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             while (iter.hasNext()) {
                 Lease<InstanceInfo> lease = iter.next().getLeaseInfo();
                 InstanceInfo instanceInfo = lease.getHolder();
-                Object[] args = {instanceInfo.getId(),
-                        instanceInfo.getStatus().name(),
-                        instanceInfo.getActionType().name()};
                 logger.debug(
-                        "The instance id %s is found with status %s and actiontype %s",
-                        args);
+                        "The instance id {} is found with status {} and actiontype {}",
+                        instanceInfo.getId(), instanceInfo.getStatus().name(), instanceInfo.getActionType().name());
                 Application app = applicationInstancesMap.get(instanceInfo
                         .getAppName());
                 if (app == null) {
@@ -959,14 +954,12 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         try {
             write.lock();
             Iterator<RecentlyChangedItem> iter = this.recentlyChangedQueue.iterator();
-            logger.debug("The number of elements in the delta queue is :" + this.recentlyChangedQueue.size());
+            logger.debug("The number of elements in the delta queue is :{}", this.recentlyChangedQueue.size());
             while (iter.hasNext()) {
                 Lease<InstanceInfo> lease = iter.next().getLeaseInfo();
                 InstanceInfo instanceInfo = lease.getHolder();
-                Object[] args = {instanceInfo.getId(),
-                        instanceInfo.getStatus().name(),
-                        instanceInfo.getActionType().name()};
-                logger.debug("The instance id %s is found with status %s and actiontype %s", args);
+                logger.debug("The instance id {} is found with status {} and actiontype {}",
+                        instanceInfo.getId(), instanceInfo.getStatus().name(), instanceInfo.getActionType().name());
                 Application app = applicationInstancesMap.get(instanceInfo.getAppName());
                 if (app == null) {
                     app = new Application(instanceInfo.getAppName());
