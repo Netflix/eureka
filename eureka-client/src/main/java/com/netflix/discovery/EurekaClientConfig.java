@@ -289,7 +289,9 @@ public interface EurekaClientConfig {
      * 
      * @return true if this instance should unregister with eureka on client shutdown, false otherwise
      */
-    boolean shouldUnregisterOnShutdown();
+    default boolean shouldUnregisterOnShutdown() {
+        return true;
+    }
 
     /**
      * Indicates whether or not this instance should try to use the eureka
@@ -525,7 +527,9 @@ public interface EurekaClientConfig {
      *
      * @return true or false for whether the client initialization should enforce an initial registration
      */
-    boolean shouldEnforceRegistrationAtInit();
+    default boolean shouldEnforceRegistrationAtInit() {
+        return false;
+    }
 
     /**
      * This is a transient config and once the latest codecs are stable, can be removed (as there will only be one)
