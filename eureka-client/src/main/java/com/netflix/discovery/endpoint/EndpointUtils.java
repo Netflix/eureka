@@ -156,6 +156,8 @@ public class EndpointUtils {
                             sb.append("/");
                         }
                         sb.append(clientConfig.getEurekaServerURLContext());
+                    } else {
+                        sb.append("/");
                     }
                     String serviceUrl = sb.toString();
                     logger.debug("The EC2 url is {}", serviceUrl);
