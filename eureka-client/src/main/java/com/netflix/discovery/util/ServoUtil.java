@@ -38,9 +38,7 @@ public final class ServoUtil {
             DefaultMonitorRegistry.getInstance().register(monitor);
         } catch (Exception e) {
             logger.warn("Cannot register monitor {}", monitor.getConfig().getName());
-            if (logger.isDebugEnabled()) {
-                logger.debug(e.getMessage(), e);
-            }
+            logger.debug(e.getMessage(), e);
             return false;
         }
         return true;

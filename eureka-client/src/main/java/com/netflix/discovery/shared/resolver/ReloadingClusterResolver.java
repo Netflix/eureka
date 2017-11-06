@@ -101,10 +101,8 @@ public class ReloadingClusterResolver<T extends EurekaEndpoint> implements Clust
                 if (newDelegate != null) {
                     delegateRef.set(newDelegate);
                     lastReloadTimestamp = System.currentTimeMillis();
-                    if (logger.isInfoEnabled()) {
-                        logger.info("Reload endpoints differ from the original list; next reload in {}[sec], Loaded endpoints={}",
-                                currentReloadIntervalMs / 1000, newDelegate.getClusterEndpoints());
-                    }
+                    logger.info("Reload endpoints differ from the original list; next reload in {}[sec], Loaded endpoints={}",
+                            currentReloadIntervalMs / 1000, newDelegate.getClusterEndpoints());
                 }
             } catch (Exception e) {
                 this.currentReloadIntervalMs = Math.min(maxReloadIntervalMs, currentReloadIntervalMs * 2);

@@ -271,9 +271,7 @@ public class DeserializerStringCache implements Function<String, String> {
         if (stringValue != null && (lengthLimit < 0 || stringValue.length() <= lengthLimit)) {
             return (String) (cacheScope == CacheScope.GLOBAL_SCOPE ? globalCache : applicationCache)
                     .computeIfAbsent(CharBuffer.wrap(stringValue), s -> {
-                        if (logger.isTraceEnabled())
-                            logger.trace(" (string) writing new interned value {} into {} cache scope", stringValue,
-                                    cacheScope);
+                        logger.trace(" (string) writing new interned value {} into {} cache scope", stringValue, cacheScope);
                         return stringValue;
                     });
         }

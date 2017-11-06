@@ -319,7 +319,7 @@ public class InstanceInfo {
                     return InstanceStatus.valueOf(s.toUpperCase());
                 } catch (IllegalArgumentException e) {
                     // ignore and fall through to unknown
-                    if (logger.isDebugEnabled()) logger.debug("illegal argument supplied to InstanceStatus.valueOf: {}, defaulting to {}", s, UNKNOWN);
+                    logger.debug("illegal argument supplied to InstanceStatus.valueOf: {}, defaulting to {}", s, UNKNOWN);
                 }
             }
             return UNKNOWN;

@@ -51,9 +51,7 @@ public class DnsClusterResolver implements ClusterResolver<EurekaEndpoint> {
         } else {
             this.eurekaEndpoints = DefaultEndpoint.createForServerList(addresses, port, isSecure, relativeUri);
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug("Resolved {} to {}", rootClusterDNS, eurekaEndpoints);
-        }
+        logger.debug("Resolved {} to {}", rootClusterDNS, eurekaEndpoints);
     }
 
     @Override
