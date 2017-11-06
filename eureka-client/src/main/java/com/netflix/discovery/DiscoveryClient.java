@@ -426,7 +426,7 @@ public class DiscoveryClient implements EurekaClient {
                     throw new IllegalStateException("Registration error at startup. Invalid server response.");
                 }
             } catch (Throwable th) {
-                logger.error("Registration error at startup.", th.getMessage());
+                logger.error("Registration error at startup: {}", th.getMessage());
                 throw new IllegalStateException(th);
             }
         }
