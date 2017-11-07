@@ -1608,7 +1608,7 @@ public class DiscoveryClient implements EurekaClient {
             try {
                 listener.onEvent(event);
             } catch (Exception e) {
-                logger.info("Event {} throw an exception", event, e.getMessage());
+                logger.info("Event {} throw an exception for listener {}", event, listener, e.getMessage());
             }
         }
     }
