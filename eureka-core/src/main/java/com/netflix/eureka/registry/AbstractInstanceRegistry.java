@@ -20,7 +20,6 @@ import javax.annotation.Nullable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -149,10 +148,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 allKnownRemoteRegions[remoteRegionArrayIndex++] = remoteRegionUrlWithName.getKey();
             }
         }
-        if (logger.isInfoEnabled()) {
-            logger.info("Finished initializing remote region registries. All known remote regions: {}",
-                    Arrays.toString(allKnownRemoteRegions));
-        }
+        logger.info("Finished initializing remote region registries. All known remote regions: {}",
+                (Object) allKnownRemoteRegions);
     }
 
     @Override
@@ -735,10 +732,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
         boolean includeRemoteRegion = null != remoteRegions && remoteRegions.length != 0;
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("Fetching applications registry with remote regions: {}, Regions argument {}",
-                    includeRemoteRegion, Arrays.toString(remoteRegions));
-        }
+        logger.debug("Fetching applications registry with remote regions: {}, Regions argument {}",
+                includeRemoteRegion, remoteRegions);
 
         if (includeRemoteRegion) {
             GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS.increment();
