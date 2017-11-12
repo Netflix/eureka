@@ -36,7 +36,7 @@ public class DeserializerStringCache implements Function<String, String> {
     }
 
     private static final Logger logger = LoggerFactory.getLogger(DeserializerStringCache.class);
-    private static final boolean logEnabled = logger.isTraceEnabled();
+    private static final boolean debugLogEnabled = logger.isDebugEnabled();
     private static final String ATTR_STRING_CACHE = "deserInternCache";
     private static final int LENGTH_LIMIT = 256;
     private static final int LRU_LIMIT = 1024 * 40;
@@ -118,11 +118,11 @@ public class DeserializerStringCache implements Function<String, String> {
     public static void clear(ObjectReader reader, final CacheScope scope) {
         withCache(reader, cache -> {
             if (scope == CacheScope.GLOBAL_SCOPE) {
-                if (logEnabled)
+                if (debugLogEnabled)
                     logger.debug("clearing global-level cache with size {}", cache.globalCache.size());
                 cache.globalCache.clear();
             }
-            if (logEnabled)
+            if (debugLogEnabled)
                 logger.debug("clearing app-level serialization cache with size {}", cache.applicationCache.size());
             cache.applicationCache.clear();
             return null;
@@ -148,11 +148,11 @@ public class DeserializerStringCache implements Function<String, String> {
     public static void clear(DeserializationContext context, CacheScope scope) {
         withCache(context, cache -> {
             if (scope == CacheScope.GLOBAL_SCOPE) {
-                if (logEnabled)
+                if (debugLogEnabled)
                     logger.debug("clearing global-level serialization cache with size {}", cache.globalCache.size());
                 cache.globalCache.clear();
             }
-            if (logEnabled)
+            if (debugLogEnabled)
                 logger.debug("clearing app-level serialization cache with size {}", cache.applicationCache.size());
             cache.applicationCache.clear();
             return null;
