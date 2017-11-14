@@ -85,8 +85,8 @@ public class PeerReplicationResource {
                     batchResponse.addResponse(dispatch(instanceInfo));
                 } catch (Exception e) {
                     batchResponse.addResponse(new ReplicationInstanceResponse(Status.INTERNAL_SERVER_ERROR.getStatusCode(), null));
-                    logger.error(instanceInfo.getAction() + " request processing failed for batch item "
-                            + instanceInfo.getAppName() + '/' + instanceInfo.getId(), e);
+                    logger.error("{} request processing failed for batch item {}/{}",
+                            instanceInfo.getAction(), instanceInfo.getAppName(), instanceInfo.getId(), e);
                 }
             }
             return Response.ok(batchResponse).build();

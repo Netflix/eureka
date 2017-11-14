@@ -168,7 +168,7 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
                 );
 
         if (result.getNetworkInterfaces().isEmpty()) {
-            logger.info("No ip is free to be associated with this instance. Candidate ips are: {} for zone: ", ips, myZone);
+            logger.info("No ip is free to be associated with this instance. Candidate ips are: {} for zone: {}", ips, myZone);
         } else {
             NetworkInterface selected = ipsOrder.min(result.getNetworkInterfaces());
             ec2Service.attachNetworkInterface(

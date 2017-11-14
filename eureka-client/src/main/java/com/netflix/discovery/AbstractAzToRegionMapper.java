@@ -1,7 +1,6 @@
 package com.netflix.discovery;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -52,15 +51,15 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
     public synchronized void setRegionsToFetch(String[] regionsToFetch) {
         if (null != regionsToFetch) {
             this.regionsToFetch = regionsToFetch;
-            logger.info("Fetching availability zone to region mapping for regions {}", Arrays.toString(regionsToFetch));
+            logger.info("Fetching availability zone to region mapping for regions {}", (Object) regionsToFetch);
             availabilityZoneVsRegion.clear();
             for (String remoteRegion : regionsToFetch) {
                 Set<String> availabilityZones = getZonesForARegion(remoteRegion);
                 if (null == availabilityZones
                         || (availabilityZones.size() == 1 && availabilityZones.contains(DEFAULT_ZONE))
                         || availabilityZones.isEmpty()) {
-                    logger.info("No availability zone information available for remote region: " + remoteRegion
-                            + ". Now checking in the default mapping.");
+                    logger.info("No availability zone information available for remote region: {}"
+                            + ". Now checking in the default mapping.", remoteRegion);
                     if (defaultRegionVsAzMap.containsKey(remoteRegion)) {
                         Collection<String> defaultAvailabilityZones = defaultRegionVsAzMap.get(remoteRegion);
                         for (String defaultAvailabilityZone : defaultAvailabilityZones) {

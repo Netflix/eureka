@@ -52,7 +52,7 @@ public class ThresholdLevelsMetric {
             try {
                 DefaultMonitorRegistry.getInstance().register(gauges[i]);
             } catch (Throwable e) {
-                logger.warn("Cannot register metric " + name, e);
+                logger.warn("Cannot register metric {}", name, e);
             }
         }
     }

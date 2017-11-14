@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -117,15 +116,17 @@ public class EndpointUtils {
                 }
             }
             if (zoneFound) {
-                Object[] args = {zones, instanceZone, zoneIndex};
-                logger.debug("The zone index from the list {} that matches the instance zone {} is {}", args);
+                logger.debug("The zone index from the list {} that matches the instance zone {} is {}",
+                        zones, instanceZone, zoneIndex);
                 break;
             }
             zoneIndex++;
         }
         if (zoneIndex >= zones.size()) {
-            logger.warn("No match for the zone {} in the list of available zones {}",
-                    instanceZone, Arrays.toString(zones.toArray()));
+            if (logger.isWarnEnabled()) {
+                logger.warn("No match for the zone {} in the list of available zones {}",
+                        instanceZone, zones.toArray());
+            }
         } else {
             // Rearrange the zones with the instance zone first
             for (int i = 0; i < zoneIndex; i++) {
@@ -159,8 +160,10 @@ public class EndpointUtils {
         randomizer.randomize(serviceUrls);
         serviceUrls.add(0, primaryServiceUrl);
 
-        logger.debug("This client will talk to the following serviceUrls in order : {} ",
-                Arrays.toString(serviceUrls.toArray()));
+        if (logger.isDebugEnabled()) {
+            logger.debug("This client will talk to the following serviceUrls in order : {} ",
+                    (Object) serviceUrls.toArray());
+        }
         return serviceUrls;
     }
 
@@ -180,7 +183,7 @@ public class EndpointUtils {
             availZones = new String[1];
             availZones[0] = DEFAULT_ZONE;
         }
-        logger.debug("The availability zone for the given region {} are {}", region, Arrays.toString(availZones));
+        logger.debug("The availability zone for the given region {} are {}", region, availZones);
         int myZoneOffset = getZoneOffset(instanceZone, preferSameZone, availZones);
 
         List<String> serviceUrls = clientConfig.getEurekaServerServiceUrls(availZones[myZoneOffset]);
@@ -222,7 +225,7 @@ public class EndpointUtils {
             availZones = new String[1];
             availZones[0] = DEFAULT_ZONE;
         }
-        logger.debug("The availability zone for the given region {} are {}", region, Arrays.toString(availZones));
+        logger.debug("The availability zone for the given region {} are {}", region, availZones);
         int myZoneOffset = getZoneOffset(instanceZone, preferSameZone, availZones);
 
         String zone = availZones[myZoneOffset];
@@ -362,7 +365,7 @@ public class EndpointUtils {
             }
         }
         logger.warn("DISCOVERY: Could not pick a zone based on preferred zone settings. My zone - {}," +
-                " preferSameZone- {}. Defaulting to " + availZones[0], myZone, preferSameZone);
+                " preferSameZone - {}. Defaulting to {}", myZone, preferSameZone, availZones[0]);
 
         return 0;
     }

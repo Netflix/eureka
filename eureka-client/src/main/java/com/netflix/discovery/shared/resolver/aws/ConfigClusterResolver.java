@@ -86,9 +86,7 @@ public class ConfigClusterResolver implements ClusterResolver<AwsEndpoint> {
             }
         }
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("Config resolved to {}", endpoints);
-        }
+        logger.debug("Config resolved to {}", endpoints);
 
         if (endpoints.isEmpty()) {
             logger.error("Cannot resolve to any endpoints from provided configuration: {}", serviceUrls);

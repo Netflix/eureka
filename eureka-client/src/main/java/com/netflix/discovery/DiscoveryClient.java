@@ -276,7 +276,7 @@ public class DiscoveryClient implements EurekaClient {
                     if (null != backupRegistryClassName) {
                         try {
                             backupRegistryInstance = (BackupRegistry) Class.forName(backupRegistryClassName).newInstance();
-                            logger.info("Enabled backup registry of type " + backupRegistryInstance.getClass());
+                            logger.info("Enabled backup registry of type {}", backupRegistryInstance.getClass());
                         } catch (InstantiationException e) {
                             logger.error("Error instantiating BackupRegistry.", e);
                         } catch (IllegalAccessException e) {
@@ -426,7 +426,7 @@ public class DiscoveryClient implements EurekaClient {
                     throw new IllegalStateException("Registration error at startup. Invalid server response.");
                 }
             } catch (Throwable th) {
-                logger.error("Registration error at startup.", th.getMessage());
+                logger.error("Registration error at startup: {}", th.getMessage());
                 throw new IllegalStateException(th);
             }
         }
@@ -809,12 +809,12 @@ public class DiscoveryClient implements EurekaClient {
                     ? eurekaTransport.queryClient.getApplications()
                     : eurekaTransport.queryClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
             if (response.getStatusCode() == 200) {
-                logger.debug(PREFIX + appPathIdentifier + " -  refresh status: " + response.getStatusCode());
+                logger.debug(PREFIX + "{} -  refresh status: {}", appPathIdentifier, response.getStatusCode());
                 return response.getEntity();
             }
-            logger.error(PREFIX + appPathIdentifier + " - was unable to refresh its cache! status = " + response.getStatusCode());
+            logger.error(PREFIX + "{} - was unable to refresh its cache! status = {}", appPathIdentifier, response.getStatusCode());
         } catch (Throwable th) {
-            logger.error(PREFIX + appPathIdentifier + " - was unable to refresh its cache! status = " + th.getMessage(), th);
+            logger.error(PREFIX + "{} - was unable to refresh its cache! status = {}", appPathIdentifier, th.getMessage(), th);
         }
         return null;
     }
@@ -823,16 +823,16 @@ public class DiscoveryClient implements EurekaClient {
      * Register with the eureka service by making the appropriate REST call.
      */
     boolean register() throws Throwable {
-        logger.info(PREFIX + appPathIdentifier + ": registering service...");
+        logger.info(PREFIX + "{}: registering service...", appPathIdentifier);
         EurekaHttpResponse<Void> httpResponse;
         try {
             httpResponse = eurekaTransport.registrationClient.register(instanceInfo);
         } catch (Exception e) {
-            logger.warn("{} - registration failed {}", PREFIX + appPathIdentifier, e.getMessage(), e);
+            logger.warn(PREFIX + "{} - registration failed {}", appPathIdentifier, e.getMessage(), e);
             throw e;
         }
         if (logger.isInfoEnabled()) {
-            logger.info("{} - registration status: {}", PREFIX + appPathIdentifier, httpResponse.getStatusCode());
+            logger.info(PREFIX + "{} - registration status: {}", appPathIdentifier, httpResponse.getStatusCode());
         }
         return httpResponse.getStatusCode() == 204;
     }
@@ -844,10 +844,10 @@ public class DiscoveryClient implements EurekaClient {
         EurekaHttpResponse<InstanceInfo> httpResponse;
         try {
             httpResponse = eurekaTransport.registrationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
-            logger.debug("{} - Heartbeat status: {}", PREFIX + appPathIdentifier, httpResponse.getStatusCode());
+            logger.debug(PREFIX + "{} - Heartbeat status: {}", appPathIdentifier, httpResponse.getStatusCode());
             if (httpResponse.getStatusCode() == 404) {
                 REREGISTER_COUNTER.increment();
-                logger.info("{} - Re-registering apps/{}", PREFIX + appPathIdentifier, instanceInfo.getAppName());
+                logger.info(PREFIX + "{} - Re-registering apps/{}", appPathIdentifier, instanceInfo.getAppName());
                 long timestamp = instanceInfo.setIsDirtyWithTime();
                 boolean success = register();
                 if (success) {
@@ -857,7 +857,7 @@ public class DiscoveryClient implements EurekaClient {
             }
             return httpResponse.getStatusCode() == 200;
         } catch (Throwable e) {
-            logger.error("{} - was unable to send heartbeat!", PREFIX + appPathIdentifier, e);
+            logger.error(PREFIX + "{} - was unable to send heartbeat!", appPathIdentifier, e);
             return false;
         }
     }
@@ -921,9 +921,9 @@ public class DiscoveryClient implements EurekaClient {
             try {
                 logger.info("Unregistering ...");
                 EurekaHttpResponse<Void> httpResponse = eurekaTransport.registrationClient.cancel(instanceInfo.getAppName(), instanceInfo.getId());
-                logger.info(PREFIX + appPathIdentifier + " - deregister  status: " + httpResponse.getStatusCode());
+                logger.info(PREFIX + "{} - deregister  status: {}", appPathIdentifier, httpResponse.getStatusCode());
             } catch (Exception e) {
-                logger.error(PREFIX + appPathIdentifier + " - de-registration failed" + e.getMessage(), e);
+                logger.error(PREFIX + "{} - de-registration failed{}", appPathIdentifier, e.getMessage(), e);
             }
         }
     }
@@ -969,7 +969,7 @@ public class DiscoveryClient implements EurekaClient {
             applications.setAppsHashCode(applications.getReconcileHashCode());
             logTotalInstances();
         } catch (Throwable e) {
-            logger.error(PREFIX + appPathIdentifier + " - was unable to refresh its cache! status = " + e.getMessage(), e);
+            logger.error(PREFIX + "{} - was unable to refresh its cache! status = {}", appPathIdentifier, e.getMessage(), e);
             return false;
         } finally {
             if (tracer != null) {
@@ -1261,7 +1261,7 @@ public class DiscoveryClient implements EurekaClient {
         if (clientConfig.shouldRegisterWithEureka()) {
             int renewalIntervalInSecs = instanceInfo.getLeaseInfo().getRenewalIntervalInSecs();
             int expBackOffBound = clientConfig.getHeartbeatExecutorExponentialBackOffBound();
-            logger.info("Starting heartbeat executor: " + "renew interval is: " + renewalIntervalInSecs);
+            logger.info("Starting heartbeat executor: " + "renew interval is: {}", renewalIntervalInSecs);
 
             // Heartbeat timer
             scheduler.schedule(
@@ -1487,7 +1487,7 @@ public class DiscoveryClient implements EurekaClient {
                     allAppsHashCodes.append(entry.getValue().getAppsHashCode());
                 }
                 logger.debug("Completed cache refresh task for discovery. All Apps hash code is {} ",
-                        allAppsHashCodes.toString());
+                        allAppsHashCodes);
             }
         } catch (Throwable e) {
             logger.error("Cannot fetch registry from server", e);

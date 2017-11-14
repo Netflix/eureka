@@ -65,7 +65,7 @@ public class InstancesResource {
         if (list != null && list.size() > 0) {
             return Response.ok(list.get(0)).build();
         } else {
-            logger.info("Not Found: " + id);
+            logger.info("Not Found: {}", id);
             return Response.status(Status.NOT_FOUND).build();
         }
     }

@@ -26,9 +26,9 @@ public class Archaius1VipAddressResolver implements VipAddressResolver {
             String key = matcher.group(1);
             String value = DynamicPropertyFactory.getInstance().getStringProperty(key, "").get();
 
-            logger.debug("att:" + matcher.group());
-            logger.debug(", att key:" + key);
-            logger.debug(", att value:" + value);
+            logger.debug("att:{}", matcher.group());
+            logger.debug(", att key:{}", key);
+            logger.debug(", att value:{}", value);
             logger.debug("");
             result = result.replaceAll("\\$\\{" + key + "\\}", value);
             matcher = VIP_ATTRIBUTES_PATTERN.matcher(result);

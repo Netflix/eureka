@@ -81,7 +81,7 @@ public final class DnsResolver {
             } while (targetHost == null);
             return targetHost;
         } catch (NamingException e) {
-            logger.warn("Cannot resolve eureka server address " + currentHost + "; returning original value " + originalHost, e);
+            logger.warn("Cannot resolve eureka server address {}; returning original value {}", currentHost, originalHost, e);
             return originalHost;
         }
     }
@@ -109,7 +109,7 @@ public final class DnsResolver {
                 return result;
             }
         } catch (Exception e) {
-            logger.warn("Cannot load A-record for eureka server address " + rootDomainName, e);
+            logger.warn("Cannot load A-record for eureka server address {}", rootDomainName, e);
             return null;
         }
         return null;

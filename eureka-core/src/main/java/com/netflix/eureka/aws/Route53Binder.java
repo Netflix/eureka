@@ -154,7 +154,7 @@ public class Route53Binder implements AwsBinder {
             try {
                 domains.add(extractDomain(url));
             } catch(MalformedURLException e) {
-                logger.error("Invalid url " + url, e);
+                logger.error("Invalid url {}", url, e);
             }
         }
         return domains;
@@ -191,7 +191,7 @@ public class Route53Binder implements AwsBinder {
         }
 
         if (firstError != null) {
-            logger.error("Cannot execute change " + change + " " + firstError, firstError);
+            logger.error("Cannot execute change {} {}", change, firstError, firstError);
         }
 
         return false;

@@ -110,9 +110,7 @@ public class DnsTxtRecordClusterResolver implements ClusterResolver<AwsEndpoint>
     @Override
     public List<AwsEndpoint> getClusterEndpoints() {
         List<AwsEndpoint> eurekaEndpoints = resolve(region, rootClusterDNS, extractZoneFromDNS, port, isSecure, relativeUri);
-        if (logger.isDebugEnabled()) {
-            logger.debug("Resolved {} to {}", rootClusterDNS, eurekaEndpoints);
-        }
+        logger.debug("Resolved {} to {}", rootClusterDNS, eurekaEndpoints);
 
         return eurekaEndpoints;
     }
