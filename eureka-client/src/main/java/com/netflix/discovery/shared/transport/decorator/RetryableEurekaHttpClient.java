@@ -52,6 +52,7 @@ import static com.netflix.discovery.EurekaClientNames.METRIC_TRANSPORT_PREFIX;
  * retried on another server, or the response with this status code returned to the client.
  *
  * @author Tomasz Bak
+ * @author Li gang
  */
 public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
 
@@ -163,6 +164,10 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
 
         // If enough hosts are bad, we have no choice but start over again
         int threshold = (int) (candidateHosts.size() * transportConfig.getRetryableClientQuarantineRefreshPercentage());
+        //Prevent threshold is too large
+        if (threshold > candidateHosts.size()) {
+            threshold = candidateHosts.size();
+        }
         if (quarantineSet.isEmpty()) {
             // no-op
         } else if (quarantineSet.size() >= threshold) {
