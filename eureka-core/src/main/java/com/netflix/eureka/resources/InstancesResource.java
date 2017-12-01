@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
  * A <em>jersey</em> resource that gets information about a particular instance.
  *
  * @author Karthik Ranganathan, Greg Kim
+ * @author Gang Li
  *
  */
 @Produces({"application/xml", "application/json"})
@@ -62,7 +63,7 @@ public class InstancesResource {
                             @PathParam("id") String id) {
         CurrentRequestVersion.set(Version.toEnum(version));
         List<InstanceInfo> list = registry.getInstancesById(id);
-        if (list != null && list.size() > 0) {
+        if (list != null && !list.isEmpty()) {
             return Response.ok(list.get(0)).build();
         } else {
             logger.info("Not Found: {}", id);
