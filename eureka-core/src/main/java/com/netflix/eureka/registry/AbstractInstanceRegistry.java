@@ -69,6 +69,7 @@ import static com.netflix.eureka.util.EurekaMonitors.*;
  * </p>
  *
  * @author Karthik Ranganathan
+ * @author Gang Li
  *
  */
 public abstract class AbstractInstanceRegistry implements InstanceRegistry {
@@ -134,7 +135,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     protected void initRemoteRegionRegistry() throws MalformedURLException {
         Map<String, String> remoteRegionUrlsWithName = serverConfig.getRemoteRegionUrlsWithName();
-        if (remoteRegionUrlsWithName.size() > 0) {
+        if (!remoteRegionUrlsWithName.isEmpty()) {
             allKnownRemoteRegions = new String[remoteRegionUrlsWithName.size()];
             int remoteRegionArrayIndex = 0;
             for (Map.Entry<String, String> remoteRegionUrlWithName : remoteRegionUrlsWithName.entrySet()) {
