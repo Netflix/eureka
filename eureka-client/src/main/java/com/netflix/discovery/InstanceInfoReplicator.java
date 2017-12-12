@@ -69,12 +69,6 @@ class InstanceInfoReplicator implements Runnable {
     }
 
     public void stop() {
-        Future latestPeriodic = scheduledPeriodicRef.get();
-        if (latestPeriodic != null && !latestPeriodic.isDone()) {
-            logger.info("Canceling the latest scheduled before stop");
-            boolean result = latestPeriodic.cancel(false);
-            System.out.println("Result:" + result);
-        }
         shutdownAndAwaitTermination(scheduler);
         started.set(false);
     }
