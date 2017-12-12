@@ -7,7 +7,7 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.converters.ConversionException;
+import com.thoughtworks.xstream.security.ForbiddenClassException;
 import org.junit.Test;
 
 /**
@@ -42,7 +42,7 @@ public class XmlXStreamTest {
     /**
      * Tests: http://x-stream.github.io/CVE-2017-7957.html
      */
-    @Test(expected=ConversionException.class, timeout=5000)
+    @Test(expected=ForbiddenClassException.class, timeout=5000)
     public void testVoidElementUnmarshalling() throws Exception {
         XStream xstream = XmlXStream.getInstance();
         xstream.fromXML("<void/>");
@@ -51,7 +51,7 @@ public class XmlXStreamTest {
     /**
      * Tests: http://x-stream.github.io/CVE-2017-7957.html
      */
-    @Test(expected=ConversionException.class, timeout=5000)
+    @Test(expected=ForbiddenClassException.class, timeout=5000)
     public void testVoidAttributeUnmarshalling() throws Exception {
         XStream xstream = XmlXStream.getInstance();
         xstream.fromXML("<string class='void'>Hello, world!</string>");
