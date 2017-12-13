@@ -6,6 +6,7 @@ import com.netflix.discovery.util.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -68,8 +69,19 @@ class InstanceInfoReplicator implements Runnable {
     }
 
     public void stop() {
-        scheduler.shutdownNow();
+        shutdownAndAwaitTermination(scheduler);
         started.set(false);
+    }
+
+    private void shutdownAndAwaitTermination(ExecutorService pool) {
+        pool.shutdown();
+        try {
+            if (!pool.awaitTermination(3, TimeUnit.SECONDS)) {
+                pool.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            logger.warn("InstanceInfoReplicator stop interrupted");
+        }
     }
 
     public boolean onDemandUpdate() {
