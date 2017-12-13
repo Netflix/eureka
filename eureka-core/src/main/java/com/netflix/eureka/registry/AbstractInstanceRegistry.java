@@ -69,7 +69,6 @@ import static com.netflix.eureka.util.EurekaMonitors.*;
  * </p>
  *
  * @author Karthik Ranganathan
- * @author Gang Li
  *
  */
 public abstract class AbstractInstanceRegistry implements InstanceRegistry {
