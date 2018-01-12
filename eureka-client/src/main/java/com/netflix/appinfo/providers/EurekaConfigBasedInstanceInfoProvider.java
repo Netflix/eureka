@@ -59,8 +59,8 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
 
             // set the appropriate id for the InstanceInfo, falling back to datacenter Id if applicable, else hostname
             String instanceId = config.getInstanceId();
-            DataCenterInfo dataCenterInfo = config.getDataCenterInfo();
             if (instanceId == null || instanceId.isEmpty()) {
+                DataCenterInfo dataCenterInfo = config.getDataCenterInfo();
                 if (dataCenterInfo instanceof UniqueIdentifier) {
                     instanceId = ((UniqueIdentifier) dataCenterInfo).getId();
                 } else {
