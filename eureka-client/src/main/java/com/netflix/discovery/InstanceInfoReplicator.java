@@ -86,21 +86,26 @@ class InstanceInfoReplicator implements Runnable {
 
     public boolean onDemandUpdate() {
         if (rateLimiter.acquire(burstSize, allowedRatePerMinute)) {
-            scheduler.submit(new Runnable() {
-                @Override
-                public void run() {
-                    logger.debug("Executing on-demand update of local InstanceInfo");
-
-                    Future latestPeriodic = scheduledPeriodicRef.get();
-                    if (latestPeriodic != null && !latestPeriodic.isDone()) {
-                        logger.debug("Canceling the latest scheduled update, it will be rescheduled at the end of on demand update");
-                        latestPeriodic.cancel(false);
+            if (!scheduler.isShutdown()) {
+                scheduler.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        logger.debug("Executing on-demand update of local InstanceInfo");
+    
+                        Future latestPeriodic = scheduledPeriodicRef.get();
+                        if (latestPeriodic != null && !latestPeriodic.isDone()) {
+                            logger.debug("Canceling the latest scheduled update, it will be rescheduled at the end of on demand update");
+                            latestPeriodic.cancel(false);
+                        }
+    
+                        InstanceInfoReplicator.this.run();
                     }
-
-                    InstanceInfoReplicator.this.run();
-                }
-            });
-            return true;
+                });
+                return true;
+            } else {
+                logger.warn("Ignoring onDemand update due to stopped scheduler");
+                return false;
+            }
         } else {
             logger.warn("Ignoring onDemand update due to rate limiter");
             return false;
