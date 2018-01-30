@@ -108,7 +108,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
      */
     @Override
     public int getSecurePort() {
-        return configInstance.getIntProperty(namespace + SECURE_PORT_KEY, super.getSecurePort()) .get();
+        return configInstance.getIntProperty(namespace + SECURE_PORT_KEY, super.getSecurePort()).get();
     }
 
     /*
