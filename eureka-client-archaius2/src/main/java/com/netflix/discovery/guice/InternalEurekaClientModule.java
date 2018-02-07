@@ -7,6 +7,7 @@ import com.google.inject.Scopes;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.EurekaInstanceInfoFactory;
 import com.netflix.appinfo.providers.Archaius2VipAddressResolver;
 import com.netflix.appinfo.providers.CompositeInstanceConfigFactory;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
@@ -48,6 +49,9 @@ final class InternalEurekaClientModule extends AbstractModule {
         @Inject(optional = true)
         EurekaInstanceConfigFactory instanceConfigFactory;
 
+        @Inject(optional = true)
+        EurekaInstanceInfoFactory eurekaInstanceInfoFactory;
+
         String getInstanceConfigNamespace() {
             return instanceConfigNamespace == null ? "eureka" : instanceConfigNamespace;
         }
@@ -61,6 +65,10 @@ final class InternalEurekaClientModule extends AbstractModule {
                     ? new CompositeInstanceConfigFactory(config, getInstanceConfigNamespace())
                     : instanceConfigFactory;
         }
+
+        EurekaInstanceInfoFactory getInstanceInfoFactory() {
+            return eurekaInstanceInfoFactory;
+        }
     }
 
     @Override
@@ -71,9 +79,7 @@ final class InternalEurekaClientModule extends AbstractModule {
         bind(ApplicationInfoManager.class).asEagerSingleton();
 
         bind(VipAddressResolver.class).to(Archaius2VipAddressResolver.class);
-        bind(InstanceInfo.class).toProvider(EurekaConfigBasedInstanceInfoProvider.class);
         bind(EurekaClient.class).to(DiscoveryClient.class);
-
 
         // Default to the jersey1 discovery client optional args
         bind(AbstractDiscoveryClientOptionalArgs.class).to(Jersey1DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
@@ -95,6 +101,15 @@ final class InternalEurekaClientModule extends AbstractModule {
     @Singleton
     public EurekaInstanceConfig getEurekaInstanceConfigProvider(ModuleConfig moduleConfig, EurekaConfigLoader configLoader) {
         return moduleConfig.getInstanceConfigProvider().get();
+    }
+
+    @Provides
+    @Singleton
+    public InstanceInfo getInstanceInfoFactory(Config config, EurekaInstanceConfig eurekaInstanceConfig, ModuleConfig moduleConfig) {
+        EurekaInstanceInfoFactory instanceInfoFactory = moduleConfig.getInstanceInfoFactory() == null
+                ? new EurekaConfigBasedInstanceInfoProvider(eurekaInstanceConfig, new Archaius2VipAddressResolver(config))
+                : moduleConfig.getInstanceInfoFactory();
+        return instanceInfoFactory.get();
     }
 
     @Override

@@ -10,6 +10,7 @@ import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.InstanceInfo.PortType;
+import com.netflix.appinfo.EurekaInstanceInfoFactory;
 import com.netflix.appinfo.LeaseInfo;
 import com.netflix.appinfo.RefreshableInstanceConfig;
 import com.netflix.appinfo.UniqueIdentifier;
@@ -27,7 +28,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 @Singleton
-public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceInfo> {
+public class EurekaConfigBasedInstanceInfoProvider implements EurekaInstanceInfoFactory, Provider<InstanceInfo> {
     private static final Logger LOG = LoggerFactory.getLogger(EurekaConfigBasedInstanceInfoProvider.class);
 
     private final EurekaInstanceConfig config;
@@ -39,7 +40,14 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
 
     @Inject
     public EurekaConfigBasedInstanceInfoProvider(EurekaInstanceConfig config) {
+        this(config, null);
+    }
+
+    public EurekaConfigBasedInstanceInfoProvider(EurekaInstanceConfig config, VipAddressResolver vipAddressResolver) {
         this.config = config;
+        if (vipAddressResolver != null) {
+            this.vipAddressResolver = vipAddressResolver;
+        }
     }
 
     @Override
