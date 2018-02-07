@@ -55,7 +55,11 @@ public class ApplicationInfoManager {
         }
     };
 
-    private static ApplicationInfoManager instance = new ApplicationInfoManager(null, null, null);
+    private static ApplicationInfoManager instance = new ApplicationInfoManager(
+            (EurekaInstanceConfig) null,
+            (InstanceInfo) null,
+            (OptionalArgs) null
+    );
 
     protected final Map<String, StatusChangeListener> listeners;
     private final InstanceStatusMapper instanceStatusMapper;
@@ -95,8 +99,16 @@ public class ApplicationInfoManager {
         instance = this;
     }
 
+    public ApplicationInfoManager(EurekaInstanceConfig config, EurekaInstanceInfoFactory instanceInfoFactory, OptionalArgs optionalArgs) {
+        this(config, instanceInfoFactory.get(), optionalArgs);
+    }
+
+    /**
+     * @Deprecated 2018-02-07 prefer {@link #ApplicationInfoManager(EurekaInstanceConfig, EurekaInstanceInfoFactory, OptionalArgs)}
+     */
+    @Deprecated
     public ApplicationInfoManager(EurekaInstanceConfig config, /* nullable */ OptionalArgs optionalArgs) {
-        this(config, new EurekaConfigBasedInstanceInfoProvider(config).get(), optionalArgs);
+        this(config, new EurekaConfigBasedInstanceInfoProvider(config), optionalArgs);
     }
 
     public ApplicationInfoManager(EurekaInstanceConfig config, InstanceInfo instanceInfo) {
@@ -104,7 +116,7 @@ public class ApplicationInfoManager {
     }
 
     /**
-     * @deprecated 2016-09-19 prefer {@link #ApplicationInfoManager(EurekaInstanceConfig, com.netflix.appinfo.ApplicationInfoManager.OptionalArgs)}
+     * @deprecated 2016-09-19 prefer {@link #ApplicationInfoManager(EurekaInstanceConfig, EurekaInstanceInfoFactory, OptionalArgs)}
      */
     @Deprecated
     public ApplicationInfoManager(EurekaInstanceConfig config) {

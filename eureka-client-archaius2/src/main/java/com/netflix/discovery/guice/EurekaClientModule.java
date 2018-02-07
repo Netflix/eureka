@@ -3,6 +3,7 @@ package com.netflix.discovery.guice;
 import com.google.inject.AbstractModule;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.name.Names;
+import com.netflix.appinfo.EurekaInstanceInfoFactory;
 import com.netflix.appinfo.providers.EurekaInstanceConfigFactory;
 
 /**
@@ -32,6 +33,18 @@ import com.netflix.appinfo.providers.EurekaInstanceConfigFactory;
  * }).createInjector()
  * </code>
  *
+ * This module support the binding of a custom {@link EurekaInstanceInfoFactory} to supply your own
+ * way of providing a factory for the creation of an {@link com.netflix.appinfo.InstanceInfo} used for
+ * eureka registration.
+ *
+ * Custom {@link EurekaInstanceInfoFactory} may be registered as follows:
+ * <code>
+ * InjectorBuilder.fromModules(new EurekaClientModule() {
+ *      protected void configureEureka() {
+ *          bindEurekaInstanceInfoFactory().to(MyEurekaInstanceInfoFactory.class);
+ *      }
+ * }).createInjector()
+ * </code>
  * Note that this module is NOT compatible with the archaius1 based {@link com.netflix.discovery.guice.EurekaModule}
  *
  * @author David Liu
@@ -48,6 +61,10 @@ public class EurekaClientModule extends AbstractModule {
 
     protected LinkedBindingBuilder<EurekaInstanceConfigFactory> bindEurekaInstanceConfigFactory() {
         return bind(EurekaInstanceConfigFactory.class);
+    }
+
+    protected LinkedBindingBuilder<EurekaInstanceInfoFactory> bindEurekaInstanceInfoFactory() {
+        return bind(EurekaInstanceInfoFactory.class);
     }
 
     @Override

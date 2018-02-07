@@ -3,6 +3,8 @@ package com.netflix.discovery.guice;
 import com.google.inject.AbstractModule;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.EurekaInstanceConfig;
+import com.netflix.appinfo.EurekaInstanceInfoFactory;
+import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.providers.EurekaInstanceConfigFactory;
 import com.netflix.archaius.guice.ArchaiusModule;
 import com.netflix.governator.InjectorBuilder;
@@ -18,11 +20,14 @@ public class EurekaClientModuleConfigurationTest {
 
     @Test
     public void testBindEurekaInstanceConfigFactory() {
-        final EurekaInstanceConfigFactory mockFactory = Mockito.mock(EurekaInstanceConfigFactory.class);
+        final EurekaInstanceConfigFactory mockInstanceConfigFactory = Mockito.mock(EurekaInstanceConfigFactory.class);
         final EurekaInstanceConfig mockConfig = Mockito.mock(EurekaInstanceConfig.class);
         final ApplicationInfoManager mockInfoManager = Mockito.mock(ApplicationInfoManager.class);
+        final EurekaInstanceInfoFactory mockInstanceInfoFactory = Mockito.mock(EurekaInstanceInfoFactory.class);
+        final InstanceInfo mockInstanceInfo = Mockito.mock(InstanceInfo.class);
 
-        Mockito.when(mockFactory.get()).thenReturn(mockConfig);
+        Mockito.when(mockInstanceConfigFactory.get()).thenReturn(mockConfig);
+        Mockito.when(mockInstanceInfoFactory.get()).thenReturn(mockInstanceInfo);
 
         LifecycleInjector injector = InjectorBuilder
                 .fromModules(
@@ -30,7 +35,13 @@ public class EurekaClientModuleConfigurationTest {
                         new EurekaClientModule() {
                             @Override
                             protected void configureEureka() {
-                                bindEurekaInstanceConfigFactory().toInstance(mockFactory);
+                                bindEurekaInstanceConfigFactory().toInstance(mockInstanceConfigFactory);
+                            }
+                        },
+                        new EurekaClientModule() {
+                            @Override
+                            protected void configureEureka() {
+                                bindEurekaInstanceInfoFactory().toInstance(mockInstanceInfoFactory);
                             }
                         }
                 )
@@ -47,5 +58,8 @@ public class EurekaClientModuleConfigurationTest {
 
         EurekaInstanceConfig config = injector.getInstance(EurekaInstanceConfig.class);
         Assert.assertEquals(mockConfig, config);
+
+        InstanceInfo instanceInfo = injector.getInstance(InstanceInfo.class);
+        Assert.assertEquals(mockInstanceInfo, instanceInfo);
     }
 }
