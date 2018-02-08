@@ -81,6 +81,18 @@ public class ReplicationTaskProcessorTest {
         assertThat(status, is(ProcessingResult.Congestion));
         assertThat(task.getProcessingState(), is(ProcessingState.Pending));
     }
+    
+    @Test
+    public void testBatchableTaskNetworkReadTimeOutHandling() throws Exception {
+        TestableInstanceReplicationTask task = aReplicationTask().build();
+
+        replicationClient.withReadtimeOut(1);
+        ProcessingResult status = replicationTaskProcessor.process(Collections.<ReplicationTask>singletonList(task));
+
+        assertThat(status, is(ProcessingResult.Congestion));
+        assertThat(task.getProcessingState(), is(ProcessingState.Pending));
+    }
+
 
     @Test
     public void testBatchableTaskNetworkFailureHandling() throws Exception {
