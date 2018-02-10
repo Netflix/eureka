@@ -151,7 +151,7 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
     public EurekaHttpResponse<ReplicationListResponse> submitBatchUpdates(ReplicationList replicationList) {
     	
         if (readTimeOutCounter.get() < readtimeOutRepeatCount) {
-            networkFailureCounter.incrementAndGet();
+            readTimeOutCounter.incrementAndGet();
             throw new RuntimeException(new SocketTimeoutException("Read timed out"));
         }
     	
