@@ -2,6 +2,7 @@ package com.netflix.eureka.cluster;
 
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -32,12 +33,17 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
     private int[] networkStatusCodes;
     private InstanceInfo instanceInfoFromPeer;
     private int networkFailuresRepeatCount;
+    private int readtimeOutRepeatCount;
+
 
     private int batchStatusCode;
 
     private final AtomicInteger callCounter = new AtomicInteger();
     private final AtomicInteger networkFailureCounter = new AtomicInteger();
+    private final AtomicInteger readTimeOutCounter = new AtomicInteger();
+
     private long processingDelayMs;
+    
 
     private final BlockingQueue<HandledRequest> handledRequests = new LinkedBlockingQueue<>();
 
@@ -53,9 +59,12 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
         this.batchStatusCode = batchStatusCode;
     }
 
-
     public void withNetworkError(int networkFailuresRepeatCount) {
         this.networkFailuresRepeatCount = networkFailuresRepeatCount;
+    }
+
+    public void withReadtimeOut(int readtimeOutRepeatCount) {
+        this.readtimeOutRepeatCount = readtimeOutRepeatCount;
     }
 
     public void withProcessingDelay(long processingDelay, TimeUnit timeUnit) {
@@ -140,6 +149,13 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
 
     @Override
     public EurekaHttpResponse<ReplicationListResponse> submitBatchUpdates(ReplicationList replicationList) {
+    	
+        if (readTimeOutCounter.get() < readtimeOutRepeatCount) {
+            readTimeOutCounter.incrementAndGet();
+            throw new RuntimeException(new SocketTimeoutException("Read timed out"));
+        }
+    	
+    	
         if (networkFailureCounter.get() < networkFailuresRepeatCount) {
             networkFailureCounter.incrementAndGet();
             throw new RuntimeException(new IOException("simulated network failure"));

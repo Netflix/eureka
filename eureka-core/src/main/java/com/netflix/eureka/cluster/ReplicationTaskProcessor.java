@@ -2,6 +2,8 @@ package com.netflix.eureka.cluster;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
@@ -28,6 +30,8 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
     private final String peerId;
 
     private volatile long lastNetworkErrorTime;
+    
+    private static final Pattern READ_TIME_OUT_PATTERN = Pattern.compile(".*read.*time.*out.*"); 
 
     ReplicationTaskProcessor(String peerId, HttpReplicationClient replicationClient) {
         this.replicationClient = replicationClient;
@@ -53,7 +57,11 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
                 return ProcessingResult.PermanentError;
             }
         } catch (Throwable e) {
-            if (isNetworkConnectException(e)) {
+        	if (maybeReadTimeOut(e)) {
+                logger.error("It seems to be a socket read timeout exception, it will retry later. if it continues to happen and some eureka node occupied all the cpu time, you should set property 'eureka.server.peer-node-read-timeout-ms' to a bigger value", e);
+            	//read timeout exception is more Congestion then TransientError, return Congestion for longer delay 
+                return ProcessingResult.Congestion;
+            } else if (isNetworkConnectException(e)) {
                 logNetworkErrorSample(task, e);
                 return ProcessingResult.TransientError;
             } else {
@@ -84,7 +92,11 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
                 handleBatchResponse(tasks, response.getEntity().getResponseList());
             }
         } catch (Throwable e) {
-            if (isNetworkConnectException(e)) {
+            if (maybeReadTimeOut(e)) {
+                logger.error("It seems to be a socket read timeout exception, it will retry later. if it continues to happen and some eureka node occupied all the cpu time, you should set property 'eureka.server.peer-node-read-timeout-ms' to a bigger value", e);
+            	//read timeout exception is more Congestion then TransientError, return Congestion for longer delay 
+                return ProcessingResult.Congestion;
+            } else if (isNetworkConnectException(e)) {
                 logNetworkErrorSample(null, e);
                 return ProcessingResult.TransientError;
             } else {
@@ -170,7 +182,29 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
         } while (e != null);
         return false;
     }
-
+    
+    /**
+     * Check if the exception is socket read time out exception
+     *
+     * @param e
+     *            The exception for which the information needs to be found.
+     * @return true, if it may be a socket read time out exception.
+     */
+    private static boolean maybeReadTimeOut(Throwable e) {
+        do {
+            if (IOException.class.isInstance(e)) {
+            	String message = e.getMessage().toLowerCase();
+            	Matcher matcher = READ_TIME_OUT_PATTERN.matcher(message);
+            	if(matcher.find()) {
+            		return true;
+            	}
+            }
+            e = e.getCause();
+        } while (e != null);
+        return false;
+    }
+    
+    
     private static ReplicationInstance createReplicationInstanceOf(InstanceReplicationTask task) {
         ReplicationInstanceBuilder instanceBuilder = aReplicationInstance();
         instanceBuilder.withAppName(task.getAppName());
