@@ -175,6 +175,9 @@ public final class EurekaEntityComparators {
         if (first.getStatus() != null ? !first.getStatus().equals(second.getStatus()) : second.getStatus() != null) {
             return false;
         }
+        if (first.getOverriddenStatus() != null ? !first.getOverriddenStatus().equals(second.getOverriddenStatus()) : second.getOverriddenStatus() != null) {
+            return false;
+        }
         if (first.getStatusPageUrl() != null ? !first.getStatusPageUrl().equals(second.getStatusPageUrl()) : second.getStatusPageUrl() != null) {
             return false;
         }

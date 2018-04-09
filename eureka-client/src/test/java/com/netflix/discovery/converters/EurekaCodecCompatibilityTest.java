@@ -175,6 +175,7 @@ public class EurekaCodecCompatibilityTest {
             @Override
             public void call(EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws IOException {
                 String encodedString = encodingCodec.encode(instanceInfo);
+
                 InstanceInfo decodedValue = decodingCodec.decode(encodedString, InstanceInfo.class);
                 assertThat(EurekaEntityComparators.equal(instanceInfo, decodedValue), is(true));
                 assertThat(EurekaEntityComparators.equal(instanceInfo, decodedValue, new EurekaEntityComparators.RawIdEqualFunc()), is(true));
@@ -183,6 +184,28 @@ public class EurekaCodecCompatibilityTest {
 
         verifyAllPairs(codingAction, InstanceInfo.class, availableJsonWrappers);
         verifyAllPairs(codingAction, InstanceInfo.class, availableXmlWrappers);
+    }
+
+    // https://github.com/Netflix/eureka/issues/1051
+    @Test
+    public void testInstanceInfoEncodeDecodeCompatibilityDueToOverriddenStatusRenaming() throws Exception {
+        final InstanceInfo instanceInfo = infoIterator.next();
+        new InstanceInfo.Builder(instanceInfo).setOverriddenStatus(InstanceInfo.InstanceStatus.OUT_OF_SERVICE);
+
+        Action2 codingAction = new Action2() {
+            @Override
+            public void call(EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws IOException {
+                String encodedString = encodingCodec.encode(instanceInfo);
+                // sed to older naming to test
+                encodedString = encodedString.replace("overriddenStatus", "overriddenstatus");
+
+                InstanceInfo decodedValue = decodingCodec.decode(encodedString, InstanceInfo.class);
+                assertThat(EurekaEntityComparators.equal(instanceInfo, decodedValue), is(true));
+                assertThat(EurekaEntityComparators.equal(instanceInfo, decodedValue, new EurekaEntityComparators.RawIdEqualFunc()), is(true));
+            }
+        };
+
+        verifyForPair(codingAction, InstanceInfo.class, new CodecWrappers.JacksonJson(), new CodecWrappers.LegacyJacksonJson());
     }
 
     @Test
