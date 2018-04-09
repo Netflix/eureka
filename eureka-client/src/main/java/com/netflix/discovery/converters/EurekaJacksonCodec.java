@@ -70,6 +70,11 @@ public class EurekaJacksonCodec {
 
     protected static final String ELEM_INSTANCE = "instance";
     protected static final String ELEM_OVERRIDDEN_STATUS = "overriddenStatus";
+    // the casing of this field was accidentally changed in commit
+    // https://github.com/Netflix/eureka/commit/939957124a8f055c7d343d67d0842ae06cf59530#diff-1e0de94c9faa44a518abe30d94744178L63
+    // we need to look for both during deser for compatibility
+    // see https://github.com/Netflix/eureka/issues/1051
+    protected static final String ELEM_OVERRIDDEN_STATUS_LEGACY = "overriddenstatus";
     protected static final String ELEM_HOST = "hostName";
     protected static final String ELEM_INSTANCE_ID = "instanceId";
     protected static final String ELEM_APP = "app";
@@ -412,6 +417,7 @@ public class EurekaJacksonCodec {
             ID_ATTR(ELEM_IDENTIFYING_ATTR),// nothing 
             STATUS(ELEM_STATUS),
             OVERRIDDEN_STATUS(ELEM_OVERRIDDEN_STATUS),
+            OVERRIDDEN_STATUS_LEGACY(ELEM_OVERRIDDEN_STATUS_LEGACY),
             PORT(ELEM_PORT),
             SECURE_PORT(ELEM_SECURE_PORT),
             COUNTRY_ID(ELEM_COUNTRY_ID),
@@ -515,6 +521,9 @@ public class EurekaJacksonCodec {
                         builder.setStatus(statusLookup.find(jp, InstanceStatus.UNKNOWN));
                         break;
                     case OVERRIDDEN_STATUS:
+                        builder.setOverriddenStatus(statusLookup.find(jp, InstanceStatus.UNKNOWN));
+                        break;
+                    case OVERRIDDEN_STATUS_LEGACY:
                         builder.setOverriddenStatus(statusLookup.find(jp, InstanceStatus.UNKNOWN));
                         break;
                     case PORT:
