@@ -204,7 +204,8 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
                     .withMaxTotalConnections(maxTotalConnections)
                     .withConnectionIdleTimeout((int) connectionIdleTimeout)
                     .withEncoderWrapper(encoderWrapper)
-                    .withDecoderWrapper(decoderWrapper);
+                    .withDecoderWrapper(decoderWrapper)
+                    .withProxy(proxyHost,String.valueOf(proxyPort),proxyUserName,proxyPassword);
 
             if (systemSSL) {
                 clientBuilder.withSystemSSLConfiguration();
