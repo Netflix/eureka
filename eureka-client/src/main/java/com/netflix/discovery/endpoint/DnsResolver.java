@@ -134,6 +134,14 @@ public final class DnsResolver {
         String txtRecord = null;
         if (attr != null) {
             txtRecord = attr.get().toString();
+
+            /**
+             * compatible splited txt record of "host1 host2 host3" but not "host1" "host2" "host3".
+             * some dns service provider support txt value only format "host1 host2 host3"
+             */
+            if (txtRecord.startsWith("\"") && txtRecord.endsWith("\"")) {
+                txtRecord = txtRecord.substring(1, txtRecord.length() - 1);
+            }
         }
 
         Set<String> cnamesSet = new TreeSet<String>();
