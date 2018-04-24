@@ -552,7 +552,8 @@ public interface EurekaClientConfig {
 
     /**
      * To avoid configuration API pollution when trying new/experimental or features or for the migration process,
-     * the corresponding configuration can be put into experimental configuration section.
+     * the corresponding configuration can be put into experimental configuration section. Config format is:
+     * eureka.experimental.freeFormConfigString
      *
      * @return a property of experimental feature
      */

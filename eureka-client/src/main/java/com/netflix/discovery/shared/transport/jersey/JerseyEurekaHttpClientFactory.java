@@ -95,7 +95,12 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
         this.jerseyClient = jerseyClient;
         this.apacheClient = jerseyClient != null ? jerseyClient.getClient() : apacheClient;
         this.additionalHeaders = additionalHeaders;
-        this.cleaner = new ApacheHttpClientConnectionCleaner(this.apacheClient, connectionIdleTimeout);
+        if (jerseyClient == null) {
+            // the jersey client contains a cleaner already so only create this cleaner if we don't have a jersey client
+            this.cleaner = new ApacheHttpClientConnectionCleaner(this.apacheClient, connectionIdleTimeout);
+        } else {
+            this.cleaner = null;
+        }
     }
 
     @Override
@@ -105,7 +110,10 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
 
     @Override
     public void shutdown() {
-        cleaner.shutdown();
+        if (cleaner != null) {
+            cleaner.shutdown();
+        }
+
         if (jerseyClient != null) {
             jerseyClient.destroyResources();
         } else {
@@ -126,7 +134,9 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
                                                        AbstractEurekaIdentity clientIdentity,
                                                        Optional<SSLContext> sslContext,
                                                        Optional<HostnameVerifier> hostnameVerifier) {
-        JerseyEurekaHttpClientFactoryBuilder clientBuilder = newBuilder()
+        boolean useExperimental = "true".equals(clientConfig.getExperimental("JerseyEurekaHttpClientFactory.useNewBuilder"));
+
+        JerseyEurekaHttpClientFactoryBuilder clientBuilder = (useExperimental ? experimentalBuilder() : newBuilder())
                 .withAdditionalFilters(additionalFilters)
                 .withMyInstanceInfo(myInstanceInfo)
                 .withUserAgent("Java-EurekaClient")
