@@ -121,7 +121,7 @@ public class EIPManager implements AwsBinder {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e1) {
-                    throw new RuntimeException(e);
+                    throw new RuntimeException(e1);
                 }
             }
         }
