@@ -27,22 +27,24 @@ if (JavaVersion.current().isJava8Compatible()) {
 allprojects {
     ext {
         githubProjectName = 'eureka'
-        awsVersion = '1.11.105'
+
+        awsVersion = '1.11.277'
         servletVersion = '2.5'
         jerseyVersion = '1.19.1'
         jettisonVersion = '1.3.7'
-        apacheHttpClientVersion = '4.4.1'
+        apacheHttpClientVersion = '4.5.3'
         guiceVersion = '4.1.0'
-        servoVersion = '0.10.1'
-        governatorVersion = '1.12.10'
-        archaiusVersion = '0.7.5'
-        blitzVersion = '1.34'
-        mockitoVersion = '1.10.19'
-        junit_version = '4.11'
-        mockserverVersion = '3.9.2'
-        jetty_version = '7.2.0.v20101020'
-        jacksonVersion = '2.8.7'
+        servoVersion = '0.12.21'
+        governatorVersion = '1.17.5'
+        archaiusVersion = '0.7.6'
+        jacksonVersion = '2.9.4'
         woodstoxVersion = '4.4.1'
+
+        // test deps
+        jetty_version = '7.2.0.v20101020'
+        junit_version = '4.11'
+        mockitoVersion = '1.10.19'
+        mockserverVersion = '3.9.2'
     }
 }
 
