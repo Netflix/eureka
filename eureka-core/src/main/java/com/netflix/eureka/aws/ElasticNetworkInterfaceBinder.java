@@ -96,7 +96,7 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
                 try {
                     Thread.sleep(IP_BIND_SLEEP_TIME_MS);
                 } catch (InterruptedException e1) {
-                    throw new RuntimeException(e);
+                    throw new RuntimeException(e1);
                 }
             }
         }
@@ -116,7 +116,7 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
                 try {
                     Thread.sleep(IP_BIND_SLEEP_TIME_MS);
                 } catch (InterruptedException e1) {
-                    throw new RuntimeException(e);
+                    throw new RuntimeException(e1);
                 }
             }
         }

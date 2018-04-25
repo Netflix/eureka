@@ -140,8 +140,7 @@ public class EndpointUtils {
         for (String zone : zones) {
             for (String zoneCname : zoneDnsNamesMap.get(zone)) {
                 List<String> ec2Urls = new ArrayList<String>(getEC2DiscoveryUrlsFromZone(zoneCname, DiscoveryUrlType.CNAME));
-                // Rearrange the list to distribute the load in case of
-                // multiple servers
+                // Rearrange the list to distribute the load in case of multiple servers
                 if (ec2Urls.size() > 1) {
                     randomizer.randomize(ec2Urls);
                 }
@@ -156,6 +155,9 @@ public class EndpointUtils {
                             sb.append("/");
                         }
                         sb.append(clientConfig.getEurekaServerURLContext());
+                        if (!clientConfig.getEurekaServerURLContext().endsWith("/")) {
+                            sb.append("/");
+                        }
                     } else {
                         sb.append("/");
                     }
