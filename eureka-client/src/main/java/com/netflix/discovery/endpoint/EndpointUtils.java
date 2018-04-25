@@ -146,10 +146,20 @@ public class EndpointUtils {
                     randomizer.randomize(ec2Urls);
                 }
                 for (String ec2Url : ec2Urls) {
-                    String serviceUrl = "http://" + ec2Url + ":"
-                            + clientConfig.getEurekaServerPort()
-                            + "/" + clientConfig.getEurekaServerURLContext()
-                            + "/";
+                    StringBuilder sb = new StringBuilder()
+                            .append("http://")
+                            .append(ec2Url)
+                            .append(":")
+                            .append(clientConfig.getEurekaServerPort());
+                    if (clientConfig.getEurekaServerURLContext() != null) {
+                        if (!clientConfig.getEurekaServerURLContext().startsWith("/")) {
+                            sb.append("/");
+                        }
+                        sb.append(clientConfig.getEurekaServerURLContext());
+                    } else {
+                        sb.append("/");
+                    }
+                    String serviceUrl = sb.toString();
                     logger.debug("The EC2 url is {}", serviceUrl);
                     serviceUrls.add(serviceUrl);
                 }
