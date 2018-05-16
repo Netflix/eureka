@@ -71,25 +71,4 @@ public class AsyncSequentialExecutor {
         return result;
     }
 
-    class Backoff {
-
-        private final int pauseTimeInMs;
-
-        /**
-         * Prepare to pause for one duration.
-         *
-         * @param pauseTimeInMs pause time in milliseconds
-         */
-        public Backoff(int pauseTimeInMs) {
-            this.pauseTimeInMs = pauseTimeInMs;
-        }
-
-        /**
-         * Backoff for one duration.
-         */
-        public void backoff() throws InterruptedException {
-            Thread.sleep(pauseTimeInMs);
-        }
-    }
-
 }

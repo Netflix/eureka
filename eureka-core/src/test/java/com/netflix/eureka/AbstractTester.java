@@ -106,8 +106,8 @@ public class AbstractTester {
         );
 
         serverContext.initialize();
-        int registryCount = registry.syncUp();
-        registry.openForTraffic(applicationInfoManager, registryCount);
+
+        registry.openForTraffic(applicationInfoManager, 1);
     }
 
     protected DataCenterInfo getDataCenterInfo() {
