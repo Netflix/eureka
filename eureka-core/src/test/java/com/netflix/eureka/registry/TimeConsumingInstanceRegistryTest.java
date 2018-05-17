@@ -28,27 +28,31 @@ public class TimeConsumingInstanceRegistryTest extends AbstractTester {
      * {@link EurekaServerConfig#getRenewalThresholdUpdateIntervalMs()}, and discovery client will try to get
      * applications count from peer or remote Eureka servers, the count number will be used to update threshold.</li>
      * </ul>
+     * </p>
      * Below shows the time line of a bunch of events in 120 seconds. Here the following setting are configured during registry startup:
-     * eureka.renewalThresholdUpdateIntervalMs=5000,
-     * eureka.evictionIntervalTimerInMs=10000
+     * <code>eureka.renewalThresholdUpdateIntervalMs=5000</code>,
+     * <code>eureka.evictionIntervalTimerInMs=10000</code>,
+     * <code>eureka.renewalPercentThreshold=0.85</code>
+     * </p>
      * <pre>
      * TimeInSecs 0          15         30    40   45         60        75   80      90         105       120
      *            |----------|----------|------|----|----------|---------|----|-------|----------|---------|
      * Events    (1)        (2)               (3)  (4)        (5)       (6)  (7)                (8)       (9)
      * </pre>
+     * </p>
      * <ul>
      * <li>(1). Remote server started on random port, local registry started as well.
      * 50 instances will be registered to local registry with application name of {@link #LOCAL_REGION_APP_NAME}
      * and lease duration set to 30 seconds.
      * At this time isLeaseExpirationEnabled=false, getNumOfRenewsPerMinThreshold=
-     * (50*2 + 2(which comes from remote registry))*85%=86</li>
+     * (50*2 + 1(initial value))*85%=86</li>
      * <li>(2). 45 out of the 50 instances send heartbeats to local registry.</li>
      * <li>(3). Check registry status, isLeaseExpirationEnabled=false, getNumOfRenewsInLastMin=0,
      * getNumOfRenewsPerMinThreshold=86, registeredInstancesNumberOfMYLOCALAPP=50</li>
      * <li>(4). 45 out of the 50 instances send heartbeats to local registry.</li>
      * <li>(5). Accumulate one minutes data, and from now on, isLeaseExpirationEnabled=true,
      * getNumOfRenewsInLastMin=90. Because lease expiration is enabled, and lease for 5 instance are expired,
-     * so evict 5 instances.</li>
+     * so when eviction thread is working, the 5 instances will be marked as deleted.</li>
      * <li>(6). 45 out of the 50 instances send heartbeats to local registry.</li>
      * <li>(7). Check registry status, isLeaseExpirationEnabled=true, getNumOfRenewsInLastMin=90,
      * getNumOfRenewsPerMinThreshold=86, registeredInstancesNumberOfMYLOCALAPP=45</li>
@@ -59,6 +63,7 @@ public class TimeConsumingInstanceRegistryTest extends AbstractTester {
      * <li>(9). Check registry status, isLeaseExpirationEnabled=false, getNumOfRenewsInLastMin=90,
      * getNumOfRenewsPerMinThreshold=256, registeredInstancesNumberOfMYLOCALAPP=45</li>
      * </ul>
+     * </p>
      * Note that there is a thread retrieving and printing out registry status for debugging purpose.
      */
     @Test
