@@ -606,6 +606,8 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                 // If in the same region as server, then consider it registerable
                 return true;
             }
+            // otherwise return false
+            return false;
         }
         return true; // Everything non-amazon is registrable.
     }
