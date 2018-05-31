@@ -137,7 +137,7 @@ public class InstanceInfo {
     private volatile DataCenterInfo dataCenterInfo;
     private volatile String hostName;
     private volatile InstanceStatus status = InstanceStatus.UP;
-    private volatile InstanceStatus overriddenstatus = InstanceStatus.UNKNOWN;
+    private volatile InstanceStatus overriddenStatus = InstanceStatus.UNKNOWN;
     @XStreamOmitField
     private volatile boolean isInstanceInfoDirty = false;
     private volatile LeaseInfo leaseInfo;
@@ -180,7 +180,7 @@ public class InstanceInfo {
             @JsonProperty("dataCenterInfo") DataCenterInfo dataCenterInfo,
             @JsonProperty("hostName") String hostName,
             @JsonProperty("status") InstanceStatus status,
-            @JsonProperty("overriddenstatus") InstanceStatus overriddenstatus,
+            @JsonProperty("overriddenstatus") InstanceStatus overriddenStatus,
             @JsonProperty("leaseInfo") LeaseInfo leaseInfo,
             @JsonProperty("isCoordinatingDiscoveryServer") Boolean isCoordinatingDiscoveryServer,
             @JsonProperty("metadata") HashMap<String, String> metadata,
@@ -207,7 +207,7 @@ public class InstanceInfo {
         this.dataCenterInfo = dataCenterInfo;
         this.hostName = hostName;
         this.status = status;
-        this.overriddenstatus = overriddenstatus;
+        this.overriddenStatus = overriddenStatus;
         this.leaseInfo = leaseInfo;
         this.isCoordinatingDiscoveryServer = isCoordinatingDiscoveryServer;
         this.lastUpdatedTimestamp = lastUpdatedTimestamp;
@@ -284,7 +284,7 @@ public class InstanceInfo {
         this.hostName = ii.hostName;
 
         this.status = ii.status;
-        this.overriddenstatus = ii.overriddenstatus;
+        this.overriddenStatus = ii.overriddenStatus;
 
         this.isInstanceInfoDirty = ii.isInstanceInfoDirty;
 
@@ -480,7 +480,7 @@ public class InstanceInfo {
          * @return @return the {@link InstanceInfo} builder.
          */
         public Builder setOverriddenStatus(InstanceStatus status) {
-            result.overriddenstatus = status;
+            result.overriddenStatus = status;
             return this;
         }
 
@@ -978,7 +978,7 @@ public class InstanceInfo {
      * status.
      */
     public InstanceStatus getOverriddenStatus() {
-        return overriddenstatus;
+        return overriddenStatus;
     }
 
     /**
@@ -1184,8 +1184,8 @@ public class InstanceInfo {
      * @param status overridden status for this instance.
      */
     public synchronized void setOverriddenStatus(InstanceStatus status) {
-        if (this.overriddenstatus != status) {
-            this.overriddenstatus = status;
+        if (this.overriddenStatus != status) {
+            this.overriddenStatus = status;
         }
     }
 
