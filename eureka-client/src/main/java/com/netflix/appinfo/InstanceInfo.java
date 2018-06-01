@@ -181,6 +181,7 @@ public class InstanceInfo {
             @JsonProperty("hostName") String hostName,
             @JsonProperty("status") InstanceStatus status,
             @JsonProperty("overriddenstatus") InstanceStatus overriddenStatus,
+            @JsonProperty("overriddenStatus") InstanceStatus overriddenStatusAlt,
             @JsonProperty("leaseInfo") LeaseInfo leaseInfo,
             @JsonProperty("isCoordinatingDiscoveryServer") Boolean isCoordinatingDiscoveryServer,
             @JsonProperty("metadata") HashMap<String, String> metadata,
@@ -207,7 +208,7 @@ public class InstanceInfo {
         this.dataCenterInfo = dataCenterInfo;
         this.hostName = hostName;
         this.status = status;
-        this.overriddenStatus = overriddenStatus;
+        this.overriddenStatus = overriddenStatus == null ? overriddenStatusAlt : overriddenStatus;
         this.leaseInfo = leaseInfo;
         this.isCoordinatingDiscoveryServer = isCoordinatingDiscoveryServer;
         this.lastUpdatedTimestamp = lastUpdatedTimestamp;
