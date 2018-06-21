@@ -161,7 +161,7 @@ public class DiscoveryClient implements EurekaClient {
     private final Provider<BackupRegistry> backupRegistryProvider;
     private final EurekaTransport eurekaTransport;
 
-    private volatile HealthCheckHandler healthCheckHandler;
+    private final AtomicReference<HealthCheckHandler> healthCheckHandlerRef = new AtomicReference<>();
     private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<>();
     private volatile InstanceInfo.InstanceStatus lastRemoteInstanceStatus = InstanceInfo.InstanceStatus.UNKNOWN;
     private final CopyOnWriteArraySet<EurekaEventListener> eventListeners = new CopyOnWriteArraySet<>();
@@ -633,7 +633,7 @@ public class DiscoveryClient implements EurekaClient {
             logger.error("Cannot register a listener for instance info since it is null!");
         }
         if (callback != null) {
-            healthCheckHandler = new HealthCheckCallbackToHandlerBridge(callback);
+            healthCheckHandlerRef.set(new HealthCheckCallbackToHandlerBridge(callback));
         }
     }
 
@@ -643,7 +643,7 @@ public class DiscoveryClient implements EurekaClient {
             logger.error("Cannot register a healthcheck handler when instance info is null!");
         }
         if (healthCheckHandler != null) {
-            this.healthCheckHandler = healthCheckHandler;
+            this.healthCheckHandlerRef.set(healthCheckHandler);
             // schedule an onDemand update of the instanceInfo when a new healthcheck handler is registered
             if (instanceInfoReplicator != null) {
                 instanceInfoReplicator.onDemandUpdate();
@@ -1414,6 +1414,7 @@ public class DiscoveryClient implements EurekaClient {
 
     @Override
     public HealthCheckHandler getHealthCheckHandler() {
+        HealthCheckHandler healthCheckHandler = this.healthCheckHandlerRef.get();
         if (healthCheckHandler == null) {
             if (null != healthCheckHandlerProvider) {
                 healthCheckHandler = healthCheckHandlerProvider.get();
@@ -1424,9 +1425,10 @@ public class DiscoveryClient implements EurekaClient {
             if (null == healthCheckHandler) {
                 healthCheckHandler = new HealthCheckCallbackToHandlerBridge(null);
             }
+            this.healthCheckHandlerRef.compareAndSet(null, healthCheckHandler);
         }
 
-        return healthCheckHandler;
+        return this.healthCheckHandlerRef.get();
     }
 
     /**
@@ -1491,9 +1493,9 @@ public class DiscoveryClient implements EurekaClient {
             }
         } catch (Throwable e) {
             logger.error("Cannot fetch registry from server", e);
-        }        
+        }
     }
-    
+
     /**
      * Fetch the registry information from back up registry if all eureka server
      * urls are unreachable.
