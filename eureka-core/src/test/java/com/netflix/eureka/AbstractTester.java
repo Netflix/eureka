@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.google.common.collect.Lists;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.DataCenterInfo;
@@ -25,6 +26,7 @@ import com.netflix.eureka.mock.MockRemoteEurekaServer;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl;
 import com.netflix.eureka.resources.DefaultServerCodecs;
 import com.netflix.eureka.resources.ServerCodecs;
+import com.netflix.eureka.test.async.executor.SingleEvent;
 import org.junit.After;
 import org.junit.Before;
 
@@ -66,6 +68,9 @@ public class AbstractTester {
         ConfigurationManager.getConfigInstance().clearProperty("eureka.remoteRegion." + REMOTE_REGION_NAME + ".appWhiteList");
         ConfigurationManager.getConfigInstance().setProperty("eureka.deltaRetentionTimerIntervalInMs", "600000");
         ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegion.registryFetchIntervalInSeconds", "5");
+        ConfigurationManager.getConfigInstance().setProperty("eureka.renewalThresholdUpdateIntervalMs", "5000");
+        ConfigurationManager.getConfigInstance().setProperty("eureka.evictionIntervalTimerInMs", "10000");
+
         populateRemoteRegistryAtStartup();
         mockRemoteEurekaServer = newMockRemoteServer();
         mockRemoteEurekaServer.start();
@@ -101,6 +106,8 @@ public class AbstractTester {
         );
 
         serverContext.initialize();
+
+        registry.openForTraffic(applicationInfoManager, 1);
     }
 
     protected DataCenterInfo getDataCenterInfo() {
@@ -174,6 +181,18 @@ public class AbstractTester {
         return createLocalInstanceWithStatus(hostname, InstanceInfo.InstanceStatus.OUT_OF_SERVICE);
     }
 
+    protected static InstanceInfo createLocalInstanceWithIdAndStatus(String hostname, String id, InstanceInfo.InstanceStatus status) {
+        InstanceInfo.Builder instanceBuilder = InstanceInfo.Builder.newBuilder();
+        instanceBuilder.setInstanceId(id);
+        instanceBuilder.setAppName(LOCAL_REGION_APP_NAME);
+        instanceBuilder.setHostName(hostname);
+        instanceBuilder.setIPAddr("10.10.101.1");
+        instanceBuilder.setDataCenterInfo(getAmazonInfo(null, hostname));
+        instanceBuilder.setLeaseInfo(LeaseInfo.Builder.newBuilder().build());
+        instanceBuilder.setStatus(status);
+        return instanceBuilder.build();
+    }
+
     private static InstanceInfo createLocalInstanceWithStatus(String hostname, InstanceInfo.InstanceStatus status) {
         InstanceInfo.Builder instanceBuilder = InstanceInfo.Builder.newBuilder();
         instanceBuilder.setInstanceId("foo");
@@ -215,11 +234,6 @@ public class AbstractTester {
         }
 
         @Override
-        public boolean isLeaseExpirationEnabled() {
-            return false;
-        }
-
-        @Override
         public InstanceInfo getNextServerFromEureka(String virtualHostname, boolean secure) {
             return null;
         }
@@ -233,6 +247,60 @@ public class AbstractTester {
 
     protected void registerInstanceLocally(InstanceInfo remoteInstance) {
         registry.register(remoteInstance, 10000000, false);
-        registeredApps.add(new Pair<String, String>(LOCAL_REGION_APP_NAME, LOCAL_REGION_APP_NAME));
+        registeredApps.add(new Pair<String, String>(LOCAL_REGION_APP_NAME, remoteInstance.getId()));
+    }
+
+    protected void registerInstanceLocallyWithLeaseDurationInSecs(InstanceInfo remoteInstance, int leaseDurationInSecs) {
+        registry.register(remoteInstance, leaseDurationInSecs, false);
+        registeredApps.add(new Pair<String, String>(LOCAL_REGION_APP_NAME, remoteInstance.getId()));
+    }
+
+
+    /**
+     * Send renewal request to Eureka server to renew lease for 45 instances.
+     *
+     * @return action.
+     */
+    protected SingleEvent.Action renewPartOfTheWholeInstancesAction() {
+        return new SingleEvent.Action() {
+            @Override
+            public void execute() {
+                for (int j = 0; j < 45; j++) {
+                    registry.renew(LOCAL_REGION_APP_NAME,
+                        LOCAL_REGION_INSTANCE_1_HOSTNAME + j, false);
+                }
+            }
+        };
+    }
+
+    /**
+     * Build one single event.
+     *
+     * @param intervalTimeInSecs the interval time from previous event.
+     * @param action             action to take.
+     * @return single event.
+     */
+    protected SingleEvent buildEvent(int intervalTimeInSecs, SingleEvent.Action action) {
+        return SingleEvent.Builder.newBuilder()
+            .withIntervalTimeInMs(intervalTimeInSecs * 1000)
+            .withAction(action).build();
+    }
+
+    /**
+     * Build multiple {@link SingleEvent}.
+     *
+     * @param intervalTimeInSecs the interval time between those events.
+     * @param eventCount         total event count.
+     * @param action             action to take for every event.
+     * @return list consisting of multiple single events.
+     */
+    protected List<SingleEvent> buildEvents(int intervalTimeInSecs, int eventCount, SingleEvent.Action action) {
+        List<SingleEvent> result = Lists.newArrayListWithCapacity(eventCount);
+        for (int i = 0; i < eventCount; i++) {
+            result.add(SingleEvent.Builder.newBuilder()
+                .withIntervalTimeInMs(intervalTimeInSecs * 1000)
+                .withAction(action).build());
+        }
+        return result;
     }
 }
