@@ -7,6 +7,14 @@ import com.netflix.config.ConfigurationManager;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.IntStream.range;
+
 /**
  * @author Nitesh Kant
  */
@@ -112,6 +120,63 @@ public class DiscoveryClientHealthTest extends AbstractDiscoveryClientTester {
         Assert.assertTrue("Healthcheck callback not invoked when status is UP.", myHealthCheckHandler.isInvoked());
         Assert.assertEquals("Instance info status not as expected post healthcheck.", InstanceInfo.InstanceStatus.DOWN,
                 clientImpl.getInstanceInfo().getStatus());
+    }
+
+    @Test
+    public void shouldRegisterHealthCheckHandlerInConcurrentEnvironment() throws Exception {
+        HealthCheckHandler myHealthCheckHandler = new MyHealthCheckHandler(InstanceInfo.InstanceStatus.UP);
+
+        int testsCount = 20;
+        int threadsCount = testsCount * 2;
+        CountDownLatch starterLatch = new CountDownLatch(threadsCount);
+        CountDownLatch finishLatch = new CountDownLatch(threadsCount);
+
+        List<DiscoveryClient> discoveryClients = range(0, testsCount)
+                .mapToObj(i -> (DiscoveryClient) getSetupDiscoveryClient())
+                .collect(toList());
+
+        Stream<Thread> registerCustomHandlerThreads = discoveryClients.stream().map(client ->
+                new SimultaneousStarter(starterLatch, finishLatch, () -> client.registerHealthCheck(myHealthCheckHandler)));
+        Stream<Thread> lazyInitOfDefaultHandlerThreads = discoveryClients.stream().map(client ->
+                new SimultaneousStarter(starterLatch, finishLatch, client::getHealthCheckHandler));
+        List<Thread> threads = Stream.concat(registerCustomHandlerThreads, lazyInitOfDefaultHandlerThreads)
+                .collect(toList());
+        Collections.shuffle(threads);
+        threads.forEach(Thread::start);
+
+       try {
+            finishLatch.await();
+            discoveryClients.forEach(client ->
+                    Assert.assertSame("Healthcheck handler should be custom.", myHealthCheckHandler, client.getHealthCheckHandler()));
+        } finally {
+            //cleanup resources
+            discoveryClients.forEach(DiscoveryClient::shutdown);
+        }
+    }
+
+    public static class SimultaneousStarter extends Thread {
+
+        private final CountDownLatch starterLatch;
+        private final CountDownLatch finishLatch;
+        private final Runnable runnable;
+
+        public SimultaneousStarter(CountDownLatch starterLatch, CountDownLatch finishLatch, Runnable runnable) {
+            this.starterLatch = starterLatch;
+            this.finishLatch = finishLatch;
+            this.runnable = runnable;
+        }
+
+        @Override
+        public void run() {
+            starterLatch.countDown();
+            try {
+                starterLatch.await();
+                runnable.run();
+                finishLatch.countDown();
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Something went wrong...");
+            }
+        }
     }
 
     private static class MyHealthCheckCallback implements HealthCheckCallback {
