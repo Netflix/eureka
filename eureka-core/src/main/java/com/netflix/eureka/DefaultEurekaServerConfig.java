@@ -217,6 +217,19 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
                 (15 * 60 * 1000)).get();
     }
 
+    /*
+     * (non-Javadoc)
+     *
+     * @see
+     * com.netflix.eureka.EurekaServerConfig#getExpectedClientRenewalIntervalSeconds()
+     */
+    @Override
+    public int getExpectedClientRenewalIntervalSeconds() {
+        return configInstance.getIntProperty(
+                namespace + "expectedClientRenewalIntervalSeconds",
+                30).get();
+    }
+
     @Override
     public double getRenewalPercentThreshold() {
         return configInstance.getDoubleProperty(

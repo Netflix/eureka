@@ -101,7 +101,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     protected String[] allKnownRemoteRegions = EMPTY_STR_ARRAY;
     protected volatile int numberOfRenewsPerMinThreshold;
-    protected volatile int expectedNumberOfRenewsPerMin;
+    protected volatile int expectedNumberOfClientsSendingRenews;
 
     protected final EurekaServerConfig serverConfig;
     protected final EurekaClientConfig clientConfig;
@@ -218,13 +218,13 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             } else {
                 // The lease does not exist and hence it is a new registration
                 synchronized (lock) {
-                    if (this.expectedNumberOfRenewsPerMin > 0) {
-                        // Since the client wants to cancel it, reduce the threshold
-                        // (1
-                        // for 30 seconds, 2 for a minute)
-                        this.expectedNumberOfRenewsPerMin = this.expectedNumberOfRenewsPerMin + 2;
+                    if (this.expectedNumberOfClientsSendingRenews > 0) {
+                        // Since the client wants to register it, increase the number of clients sending renews
+                        this.expectedNumberOfClientsSendingRenews = this.expectedNumberOfClientsSendingRenews + 1;
                         this.numberOfRenewsPerMinThreshold =
-                                (int) (this.expectedNumberOfRenewsPerMin * serverConfig.getRenewalPercentThreshold());
+                                (int) (this.expectedNumberOfClientsSendingRenews
+                                        * (60.0 / serverConfig.getExpectedClientRenewalIntervalSeconds())
+                                        * serverConfig.getRenewalPercentThreshold());
                     }
                 }
                 logger.debug("No previous lease information found; it is new registration");

@@ -135,6 +135,16 @@ public interface EurekaServerConfig {
     int getRenewalThresholdUpdateIntervalMs();
 
     /**
+     * The interval with which clients are expected to send their heartbeats. Defaults to 30
+     * seconds. If clients send heartbeats with different frequency, say, every 15 seconds, then
+     * this parameter should be tuned accordingly, otherwise, self-preservation won't work as
+     * expected.
+     *
+     * @return time in seconds indicating the expected interval
+     */
+    int getExpectedClientRenewalIntervalSeconds();
+
+    /**
      * The interval with which the information about the changes in peer eureka
      * nodes is updated. The user can use the DNS mechanism or dynamic
      * configuration provided by <a href="https://github.com/Netflix/archaius">Archaius</a> to
