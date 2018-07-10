@@ -808,7 +808,7 @@ public class DiscoveryClient implements EurekaClient {
             EurekaHttpResponse<Applications> response = clientConfig.getRegistryRefreshSingleVipAddress() == null
                     ? eurekaTransport.queryClient.getApplications()
                     : eurekaTransport.queryClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress());
-            if (response.getStatusCode() == 200) {
+            if (response.getStatusCode() == Status.OK.getStatusCode()) {
                 logger.debug(PREFIX + "{} -  refresh status: {}", appPathIdentifier, response.getStatusCode());
                 return response.getEntity();
             }
@@ -834,7 +834,7 @@ public class DiscoveryClient implements EurekaClient {
         if (logger.isInfoEnabled()) {
             logger.info(PREFIX + "{} - registration status: {}", appPathIdentifier, httpResponse.getStatusCode());
         }
-        return httpResponse.getStatusCode() == 204;
+        return httpResponse.getStatusCode() == Status.NO_CONTENT.getStatusCode();
     }
 
     /**
@@ -845,7 +845,7 @@ public class DiscoveryClient implements EurekaClient {
         try {
             httpResponse = eurekaTransport.registrationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
             logger.debug(PREFIX + "{} - Heartbeat status: {}", appPathIdentifier, httpResponse.getStatusCode());
-            if (httpResponse.getStatusCode() == 404) {
+            if (httpResponse.getStatusCode() == Status.NOT_FOUND.getStatusCode()) {
                 REREGISTER_COUNTER.increment();
                 logger.info(PREFIX + "{} - Re-registering apps/{}", appPathIdentifier, instanceInfo.getAppName());
                 long timestamp = instanceInfo.setIsDirtyWithTime();
@@ -855,7 +855,7 @@ public class DiscoveryClient implements EurekaClient {
                 }
                 return success;
             }
-            return httpResponse.getStatusCode() == 200;
+            return httpResponse.getStatusCode() == Status.OK.getStatusCode();
         } catch (Throwable e) {
             logger.error(PREFIX + "{} - was unable to send heartbeat!", appPathIdentifier, e);
             return false;
