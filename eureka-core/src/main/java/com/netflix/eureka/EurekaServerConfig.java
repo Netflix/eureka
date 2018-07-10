@@ -670,4 +670,11 @@ public interface EurekaServerConfig {
      * @return a property of experimental feature
      */
     String getExperimental(String name);
+
+    /**
+     * Get the capacity of responseCache, default value is 1000.
+     *
+     * @return the capacity of responseCache.
+     */
+    int getInitialCapacityOfResponseCache();
 }

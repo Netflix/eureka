@@ -674,4 +674,9 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
         return configInstance.getIntProperty(
                 namespace + "minAvailableInstancesForPeerReplication", -1).get();
     }
+
+    @Override
+    public int getInitialCapacityOfResponseCache() {
+        return configInstance.getIntProperty(namespace + "initialCapacityOfResponseCache", 1000).get();
+    }
 }
