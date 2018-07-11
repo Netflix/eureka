@@ -404,4 +404,14 @@ public class Applications {
             }
         }
     }
+
+    /**
+     * Remove the <em>application</em> from the list.
+     *
+     * @param app the <em>application</em>
+     */
+    public void removeApplication(Application app) {
+        this.appNameApplicationMap.remove(app.getName().toUpperCase(Locale.ROOT));
+        this.applications.remove(app);
+    }
 }
