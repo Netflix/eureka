@@ -225,9 +225,10 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
      */
     @Override
     public int getExpectedClientRenewalIntervalSeconds() {
-        return configInstance.getIntProperty(
+        final int configured = configInstance.getIntProperty(
                 namespace + "expectedClientRenewalIntervalSeconds",
                 30).get();
+        return configured > 0 ? configured : 30;
     }
 
     @Override
