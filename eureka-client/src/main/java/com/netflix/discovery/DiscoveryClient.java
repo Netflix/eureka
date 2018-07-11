@@ -1222,8 +1222,8 @@ public class DiscoveryClient implements EurekaClient {
                         logger.debug("Deleted instance {} to the existing apps ", instance.getId());
                         existingApp.removeInstance(instance);
                         /*
-                         *We find all instance list from application(Instance status are not only the status is UP but also other status)
-                         *if instance list is empty, we remove the application.
+                         * We find all instance list from application(The status of instance status is not only the status is UP but also other status)
+                         * if instance list is empty, we remove the application.
                          */
                         if (existingApp.getInstancesAsIsFromEureka().isEmpty()) {
                             applications.removeApplication(existingApp);
