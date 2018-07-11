@@ -221,10 +221,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     if (this.expectedNumberOfClientsSendingRenews > 0) {
                         // Since the client wants to register it, increase the number of clients sending renews
                         this.expectedNumberOfClientsSendingRenews = this.expectedNumberOfClientsSendingRenews + 1;
-                        this.numberOfRenewsPerMinThreshold =
-                                (int) (this.expectedNumberOfClientsSendingRenews
-                                        * (60.0 / serverConfig.getExpectedClientRenewalIntervalSeconds())
-                                        * serverConfig.getRenewalPercentThreshold());
+                        updateRenewsPerMinThreshold();
                     }
                 }
                 logger.debug("No previous lease information found; it is new registration");
@@ -1190,6 +1187,12 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     private void invalidateCache(String appName, @Nullable String vipAddress, @Nullable String secureVipAddress) {
         // invalidate cache
         responseCache.invalidate(appName, vipAddress, secureVipAddress);
+    }
+
+    protected void updateRenewsPerMinThreshold() {
+        this.numberOfRenewsPerMinThreshold = (int) (this.expectedNumberOfClientsSendingRenews
+                * (60.0 / serverConfig.getExpectedClientRenewalIntervalSeconds())
+                * serverConfig.getRenewalPercentThreshold());
     }
 
     private static final class RecentlyChangedItem {

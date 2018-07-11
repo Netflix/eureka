@@ -237,10 +237,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     public void openForTraffic(ApplicationInfoManager applicationInfoManager, int count) {
         // Renewals happen every 30 seconds and for a minute it should be a factor of 2.
         this.expectedNumberOfClientsSendingRenews = count;
-        this.numberOfRenewsPerMinThreshold =
-                (int) (this.expectedNumberOfClientsSendingRenews
-                        * (60.0 / serverConfig.getExpectedClientRenewalIntervalSeconds())
-                        * serverConfig.getRenewalPercentThreshold());
+        updateRenewsPerMinThreshold();
         logger.info("Got {} instances from neighboring DS node", count);
         logger.info("Renew threshold is: {}", numberOfRenewsPerMinThreshold);
         this.startupTime = System.currentTimeMillis();
@@ -383,10 +380,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                 if (this.expectedNumberOfClientsSendingRenews > 0) {
                     // Since the client wants to cancel it, reduce the number of clients to send renews
                     this.expectedNumberOfClientsSendingRenews = this.expectedNumberOfClientsSendingRenews - 1;
-                    this.numberOfRenewsPerMinThreshold =
-                            (int) (this.expectedNumberOfClientsSendingRenews
-                                    * (60.0 / serverConfig.getExpectedClientRenewalIntervalSeconds())
-                                    * serverConfig.getRenewalPercentThreshold());
+                    updateRenewsPerMinThreshold();
                 }
             }
             return true;
@@ -539,9 +533,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                 if ((count) > (serverConfig.getRenewalPercentThreshold() * expectedNumberOfClientsSendingRenews)
                         || (!this.isSelfPreservationModeEnabled())) {
                     this.expectedNumberOfClientsSendingRenews = count;
-                    this.numberOfRenewsPerMinThreshold = (int) ((count
-                            * (60.0 / serverConfig.getExpectedClientRenewalIntervalSeconds()))
-                            * serverConfig.getRenewalPercentThreshold());
+                    updateRenewsPerMinThreshold();
                 }
             }
             logger.info("Current renewal threshold is : {}", numberOfRenewsPerMinThreshold);
