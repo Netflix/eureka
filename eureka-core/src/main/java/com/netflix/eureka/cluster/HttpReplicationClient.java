@@ -15,4 +15,5 @@ public interface HttpReplicationClient extends EurekaHttpClient {
 
     EurekaHttpResponse<ReplicationListResponse> submitBatchUpdates(ReplicationList replicationList);
 
+    EurekaHttpResponse<String> fetchPeerId();
 }

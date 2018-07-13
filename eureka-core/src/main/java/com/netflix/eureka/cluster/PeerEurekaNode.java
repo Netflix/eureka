@@ -70,6 +70,7 @@ public class PeerEurekaNode {
     private static final Logger logger = LoggerFactory.getLogger(PeerEurekaNode.class);
 
     public static final String BATCH_URL_PATH = "peerreplication/batch/";
+    public static final String PEER_IDENTIFIER_PATH = "peerIdentifier/";
 
     public static final String HEADER_REPLICATION = "x-netflix-discovery-replication";
 
@@ -380,6 +381,15 @@ public class PeerEurekaNode {
             batcherName = serviceUrl;
         }
         return "target_" + batcherName;
+    }
+
+    public String fetchPeerId() {
+        try {
+            return replicationClient.fetchPeerId().getEntity();
+        } catch (Throwable t) {
+            logger.warn("Exception when trying to fetch peer node id: ", t);
+            return null;
+        }
     }
 
     private static String taskId(String requestType, String appName, String id) {
