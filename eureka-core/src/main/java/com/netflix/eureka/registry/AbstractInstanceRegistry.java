@@ -101,7 +101,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     protected String[] allKnownRemoteRegions = EMPTY_STR_ARRAY;
     protected volatile int numberOfRenewsPerMinThreshold;
-    protected volatile int expectedNumberOfRenewsPerMin;
+    protected volatile int expectedNumberOfClientsSendingRenews;
 
     protected final EurekaServerConfig serverConfig;
     protected final EurekaClientConfig clientConfig;
@@ -218,13 +218,10 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             } else {
                 // The lease does not exist and hence it is a new registration
                 synchronized (lock) {
-                    if (this.expectedNumberOfRenewsPerMin > 0) {
-                        // Since the client wants to cancel it, reduce the threshold
-                        // (1
-                        // for 30 seconds, 2 for a minute)
-                        this.expectedNumberOfRenewsPerMin = this.expectedNumberOfRenewsPerMin + 2;
-                        this.numberOfRenewsPerMinThreshold =
-                                (int) (this.expectedNumberOfRenewsPerMin * serverConfig.getRenewalPercentThreshold());
+                    if (this.expectedNumberOfClientsSendingRenews > 0) {
+                        // Since the client wants to register it, increase the number of clients sending renews
+                        this.expectedNumberOfClientsSendingRenews = this.expectedNumberOfClientsSendingRenews + 1;
+                        updateRenewsPerMinThreshold();
                     }
                 }
                 logger.debug("No previous lease information found; it is new registration");
@@ -1190,6 +1187,12 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     private void invalidateCache(String appName, @Nullable String vipAddress, @Nullable String secureVipAddress) {
         // invalidate cache
         responseCache.invalidate(appName, vipAddress, secureVipAddress);
+    }
+
+    protected void updateRenewsPerMinThreshold() {
+        this.numberOfRenewsPerMinThreshold = (int) (this.expectedNumberOfClientsSendingRenews
+                * (60.0 / serverConfig.getExpectedClientRenewalIntervalSeconds())
+                * serverConfig.getRenewalPercentThreshold());
     }
 
     private static final class RecentlyChangedItem {
