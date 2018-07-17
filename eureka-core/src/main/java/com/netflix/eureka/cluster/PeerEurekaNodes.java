@@ -9,8 +9,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -18,11 +21,11 @@ import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.endpoint.EndpointUtils;
-import com.netflix.discovery.shared.Application;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.resources.ServerCodecs;
 import com.netflix.eureka.transport.JerseyReplicationClient;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +49,11 @@ public class PeerEurekaNodes {
     private volatile Set<String> peerEurekaNodeUrls = Collections.emptySet();
 
     private ScheduledExecutorService taskExecutor;
+
+    public static final String thisNodeId = UUID.randomUUID().toString();
+    private String thisNodeUrl;
+    private Set<String> otherNodesUrls = new HashSet<>();
+    private final Semaphore peerIdSemaphore = new Semaphore(1);
 
     @Inject
     public PeerEurekaNodes(
@@ -233,9 +241,56 @@ public class PeerEurekaNodes {
      *         replicate, false otherwise.
      */
     public boolean isThisMyUrl(String url) {
-        return isInstanceURL(url, applicationInfoManager.getInfo());
+        return isInstanceURL(url, applicationInfoManager.getInfo()) || isMyUrlEqualTo(url);
     }
-    
+
+    /**
+     * Checks if peer node is current host. In addition to usual checks, if they
+     * return false, fetches unique identifier from passed node, and if that UUID
+     * is equal to generated on this node, concludes that node is in fact current
+     * host and remembers the URL, so that future checks against same URL will
+     * return true.
+     *
+     * @param node peer replica node to check
+     * @return true, if the node represents the current node which is trying to
+     *         replicate, false otherwise.
+     */
+    public boolean isThisMe(PeerEurekaNode node) {
+        final String serviceUrl = node.getServiceUrl();
+        if (isThisMyUrl(serviceUrl)) {
+            return true;
+        }
+        if (otherNodesUrls.contains(serviceUrl)) {
+            return false;
+        }
+        if (thisNodeUrl == null) {
+            // sometimes (say, when many nodes are started at same time, and one of them is already running)
+            // it is possible that this server will try to send many replications to the same Eureka node.
+            // To not slow down replication greatly, we add this semaphore, so that only one one replication
+            // at a time is slowed down by long http call ending with timeout
+            if (peerIdSemaphore.tryAcquire()) {
+                logger.debug("Own url is not known yet; trying");
+                String peerId = node.fetchPeerId();
+                if (peerId == null) {
+                    logger.warn("Could not fetch peer id from url {}", serviceUrl);
+                } else if (thisNodeId.equals(peerId)) {
+                    logger.info("Found that url {} is url of this Eureka instance", serviceUrl);
+                    thisNodeUrl = serviceUrl;
+                    otherNodesUrls.clear();
+                } else {
+                    logger.info("Marking url {} as \"not mine\"");
+                    otherNodesUrls.add(serviceUrl);
+                }
+                peerIdSemaphore.release();
+            }
+        }
+        return isMyUrlEqualTo(serviceUrl);
+    }
+
+    private boolean isMyUrlEqualTo(String serviceUrl) {
+        return StringUtils.equals(serviceUrl, thisNodeUrl);
+    }
+
     /**
      * Checks if the given service url matches the supplied instance
      *

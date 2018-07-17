@@ -127,6 +127,26 @@ public class JerseyReplicationClient extends AbstractJerseyEurekaHttpClient impl
     }
 
     @Override
+    public EurekaHttpResponse<String> fetchPeerId() {
+        ClientResponse response = null;
+        try {
+            response = jerseyApacheClient.resource(serviceUrl)
+                    .path(PeerEurekaNode.PEER_IDENTIFIER_PATH)
+                    .accept(MediaType.TEXT_PLAIN)
+                    .get(ClientResponse.class);
+            if (!isSuccess(response.getStatus())) {
+                return anEurekaHttpResponse(response.getStatus(), String.class).build();
+            }
+            String peerId = response.getEntity(String.class);
+            return anEurekaHttpResponse(response.getStatus(), peerId).type(MediaType.TEXT_PLAIN_TYPE).build();
+        } finally {
+            if (response != null) {
+                response.close();
+            }
+        }
+    }
+
+    @Override
     public void shutdown() {
         super.shutdown();
         jerseyClient.destroyResources();

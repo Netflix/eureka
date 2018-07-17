@@ -19,6 +19,7 @@ import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
+import org.apache.commons.lang3.NotImplementedException;
 
 import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEurekaHttpResponse;
 
@@ -114,37 +115,37 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
 
     @Override
     public EurekaHttpResponse<Applications> getApplications(String... regions) {
-        throw new IllegalStateException("method not supported");
+        throw new NotImplementedException("method not supported");
     }
 
     @Override
     public EurekaHttpResponse<Applications> getDelta(String... regions) {
-        throw new IllegalStateException("method not supported");
+        throw new NotImplementedException("method not supported");
     }
 
     @Override
     public EurekaHttpResponse<Applications> getVip(String vipAddress, String... regions) {
-        throw new IllegalStateException("method not supported");
+        throw new NotImplementedException("method not supported");
     }
 
     @Override
     public EurekaHttpResponse<Applications> getSecureVip(String secureVipAddress, String... regions) {
-        throw new IllegalStateException("method not supported");
+        throw new NotImplementedException("method not supported");
     }
 
     @Override
     public EurekaHttpResponse<Application> getApplication(String appName) {
-        throw new IllegalStateException("method not supported");
+        throw new NotImplementedException("method not supported");
     }
 
     @Override
     public EurekaHttpResponse<InstanceInfo> getInstance(String id) {
-        throw new IllegalStateException("method not supported");
+        throw new NotImplementedException("method not supported");
     }
 
     @Override
     public EurekaHttpResponse<InstanceInfo> getInstance(String appName, String id) {
-        throw new IllegalStateException("method not supported");
+        throw new NotImplementedException("method not supported");
     }
 
     @Override
@@ -177,6 +178,11 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
 
         int statusCode = networkStatusCodes[callCounter.getAndIncrement()];
         return anEurekaHttpResponse(statusCode, replicationListResponse).type(MediaType.APPLICATION_JSON_TYPE).build();
+    }
+
+    @Override
+    public EurekaHttpResponse<String> fetchPeerId() {
+        throw new NotImplementedException("method is not supported");
     }
 
     @Override
