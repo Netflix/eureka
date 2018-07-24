@@ -16,8 +16,6 @@
 
 package com.netflix.eureka;
 
-import javax.annotation.Nullable;
-import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,6 +24,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+import javax.inject.Singleton;
+
 import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicBooleanProperty;
 import com.netflix.config.DynamicIntProperty;
@@ -33,6 +34,7 @@ import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
 import com.netflix.config.DynamicStringSetProperty;
 import com.netflix.eureka.aws.AwsBindingStrategy;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -310,6 +312,11 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     public long getEvictionIntervalTimerInMs() {
         return configInstance.getLongProperty(
                 namespace + "evictionIntervalTimerInMs", (60 * 1000)).get();
+    }
+
+    @Override
+    public boolean shouldUseAwsAsgApi() {
+        return configInstance.getBooleanProperty(namespace + "shouldUseAwsAsgApi", true).get();
     }
 
     @Override

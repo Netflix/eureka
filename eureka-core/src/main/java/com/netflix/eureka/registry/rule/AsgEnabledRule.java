@@ -2,8 +2,9 @@ package com.netflix.eureka.registry.rule;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
-import com.netflix.eureka.aws.AwsAsgUtil;
+import com.netflix.eureka.aws.AsgClient;
 import com.netflix.eureka.lease.Lease;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,17 +17,17 @@ import org.slf4j.LoggerFactory;
 public class AsgEnabledRule implements InstanceStatusOverrideRule {
     private static final Logger logger = LoggerFactory.getLogger(AsgEnabledRule.class);
 
-    private final AwsAsgUtil awsAsgUtil;
+    private final AsgClient asgClient;
 
-    public AsgEnabledRule(AwsAsgUtil awsAsgUtil) {
-        this.awsAsgUtil = awsAsgUtil;
+    public AsgEnabledRule(AsgClient asgClient) {
+        this.asgClient = asgClient;
     }
 
     @Override
     public StatusOverrideResult apply(InstanceInfo instanceInfo, Lease<InstanceInfo> existingLease, boolean isReplication) {
         // If the ASGName is present- check for its status
         if (instanceInfo.getASGName() != null) {
-            boolean isASGDisabled = !awsAsgUtil.isASGEnabled(instanceInfo);
+            boolean isASGDisabled = !asgClient.isASGEnabled(instanceInfo);
             logger.debug("The ASG name is specified {} and the value is {}", instanceInfo.getASGName(), isASGDisabled);
             if (isASGDisabled) {
                 return StatusOverrideResult.matchingStatus(InstanceStatus.OUT_OF_SERVICE);

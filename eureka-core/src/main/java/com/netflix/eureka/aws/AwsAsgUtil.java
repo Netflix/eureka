@@ -31,22 +31,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
-import com.amazonaws.services.securitytoken.model.AssumeRoleResult;
-import com.amazonaws.services.securitytoken.model.Credentials;
-import com.google.common.base.Strings;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.netflix.appinfo.AmazonInfo;
-import com.netflix.appinfo.AmazonInfo.MetaDataKey;
-import com.netflix.appinfo.ApplicationInfoManager;
-import com.netflix.discovery.EurekaClientConfig;
-import com.netflix.eureka.registry.InstanceRegistry;
-import com.netflix.appinfo.DataCenterInfo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -58,20 +44,34 @@ import com.amazonaws.services.autoscaling.model.AutoScalingGroup;
 import com.amazonaws.services.autoscaling.model.DescribeAutoScalingGroupsRequest;
 import com.amazonaws.services.autoscaling.model.DescribeAutoScalingGroupsResult;
 import com.amazonaws.services.autoscaling.model.SuspendedProcess;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
 import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
+import com.amazonaws.services.securitytoken.model.AssumeRoleResult;
+import com.amazonaws.services.securitytoken.model.Credentials;
+import com.google.common.base.Strings;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.netflix.appinfo.AmazonInfo;
+import com.netflix.appinfo.AmazonInfo.MetaDataKey;
+import com.netflix.appinfo.ApplicationInfoManager;
+import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
+import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.EurekaServerConfig;
+import com.netflix.eureka.registry.InstanceRegistry;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A utility class for querying and updating information about amazon
@@ -81,7 +81,7 @@ import javax.inject.Singleton;
  *
  */
 @Singleton
-public class AwsAsgUtil {
+public class AwsAsgUtil implements AsgClient {
     private static final Logger logger = LoggerFactory.getLogger(AwsAsgUtil.class);
 
     private static final String PROP_ADD_TO_LOAD_BALANCER = "AddToLoadBalancer";
@@ -371,6 +371,11 @@ public class AwsAsgUtil {
             @Override
             public void run() {
                 try {
+                    if (!serverConfig.shouldUseAwsAsgApi()) {
+                        // Disabled via the config, no-op.
+                        return;
+                    }
+
                     // First get the active ASG names
                     Set<CacheKey> cacheKeys = getCacheKeys();
                     if (logger.isDebugEnabled()) {
