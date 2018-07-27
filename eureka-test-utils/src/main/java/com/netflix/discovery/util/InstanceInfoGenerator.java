@@ -85,7 +85,7 @@ public class InstanceInfoGenerator {
                 if (!hasNext()) {
                     throw new NoSuchElementException("no more InstanceInfo elements");
                 }
-                InstanceInfo toReturn = generateInstanceInfo(currentApp, appInstanceIds[currentApp], useInstanceId);
+                InstanceInfo toReturn = generateInstanceInfo(currentApp, appInstanceIds[currentApp], useInstanceId, ActionType.ADDED);
                 appInstanceIds[currentApp]++;
                 currentApp = (currentApp + 1) % appNames.length;
                 returned++;
@@ -156,8 +156,19 @@ public class InstanceInfoGenerator {
         return new InstanceInfoGeneratorBuilder(instanceCount, appNames);
     }
 
+    public Applications takeDeltaForDelete(boolean useInstanceId, int instanceCount) {
+        List<InstanceInfo> instanceInfoList = new ArrayList<>();
+        for (int i = 0; i < instanceCount; i ++) {
+            instanceInfoList.add(this.generateInstanceInfo(i, i, useInstanceId, ActionType.DELETED));
+        }
+        Applications delete = EurekaEntityFunctions.toApplications(toApplicationMap(instanceInfoList));
+        allApplications = mergeApplications(allApplications, delete);
+        delete.setAppsHashCode(allApplications.getAppsHashCode());
+        return delete;
+    }
+
     // useInstanceId to false to generate older InstanceInfo types that does not use instanceId field for instance id.
-    private InstanceInfo generateInstanceInfo(int appIndex, int appInstanceId, boolean useInstanceId) {
+    private InstanceInfo generateInstanceInfo(int appIndex, int appInstanceId, boolean useInstanceId, ActionType actionType) {
         String appName = appNames[appIndex];
         String hostName = "instance" + appInstanceId + '.' + appName + ".com";
         String privateHostname = "ip-10.0" + appIndex + "." + appInstanceId + ".compute.internal";
@@ -199,7 +210,7 @@ public class InstanceInfoGenerator {
                 : InstanceInfo.Builder.newBuilder();
 
         builder
-                .setActionType(ActionType.ADDED)
+                .setActionType(actionType)
                 .setAppGroupName(appName + "Group")
                 .setAppName(appName)
                 .setHostName(hostName)
