@@ -583,6 +583,16 @@ public interface EurekaServerConfig {
     boolean shouldBatchReplication();
 
     /**
+     * Allows to configure URL which Eureka should treat as its own during replication. In some cases Eureka URLs don't
+     * match IP address or hostname (for example, when nodes are behind load balancers). Setting this parameter on each
+     * node to URLs of associated load balancers helps to avoid replication to the same node where event originally came
+     * to. Important: you need to configure the whole URL including scheme and path, like
+     * <code>http://eureka-node1.mydomain.com:8010/eureka/v2/</code>
+     * @return URL Eureka will treat as its own
+     */
+    String getMyUrl();
+
+    /**
      * Indicates whether the eureka server should log/metric clientAuthHeaders
      * @return {@code true} if the clientAuthHeaders should be logged and/or emitted as metrics
      */

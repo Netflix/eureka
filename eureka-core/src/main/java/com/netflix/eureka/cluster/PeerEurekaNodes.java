@@ -233,6 +233,10 @@ public class PeerEurekaNodes {
      *         replicate, false otherwise.
      */
     public boolean isThisMyUrl(String url) {
+        final String myUrlConfigured = serverConfig.getMyUrl();
+        if (myUrlConfigured != null) {
+            return myUrlConfigured.equals(url);
+        }
         return isInstanceURL(url, applicationInfoManager.getInfo());
     }
     

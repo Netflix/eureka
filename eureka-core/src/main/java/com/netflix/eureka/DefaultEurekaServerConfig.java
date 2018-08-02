@@ -88,6 +88,8 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     private final DynamicStringProperty listAutoScalingGroupsRoleName =
             configInstance.getStringProperty(namespace + "listAutoScalingGroupsRoleName", "ListAutoScalingGroups");
 
+    private final DynamicStringProperty myUrl = configInstance.getStringProperty(namespace + "myUrl", null);
+
     public DefaultEurekaServerConfig() {
         init();
     }
@@ -598,6 +600,11 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     @Override
     public boolean shouldBatchReplication() {
         return configInstance.getBooleanProperty(namespace + "shouldBatchReplication", false).get();
+    }
+
+    @Override
+    public String getMyUrl() {
+        return myUrl.get();
     }
 
     @Override
