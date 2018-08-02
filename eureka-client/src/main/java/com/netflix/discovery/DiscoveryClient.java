@@ -1218,11 +1218,17 @@ public class DiscoveryClient implements EurekaClient {
 
                 } else if (ActionType.DELETED.equals(instance.getActionType())) {
                     Application existingApp = applications.getRegisteredApplications(instance.getAppName());
-                    if (existingApp == null) {
-                        applications.addApplication(app);
+                    if (existingApp != null) {
+                        logger.debug("Deleted instance {} to the existing apps ", instance.getId());
+                        existingApp.removeInstance(instance);
+                        /*
+                         * We find all instance list from application(The status of instance status is not only the status is UP but also other status)
+                         * if instance list is empty, we remove the application.
+                         */
+                        if (existingApp.getInstancesAsIsFromEureka().isEmpty()) {
+                            applications.removeApplication(existingApp);
+                        }
                     }
-                    logger.debug("Deleted instance {} to the existing apps ", instance.getId());
-                    applications.getRegisteredApplications(instance.getAppName()).removeInstance(instance);
                 }
             }
         }

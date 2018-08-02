@@ -2,6 +2,7 @@ package com.netflix.discovery;
 
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -30,6 +31,7 @@ import static com.netflix.discovery.util.EurekaEntityFunctions.toApplications;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -275,6 +277,41 @@ public class DiscoveryClientRegistryTest {
 
         assertThat(discoveryClientResource.awaitCacheUpdate(5, TimeUnit.SECONDS), is(true));
         assertThat(client.getApplications().getAppsHashCode(), is(equalTo("DOWN_1_UP_2_")));
+    }
+
+    @Test
+    public void testEurekaClientPeriodicCacheRefreshForDelete() throws Exception {
+        InstanceInfoGenerator instanceGen = InstanceInfoGenerator.newBuilder(3, 1).build();
+        Applications initialApps = instanceGen.takeDelta(2);
+        Applications deltaForDelete = instanceGen.takeDeltaForDelete(true, 1);
+        when(requestHandler.getApplications(TEST_REMOTE_REGION)).thenReturn(
+                anEurekaHttpResponse(200, initialApps).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
+        EurekaClient client = discoveryClientResource.getClient();
+        assertThat(countInstances(client.getApplications()), is(equalTo(2)));
+        when(requestHandler.getDelta(TEST_REMOTE_REGION)).thenReturn(
+                anEurekaHttpResponse(200, deltaForDelete).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
+        assertThat(discoveryClientResource.awaitCacheUpdate(5, TimeUnit.SECONDS), is(true));
+        assertThat(client.getApplications().getRegisteredApplications().size(), is(equalTo(1)));
+        assertThat(countInstances(client.getApplications()), is(equalTo(1)));
+    }
+
+    @Test
+    public void testEurekaClientPeriodicCacheRefreshForDeleteAndNoApplication() throws Exception {
+        InstanceInfoGenerator instanceGen = InstanceInfoGenerator.newBuilder(3, 1).build();
+        Applications initialApps = instanceGen.takeDelta(1);
+        Applications deltaForDelete = instanceGen.takeDeltaForDelete(true, 1);
+        when(requestHandler.getApplications(TEST_REMOTE_REGION)).thenReturn(
+                anEurekaHttpResponse(200, initialApps).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
+        EurekaClient client = discoveryClientResource.getClient();
+        assertThat(countInstances(client.getApplications()), is(equalTo(1)));
+        when(requestHandler.getDelta(TEST_REMOTE_REGION)).thenReturn(
+                anEurekaHttpResponse(200, deltaForDelete).type(MediaType.APPLICATION_JSON_TYPE).build()
+        );
+        assertThat(discoveryClientResource.awaitCacheUpdate(5, TimeUnit.SECONDS), is(true));
+        assertEquals(client.getApplications().getRegisteredApplications(), new ArrayList<>());
     }
 
     /**
