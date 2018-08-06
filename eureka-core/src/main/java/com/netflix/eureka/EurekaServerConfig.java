@@ -16,11 +16,12 @@
 
 package com.netflix.eureka;
 
-import com.netflix.eureka.aws.AwsBindingStrategy;
-
-import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
+
+import javax.annotation.Nullable;
+
+import com.netflix.eureka.aws.AwsBindingStrategy;
 
 /**
  * Configuration information required by the eureka server to operate.
@@ -265,6 +266,13 @@ public interface EurekaServerConfig {
     long getEvictionIntervalTimerInMs();
 
     /**
+     * Whether to use AWS API to query ASG statuses.
+     *
+     * @return true if AWS API is used, false otherwise.
+     */
+    boolean shouldUseAwsAsgApi();
+
+    /**
      * Get the timeout value for querying the <em>AWS</em> for <em>ASG</em>
      * information.
      *
@@ -418,7 +426,7 @@ public interface EurekaServerConfig {
      * @return maximum number of threads to be used for replication.
      */
     int getMaxThreadsForPeerReplication();
-    
+
     /**
      * Get the minimum number of available peer replication instances
      * for this instance to be considered healthy. The design of eureka allows
@@ -428,7 +436,7 @@ public interface EurekaServerConfig {
      * The default value of -1 is interpreted as a marker to not compare
      * the number of replicas. This would be done to either disable this check
      * or to run eureka in a single node configuration.
-     * 
+     *
      * @return minimum number of available peer replication instances
      *         for this instance to be considered healthy.
      */
