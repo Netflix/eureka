@@ -26,6 +26,9 @@ import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.servo.DefaultMonitorRegistry;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Monitors;
+import com.netflix.spectator.api.Counter;
+import com.netflix.spectator.api.Id;
+import com.netflix.spectator.api.Registry;
 
 /**
  * The enum that encapsulates all statistics monitored by Eureka.
@@ -89,9 +92,11 @@ public enum EurekaMonitors {
 
     @com.netflix.servo.annotations.Monitor(name = "count", type = DataSourceType.COUNTER)
     private final AtomicLong counter = new AtomicLong();
+    private Counter spectatorCounter;
 
     @com.netflix.servo.annotations.Monitor(name = "count-minus-replication", type = DataSourceType.COUNTER)
     private final AtomicLong myZoneCounter = new AtomicLong();
+    private Counter spectatorMyZoneCounter;
 
     /**
      * Increment the counter for the given statistic.
@@ -109,13 +114,26 @@ public enum EurekaMonitors {
      *            true if this a replication, false otherwise.
      */
     public void increment(boolean isReplication) {
-        counter.incrementAndGet();
+        incrementCounter();
 
         if (!isReplication) {
-            myZoneCounter.incrementAndGet();
+            incrementMyZoneCounter();
         }
     }
 
+    private void incrementCounter() {
+        counter.incrementAndGet();
+        if (spectatorCounter != null) {
+            spectatorCounter.increment();
+        }
+    }
+
+    private void incrementMyZoneCounter() {
+        myZoneCounter.incrementAndGet();
+        if (spectatorMyZoneCounter != null) {
+            spectatorMyZoneCounter.increment();
+        }
+    }
     /**
      * Gets the statistic name of this monitor.
      *
@@ -175,11 +193,38 @@ public enum EurekaMonitors {
     }
 
     /**
+     * Registers metrics to given Spectator registry
+     * @param registry Spectator registry to register counters to
+     */
+
+    public static void registerAllStatsSpectator(Registry registry) {
+        registerAllStatsSpectator(registry, "eurekaServer.");
+    }
+
+    /**
+     * Registers metrics to given Spectator registry with given prefix, for example, "eureka."
+     * @param registry Spectator registry to register counters to
+     * @param prefix Prefix for name of counters
+     */
+    public static void registerAllStatsSpectator(Registry registry, String prefix) {
+        for (EurekaMonitors c : EurekaMonitors.values()) {
+            c.addSpectatorCounters(registry, prefix);
+        }
+    }
+
+    /**
      * Unregister all statistics from <tt>Servo</tt>.
      */
     public static void shutdown() {
         for (EurekaMonitors c : EurekaMonitors.values()) {
             DefaultMonitorRegistry.getInstance().unregister(Monitors.newObjectMonitor(c.getName(), c));
         }
+    }
+
+    private void addSpectatorCounters(Registry registry, String prefix) {
+        Id id = registry.createId(prefix + name + ".count");
+        spectatorCounter = registry.counter(id);
+        Id myZoneId = registry.createId(prefix + name + ".count-minus-replication");
+        spectatorMyZoneCounter = registry.counter(myZoneId);
     }
 }

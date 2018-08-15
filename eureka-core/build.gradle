@@ -9,6 +9,7 @@ dependencies {
     compile "javax.servlet:servlet-api:${servletVersion}"
     compile 'com.thoughtworks.xstream:xstream:1.4.10'
     compile 'javax.ws.rs:jsr311-api:1.1.1'
+    compile 'com.netflix.spectator:spectator-api:0.74.2'
 
     // These dependencies are marked 'provided' in the client, but we need them always on the server
     compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${jacksonVersion}"
