@@ -20,6 +20,7 @@ import java.util.List;
 
 import com.google.inject.Injector;
 import com.netflix.config.ConfigurationManager;
+import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.EurekaNamespace;
 import com.netflix.governator.guice.BootstrapBinder;
@@ -56,5 +57,24 @@ public class DefaultEurekaClientConfigProviderTest {
 
         List<String> serviceUrls = clientConfig.getEurekaServerServiceUrls("default");
         assertThat(serviceUrls.get(0), is(equalTo(SERVICE_URI)));
+    }
+
+    @Test
+    public void testURLSeparator() throws Exception {
+        testURLSeparator(",");
+        testURLSeparator(" ,");
+        testURLSeparator(", ");
+        testURLSeparator(" , ");
+        testURLSeparator(" ,  ");
+    }
+
+    private void testURLSeparator(String separator) {
+        ConfigurationManager.getConfigInstance().setProperty(CommonConstants.DEFAULT_CONFIG_NAMESPACE + ".serviceUrl.default", SERVICE_URI + separator + SERVICE_URI);
+
+        DefaultEurekaClientConfig clientConfig = new DefaultEurekaClientConfig();
+
+        List<String> serviceUrls = clientConfig.getEurekaServerServiceUrls("default");
+        assertThat(serviceUrls.get(0), is(equalTo(SERVICE_URI)));
+        assertThat(serviceUrls.get(1), is(equalTo(SERVICE_URI)));
     }
 }

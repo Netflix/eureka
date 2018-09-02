@@ -66,6 +66,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     @Deprecated
     public static final String DEFAULT_NAMESPACE = CommonConstants.DEFAULT_CONFIG_NAMESPACE + ".";
     public static final String DEFAULT_ZONE = "defaultZone";
+    public static final String URL_SEPARATOR = "\\s*,\\s*";
 
     private final String namespace;
     private final DynamicPropertyFactory configInstance;
@@ -368,7 +369,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
         return configInstance
                 .getStringProperty(
                         namespace + region + "." + CONFIG_AVAILABILITY_ZONE_PREFIX,
-                        DEFAULT_ZONE).get().split(",");
+                        DEFAULT_ZONE).get().split(URL_SEPARATOR);
     }
 
     /*
@@ -387,7 +388,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
         }
         if (serviceUrls != null) {
-            return Arrays.asList(serviceUrls.split(","));
+            return Arrays.asList(serviceUrls.split(URL_SEPARATOR));
         }
 
         return new ArrayList<String>();
