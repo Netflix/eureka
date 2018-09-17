@@ -19,6 +19,7 @@ public final class AmazonInfoUtils {
         HttpURLConnection uc = (HttpURLConnection) url.openConnection();
         uc.setConnectTimeout(connectionTimeoutMs);
         uc.setReadTimeout(readTimeoutMs);
+        uc.setRequestProperty("User-Agent", "eureka-java-client");
 
         if (uc.getResponseCode() != HttpURLConnection.HTTP_OK) {  // need to read the error for clean connection close
             BufferedReader br = new BufferedReader(new InputStreamReader(uc.getErrorStream()));
