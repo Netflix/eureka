@@ -141,7 +141,7 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
             ClientConfig clientConfig = new ClientConfig();
             
             for (ClientRequestFilter filter : additionalFilters) {
-                clientBuilder.register(filter);
+                clientConfig.register(filter);
             }
 
             for (Feature feature : features) {
