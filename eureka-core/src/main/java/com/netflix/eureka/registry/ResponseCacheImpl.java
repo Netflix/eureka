@@ -420,13 +420,14 @@ public class ResponseCacheImpl implements ResponseCache {
                             tracer = serializeDeltaAppsWithRemoteRegionTimer.start();
                             versionDeltaWithRegions.incrementAndGet();
                             versionDeltaWithRegionsLegacy.incrementAndGet();
-                            payload = getPayLoad(key,
-                                    registry.getApplicationDeltasFromMultipleRegions(key.getRegions()));
+                            payload = registry.inLock(() ->
+                                    getPayLoad(key, registry.getApplicationDeltasFromMultipleRegions(key.getRegions()))
+                            );
                         } else {
                             tracer = serializeDeltaAppsTimer.start();
                             versionDelta.incrementAndGet();
                             versionDeltaLegacy.incrementAndGet();
-                            payload = getPayLoad(key, registry.getApplicationDeltas());
+                            payload = registry.inLock(() -> getPayLoad(key, registry.getApplicationDeltas()));
                         }
                     } else {
                         tracer = serializeOneApptimer.start();

@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 
 import com.google.common.cache.CacheBuilder;
 import com.netflix.appinfo.InstanceInfo;
@@ -867,50 +868,45 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         Applications apps = new Applications();
         apps.setVersion(responseCache.getVersionDelta().get());
         Map<String, Application> applicationInstancesMap = new HashMap<String, Application>();
-        try {
-            write.lock();
-            Iterator<RecentlyChangedItem> iter = this.recentlyChangedQueue.iterator();
-            logger.debug("The number of elements in the delta queue is : {}",
-                    this.recentlyChangedQueue.size());
-            while (iter.hasNext()) {
-                Lease<InstanceInfo> lease = iter.next().getLeaseInfo();
-                InstanceInfo instanceInfo = lease.getHolder();
-                logger.debug(
-                        "The instance id {} is found with status {} and actiontype {}",
-                        instanceInfo.getId(), instanceInfo.getStatus().name(), instanceInfo.getActionType().name());
-                Application app = applicationInstancesMap.get(instanceInfo
-                        .getAppName());
-                if (app == null) {
-                    app = new Application(instanceInfo.getAppName());
-                    applicationInstancesMap.put(instanceInfo.getAppName(), app);
-                    apps.addApplication(app);
-                }
-                app.addInstance(decorateInstanceInfo(lease));
+        Iterator<RecentlyChangedItem> iter = this.recentlyChangedQueue.iterator();
+        logger.debug("The number of elements in the delta queue is : {}",
+                this.recentlyChangedQueue.size());
+        while (iter.hasNext()) {
+            Lease<InstanceInfo> lease = iter.next().getLeaseInfo();
+            InstanceInfo instanceInfo = lease.getHolder();
+            logger.debug(
+                    "The instance id {} is found with status {} and actiontype {}",
+                    instanceInfo.getId(), instanceInfo.getStatus().name(), instanceInfo.getActionType().name());
+            Application app = applicationInstancesMap.get(instanceInfo
+                    .getAppName());
+            if (app == null) {
+                app = new Application(instanceInfo.getAppName());
+                applicationInstancesMap.put(instanceInfo.getAppName(), app);
+                apps.addApplication(app);
             }
+            app.addInstance(decorateInstanceInfo(lease));
+        }
 
-            boolean disableTransparentFallback = serverConfig.disableTransparentFallbackToOtherRegion();
+        boolean disableTransparentFallback = serverConfig.disableTransparentFallbackToOtherRegion();
 
-            if (!disableTransparentFallback) {
-                Applications allAppsInLocalRegion = getApplications(false);
+        if (!disableTransparentFallback) {
+            Applications allAppsInLocalRegion = getApplications(false);
 
-                for (RemoteRegionRegistry remoteRegistry : this.regionNameVSRemoteRegistry.values()) {
-                    Applications applications = remoteRegistry.getApplicationDeltas();
-                    for (Application application : applications.getRegisteredApplications()) {
-                        Application appInLocalRegistry =
-                                allAppsInLocalRegion.getRegisteredApplications(application.getName());
-                        if (appInLocalRegistry == null) {
-                            apps.addApplication(application);
-                        }
+            for (RemoteRegionRegistry remoteRegistry : this.regionNameVSRemoteRegistry.values()) {
+                Applications applications = remoteRegistry.getApplicationDeltas();
+                for (Application application : applications.getRegisteredApplications()) {
+                    Application appInLocalRegistry =
+                            allAppsInLocalRegion.getRegisteredApplications(application.getName());
+                    if (appInLocalRegistry == null) {
+                        apps.addApplication(application);
                     }
                 }
             }
-
-            Applications allApps = getApplications(!disableTransparentFallback);
-            apps.setAppsHashCode(allApps.getReconcileHashCode());
-            return apps;
-        } finally {
-            write.unlock();
         }
+
+        Applications allApps = getApplications(!disableTransparentFallback);
+        apps.setAppsHashCode(allApps.getReconcileHashCode());
+        return apps;
     }
 
     /**
@@ -947,54 +943,50 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         Applications apps = new Applications();
         apps.setVersion(responseCache.getVersionDeltaWithRegions().get());
         Map<String, Application> applicationInstancesMap = new HashMap<String, Application>();
-        try {
-            write.lock();
-            Iterator<RecentlyChangedItem> iter = this.recentlyChangedQueue.iterator();
-            logger.debug("The number of elements in the delta queue is :{}", this.recentlyChangedQueue.size());
-            while (iter.hasNext()) {
-                Lease<InstanceInfo> lease = iter.next().getLeaseInfo();
-                InstanceInfo instanceInfo = lease.getHolder();
-                logger.debug("The instance id {} is found with status {} and actiontype {}",
-                        instanceInfo.getId(), instanceInfo.getStatus().name(), instanceInfo.getActionType().name());
-                Application app = applicationInstancesMap.get(instanceInfo.getAppName());
-                if (app == null) {
-                    app = new Application(instanceInfo.getAppName());
-                    applicationInstancesMap.put(instanceInfo.getAppName(), app);
-                    apps.addApplication(app);
-                }
-                app.addInstance(decorateInstanceInfo(lease));
-            }
 
-            if (includeRemoteRegion) {
-                for (String remoteRegion : remoteRegions) {
-                    RemoteRegionRegistry remoteRegistry = regionNameVSRemoteRegistry.get(remoteRegion);
-                    if (null != remoteRegistry) {
-                        Applications remoteAppsDelta = remoteRegistry.getApplicationDeltas();
-                        if (null != remoteAppsDelta) {
-                            for (Application application : remoteAppsDelta.getRegisteredApplications()) {
-                                if (shouldFetchFromRemoteRegistry(application.getName(), remoteRegion)) {
-                                    Application appInstanceTillNow =
-                                            apps.getRegisteredApplications(application.getName());
-                                    if (appInstanceTillNow == null) {
-                                        appInstanceTillNow = new Application(application.getName());
-                                        apps.addApplication(appInstanceTillNow);
-                                    }
-                                    for (InstanceInfo instanceInfo : application.getInstances()) {
-                                        appInstanceTillNow.addInstance(instanceInfo);
-                                    }
+        Iterator<RecentlyChangedItem> iter = this.recentlyChangedQueue.iterator();
+        logger.debug("The number of elements in the delta queue is :{}", this.recentlyChangedQueue.size());
+        while (iter.hasNext()) {
+            Lease<InstanceInfo> lease = iter.next().getLeaseInfo();
+            InstanceInfo instanceInfo = lease.getHolder();
+            logger.debug("The instance id {} is found with status {} and actiontype {}",
+                    instanceInfo.getId(), instanceInfo.getStatus().name(), instanceInfo.getActionType().name());
+            Application app = applicationInstancesMap.get(instanceInfo.getAppName());
+            if (app == null) {
+                app = new Application(instanceInfo.getAppName());
+                applicationInstancesMap.put(instanceInfo.getAppName(), app);
+                apps.addApplication(app);
+            }
+            app.addInstance(decorateInstanceInfo(lease));
+        }
+
+        if (includeRemoteRegion) {
+            for (String remoteRegion : remoteRegions) {
+                RemoteRegionRegistry remoteRegistry = regionNameVSRemoteRegistry.get(remoteRegion);
+                if (null != remoteRegistry) {
+                    Applications remoteAppsDelta = remoteRegistry.getApplicationDeltas();
+                    if (null != remoteAppsDelta) {
+                        for (Application application : remoteAppsDelta.getRegisteredApplications()) {
+                            if (shouldFetchFromRemoteRegistry(application.getName(), remoteRegion)) {
+                                Application appInstanceTillNow =
+                                        apps.getRegisteredApplications(application.getName());
+                                if (appInstanceTillNow == null) {
+                                    appInstanceTillNow = new Application(application.getName());
+                                    apps.addApplication(appInstanceTillNow);
+                                }
+                                for (InstanceInfo instanceInfo : application.getInstances()) {
+                                    appInstanceTillNow.addInstance(instanceInfo);
                                 }
                             }
                         }
                     }
                 }
             }
-
-            Applications allApps = getApplicationsFromMultipleRegions(remoteRegions);
-            apps.setAppsHashCode(allApps.getReconcileHashCode());
-            return apps;
-        } finally {
-            write.unlock();
         }
+
+        Applications allApps = getApplicationsFromMultipleRegions(remoteRegions);
+        apps.setAppsHashCode(allApps.getReconcileHashCode());
+        return apps;
     }
 
     /**
@@ -1193,6 +1185,15 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         this.numberOfRenewsPerMinThreshold = (int) (this.expectedNumberOfClientsSendingRenews
                 * (60.0 / serverConfig.getExpectedClientRenewalIntervalSeconds())
                 * serverConfig.getRenewalPercentThreshold());
+    }
+
+    public <R> R inLock(Supplier<R> method) {
+        try  {
+            write.lock();
+            return method.get();
+        } finally {
+            write.unlock();
+        }
     }
 
     private static final class RecentlyChangedItem {
