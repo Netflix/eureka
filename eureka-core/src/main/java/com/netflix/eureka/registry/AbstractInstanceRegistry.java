@@ -885,7 +885,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     applicationInstancesMap.put(instanceInfo.getAppName(), app);
                     apps.addApplication(app);
                 }
-                app.addInstance(decorateInstanceInfo(lease));
+                app.addInstance(new InstanceInfo(decorateInstanceInfo(lease)));
             }
 
             boolean disableTransparentFallback = serverConfig.disableTransparentFallbackToOtherRegion();
@@ -962,7 +962,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     applicationInstancesMap.put(instanceInfo.getAppName(), app);
                     apps.addApplication(app);
                 }
-                app.addInstance(decorateInstanceInfo(lease));
+                app.addInstance(new InstanceInfo(decorateInstanceInfo(lease)));
             }
 
             if (includeRemoteRegion) {
@@ -980,7 +980,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                                         apps.addApplication(appInstanceTillNow);
                                     }
                                     for (InstanceInfo instanceInfo : application.getInstances()) {
-                                        appInstanceTillNow.addInstance(instanceInfo);
+                                        appInstanceTillNow.addInstance(new InstanceInfo(instanceInfo));
                                     }
                                 }
                             }
