@@ -50,7 +50,7 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig implements Ref
     };
 
     private final AmazonInfoConfig amazonInfoConfig;
-    private final RefreshableAmazonInfoProvider amazonInfoHolder;
+    /* visible for testing */ RefreshableAmazonInfoProvider amazonInfoHolder;
 
     public CloudInstanceConfig() {
         this(CommonConstants.DEFAULT_CONFIG_NAMESPACE);

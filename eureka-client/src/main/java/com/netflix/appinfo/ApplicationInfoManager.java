@@ -219,6 +219,21 @@ public class ApplicationInfoManager {
             builder.setHostName(newAddress).setIPAddr(newIp).setDataCenterInfo(config.getDataCenterInfo());
             instanceInfo.setIsDirty();
         }
+
+        String existingSpotInstanceAction  = instanceInfo.getMetadata().get(AmazonInfo.MetaDataKey.spotInstanceAction.name);
+        DataCenterInfo dataCenterInfo = config.getDataCenterInfo();
+        if (dataCenterInfo instanceof AmazonInfo) {
+            AmazonInfo amazonInfo = (AmazonInfo) dataCenterInfo;
+            String newSpotInstanceAction = amazonInfo.getMetadata().get(AmazonInfo.MetaDataKey.spotInstanceAction.name);
+            if (newSpotInstanceAction != null && !newSpotInstanceAction.equals(existingSpotInstanceAction)) {
+                logger.warn(String.format("The spot instance termination action changed from: %s => %s",
+                        existingSpotInstanceAction,
+                        newSpotInstanceAction));
+                InstanceInfo.Builder builder = new InstanceInfo.Builder(instanceInfo);
+                builder.setDataCenterInfo(config.getDataCenterInfo());
+                instanceInfo.setIsDirty();
+            }
+        }        
     }
 
     public void refreshLeaseInfoIfRequired() {
