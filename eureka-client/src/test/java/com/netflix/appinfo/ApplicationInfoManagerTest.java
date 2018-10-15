@@ -62,7 +62,7 @@ public class ApplicationInfoManagerTest {
         String spotInstanceAction = "{\"action\": \"terminate\", \"time\": \"2017-09-18T08:22:00Z\"}";
 
         AmazonInfo newAmazonInfo = AmazonInfo.Builder.newBuilder()
-                .addMetadata(AmazonInfo.MetaDataKey.spotInstanceTerminationTime, terminationTime) // new property on refresh
+                .addMetadata(AmazonInfo.MetaDataKey.spotTerminationTime, terminationTime) // new property on refresh
                 .addMetadata(AmazonInfo.MetaDataKey.spotInstanceAction, spotInstanceAction) // new property refresh
                 .addMetadata(AmazonInfo.MetaDataKey.publicHostname, instanceInfo.getHostName()) // unchanged
                 .addMetadata(AmazonInfo.MetaDataKey.instanceId, instanceInfo.getInstanceId()) // unchanged
@@ -72,7 +72,7 @@ public class ApplicationInfoManagerTest {
 
         applicationInfoManager.refreshDataCenterInfoIfRequired();
 
-        assertThat(((AmazonInfo)instanceInfo.getDataCenterInfo()).getMetadata().get(AmazonInfo.MetaDataKey.spotInstanceTerminationTime.getName()), is(terminationTime));
+        assertThat(((AmazonInfo)instanceInfo.getDataCenterInfo()).getMetadata().get(AmazonInfo.MetaDataKey.spotTerminationTime.getName()), is(terminationTime));
         assertThat(((AmazonInfo)instanceInfo.getDataCenterInfo()).getMetadata().get(AmazonInfo.MetaDataKey.spotInstanceAction.getName()), is(spotInstanceAction));
     }
 
