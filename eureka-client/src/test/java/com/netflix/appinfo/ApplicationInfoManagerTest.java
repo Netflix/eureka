@@ -54,9 +54,8 @@ public class ApplicationInfoManagerTest {
     @Test
     public void testSpotInstanceTermination() {
         AmazonInfo initialAmazonInfo = AmazonInfo.Builder.newBuilder().build();
-        config = spy(new CloudInstanceConfig(initialAmazonInfo));
         RefreshableAmazonInfoProvider refreshableAmazonInfoProvider = spy(new RefreshableAmazonInfoProvider(initialAmazonInfo, new Archaius1AmazonInfoConfig(CommonConstants.DEFAULT_CONFIG_NAMESPACE)));
-        config.amazonInfoHolder = refreshableAmazonInfoProvider;
+        config = spy(new CloudInstanceConfig(CommonConstants.DEFAULT_CONFIG_NAMESPACE, refreshableAmazonInfoProvider));
         this.applicationInfoManager = new ApplicationInfoManager(config, instanceInfo, null);
 
         String terminationTime = "2015-01-05T18:02:00Z";
