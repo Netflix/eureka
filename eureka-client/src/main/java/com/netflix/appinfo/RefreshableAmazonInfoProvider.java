@@ -81,10 +81,7 @@ public class RefreshableAmazonInfoProvider implements Provider<AmazonInfo> {
      */
     public synchronized void refresh() {
         try {
-            AmazonInfo newInfo = AmazonInfo.Builder
-                    .newBuilder()
-                    .withAmazonInfoConfig(amazonInfoConfig)
-                    .autoBuild(amazonInfoConfig.getNamespace());
+            AmazonInfo newInfo = getNewAmazonInfo();
 
             if (shouldUpdate(newInfo, info)) {
                 // the datacenter info has changed, re-sync it
@@ -94,6 +91,13 @@ public class RefreshableAmazonInfoProvider implements Provider<AmazonInfo> {
         } catch (Throwable t) {
             logger.error("Cannot refresh the Amazon Info ", t);
         }
+    }
+
+    /* visible for testing */ AmazonInfo getNewAmazonInfo() {
+        return AmazonInfo.Builder
+                        .newBuilder()
+                        .withAmazonInfoConfig(amazonInfoConfig)
+                        .autoBuild(amazonInfoConfig.getNamespace());
     }
 
     /**

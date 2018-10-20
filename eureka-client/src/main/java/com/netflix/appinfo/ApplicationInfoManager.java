@@ -200,6 +200,11 @@ public class ApplicationInfoManager {
     public void refreshDataCenterInfoIfRequired() {
         String existingAddress = instanceInfo.getHostName();
 
+        String existingSpotInstanceAction = null;
+        if (instanceInfo.getDataCenterInfo() instanceof AmazonInfo) {
+            existingSpotInstanceAction = ((AmazonInfo) instanceInfo.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.spotInstanceAction);
+        }
+
         String newAddress;
         if (config instanceof RefreshableInstanceConfig) {
             // Refresh data center info, and return up to date address
@@ -211,14 +216,33 @@ public class ApplicationInfoManager {
 
         if (newAddress != null && !newAddress.equals(existingAddress)) {
             logger.warn("The address changed from : {} => {}", existingAddress, newAddress);
-
-            // :( in the legacy code here the builder is acting as a mutator.
-            // This is hard to fix as this same instanceInfo instance is referenced elsewhere.
-            // We will most likely re-write the client at sometime so not fixing for now.
-            InstanceInfo.Builder builder = new InstanceInfo.Builder(instanceInfo);
-            builder.setHostName(newAddress).setIPAddr(newIp).setDataCenterInfo(config.getDataCenterInfo());
-            instanceInfo.setIsDirty();
+            updateInstanceInfo(newAddress, newIp);
         }
+
+        if (config.getDataCenterInfo() instanceof AmazonInfo) {
+            String newSpotInstanceAction = ((AmazonInfo) config.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.spotInstanceAction);
+            if (newSpotInstanceAction != null && !newSpotInstanceAction.equals(existingSpotInstanceAction)) {
+                logger.info(String.format("The spot instance termination action changed from: %s => %s",
+                        existingSpotInstanceAction,
+                        newSpotInstanceAction));
+                updateInstanceInfo(null , null );
+            }
+        }        
+    }
+
+    private void updateInstanceInfo(String newAddress, String newIp) {
+        // :( in the legacy code here the builder is acting as a mutator.
+        // This is hard to fix as this same instanceInfo instance is referenced elsewhere.
+        // We will most likely re-write the client at sometime so not fixing for now.
+        InstanceInfo.Builder builder = new InstanceInfo.Builder(instanceInfo);
+        if (newAddress != null) {
+            builder.setHostName(newAddress);
+        }
+        if (newIp != null) {
+            builder.setIPAddr(newIp);
+        }
+        builder.setDataCenterInfo(config.getDataCenterInfo());
+        instanceInfo.setIsDirty();
     }
 
     public void refreshLeaseInfoIfRequired() {

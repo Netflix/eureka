@@ -63,6 +63,8 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
         availabilityZone("availability-zone", "placement/"),
         publicHostname("public-hostname"),
         publicIpv4("public-ipv4"),
+        spotTerminationTime("termination-time", "spot/"),
+        spotInstanceAction("instance-action", "spot/"),
         mac("mac"),  // mac is declared above vpcId so will be found before vpcId (where it is needed)
         vpcId("vpc-id", "network/interfaces/macs/") {
             @Override

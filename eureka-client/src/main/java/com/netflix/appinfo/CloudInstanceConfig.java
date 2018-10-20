@@ -49,7 +49,6 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig implements Ref
             MetaDataKey.localIpv4.name()
     };
 
-    private final AmazonInfoConfig amazonInfoConfig;
     private final RefreshableAmazonInfoProvider amazonInfoHolder;
 
     public CloudInstanceConfig() {
@@ -64,9 +63,13 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig implements Ref
         this(CommonConstants.DEFAULT_CONFIG_NAMESPACE, new Archaius1AmazonInfoConfig(CommonConstants.DEFAULT_CONFIG_NAMESPACE), info, false);
     }
 
+    /* visible for testing */ CloudInstanceConfig(String namespace, RefreshableAmazonInfoProvider refreshableAmazonInfoProvider) {
+        super(namespace);
+        this.amazonInfoHolder = refreshableAmazonInfoProvider;
+    }
+
     /* visible for testing */ CloudInstanceConfig(String namespace, AmazonInfoConfig amazonInfoConfig, AmazonInfo initialInfo, boolean eagerInit) {
         super(namespace);
-        this.amazonInfoConfig = amazonInfoConfig;
         if (eagerInit) {
             RefreshableAmazonInfoProvider.FallbackAddressProvider fallbackAddressProvider =
                     new RefreshableAmazonInfoProvider.FallbackAddressProvider() {

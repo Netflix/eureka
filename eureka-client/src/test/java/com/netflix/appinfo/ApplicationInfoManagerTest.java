@@ -1,5 +1,6 @@
 package com.netflix.appinfo;
 
+import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,6 +49,31 @@ public class ApplicationInfoManagerTest {
         applicationInfoManager.refreshDataCenterInfoIfRequired();
 
         assertThat(instanceInfo.getHostName(), is(newPublicHostname));
+    }
+
+    @Test
+    public void testSpotInstanceTermination() {
+        AmazonInfo initialAmazonInfo = AmazonInfo.Builder.newBuilder().build();
+        RefreshableAmazonInfoProvider refreshableAmazonInfoProvider = spy(new RefreshableAmazonInfoProvider(initialAmazonInfo, new Archaius1AmazonInfoConfig(CommonConstants.DEFAULT_CONFIG_NAMESPACE)));
+        config = spy(new CloudInstanceConfig(CommonConstants.DEFAULT_CONFIG_NAMESPACE, refreshableAmazonInfoProvider));
+        this.applicationInfoManager = new ApplicationInfoManager(config, instanceInfo, null);
+
+        String terminationTime = "2015-01-05T18:02:00Z";
+        String spotInstanceAction = "{\"action\": \"terminate\", \"time\": \"2017-09-18T08:22:00Z\"}";
+
+        AmazonInfo newAmazonInfo = AmazonInfo.Builder.newBuilder()
+                .addMetadata(AmazonInfo.MetaDataKey.spotTerminationTime, terminationTime) // new property on refresh
+                .addMetadata(AmazonInfo.MetaDataKey.spotInstanceAction, spotInstanceAction) // new property refresh
+                .addMetadata(AmazonInfo.MetaDataKey.publicHostname, instanceInfo.getHostName()) // unchanged
+                .addMetadata(AmazonInfo.MetaDataKey.instanceId, instanceInfo.getInstanceId()) // unchanged
+                .addMetadata(AmazonInfo.MetaDataKey.localIpv4, instanceInfo.getIPAddr()) // unchanged
+                .build();
+        when(refreshableAmazonInfoProvider.getNewAmazonInfo()).thenReturn(newAmazonInfo);
+
+        applicationInfoManager.refreshDataCenterInfoIfRequired();
+
+        assertThat(((AmazonInfo)instanceInfo.getDataCenterInfo()).getMetadata().get(AmazonInfo.MetaDataKey.spotTerminationTime.getName()), is(terminationTime));
+        assertThat(((AmazonInfo)instanceInfo.getDataCenterInfo()).getMetadata().get(AmazonInfo.MetaDataKey.spotInstanceAction.getName()), is(spotInstanceAction));
     }
 
     @Test
