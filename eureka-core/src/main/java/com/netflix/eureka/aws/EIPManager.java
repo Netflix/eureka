@@ -350,7 +350,7 @@ public class EIPManager implements AwsBinder {
             regionPhrase = "." + region;
         }
         for (String cname : ec2Urls) {
-            int beginIndex = cname.indexOf("ec2-") + 4;
+            int beginIndex = cname.indexOf("ec2-");
 
             if (-1 < beginIndex) {
                 // CNAME contains "ec2-"
