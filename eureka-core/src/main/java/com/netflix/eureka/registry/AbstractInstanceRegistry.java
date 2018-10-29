@@ -54,9 +54,12 @@ import com.netflix.eureka.registry.rule.InstanceStatusOverrideRule;
 import com.netflix.eureka.resources.ServerCodecs;
 import com.netflix.eureka.util.MeasuredRate;
 import com.netflix.servo.annotations.DataSourceType;
+import com.netflix.servo.monitor.Monitors;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.netflix.appinfo.InstanceInfo.InstanceStatus.*;
 import static com.netflix.eureka.util.EurekaMonitors.*;
 
 /**
@@ -98,6 +101,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     private final MeasuredRate renewsLastMin;
 
     private final AtomicReference<EvictionTask> evictionTaskRef = new AtomicReference<EvictionTask>();
+
+    private final CountsPerStatus countsPerStatus = new CountsPerStatus();
 
     protected String[] allKnownRemoteRegions = EMPTY_STR_ARRAY;
     protected volatile int numberOfRenewsPerMinThreshold;
@@ -784,7 +789,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 }
             }
         }
-        apps.setAppsHashCode(apps.getReconcileHashCode());
+        final String reconcileHashCode = apps.getReconcileHashCode();
+        countsPerStatus.updateFromHashcode(reconcileHashCode);
+        apps.setAppsHashCode(reconcileHashCode);
         return apps;
     }
 
@@ -845,7 +852,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 }
             }
         }
-        apps.setAppsHashCode(apps.getReconcileHashCode());
+        final String reconcileHashCode = apps.getReconcileHashCode();
+        countsPerStatus.updateFromHashcode(reconcileHashCode);
+        apps.setAppsHashCode(reconcileHashCode);
         return apps;
     }
 
@@ -906,7 +915,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             }
 
             Applications allApps = getApplications(!disableTransparentFallback);
-            apps.setAppsHashCode(allApps.getReconcileHashCode());
+            final String reconcileHashCode = allApps.getReconcileHashCode();
+            countsPerStatus.updateFromHashcode(reconcileHashCode);
+            apps.setAppsHashCode(reconcileHashCode);
             return apps;
         } finally {
             write.unlock();
@@ -990,7 +1001,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             }
 
             Applications allApps = getApplicationsFromMultipleRegions(remoteRegions);
-            apps.setAppsHashCode(allApps.getReconcileHashCode());
+            final String reconcileHashCode = allApps.getReconcileHashCode();
+            countsPerStatus.updateFromHashcode(reconcileHashCode);
+            apps.setAppsHashCode(reconcileHashCode);
             return apps;
         } finally {
             write.unlock();
@@ -1334,5 +1347,48 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             }
 
         };
+    }
+
+    static class CountsPerStatus {
+        @com.netflix.servo.annotations.Monitor(name = "numOfInstancesStatusUp", description = "Number of instances in status UP in registry", type = DataSourceType.GAUGE)
+        volatile int up;
+        @com.netflix.servo.annotations.Monitor(name = "numOfInstancesStatusDown", description = "Number of instances in status DOWN in registry", type = DataSourceType.GAUGE)
+        volatile int down;
+        @com.netflix.servo.annotations.Monitor(name = "numOfInstancesStatusStarting", description = "Number of instances in status STARTING in registry", type = DataSourceType.GAUGE)
+        volatile int starting;
+        @com.netflix.servo.annotations.Monitor(name = "numOfInstancesStatusOutOfService", description = "Number of instances in status OUT_OF_SERVICE in registry", type = DataSourceType.GAUGE)
+        volatile int outOfService;
+        @com.netflix.servo.annotations.Monitor(name = "numOfInstancesStatusUnknown", description = "Number of instances in status UNKNOWN in registry", type = DataSourceType.GAUGE)
+        volatile int unknown;
+
+        private CountsPerStatus() {
+            try {
+                Monitors.registerObject(this);
+            } catch (Throwable e) {
+                logger.warn("Cannot register the JMX monitor for counts of instances per status :", e);
+            }
+        }
+
+        void updateFromHashcode(String hashcode) {
+            try {
+                up = getCount(hashcode, UP);
+                down = getCount(hashcode, DOWN);
+                starting = getCount(hashcode, STARTING);
+                outOfService = getCount(hashcode, OUT_OF_SERVICE);
+                unknown = getCount(hashcode, UNKNOWN);
+            } catch (Exception e) {
+                // guard against malformed (for whatever reason) hashcode
+                logger.warn("Failed to parse reconcile hash code to record counts of instances per status: ", e);
+            }
+        }
+
+        private int getCount(String hashcode, InstanceStatus status) {
+            int count = 0;
+            String s = status.toString();
+            if (hashcode.contains(s)) {
+                count = Integer.parseInt(StringUtils.substringBetween(hashcode, s + "_", "_"));
+            }
+            return count;
+        }
     }
 }
