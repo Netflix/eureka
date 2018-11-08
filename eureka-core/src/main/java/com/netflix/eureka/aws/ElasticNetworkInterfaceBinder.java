@@ -264,8 +264,7 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
         return EndpointUtils.getServiceUrlsFromDNS(
                 clientConfig,
                 myZone,
-                true,
-                new EndpointUtils.InstanceInfoBasedUrlRandomizer(applicationInfoManager.getInfo())
+                true
         );
     }
 

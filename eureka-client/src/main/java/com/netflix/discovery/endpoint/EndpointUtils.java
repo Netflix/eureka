@@ -1,12 +1,11 @@
 package com.netflix.discovery.endpoint;
 
-import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.shared.resolver.ResolverUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,53 +27,18 @@ public class EndpointUtils {
         CNAME, A
     }
 
-    public static interface ServiceUrlRandomizer {
-        void randomize(List<String> urlList);
-    }
-
-    public static class InstanceInfoBasedUrlRandomizer implements ServiceUrlRandomizer {
-        private final InstanceInfo instanceInfo;
-
-        public InstanceInfoBasedUrlRandomizer(InstanceInfo instanceInfo) {
-            this.instanceInfo = instanceInfo;
-        }
-
-        @Override
-        public void randomize(List<String> urlList) {
-            int listSize = 0;
-            if (urlList != null) {
-                listSize = urlList.size();
-            }
-            if ((instanceInfo == null) || (listSize == 0)) {
-                return;
-            }
-            // Find the hashcode of the instance hostname and use it to find an entry
-            // and then arrange the rest of the entries after this entry.
-            int instanceHashcode = instanceInfo.getHostName().hashCode();
-            if (instanceHashcode < 0) {
-                instanceHashcode = instanceHashcode * -1;
-            }
-            int backupInstance = instanceHashcode % listSize;
-            for (int i = 0; i < backupInstance; i++) {
-                String zone = urlList.remove(0);
-                urlList.add(zone);
-            }
-        }
-    }
-
     /**
      * Get the list of all eureka service urls for the eureka client to talk to.
      *
      * @param clientConfig the clientConfig to use
      * @param zone the zone in which the client resides
-     * @param randomizer a randomizer to randomized returned urls, if loading from dns
      *
      * @return The list of all eureka service urls for the eureka client to talk to.
      */
-    public static List<String> getDiscoveryServiceUrls(EurekaClientConfig clientConfig, String zone, ServiceUrlRandomizer randomizer) {
+    public static List<String> getDiscoveryServiceUrls(EurekaClientConfig clientConfig, String zone) {
         boolean shouldUseDns = clientConfig.shouldUseDnsForFetchingServiceUrls();
         if (shouldUseDns) {
-            return getServiceUrlsFromDNS(clientConfig, zone, clientConfig.shouldPreferSameZoneEureka(), randomizer);
+            return getServiceUrlsFromDNS(clientConfig, zone, clientConfig.shouldPreferSameZoneEureka());
         }
         return getServiceUrlsFromConfig(clientConfig, zone, clientConfig.shouldPreferSameZoneEureka());
     }
@@ -88,11 +52,10 @@ public class EndpointUtils {
      * @param clientConfig the clientConfig to use
      * @param instanceZone The zone in which the client resides.
      * @param preferSameZone true if we have to prefer the same zone as the client, false otherwise.
-     * @param randomizer a randomizer to randomized returned urls
      *
      * @return The list of all eureka service urls for the eureka client to talk to.
      */
-    public static List<String> getServiceUrlsFromDNS(EurekaClientConfig clientConfig, String instanceZone, boolean preferSameZone, ServiceUrlRandomizer randomizer) {
+    public static List<String> getServiceUrlsFromDNS(EurekaClientConfig clientConfig, String instanceZone, boolean preferSameZone) {
         String region = getRegion(clientConfig);
         // Get zone-specific DNS names for the given region so that we can get a
         // list of available zones
@@ -142,7 +105,7 @@ public class EndpointUtils {
                 List<String> ec2Urls = new ArrayList<String>(getEC2DiscoveryUrlsFromZone(zoneCname, DiscoveryUrlType.CNAME));
                 // Rearrange the list to distribute the load in case of multiple servers
                 if (ec2Urls.size() > 1) {
-                    randomizer.randomize(ec2Urls);
+                    ec2Urls = ResolverUtils.randomize(ec2Urls);
                 }
                 for (String ec2Url : ec2Urls) {
                     StringBuilder sb = new StringBuilder()
@@ -169,7 +132,7 @@ public class EndpointUtils {
         }
         // Rearrange the fail over server list to distribute the load
         String primaryServiceUrl = serviceUrls.remove(0);
-        randomizer.randomize(serviceUrls);
+        serviceUrls = ResolverUtils.randomize(serviceUrls);
         serviceUrls.add(0, primaryServiceUrl);
 
         if (logger.isDebugEnabled()) {

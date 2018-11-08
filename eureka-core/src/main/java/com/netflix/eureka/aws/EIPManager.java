@@ -388,8 +388,7 @@ public class EIPManager implements AwsBinder {
         List<String> ec2Urls = EndpointUtils.getServiceUrlsFromDNS(
                 clientConfig,
                 myZone,
-                true,
-                new EndpointUtils.InstanceInfoBasedUrlRandomizer(applicationInfoManager.getInfo())
+                true
         );
         return getEIPsFromServiceUrls(ec2Urls);
     }

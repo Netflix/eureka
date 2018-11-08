@@ -157,7 +157,6 @@ public class DiscoveryClient implements EurekaClient {
     private final AtomicReference<String[]> remoteRegionsRef;
     private final InstanceRegionChecker instanceRegionChecker;
 
-    private final EndpointUtils.ServiceUrlRandomizer urlRandomizer;
     private final Provider<BackupRegistry> backupRegistryProvider;
     private final EurekaTransport eurekaTransport;
 
@@ -326,7 +325,6 @@ public class DiscoveryClient implements EurekaClient {
 
         this.backupRegistryProvider = backupRegistryProvider;
 
-        this.urlRandomizer = new EndpointUtils.InstanceInfoBasedUrlRandomizer(instanceInfo);
         localRegionApps.set(new Applications());
 
         fetchRegistryGeneration = new AtomicLong(0);
@@ -1348,7 +1346,7 @@ public class DiscoveryClient implements EurekaClient {
     @Deprecated
     @Override
     public List<String> getServiceUrlsFromDNS(String instanceZone, boolean preferSameZone) {
-        return EndpointUtils.getServiceUrlsFromDNS(clientConfig, instanceZone, preferSameZone, urlRandomizer);
+        return EndpointUtils.getServiceUrlsFromDNS(clientConfig, instanceZone, preferSameZone);
     }
 
     /**
@@ -1357,7 +1355,7 @@ public class DiscoveryClient implements EurekaClient {
     @Deprecated
     @Override
     public List<String> getDiscoveryServiceUrls(String zone) {
-        return EndpointUtils.getDiscoveryServiceUrls(clientConfig, zone, urlRandomizer);
+        return EndpointUtils.getDiscoveryServiceUrls(clientConfig, zone);
     }
 
     /**

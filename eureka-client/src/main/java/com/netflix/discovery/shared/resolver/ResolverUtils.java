@@ -41,11 +41,38 @@ public final class ResolverUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(ResolverUtils.class);
 
-    private static final String LOCAL_IPV4_ADDRESS = SystemUtil.getServerIPv4();
-
     private static final Pattern ZONE_RE = Pattern.compile("(txt\\.)?([^.]+).*");
 
+    private static Randomizer RANDOMIZER = new Randomizer() {
+
+        private final String LOCAL_IPV4_ADDRESS = SystemUtil.getServerIPv4();
+
+        @Override
+        public void randomize(List randomList) {
+            if (randomList.size() < 2) {
+                return;
+            }
+            Random random = new Random(LOCAL_IPV4_ADDRESS.hashCode());
+            int last = randomList.size() - 1;
+            for (int i = 0; i < last; i++) {
+                int pos = random.nextInt(randomList.size() - i);
+                if (pos != i) {
+                    Collections.swap(randomList, i, pos);
+                }
+            }
+        }
+    };
+
     private ResolverUtils() {
+    }
+
+    /**
+     * Allows to redefine method shuffling Eureka peers, if needed.
+     *
+     * @param randomizer Randomizer to use when shuffling.
+     */
+    public static void setRandomizer(Randomizer randomizer) {
+        RANDOMIZER = randomizer;
     }
 
     /**
@@ -85,19 +112,9 @@ public final class ResolverUtils {
      *
      * @return a copy of the original list with elements in the random order
      */
-    public static <T extends EurekaEndpoint> List<T> randomize(List<T> list) {
+    public static <T> List<T> randomize(List<T> list) {
         List<T> randomList = new ArrayList<>(list);
-        if (randomList.size() < 2) {
-            return randomList;
-        }
-        Random random = new Random(LOCAL_IPV4_ADDRESS.hashCode());
-        int last = randomList.size() - 1;
-        for (int i = 0; i < last; i++) {
-            int pos = random.nextInt(randomList.size() - i);
-            if (pos != i) {
-                Collections.swap(randomList, i, pos);
-            }
-        }
+        RANDOMIZER.randomize(randomList);
         return randomList;
     }
 
