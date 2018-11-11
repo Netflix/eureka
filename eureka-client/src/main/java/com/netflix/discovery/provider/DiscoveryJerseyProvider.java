@@ -104,10 +104,10 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter<Object>, Messa
         } catch (Throwable e) {
             if (e instanceof Error) { // See issue: https://github.com/Netflix/eureka/issues/72 on why we catch Error here.
                 closeInputOnError(inputStream);
-                throw new WebApplicationException(createErrorReply(500, e, mediaType));
+                throw new WebApplicationException(e, createErrorReply(500, e, mediaType));
             }
             LOGGER.debug("Cannot parse request body", e);
-            throw new WebApplicationException(createErrorReply(400, "cannot parse request body", mediaType));
+            throw new WebApplicationException(e, createErrorReply(400, "cannot parse request body", mediaType));
         }
     }
 

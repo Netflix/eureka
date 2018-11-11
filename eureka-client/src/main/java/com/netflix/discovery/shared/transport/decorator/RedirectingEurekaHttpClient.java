@@ -80,7 +80,7 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
                 TransportUtils.shutdown(delegateRef.getAndSet(currentEurekaClientRef.get()));
                 return response;
             } catch (Exception e) {
-                logger.error("Request execution error", e);
+                logger.error("Request execution error. endpoint={}", serviceEndpoint, e);
                 TransportUtils.shutdown(currentEurekaClientRef.get());
                 throw e;
             }
@@ -88,7 +88,7 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
             try {
                 return requestExecutor.execute(currentEurekaClient);
             } catch (Exception e) {
-                logger.error("Request execution error", e);
+                logger.error("Request execution error. endpoint={}", serviceEndpoint, e);
                 delegateRef.compareAndSet(currentEurekaClient, null);
                 currentEurekaClient.shutdown();
                 throw e;
