@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 public class TimedSupervisorTask extends TimerTask {
     private static final Logger logger = LoggerFactory.getLogger(TimedSupervisorTask.class);
 
+    private final Counter successCounter;
     private final Counter timeoutCounter;
     private final Counter rejectedCounter;
     private final Counter throwableCounter;
@@ -48,6 +49,7 @@ public class TimedSupervisorTask extends TimerTask {
         this.maxDelay = timeoutMillis * expBackOffBound;
 
         // Initialize the counters and register.
+        successCounter = Monitors.newCounter("success");
         timeoutCounter = Monitors.newCounter("timeouts");
         rejectedCounter = Monitors.newCounter("rejectedExecutions");
         throwableCounter = Monitors.newCounter("throwables");
@@ -64,6 +66,7 @@ public class TimedSupervisorTask extends TimerTask {
             future.get(timeoutMillis, TimeUnit.MILLISECONDS);  // block until done or timeout
             delay.set(timeoutMillis);
             threadPoolLevelGauge.set((long) executor.getActiveCount());
+            successCounter.increment();
         } catch (TimeoutException e) {
             logger.warn("task supervisor timed out", e);
             timeoutCounter.increment();
