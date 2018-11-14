@@ -240,7 +240,7 @@ public class InstanceResource {
             // ReplicationInstance information is not found, generate an error
             if (instanceInfo == null) {
                 logger.error("Cannot find instance while updating metadata for instance {}", id);
-                return Response.serverError().build();
+                return Response.status(Status.NOT_FOUND).build();
             }
             MultivaluedMap<String, String> queryParams = uriInfo.getQueryParameters();
             Set<Entry<String, List<String>>> entrySet = queryParams.entrySet();
