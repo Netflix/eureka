@@ -118,7 +118,7 @@ public class InstanceResource {
         }
         // Check if we need to sync based on dirty time stamp, the client
         // instance might have changed some value
-        Response response = null;
+        Response response;
         if (lastDirtyTimestamp != null && serverConfig.shouldSyncWhenTimestampDiffers()) {
             response = this.validateDirtyTimestamp(Long.valueOf(lastDirtyTimestamp), isFromReplicaNode);
             // Store the overridden status since the validation found out the node that replicates wins
@@ -239,15 +239,15 @@ public class InstanceResource {
             InstanceInfo instanceInfo = registry.getInstanceByAppAndId(app.getName(), id);
             // ReplicationInstance information is not found, generate an error
             if (instanceInfo == null) {
-                logger.error("Cannot find instance while updating metadata for instance {}", id);
-                return Response.serverError().build();
+                logger.warn("Cannot find instance while updating metadata for instance {}/{}", app.getName(), id);
+                return Response.status(Status.NOT_FOUND).build();
             }
             MultivaluedMap<String, String> queryParams = uriInfo.getQueryParameters();
             Set<Entry<String, List<String>>> entrySet = queryParams.entrySet();
             Map<String, String> metadataMap = instanceInfo.getMetadata();
             // Metadata map is empty - create a new map
             if (Collections.emptyMap().getClass().equals(metadataMap.getClass())) {
-                metadataMap = new ConcurrentHashMap<String, String>();
+                metadataMap = new ConcurrentHashMap<>();
                 InstanceInfo.Builder builder = new InstanceInfo.Builder(instanceInfo);
                 builder.setMetadata(metadataMap);
                 instanceInfo = builder.build();
