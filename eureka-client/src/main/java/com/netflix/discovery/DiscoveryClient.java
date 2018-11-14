@@ -1677,11 +1677,10 @@ public class DiscoveryClient implements EurekaClient {
     @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRATION_PREFIX + "lastSuccessfulHeartbeatTimePeriod",
             description = "How much time has passed from last successful heartbeat", type = DataSourceType.GAUGE)
     private long getLastSuccessfulHeartbeatTimePeriodInternal() {
-        if (!clientConfig.shouldRegisterWithEureka() || isShutdown.get()) {
-            heartbeatStalenessMonitor.update(0);
-            return 0;
-        }
-        long delay = getLastSuccessfulHeartbeatTimePeriod();
+        final long delay = (!clientConfig.shouldRegisterWithEureka() || isShutdown.get())
+            ? 0
+            : getLastSuccessfulHeartbeatTimePeriod();
+
         heartbeatStalenessMonitor.update(computeStalenessMonitorDelay(delay));
         return delay;
     }
@@ -1690,11 +1689,10 @@ public class DiscoveryClient implements EurekaClient {
     @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "lastSuccessfulRegistryFetchTimePeriod",
             description = "How much time has passed from last successful local registry update", type = DataSourceType.GAUGE)
     private long getLastSuccessfulRegistryFetchTimePeriodInternal() {
-        if (!clientConfig.shouldFetchRegistry() || isShutdown.get()) {
-            registryStalenessMonitor.update(0);
-            return 0;
-        }
-        long delay = getLastSuccessfulRegistryFetchTimePeriod();
+        final long delay = (!clientConfig.shouldFetchRegistry() || isShutdown.get())
+            ? 0
+            : getLastSuccessfulRegistryFetchTimePeriod();
+
         registryStalenessMonitor.update(computeStalenessMonitorDelay(delay));
         return delay;
     }
