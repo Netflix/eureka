@@ -277,7 +277,7 @@ public class EndpointUtils {
         try {
             dnsName = "txt." + dnsName;
             logger.debug("The zone url to be looked up is {} :", dnsName);
-            Set<String> ec2UrlsForZone = DnsResolver.getCNamesFromTxtRecord(dnsName);
+            Set<String> ec2UrlsForZone = new DnsResolver().getCNamesFromTxtRecord(dnsName);
             for (String ec2Url : ec2UrlsForZone) {
                 logger.debug("The eureka url for the dns name {} is {}", dnsName, ec2Url);
                 ec2UrlsForZone.add(ec2Url);
@@ -320,7 +320,7 @@ public class EndpointUtils {
             discoveryDnsName = "txt." + region + "." + clientConfig.getEurekaServerDNSName();
 
             logger.debug("The region url to be looked up is {} :", discoveryDnsName);
-            Set<String> zoneCnamesForRegion = new TreeSet<String>(DnsResolver.getCNamesFromTxtRecord(discoveryDnsName));
+            Set<String> zoneCnamesForRegion = new TreeSet<String>(new DnsResolver().getCNamesFromTxtRecord(discoveryDnsName));
             Map<String, List<String>> zoneCnameMapForRegion = new TreeMap<String, List<String>>();
             for (String zoneCname : zoneCnamesForRegion) {
                 String zone = null;

@@ -33,15 +33,10 @@ public final class DnsResolver {
     private static final String CNAME_RECORD_TYPE = "CNAME";
     private static final String TXT_RECORD_TYPE = "TXT";
 
-    static final DirContext dirContext = getDirContext();
-
-    private DnsResolver() {
-    }
-
     /**
      * Load up the DNS JNDI context provider.
      */
-    public static DirContext getDirContext() {
+    private DirContext getDirContext() {
         Hashtable<String, String> env = new Hashtable<String, String>();
         env.put(JAVA_NAMING_FACTORY_INITIAL, DNS_NAMING_FACTORY);
         env.put(JAVA_NAMING_PROVIDER_URL, DNS_PROVIDER_URL);
@@ -58,7 +53,7 @@ public final class DnsResolver {
      *
      * @return resolved host name
      */
-    public static String resolve(String originalHost) {
+    public String resolve(String originalHost) {
         String currentHost = originalHost;
         if (isLocalOrIp(currentHost)) {
             return originalHost;
@@ -66,7 +61,7 @@ public final class DnsResolver {
         try {
             String targetHost = null;
             do {
-                Attributes attrs = dirContext.getAttributes(currentHost, new String[]{A_RECORD_TYPE, CNAME_RECORD_TYPE});
+                Attributes attrs = getDirContext().getAttributes(currentHost, new String[]{A_RECORD_TYPE, CNAME_RECORD_TYPE});
                 Attribute attr = attrs.get(A_RECORD_TYPE);
                 if (attr != null) {
                     targetHost = attr.get().toString();
@@ -92,12 +87,12 @@ public final class DnsResolver {
      * @return resolved IP addresses or null if no A-record was present
      */
     @Nullable
-    public static List<String> resolveARecord(String rootDomainName) {
+    public List<String> resolveARecord(String rootDomainName) {
         if (isLocalOrIp(rootDomainName)) {
             return null;
         }
         try {
-            Attributes attrs = dirContext.getAttributes(rootDomainName, new String[]{A_RECORD_TYPE, CNAME_RECORD_TYPE});
+            Attributes attrs = getDirContext().getAttributes(rootDomainName, new String[]{A_RECORD_TYPE, CNAME_RECORD_TYPE});
             Attribute aRecord = attrs.get(A_RECORD_TYPE);
             Attribute cRecord = attrs.get(CNAME_RECORD_TYPE);
             if (aRecord != null && cRecord == null) {
@@ -128,8 +123,8 @@ public final class DnsResolver {
     /**
      * Looks up the DNS name provided in the JNDI context.
      */
-    public static Set<String> getCNamesFromTxtRecord(String discoveryDnsName) throws NamingException {
-        Attributes attrs = dirContext.getAttributes(discoveryDnsName, new String[]{TXT_RECORD_TYPE});
+    public Set<String> getCNamesFromTxtRecord(String discoveryDnsName) throws NamingException {
+        Attributes attrs = getDirContext().getAttributes(discoveryDnsName, new String[]{TXT_RECORD_TYPE});
         Attribute attr = attrs.get(TXT_RECORD_TYPE);
         String txtRecord = null;
         if (attr != null) {
