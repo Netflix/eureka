@@ -133,7 +133,7 @@ public class DnsTxtRecordClusterResolver implements ClusterResolver<AwsEndpoint>
                 }
             }
             return endpoints;
-        } catch (NamingException e) {
+        } catch (Exception e) {
             throw new ClusterResolverException("Cannot resolve Eureka cluster addresses for root: " + rootClusterDNS, e);
         }
     }

@@ -75,7 +75,7 @@ public final class DnsResolver {
 
             } while (targetHost == null);
             return targetHost;
-        } catch (NamingException e) {
+        } catch (Exception e) {
             logger.warn("Cannot resolve eureka server address {}; returning original value {}", currentHost, originalHost, e);
             return originalHost;
         }
