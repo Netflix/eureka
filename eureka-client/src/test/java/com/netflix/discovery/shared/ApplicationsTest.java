@@ -178,7 +178,41 @@ public class ApplicationsTest {
         assertNotNull(applications.getRegisteredApplications("TestApp").getByInstanceId("test.west.hostname"));
    
     }
-    
+
+    @Test
+    public void testInfoDetailApplications(){
+
+        DataCenterInfo myDCI = new DataCenterInfo() {
+            public DataCenterInfo.Name getName() {
+                return DataCenterInfo.Name.MyOwn;
+            }
+        };
+        InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder()
+                .setInstanceId("test.id")
+                .setAppName("test")
+                .setHostName("test.hostname")
+                .setStatus(InstanceStatus.UP)
+                .setIPAddr("test.testip:1")
+                .setPort(8080)
+                .setSecurePort(443)
+                .setDataCenterInfo(myDCI)
+                .build();
+
+        Application application = new Application("Test App");
+        application.addInstance(instanceInfo);
+
+        Applications applications = new Applications();
+        applications.addApplication(application);
+
+        List<InstanceInfo> instanceInfos = application.getInstances();
+        Assert.assertEquals(1, instanceInfos.size());
+        Assert.assertTrue(instanceInfos.contains(instanceInfo));
+
+        List<Application> appsList = applications.getRegisteredApplications();
+        Assert.assertEquals(1, appsList.size());
+        Assert.assertTrue(appsList.contains(application));
+        Assert.assertEquals(application, applications.getRegisteredApplications(application.getName()));
+    }
 
     @Test
     public void testRegisteredApplications() {
