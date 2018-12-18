@@ -33,8 +33,6 @@ public final class DnsResolver {
     private static final String CNAME_RECORD_TYPE = "CNAME";
     private static final String TXT_RECORD_TYPE = "TXT";
 
-    static final DirContext dirContext = getDirContext();
-
     private DnsResolver() {
     }
 
@@ -66,7 +64,7 @@ public final class DnsResolver {
         try {
             String targetHost = null;
             do {
-                Attributes attrs = dirContext.getAttributes(currentHost, new String[]{A_RECORD_TYPE, CNAME_RECORD_TYPE});
+                Attributes attrs = getDirContext().getAttributes(currentHost, new String[]{A_RECORD_TYPE, CNAME_RECORD_TYPE});
                 Attribute attr = attrs.get(A_RECORD_TYPE);
                 if (attr != null) {
                     targetHost = attr.get().toString();
@@ -97,7 +95,7 @@ public final class DnsResolver {
             return null;
         }
         try {
-            Attributes attrs = dirContext.getAttributes(rootDomainName, new String[]{A_RECORD_TYPE, CNAME_RECORD_TYPE});
+            Attributes attrs = getDirContext().getAttributes(rootDomainName, new String[]{A_RECORD_TYPE, CNAME_RECORD_TYPE});
             Attribute aRecord = attrs.get(A_RECORD_TYPE);
             Attribute cRecord = attrs.get(CNAME_RECORD_TYPE);
             if (aRecord != null && cRecord == null) {
@@ -129,7 +127,7 @@ public final class DnsResolver {
      * Looks up the DNS name provided in the JNDI context.
      */
     public static Set<String> getCNamesFromTxtRecord(String discoveryDnsName) throws NamingException {
-        Attributes attrs = dirContext.getAttributes(discoveryDnsName, new String[]{TXT_RECORD_TYPE});
+        Attributes attrs = getDirContext().getAttributes(discoveryDnsName, new String[]{TXT_RECORD_TYPE});
         Attribute attr = attrs.get(TXT_RECORD_TYPE);
         String txtRecord = null;
         if (attr != null) {
