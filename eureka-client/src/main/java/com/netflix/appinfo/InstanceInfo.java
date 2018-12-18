@@ -232,6 +232,14 @@ public class InstanceInfo {
         }
     }
 
+    @Override
+    public String toString(){
+        return "InstanceInfo [instanceId = " + this.instanceId + ", appName = " + this.appName +
+                ", hostName = " + this.hostName + ", status = " + this.status +
+                ", ipAddr = " + this.ipAddr + ", port = " + this.port + ", securePort = " + this.securePort +
+                ", dataCenterInfo = " + this.dataCenterInfo;
+    }
+
     private Map<String, String> removeMetadataMapLegacyValues(Map<String, String> metadata) {
         if (InstanceInfoSerializer.METADATA_COMPATIBILITY_VALUE.equals(metadata.get(InstanceInfoSerializer.METADATA_COMPATIBILITY_KEY))) {
             // TODO this else if can be removed once the server no longer uses legacy json
