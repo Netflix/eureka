@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.netflix.discovery.endpoint.DnsResolver;
 import com.netflix.discovery.shared.dns.DnsService;
 import com.netflix.discovery.shared.dns.DnsServiceImpl;
 import com.netflix.discovery.shared.resolver.DefaultEndpoint;
@@ -98,7 +97,7 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
     }
 
     public static TransportClientFactory createFactory(final TransportClientFactory delegateFactory) {
-        final DnsServiceImpl dnsService = new DnsServiceImpl(new DnsResolver());
+        final DnsServiceImpl dnsService = new DnsServiceImpl();
         return new TransportClientFactory() {
             @Override
             public EurekaHttpClient newClient(EurekaEndpoint endpoint) {

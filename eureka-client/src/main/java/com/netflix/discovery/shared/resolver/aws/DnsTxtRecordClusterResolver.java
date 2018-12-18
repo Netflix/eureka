@@ -85,7 +85,6 @@ public class DnsTxtRecordClusterResolver implements ClusterResolver<AwsEndpoint>
     private final int port;
     private final boolean isSecure;
     private final String relativeUri;
-    private DnsResolver dnsResolver;
 
     /**
      * @param rootClusterDNS top level domain name, in the two level hierarchy (see {@link DnsTxtRecordClusterResolver} documentation).
@@ -93,16 +92,14 @@ public class DnsTxtRecordClusterResolver implements ClusterResolver<AwsEndpoint>
      *                           name is the name part immediately followint 'txt.' suffix.
      * @param port Eureka sever port number
      * @param relativeUri service relative URI that will be appended to server address
-     * @param dnsResolver used to send DNS requests
      */
-    public DnsTxtRecordClusterResolver(String region, String rootClusterDNS, boolean extractZoneFromDNS, int port, boolean isSecure, String relativeUri, DnsResolver dnsResolver) {
+    public DnsTxtRecordClusterResolver(String region, String rootClusterDNS, boolean extractZoneFromDNS, int port, boolean isSecure, String relativeUri) {
         this.region = region;
         this.rootClusterDNS = rootClusterDNS;
         this.extractZoneFromDNS = extractZoneFromDNS;
         this.port = port;
         this.isSecure = isSecure;
         this.relativeUri = relativeUri;
-        this.dnsResolver = dnsResolver;
     }
 
     @Override
@@ -118,7 +115,7 @@ public class DnsTxtRecordClusterResolver implements ClusterResolver<AwsEndpoint>
         return eurekaEndpoints;
     }
 
-    private List<AwsEndpoint> resolve(String region, String rootClusterDNS, boolean extractZone, int port, boolean isSecure, String relativeUri) {
+    private static List<AwsEndpoint> resolve(String region, String rootClusterDNS, boolean extractZone, int port, boolean isSecure, String relativeUri) {
         try {
             Set<String> zoneDomainNames = resolve(rootClusterDNS);
             if (zoneDomainNames.isEmpty()) {
@@ -133,21 +130,21 @@ public class DnsTxtRecordClusterResolver implements ClusterResolver<AwsEndpoint>
                 }
             }
             return endpoints;
-        } catch (Exception e) {
+        } catch (NamingException e) {
             throw new ClusterResolverException("Cannot resolve Eureka cluster addresses for root: " + rootClusterDNS, e);
         }
     }
 
-    private Set<String> resolve(String rootClusterDNS) throws NamingException {
+    private static Set<String> resolve(String rootClusterDNS) throws NamingException {
         Set<String> result;
         try {
-            result = dnsResolver.getCNamesFromTxtRecord(rootClusterDNS);
+            result = DnsResolver.getCNamesFromTxtRecord(rootClusterDNS);
             if (!rootClusterDNS.startsWith("txt.")) {
-                result = dnsResolver.getCNamesFromTxtRecord("txt." + rootClusterDNS);
+                result = DnsResolver.getCNamesFromTxtRecord("txt." + rootClusterDNS);
             }
         } catch (NamingException e) {
             if (!rootClusterDNS.startsWith("txt.")) {
-                result = dnsResolver.getCNamesFromTxtRecord("txt." + rootClusterDNS);
+                result = DnsResolver.getCNamesFromTxtRecord("txt." + rootClusterDNS);
             } else {
                 throw e;
             }

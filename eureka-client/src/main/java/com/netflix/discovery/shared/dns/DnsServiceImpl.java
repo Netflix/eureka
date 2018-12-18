@@ -25,20 +25,14 @@ import com.netflix.discovery.endpoint.DnsResolver;
  * @author Tomasz Bak
  */
 public class DnsServiceImpl implements DnsService {
-    private final DnsResolver dnsResolver;
-
-    public DnsServiceImpl(DnsResolver dnsResolver) {
-        this.dnsResolver = dnsResolver;
-    }
-
     @Override
     public String resolveIp(String hostName) {
-        return dnsResolver.resolve(hostName);
+        return DnsResolver.resolve(hostName);
     }
 
     @Nullable
     @Override
     public List<String> resolveARecord(String rootDomainName) {
-        return dnsResolver.resolveARecord(rootDomainName);
+        return DnsResolver.resolveARecord(rootDomainName);
     }
 }

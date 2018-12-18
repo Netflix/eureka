@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.netflix.discovery.EurekaClientConfig;
-import com.netflix.discovery.endpoint.DnsResolver;
 import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
 import com.netflix.discovery.shared.resolver.aws.DnsTxtRecordClusterResolver;
@@ -90,8 +89,7 @@ public class LegacyClusterResolver implements ClusterResolver<AwsEndpoint> {
                         true,
                         Integer.parseInt(clientConfig.getEurekaServerPort()),
                         false,
-                        clientConfig.getEurekaServerURLContext(),
-                        new DnsResolver()
+                        clientConfig.getEurekaServerURLContext()
                 );
                 newResolver = new ZoneAffinityClusterResolver(newResolver, myZone, clientConfig.shouldPreferSameZoneEureka());
             } else {

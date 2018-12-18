@@ -16,7 +16,6 @@
 
 package com.netflix.eureka.transport;
 
-import com.netflix.discovery.endpoint.DnsResolver;
 import com.netflix.discovery.shared.dns.DnsServiceImpl;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
@@ -67,7 +66,7 @@ public final class EurekaServerHttpClients {
     }
 
     public static TransportClientFactory createFactory(final TransportClientFactory delegateFactory) {
-        final DnsServiceImpl dnsService = new DnsServiceImpl(new DnsResolver());
+        final DnsServiceImpl dnsService = new DnsServiceImpl();
         return new TransportClientFactory() {
             @Override
             public EurekaHttpClient newClient(EurekaEndpoint endpoint) {

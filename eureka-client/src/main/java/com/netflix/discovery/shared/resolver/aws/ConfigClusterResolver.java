@@ -2,7 +2,6 @@ package com.netflix.discovery.shared.resolver.aws;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
-import com.netflix.discovery.endpoint.DnsResolver;
 import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
 import org.slf4j.Logger;
@@ -57,8 +56,7 @@ public class ConfigClusterResolver implements ClusterResolver<AwsEndpoint> {
                 true,
                 port,
                 false,
-                clientConfig.getEurekaServerURLContext(),
-                new DnsResolver()
+                clientConfig.getEurekaServerURLContext()
         );
 
         List<AwsEndpoint> endpoints = dnsResolver.getClusterEndpoints();

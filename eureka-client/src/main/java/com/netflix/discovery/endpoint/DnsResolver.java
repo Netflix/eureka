@@ -33,10 +33,13 @@ public final class DnsResolver {
     private static final String CNAME_RECORD_TYPE = "CNAME";
     private static final String TXT_RECORD_TYPE = "TXT";
 
+    private DnsResolver() {
+    }
+
     /**
      * Load up the DNS JNDI context provider.
      */
-    private DirContext getDirContext() {
+    public static DirContext getDirContext() {
         Hashtable<String, String> env = new Hashtable<String, String>();
         env.put(JAVA_NAMING_FACTORY_INITIAL, DNS_NAMING_FACTORY);
         env.put(JAVA_NAMING_PROVIDER_URL, DNS_PROVIDER_URL);
@@ -53,7 +56,7 @@ public final class DnsResolver {
      *
      * @return resolved host name
      */
-    public String resolve(String originalHost) {
+    public static String resolve(String originalHost) {
         String currentHost = originalHost;
         if (isLocalOrIp(currentHost)) {
             return originalHost;
@@ -75,7 +78,7 @@ public final class DnsResolver {
 
             } while (targetHost == null);
             return targetHost;
-        } catch (Exception e) {
+        } catch (NamingException e) {
             logger.warn("Cannot resolve eureka server address {}; returning original value {}", currentHost, originalHost, e);
             return originalHost;
         }
@@ -87,7 +90,7 @@ public final class DnsResolver {
      * @return resolved IP addresses or null if no A-record was present
      */
     @Nullable
-    public List<String> resolveARecord(String rootDomainName) {
+    public static List<String> resolveARecord(String rootDomainName) {
         if (isLocalOrIp(rootDomainName)) {
             return null;
         }
@@ -123,7 +126,7 @@ public final class DnsResolver {
     /**
      * Looks up the DNS name provided in the JNDI context.
      */
-    public Set<String> getCNamesFromTxtRecord(String discoveryDnsName) throws NamingException {
+    public static Set<String> getCNamesFromTxtRecord(String discoveryDnsName) throws NamingException {
         Attributes attrs = getDirContext().getAttributes(discoveryDnsName, new String[]{TXT_RECORD_TYPE});
         Attribute attr = attrs.get(TXT_RECORD_TYPE);
         String txtRecord = null;
