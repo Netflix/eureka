@@ -119,7 +119,7 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
                 // only add the metadata if the value is present
                 if (value != null && !value.isEmpty()) {
                     builder.add(key, value);
-    			}
+                }
             }
 
             instanceInfo = builder.build();
