@@ -138,12 +138,12 @@ public class Applications {
     }
 
     /**
-     * Gets the list of all registered <em>applications</em> for the given
+     * Gets the registered <em>application</em> for the given
      * application name.
      *
      * @param appName
      *            the application name for which the result need to be fetched.
-     * @return the list of registered applications for the given application
+     * @return the registered application for the given application
      *         name.
      */
     public Application getRegisteredApplications(String appName) {
