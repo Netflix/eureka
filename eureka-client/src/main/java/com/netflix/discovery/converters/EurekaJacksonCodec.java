@@ -323,6 +323,8 @@ public class EurekaJacksonCodec {
         public void serialize(InstanceInfo info, JsonGenerator jgen, SerializerProvider provider) throws IOException {
             jgen.writeStartObject();
 
+            autoMarshalEligible(info, jgen);
+
             if (info.getInstanceId() != null) {
                 jgen.writeStringField(ELEM_INSTANCE_ID, info.getInstanceId());
             }
@@ -366,7 +368,6 @@ public class EurekaJacksonCodec {
                     jgen.writeObjectField(NODE_METADATA, metadata);
                 }
             }
-            autoMarshalEligible(info, jgen);
 
             jgen.writeEndObject();
         }
