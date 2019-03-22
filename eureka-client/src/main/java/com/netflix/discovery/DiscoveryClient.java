@@ -935,9 +935,10 @@ public class DiscoveryClient implements EurekaClient {
                 logger.info("Single vip registry refresh property : {}", clientConfig.getRegistryRefreshSingleVipAddress());
                 logger.info("Force full registry fetch : {}", forceFullRegistryFetch);
                 logger.info("Application is null : {}", (applications == null));
-                logger.info("Registered Applications size is zero : {}",
-                        (applications.getRegisteredApplications().size() == 0));
-                logger.info("Application version is -1: {}", (applications.getVersion() == -1));
+                if (applications != null){
+                    logger.info("Registered Applications size is zero : {}", applications.getRegisteredApplications());
+                    logger.info("Application version is -1: {}", (applications.getVersion() == -1));
+                }
                 getAndStoreFullRegistry();
             } else {
                 getAndUpdateDelta(applications);
