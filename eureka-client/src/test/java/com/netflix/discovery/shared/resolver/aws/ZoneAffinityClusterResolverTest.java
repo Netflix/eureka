@@ -18,6 +18,7 @@ package com.netflix.discovery.shared.resolver.aws;
 
 import java.util.List;
 
+import com.netflix.discovery.shared.resolver.ResolverUtils;
 import com.netflix.discovery.shared.resolver.StaticClusterResolver;
 import org.junit.Test;
 
@@ -34,8 +35,11 @@ public class ZoneAffinityClusterResolverTest {
     public void testApplicationZoneIsFirstOnTheList() throws Exception {
         List<AwsEndpoint> endpoints = SampleCluster.merge(SampleCluster.UsEast1a, SampleCluster.UsEast1b, SampleCluster.UsEast1c);
 
-        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver<>("regionA", endpoints), "us-east-1b", true);
-
+        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(
+                new StaticClusterResolver<>("regionA", endpoints),
+                "us-east-1b",
+                true,
+                ResolverUtils::randomize);
         List<AwsEndpoint> result = resolver.getClusterEndpoints();
         assertThat(result.size(), is(equalTo(endpoints.size())));
         assertThat(result.get(0).getZone(), is(equalTo("us-east-1b")));
@@ -45,7 +49,7 @@ public class ZoneAffinityClusterResolverTest {
     public void testAntiAffinity() throws Exception {
         List<AwsEndpoint> endpoints = SampleCluster.merge(SampleCluster.UsEast1a, SampleCluster.UsEast1b);
 
-        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver<>("regionA", endpoints), "us-east-1b", false);
+        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver<>("regionA", endpoints), "us-east-1b", false, ResolverUtils::randomize);
 
         List<AwsEndpoint> result = resolver.getClusterEndpoints();
         assertThat(result.size(), is(equalTo(endpoints.size())));
@@ -56,7 +60,7 @@ public class ZoneAffinityClusterResolverTest {
     public void testUnrecognizedZoneIsIgnored() throws Exception {
         List<AwsEndpoint> endpoints = SampleCluster.merge(SampleCluster.UsEast1a, SampleCluster.UsEast1b);
 
-        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver<>("regionA", endpoints), "us-east-1c", true);
+        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver<>("regionA", endpoints), "us-east-1c", true, ResolverUtils::randomize);
 
         List<AwsEndpoint> result = resolver.getClusterEndpoints();
         assertThat(result.size(), is(equalTo(endpoints.size())));

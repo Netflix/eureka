@@ -50,6 +50,8 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.ws.rs.core.Response.Status;
 
+import com.netflix.discovery.shared.resolver.EndpointRandomizer;
+import com.netflix.discovery.shared.resolver.ResolverUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -158,6 +160,7 @@ public class DiscoveryClient implements EurekaClient {
     private final InstanceRegionChecker instanceRegionChecker;
 
     private final EndpointUtils.ServiceUrlRandomizer urlRandomizer;
+    private final EndpointRandomizer endpointRandomizer;
     private final Provider<BackupRegistry> backupRegistryProvider;
     private final EurekaTransport eurekaTransport;
 
@@ -266,6 +269,10 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args) {
+        this(applicationInfoManager, config, args, ResolverUtils::randomize);
+    }
+
+    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args, EndpointRandomizer randomizer) {
         this(applicationInfoManager, config, args, new Provider<BackupRegistry>() {
             private volatile BackupRegistry backupRegistryInstance;
 
@@ -294,12 +301,12 @@ public class DiscoveryClient implements EurekaClient {
 
                 return backupRegistryInstance;
             }
-        });
+        }, randomizer);
     }
 
     @Inject
     DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args,
-                    Provider<BackupRegistry> backupRegistryProvider) {
+                    Provider<BackupRegistry> backupRegistryProvider, EndpointRandomizer endpointRandomizer) {
         if (args != null) {
             this.healthCheckHandlerProvider = args.healthCheckHandlerProvider;
             this.healthCheckCallbackProvider = args.healthCheckCallbackProvider;
@@ -325,7 +332,7 @@ public class DiscoveryClient implements EurekaClient {
         }
 
         this.backupRegistryProvider = backupRegistryProvider;
-
+        this.endpointRandomizer = endpointRandomizer;
         this.urlRandomizer = new EndpointUtils.InstanceInfoBasedUrlRandomizer(instanceInfo);
         localRegionApps.set(new Applications());
 
@@ -505,7 +512,8 @@ public class DiscoveryClient implements EurekaClient {
                 transportConfig,
                 eurekaTransport.transportClientFactory,
                 applicationInfoManager.getInfo(),
-                applicationsSource
+                applicationsSource,
+                endpointRandomizer
         );
 
         if (clientConfig.shouldRegisterWithEureka()) {
@@ -537,7 +545,8 @@ public class DiscoveryClient implements EurekaClient {
                         clientConfig,
                         transportConfig,
                         applicationInfoManager.getInfo(),
-                        applicationsSource
+                        applicationsSource,
+                        endpointRandomizer
                 );
                 newQueryClient = newQueryClientFactory.newClient();
             } catch (Exception e) {
@@ -552,7 +561,7 @@ public class DiscoveryClient implements EurekaClient {
     public EurekaClientConfig getEurekaClientConfig() {
         return clientConfig;
     }
-    
+
     @Override
     public ApplicationInfoManager getApplicationInfoManager() {
         return applicationInfoManager;

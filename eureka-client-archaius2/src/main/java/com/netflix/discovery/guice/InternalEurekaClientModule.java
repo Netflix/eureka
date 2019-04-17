@@ -20,6 +20,8 @@ import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.EurekaArchaius2ClientConfig;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.shared.resolver.EndpointRandomizer;
+import com.netflix.discovery.shared.resolver.ResolverUtils;
 import com.netflix.discovery.shared.transport.EurekaArchaius2TransportConfig;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import com.netflix.discovery.shared.transport.jersey.Jersey1DiscoveryClientOptionalArgs;
@@ -73,6 +75,7 @@ final class InternalEurekaClientModule extends AbstractModule {
         bind(VipAddressResolver.class).to(Archaius2VipAddressResolver.class);
         bind(InstanceInfo.class).toProvider(EurekaConfigBasedInstanceInfoProvider.class);
         bind(EurekaClient.class).to(DiscoveryClient.class);
+        bind(EndpointRandomizer.class).toInstance(ResolverUtils::randomize);
 
 
         // Default to the jersey1 discovery client optional args

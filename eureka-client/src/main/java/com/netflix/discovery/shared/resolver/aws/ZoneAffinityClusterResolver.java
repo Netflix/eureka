@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 
 import com.netflix.discovery.shared.resolver.ClusterResolver;
+import com.netflix.discovery.shared.resolver.EndpointRandomizer;
 import com.netflix.discovery.shared.resolver.ResolverUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,14 +39,21 @@ public class ZoneAffinityClusterResolver implements ClusterResolver<AwsEndpoint>
     private final ClusterResolver<AwsEndpoint> delegate;
     private final String myZone;
     private final boolean zoneAffinity;
+    private final EndpointRandomizer randomizer;
 
     /**
      * A zoneAffinity defines zone affinity (true) or anti-affinity rules (false).
      */
-    public ZoneAffinityClusterResolver(ClusterResolver<AwsEndpoint> delegate, String myZone, boolean zoneAffinity) {
+    public ZoneAffinityClusterResolver(
+            ClusterResolver<AwsEndpoint> delegate,
+            String myZone,
+            boolean zoneAffinity,
+            EndpointRandomizer randomizer
+    ) {
         this.delegate = delegate;
         this.myZone = myZone;
         this.zoneAffinity = zoneAffinity;
+        this.randomizer = randomizer;
     }
 
     @Override
@@ -68,15 +76,15 @@ public class ZoneAffinityClusterResolver implements ClusterResolver<AwsEndpoint>
         return randomizedList;
     }
 
-    private static List<AwsEndpoint> randomizeAndMerge(List<AwsEndpoint> myZoneEndpoints, List<AwsEndpoint> remainingEndpoints) {
+    private List<AwsEndpoint> randomizeAndMerge(List<AwsEndpoint> myZoneEndpoints, List<AwsEndpoint> remainingEndpoints) {
         if (myZoneEndpoints.isEmpty()) {
-            return ResolverUtils.randomize(remainingEndpoints);
+            return randomizer.randomize(remainingEndpoints);
         }
         if (remainingEndpoints.isEmpty()) {
-            return ResolverUtils.randomize(myZoneEndpoints);
+            return randomizer.randomize(myZoneEndpoints);
         }
-        List<AwsEndpoint> mergedList = ResolverUtils.randomize(myZoneEndpoints);
-        mergedList.addAll(ResolverUtils.randomize(remainingEndpoints));
+        List<AwsEndpoint> mergedList = randomizer.randomize(myZoneEndpoints);
+        mergedList.addAll(randomizer.randomize(remainingEndpoints));
         return mergedList;
     }
 }

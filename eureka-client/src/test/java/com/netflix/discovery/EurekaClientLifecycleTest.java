@@ -14,6 +14,8 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.PropertiesInstanceConfig;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.shared.resolver.EndpointRandomizer;
+import com.netflix.discovery.shared.resolver.ResolverUtils;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.SimpleEurekaHttpServer;
@@ -86,6 +88,7 @@ public class EurekaClientLifecycleTest {
                                 bind(EurekaInstanceConfig.class).to(LocalEurekaInstanceConfig.class);
                                 bind(EurekaClientConfig.class).to(LocalEurekaClientConfig.class);
                                 bind(AbstractDiscoveryClientOptionalArgs.class).to(Jersey1DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
+                                bind(EndpointRandomizer.class).toInstance(ResolverUtils::randomize);
                             }
                         }
                 )
@@ -122,6 +125,7 @@ public class EurekaClientLifecycleTest {
                                 bind(EurekaClientConfig.class).to(BadServerEurekaClientConfig1.class);
                                 bind(BackupRegistry.class).toInstance(backupRegistry);
                                 bind(AbstractDiscoveryClientOptionalArgs.class).to(Jersey1DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
+                                bind(EndpointRandomizer.class).toInstance(ResolverUtils::randomize);
                             }
                         }
                 )
@@ -144,6 +148,7 @@ public class EurekaClientLifecycleTest {
                                 bind(EurekaInstanceConfig.class).to(LocalEurekaInstanceConfig.class);
                                 bind(EurekaClientConfig.class).to(BadServerEurekaClientConfig2.class);
                                 bind(AbstractDiscoveryClientOptionalArgs.class).to(Jersey1DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
+                                bind(EndpointRandomizer.class).toInstance(ResolverUtils::randomize);
                             }
                         }
                 )

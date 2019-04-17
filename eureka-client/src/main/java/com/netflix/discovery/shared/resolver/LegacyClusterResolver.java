@@ -49,9 +49,9 @@ public class LegacyClusterResolver implements ClusterResolver<AwsEndpoint> {
 
     private final ClusterResolver<AwsEndpoint> delegate;
 
-    public LegacyClusterResolver(EurekaClientConfig clientConfig, String myZone) {
+    public LegacyClusterResolver(EurekaClientConfig clientConfig, String myZone, EndpointRandomizer randomizer) {
         this.delegate = new ReloadingClusterResolver<>(
-                new LegacyClusterResolverFactory(clientConfig, myZone),
+                new LegacyClusterResolverFactory(clientConfig, myZone, randomizer),
                 clientConfig.getEurekaServiceUrlPollIntervalSeconds() * 1000
         );
     }
@@ -71,11 +71,13 @@ public class LegacyClusterResolver implements ClusterResolver<AwsEndpoint> {
         private final EurekaClientConfig clientConfig;
         private final String myRegion;
         private final String myZone;
+        private final EndpointRandomizer randomizer;
 
-        LegacyClusterResolverFactory(EurekaClientConfig clientConfig, String myZone) {
+        LegacyClusterResolverFactory(EurekaClientConfig clientConfig, String myZone, EndpointRandomizer randomizer) {
             this.clientConfig = clientConfig;
             this.myRegion = clientConfig.getRegion();
             this.myZone = myZone;
+            this.randomizer = randomizer;
         }
 
         @Override
@@ -91,7 +93,7 @@ public class LegacyClusterResolver implements ClusterResolver<AwsEndpoint> {
                         false,
                         clientConfig.getEurekaServerURLContext()
                 );
-                newResolver = new ZoneAffinityClusterResolver(newResolver, myZone, clientConfig.shouldPreferSameZoneEureka());
+                newResolver = new ZoneAffinityClusterResolver(newResolver, myZone, clientConfig.shouldPreferSameZoneEureka(), randomizer);
             } else {
                 // FIXME Not randomized in the EndpointUtils.getServiceUrlsFromConfig, and no zone info to do this here
                 newResolver = new StaticClusterResolver<>(myRegion, createEurekaEndpointsFromConfig());
