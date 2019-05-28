@@ -53,6 +53,7 @@ import static com.netflix.discovery.EurekaClientNames.METRIC_TRANSPORT_PREFIX;
  *
  * @author Tomasz Bak
  * @author Li gang
+ * @author Dongtiao Zhao
  */
 public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
 
@@ -161,12 +162,13 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
     private List<EurekaEndpoint> getHostCandidates() {
         List<EurekaEndpoint> candidateHosts = clusterResolver.getClusterEndpoints();
         quarantineSet.retainAll(candidateHosts);
-
+        // Use Set to remove the same EurekaEndpoint in the List to prevent threshold always larger than quarantineSet size
+        int candidateHostsSetSize = (new ConcurrentSkipListSet<>(candidateHosts)).size();
         // If enough hosts are bad, we have no choice but start over again
-        int threshold = (int) (candidateHosts.size() * transportConfig.getRetryableClientQuarantineRefreshPercentage());
+        int threshold = (int) (candidateHostsSetSize * transportConfig.getRetryableClientQuarantineRefreshPercentage());
         //Prevent threshold is too large
-        if (threshold > candidateHosts.size()) {
-            threshold = candidateHosts.size();
+        if (threshold > candidateHostsSetSize) {
+            threshold = candidateHostsSetSize;
         }
         if (quarantineSet.isEmpty()) {
             // no-op
