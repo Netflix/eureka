@@ -33,14 +33,15 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.resolver.ClosableResolver;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.DefaultEndpoint;
+import com.netflix.discovery.shared.resolver.EndpointRandomizer;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
+import com.netflix.discovery.shared.resolver.ResolverUtils;
 import com.netflix.discovery.shared.resolver.StaticClusterResolver;
 import com.netflix.discovery.shared.resolver.aws.ApplicationsResolver;
 import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
 import com.netflix.discovery.shared.resolver.aws.EurekaHttpResolver;
 import com.netflix.discovery.shared.resolver.aws.TestEurekaHttpResolver;
 import com.netflix.discovery.shared.transport.jersey.Jersey1TransportClientFactories;
-import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.sun.jersey.api.client.ClientHandlerException;
@@ -85,6 +86,7 @@ public class EurekaHttpClientsTest {
     private SimpleEurekaHttpServer readServer;
 
     private ClusterResolver<EurekaEndpoint> clusterResolver;
+    private EndpointRandomizer randomizer;
     private EurekaHttpClientFactory clientFactory;
 
     private String readServerURI;
@@ -95,6 +97,7 @@ public class EurekaHttpClientsTest {
     public void setUp() throws IOException {
         clientConfig = mock(EurekaClientConfig.class);
         transportConfig = mock(EurekaTransportConfig.class);
+        randomizer = ResolverUtils::randomize;
 
         when(clientConfig.getEurekaServerTotalConnectionsPerHost()).thenReturn(10);
         when(clientConfig.getEurekaServerTotalConnections()).thenReturn(10);
@@ -185,7 +188,8 @@ public class EurekaHttpClientsTest {
                     transportConfig,
                     transportClientFactory,
                     applicationInfoManager.getInfo(),
-                    applicationsSource
+                    applicationsSource,
+                    randomizer
             );
 
             List endpoints = resolver.getClusterEndpoints();
@@ -244,7 +248,8 @@ public class EurekaHttpClientsTest {
                     localResolver,
                     clientConfig,
                     transportConfig,
-                    applicationInfoManager.getInfo()
+                    applicationInfoManager.getInfo(),
+                    randomizer
             );
 
             List endpoints = resolver.getClusterEndpoints();

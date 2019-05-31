@@ -14,6 +14,8 @@ import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.Jersey2DiscoveryClientOptionalArgs;
 import com.netflix.discovery.providers.DefaultEurekaClientConfigProvider;
+import com.netflix.discovery.shared.resolver.EndpointRandomizer;
+import com.netflix.discovery.shared.resolver.ResolverUtils;
 import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import com.netflix.discovery.shared.transport.jersey2.Jersey2TransportClientFactories;
 
@@ -37,7 +39,7 @@ public final class Jersey2EurekaModule extends AbstractModule {
         bind(InstanceInfo.class).toProvider(EurekaConfigBasedInstanceInfoProvider.class).in(Scopes.SINGLETON);
 
         bind(EurekaClient.class).to(DiscoveryClient.class).in(Scopes.SINGLETON);
-
+        bind(EndpointRandomizer.class).toInstance(ResolverUtils::randomize);
         // jersey2 support bindings
         bind(AbstractDiscoveryClientOptionalArgs.class).to(Jersey2DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
     }
