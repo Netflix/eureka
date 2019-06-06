@@ -127,7 +127,6 @@ public class JerseyReplicationClient extends AbstractJerseyEurekaHttpClient impl
         }
     }
 
-    @Override
     public void addReplicationClientFilter(ClientFilter clientFilter) {
         jerseyApacheClient.addFilter(clientFilter);
     }

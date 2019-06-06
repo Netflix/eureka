@@ -5,7 +5,6 @@ import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
-import com.sun.jersey.api.client.filter.ClientFilter;
 
 /**
  * @author Tomasz Bak
@@ -15,6 +14,4 @@ public interface HttpReplicationClient extends EurekaHttpClient {
     EurekaHttpResponse<Void> statusUpdate(String asgName, ASGStatus newStatus);
 
     EurekaHttpResponse<ReplicationListResponse> submitBatchUpdates(ReplicationList replicationList);
-
-    default void addReplicationClientFilter(ClientFilter clientFilter) {};
 }
