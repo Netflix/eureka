@@ -14,5 +14,4 @@ public interface HttpReplicationClient extends EurekaHttpClient {
     EurekaHttpResponse<Void> statusUpdate(String asgName, ASGStatus newStatus);
 
     EurekaHttpResponse<ReplicationListResponse> submitBatchUpdates(ReplicationList replicationList);
-
 }

@@ -26,6 +26,7 @@ import com.netflix.eureka.resources.ServerCodecs;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.WebResource.Builder;
+import com.sun.jersey.api.client.filter.ClientFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,6 +125,10 @@ public class JerseyReplicationClient extends AbstractJerseyEurekaHttpClient impl
                 response.close();
             }
         }
+    }
+
+    public void addReplicationClientFilter(ClientFilter clientFilter) {
+        jerseyApacheClient.addFilter(clientFilter);
     }
 
     @Override
