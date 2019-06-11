@@ -38,7 +38,7 @@ allprojects {
         governatorVersion = '1.17.5'
         archaiusVersion = '0.7.6'
         jacksonVersion = '2.9.4'
-        woodstoxVersion = '4.4.1'
+        woodstoxVersion = '5.2.1'
 
         // test deps
         jetty_version = '7.2.0.v20101020'
@@ -73,4 +73,3 @@ subprojects {
         }
     }
 }
-

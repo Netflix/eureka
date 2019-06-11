@@ -19,7 +19,7 @@ dependencies {
     compile "com.google.inject:guice:${guiceVersion}"
 
     compile "com.github.vlsi.compactmap:compactmap:1.2.1"
-    
+
     compile "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
     compile "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
@@ -27,7 +27,7 @@ dependencies {
     // Eureka client uses JSON encoding by default
     provided "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${jacksonVersion}"
     // Prefered jackson Stax serializer. Default Oracle has issues (adds empty namespace) and is slower
-    provided "org.codehaus.woodstox:woodstox-core-asl:${woodstoxVersion}"
+    provided "com.fasterxml.woodstox:woodstox-core:${woodstoxVersion}"
 
     runtime "org.codehaus.jettison:jettison:${jettisonVersion}"
 
