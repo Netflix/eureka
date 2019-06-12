@@ -12,7 +12,7 @@ dependencies {
 
     // These dependencies are marked 'provided' in the client, but we need them always on the server
     compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${jacksonVersion}"
-    compile "org.codehaus.woodstox:woodstox-core-asl:${woodstoxVersion}"
+    compile "com.fasterxml.woodstox:woodstox-core:${woodstoxVersion}"
 
     testCompile project(':eureka-test-utils')
     testCompile "junit:junit:${junit_version}"
