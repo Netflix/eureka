@@ -30,25 +30,29 @@ import java.util.HashSet;
 
 public class EurekaEntityFunctionsTest {
 
-    private Application createSingleInstanceApp(String appId, String instanceId) {
+    private Application createSingleInstanceApp(
+            String appId, String instanceId,
+            InstanceInfo.ActionType actionType) {
         InstanceInfo instanceInfo = Mockito.mock(InstanceInfo.class);
         Mockito.when(instanceInfo.getId()).thenReturn(instanceId);
         Mockito.when(instanceInfo.getAppName()).thenReturn(instanceId);
         Mockito.when(instanceInfo.getStatus())
                 .thenReturn(InstanceInfo.InstanceStatus.UP);
-        Mockito.when(instanceInfo.getActionType())
-                .thenReturn(InstanceInfo.ActionType.ADDED);
+        Mockito.when(instanceInfo.getActionType()).thenReturn(actionType);
         Application application = new Application(appId);
         application.addInstance(instanceInfo);
         return application;
     }
 
+    private Applications createApplications(Application... applications) {
+        return new Applications("appsHashCode",
+                1559658285l, new ArrayList<>(Arrays.asList(applications)));
+    }
+
     @Test
     public void testSelectApplicationNamesIfNotNullReturnNameString() {
-        Applications applications = new Applications("appsHashCode",
-                1559658285l, new ArrayList<>(Arrays.asList(
-                new Application("foo"), new Application("bar"),
-                new Application("baz"))));
+        Applications applications = createApplications(new Application("foo"),
+                new Application("bar"), new Application("baz"));
 
         HashSet<String> strings =
                 new HashSet<>(Arrays.asList("baz", "bar", "foo"));
@@ -58,7 +62,8 @@ public class EurekaEntityFunctionsTest {
 
     @Test
     public void testSelectInstancesMappedByIdIfNotNullReturnMapOfInstances() {
-        Application application = createSingleInstanceApp("foo", "foo");
+        Application application = createSingleInstanceApp("foo", "foo",
+                InstanceInfo.ActionType.ADDED);
         HashMap<String, InstanceInfo> hashMap = new HashMap<>();
         hashMap.put("foo", application.getByInstanceId("foo"));
         Assert.assertEquals(hashMap,
@@ -67,9 +72,9 @@ public class EurekaEntityFunctionsTest {
 
     @Test
     public void testSelectInstanceIfInstanceExistsReturnSelectedInstance() {
-        Application application = createSingleInstanceApp("foo", "foo");
-        Applications applications = new Applications("appsHashCode",
-                1559658285l, new ArrayList<>(Arrays.asList(application)));
+        Application application = createSingleInstanceApp("foo", "foo",
+                InstanceInfo.ActionType.ADDED);
+        Applications applications = createApplications(application);
 
         Assert.assertNull(EurekaEntityFunctions
                 .selectInstance(new Applications(), "foo"));
@@ -84,9 +89,9 @@ public class EurekaEntityFunctionsTest {
 
     @Test
     public void testTakeFirstIfNotNullReturnFirstInstance() {
-        Application application = createSingleInstanceApp("foo", "foo");
-        Applications applications = new Applications("appsHashCode",
-                1559658285l, new ArrayList<>(Arrays.asList(application)));
+        Application application = createSingleInstanceApp("foo", "foo",
+                InstanceInfo.ActionType.ADDED);
+        Applications applications = createApplications(application);
         applications.addApplication(application);
 
         Assert.assertNull(EurekaEntityFunctions.takeFirst(new Applications()));
@@ -96,9 +101,9 @@ public class EurekaEntityFunctionsTest {
 
     @Test
     public void testSelectAllIfNotNullReturnAllInstances() {
-        Application application = createSingleInstanceApp("foo", "foo");
-        Applications applications = new Applications("appsHashCode",
-                1559658285l, new ArrayList<>(Arrays.asList(application)));
+        Application application = createSingleInstanceApp("foo", "foo",
+                InstanceInfo.ActionType.ADDED);
+        Applications applications = createApplications(application);
         applications.addApplication(application);
         Assert.assertEquals(new ArrayList<>(Arrays.asList(
                 application.getByInstanceId("foo"),
@@ -108,7 +113,8 @@ public class EurekaEntityFunctionsTest {
 
     @Test
     public void testToApplicationMapIfNotNullReturnMapOfApplication() {
-        Application application = createSingleInstanceApp("foo", "foo");
+        Application application = createSingleInstanceApp("foo", "foo",
+                InstanceInfo.ActionType.ADDED);
         Assert.assertEquals(1, EurekaEntityFunctions.toApplicationMap(
                 new ArrayList<>(Arrays.asList(
                         application.getByInstanceId("foo")))).size());
@@ -122,10 +128,8 @@ public class EurekaEntityFunctionsTest {
         hashMap.put("bar", new Application("bar"));
         hashMap.put("baz", new Application("baz"));
 
-        Applications applications = new Applications("appsHashCode",
-                1559658285l, new ArrayList<>(Arrays.asList(
-                new Application("foo"), new Application("bar"),
-                new Application("baz"))));
+        Applications applications = createApplications(new Application("foo"),
+                new Application("bar"), new Application("baz"));
 
         Assert.assertEquals(applications.size(),
                 EurekaEntityFunctions.toApplications(hashMap).size());
@@ -133,22 +137,23 @@ public class EurekaEntityFunctionsTest {
 
     @Test
     public void testToApplicationsIfNotNullReturnApplicationsFromInstances() {
-        InstanceInfo instanceInfo1 =
-                createSingleInstanceApp("foo", "foo").getByInstanceId("foo");
-        InstanceInfo instanceInfo2 =
-                createSingleInstanceApp("bar", "bar").getByInstanceId("bar");
-        InstanceInfo instanceInfo3 =
-                createSingleInstanceApp("baz", "baz").getByInstanceId("baz");
+        InstanceInfo instanceInfo1 = createSingleInstanceApp("foo", "foo",
+                InstanceInfo.ActionType.ADDED).getByInstanceId("foo");
+        InstanceInfo instanceInfo2 = createSingleInstanceApp("bar", "bar",
+                InstanceInfo.ActionType.ADDED).getByInstanceId("bar");
+        InstanceInfo instanceInfo3 = createSingleInstanceApp("baz", "baz",
+                InstanceInfo.ActionType.ADDED).getByInstanceId("baz");
         Assert.assertEquals(3, EurekaEntityFunctions.toApplications(
                 instanceInfo1, instanceInfo2, instanceInfo3).size());
     }
 
     @Test
     public void testCopyApplicationsIfNotNullReturnApplications() {
-        Application application1 = createSingleInstanceApp("foo", "foo");
-        Application application2 = createSingleInstanceApp("bar", "bar");
-        Applications applications = new Applications("appsHashCode",
-                1559658285l, new ArrayList<>());
+        Application application1 = createSingleInstanceApp("foo", "foo",
+                InstanceInfo.ActionType.ADDED);
+        Application application2 = createSingleInstanceApp("bar", "bar",
+                InstanceInfo.ActionType.ADDED);
+        Applications applications = createApplications();
         applications.addApplication(application1);
         applications.addApplication(application2);
         Assert.assertEquals(2,
@@ -157,14 +162,16 @@ public class EurekaEntityFunctionsTest {
 
     @Test
     public void testCopyApplicationIfNotNullReturnApplication() {
-        Application application = createSingleInstanceApp("foo", "foo");
+        Application application = createSingleInstanceApp("foo", "foo",
+                InstanceInfo.ActionType.ADDED);
         Assert.assertEquals(1,
                 EurekaEntityFunctions.copyApplication(application).size());
     }
 
     @Test
     public void testCopyInstancesIfNotNullReturnCollectionOfInstanceInfo() {
-        Application application = createSingleInstanceApp("foo", "foo");
+        Application application = createSingleInstanceApp("foo", "foo",
+                InstanceInfo.ActionType.ADDED);
         Assert.assertEquals(1,
                 EurekaEntityFunctions.copyInstances(
                         new ArrayList<>(Arrays.asList(
@@ -175,9 +182,9 @@ public class EurekaEntityFunctionsTest {
     @Test
     public void
     testMergeApplicationsIfNotNullAndHasAppNameReturnApplications() {
-        Application application = createSingleInstanceApp("foo", "foo");
-        Applications applications = new Applications("appsHashCode",
-                1559658285l, new ArrayList<>(Arrays.asList(application)));
+        Application application = createSingleInstanceApp("foo", "foo",
+                InstanceInfo.ActionType.ADDED);
+        Applications applications = createApplications(application);
         Assert.assertEquals(1, EurekaEntityFunctions.mergeApplications(
                 applications, applications).size());
     }
@@ -185,13 +192,13 @@ public class EurekaEntityFunctionsTest {
     @Test
     public void
     testMergeApplicationsIfNotNullAndDoesNotHaveAppNameReturnApplications() {
-        Application application1 = createSingleInstanceApp("foo", "foo");
-        Applications applications1 = new Applications("appsHashCode",
-                1559658285l, new ArrayList<>(Arrays.asList(application1)));
+        Application application1 = createSingleInstanceApp("foo", "foo",
+                InstanceInfo.ActionType.ADDED);
+        Applications applications1 = createApplications(application1);
 
-        Application application2 = createSingleInstanceApp("bar", "bar");
-        Applications applications2 = new Applications("appsHashCode",
-                1559658285l, new ArrayList<>(Arrays.asList(application2)));
+        Application application2 = createSingleInstanceApp("bar", "bar",
+                InstanceInfo.ActionType.ADDED);
+        Applications applications2 = createApplications(application2);
 
         Assert.assertEquals(2, EurekaEntityFunctions.mergeApplications(
                 applications1, applications2).size());
@@ -199,7 +206,8 @@ public class EurekaEntityFunctionsTest {
 
     @Test
     public void testMergeApplicationIfActionTypeAddedReturnApplication() {
-        Application application = createSingleInstanceApp("foo", "foo");
+        Application application = createSingleInstanceApp("foo", "foo",
+                InstanceInfo.ActionType.ADDED);
         Assert.assertEquals(application.getInstances(),
                 EurekaEntityFunctions.mergeApplication(
                         application, application).getInstances());
@@ -207,9 +215,8 @@ public class EurekaEntityFunctionsTest {
 
     @Test
     public void testMergeApplicationIfActionTypeModifiedReturnApplication() {
-        Application application = createSingleInstanceApp("foo", "foo");
-        Mockito.when(application.getByInstanceId("foo").getActionType())
-                .thenReturn(InstanceInfo.ActionType.MODIFIED);
+        Application application = createSingleInstanceApp("foo", "foo",
+                InstanceInfo.ActionType.MODIFIED);
         Assert.assertEquals(application.getInstances(),
                 EurekaEntityFunctions.mergeApplication(
                         application, application).getInstances());
@@ -217,9 +224,9 @@ public class EurekaEntityFunctionsTest {
 
     @Test
     public void testMergeApplicationIfActionTypeDeletedReturnApplication() {
-        Application application = createSingleInstanceApp("foo", "foo");
-        Mockito.when(application.getByInstanceId("foo").getActionType())
-                .thenReturn(InstanceInfo.ActionType.DELETED);
+        Application application = createSingleInstanceApp("foo", "foo",
+                InstanceInfo.ActionType.DELETED);
+
         Assert.assertNotEquals(application.getInstances(),
                 EurekaEntityFunctions.mergeApplication(
                         application, application).getInstances());
@@ -227,9 +234,9 @@ public class EurekaEntityFunctionsTest {
 
     @Test
     public void testUpdateMetaIfNotNullReturnApplications() {
-        Application application = createSingleInstanceApp("foo", "foo");
-        Applications applications = new Applications("appsHashCode",
-                1559658285l, new ArrayList<>(Arrays.asList(application)));
+        Application application = createSingleInstanceApp("foo", "foo",
+                InstanceInfo.ActionType.ADDED);
+        Applications applications = createApplications(application);
         Assert.assertEquals(1l,
                 (long) EurekaEntityFunctions.updateMeta(applications)
                         .getVersion());
@@ -237,9 +244,9 @@ public class EurekaEntityFunctionsTest {
 
     @Test
     public void testCountInstancesIfApplicationsHasInstancesReturnSize() {
-        Application application = createSingleInstanceApp("foo", "foo");
-        Applications applications = new Applications("appsHashCode",
-                1559658285l, new ArrayList<>(Arrays.asList(application)));
+        Application application = createSingleInstanceApp("foo", "foo",
+                InstanceInfo.ActionType.ADDED);
+        Applications applications = createApplications(application);
         Assert.assertEquals(1,
                 EurekaEntityFunctions.countInstances(applications));
     }
@@ -248,10 +255,10 @@ public class EurekaEntityFunctionsTest {
     public void testComparatorByAppNameAndIdIfNotNullReturnInt() {
         InstanceInfo instanceInfo1 = Mockito.mock(InstanceInfo.class);
         InstanceInfo instanceInfo2 = Mockito.mock(InstanceInfo.class);
-        InstanceInfo instanceInfo3 =
-                createSingleInstanceApp("foo", "foo").getByInstanceId("foo");
-        InstanceInfo instanceInfo4 =
-                createSingleInstanceApp("bar", "bar").getByInstanceId("bar");
+        InstanceInfo instanceInfo3 = createSingleInstanceApp("foo", "foo",
+                InstanceInfo.ActionType.ADDED).getByInstanceId("foo");
+        InstanceInfo instanceInfo4 = createSingleInstanceApp("bar", "bar",
+                InstanceInfo.ActionType.ADDED).getByInstanceId("bar");
 
         Assert.assertTrue(EurekaEntityFunctions.comparatorByAppNameAndId()
                 .compare(instanceInfo1, instanceInfo2) > 0);
