@@ -84,30 +84,50 @@ public class StringInterningAmazonInfoBuilder extends JsonDeserializer<AmazonInf
         return new AmazonInfo(Name.Amazon.name(), metadata);
     }
 
+    private boolean isEndOfObjectOrInput(JsonToken token) {
+        return token == null || token == JsonToken.END_OBJECT;
+    }
+
+    private boolean skipToMetadata(JsonParser jp) throws IOException {
+        JsonToken token = jp.getCurrentToken();
+        while (!isEndOfObjectOrInput(token)) {
+            if (token == JsonToken.FIELD_NAME && EnumLookup.equals(BUF_METADATA, jp.getTextCharacters(), jp.getTextOffset(), jp.getTextLength())) {
+                return true;
+            }
+            token = jp.nextToken();
+        }
+        return false;
+    }
+
+    private void skipToEnd(JsonParser jp) throws IOException {
+        JsonToken token = jp.getCurrentToken();
+        while (!isEndOfObjectOrInput(token)) {
+            token = jp.nextToken();
+        }
+    }
+
     @Override
     public AmazonInfo deserialize(JsonParser jp, DeserializationContext context)
             throws IOException {
         Map<String,String> metadata = new CompactHashMap<>();
         DeserializerStringCache intern = DeserializerStringCache.from(context);        
-        
-        JsonToken jsonToken;
-        while((jsonToken = jp.nextToken()) != JsonToken.END_OBJECT){
-          jsonToken = jp.nextToken();
-            
-            if (EnumLookup.equals(BUF_METADATA, jp.getTextCharacters(), jp.getTextOffset(), jp.getTextLength())) {
-                jsonToken = jp.nextToken();                
-                while((jsonToken = jp.nextToken()) != JsonToken.END_OBJECT) {
-                    String metadataKey = intern.apply(jp, CacheScope.GLOBAL_SCOPE);
-                    jp.nextToken();
-                    CacheScope scope = VALUE_INTERN_KEYS.get(metadataKey);
-                    String metadataValue =  (scope != null) ? intern.apply(jp, scope) : intern.apply(jp, CacheScope.APPLICATION_SCOPE);                    
-                    metadata.put(metadataKey, metadataValue);
-                }
+
+        if (skipToMetadata(jp)) {
+            JsonToken jsonToken = jp.nextToken();
+            while((jsonToken = jp.nextToken()) != JsonToken.END_OBJECT) {
+                String metadataKey = intern.apply(jp, CacheScope.GLOBAL_SCOPE);
+                jp.nextToken();
+                CacheScope scope = VALUE_INTERN_KEYS.get(metadataKey);
+                String metadataValue =  (scope != null) ? intern.apply(jp, scope) : intern.apply(jp, CacheScope.APPLICATION_SCOPE);
+                metadata.put(metadataKey, metadataValue);
             }
-            else {
-                jsonToken = jp.nextToken();                
-            }
+            skipToEnd(jp);
         }
+
+        if (jp.getCurrentToken() == JsonToken.END_OBJECT) {
+            jp.nextToken();
+        }
+
         return new AmazonInfo(Name.Amazon.name(), metadata);
     }
   
