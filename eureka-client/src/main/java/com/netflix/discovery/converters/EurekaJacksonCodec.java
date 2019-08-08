@@ -323,8 +323,6 @@ public class EurekaJacksonCodec {
         public void serialize(InstanceInfo info, JsonGenerator jgen, SerializerProvider provider) throws IOException {
             jgen.writeStartObject();
 
-            autoMarshalEligible(info, jgen);
-
             if (info.getInstanceId() != null) {
                 jgen.writeStringField(ELEM_INSTANCE_ID, info.getInstanceId());
             }
@@ -336,7 +334,6 @@ public class EurekaJacksonCodec {
                 jgen.writeStringField(ELEM_SID, info.getSID());
             }
 
-            jgen.writeStringField(ELEM_STATUS, info.getStatus().name());
             jgen.writeStringField(ELEM_OVERRIDDEN_STATUS, info.getOverriddenStatus().name());
 
             jgen.writeFieldName(ELEM_PORT);
@@ -368,6 +365,9 @@ public class EurekaJacksonCodec {
                     jgen.writeObjectField(NODE_METADATA, metadata);
                 }
             }
+            autoMarshalEligible(info, jgen);
+            jgen.writeStringField(ELEM_STATUS, info.getStatus().name());
+
             jgen.writeEndObject();
         }
 
