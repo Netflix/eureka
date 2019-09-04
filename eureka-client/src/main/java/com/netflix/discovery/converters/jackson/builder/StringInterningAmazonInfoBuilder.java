@@ -28,11 +28,10 @@ import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.DataCenterInfo.Name;
 import com.netflix.discovery.converters.EnumLookup;
+import com.netflix.discovery.converters.EurekaJacksonCodec;
 import com.netflix.discovery.util.DeserializerStringCache;
 import com.netflix.discovery.util.DeserializerStringCache.CacheScope;
 import com.netflix.discovery.util.StringCache;
-
-import vlsi.utils.CompactHashMap;
 
 /**
  * Amazon instance info builder that is doing key names interning, together with
@@ -109,7 +108,7 @@ public class StringInterningAmazonInfoBuilder extends JsonDeserializer<AmazonInf
     @Override
     public AmazonInfo deserialize(JsonParser jp, DeserializationContext context)
             throws IOException {
-        Map<String,String> metadata = new CompactHashMap<>();
+        Map<String,String> metadata = EurekaJacksonCodec.METADATA_MAP_SUPPLIER.get();
         DeserializerStringCache intern = DeserializerStringCache.from(context);        
 
         if (skipToMetadata(jp)) {

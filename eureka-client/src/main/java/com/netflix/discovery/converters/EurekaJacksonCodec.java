@@ -105,6 +105,22 @@ public class EurekaJacksonCodec {
 
     public static EurekaJacksonCodec INSTANCE = new EurekaJacksonCodec();
 
+    public static final Supplier<? extends Map<String, String>> METADATA_MAP_SUPPLIER;
+
+    static {
+        boolean useCompact = true;
+        try {
+            Class.forName("vlsi.utils.CompactHashMap");
+        } catch (ClassNotFoundException e) {
+            useCompact = false;
+        }
+        if (useCompact) {
+            METADATA_MAP_SUPPLIER = CompactHashMap::new;
+        } else {
+            METADATA_MAP_SUPPLIER = HashMap::new;
+        }
+    }
+
     /**
      * XStream codec supports character replacement in field names to generate XML friendly
      * names. This feature is also configurable, and replacement strings can be provided by a user.
@@ -622,7 +638,7 @@ public class EurekaJacksonCodec {
                                 String key = intern.apply(jp, CacheScope.GLOBAL_SCOPE);
                                 jsonToken = jp.nextToken();
                                 String value = intern.apply(jp, CacheScope.APPLICATION_SCOPE );
-                                metadataMap = Optional.ofNullable(metadataMap).orElseGet(CompactHashMap::new);
+                                metadataMap = Optional.ofNullable(metadataMap).orElseGet(METADATA_MAP_SUPPLIER);
                                 metadataMap.put(key, value);
                             }
                         };   
