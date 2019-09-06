@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -1278,8 +1279,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     }
 
-    private class CircularQueue<E> extends ConcurrentLinkedQueue<E> {
-        private int size = 0;
+    private static class CircularQueue<E> extends LinkedList<E> {
+        private final int size;
 
         public CircularQueue(int size) {
             this.size = size;
@@ -1289,7 +1290,6 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         public boolean add(E e) {
             this.makeSpaceIfNotAvailable();
             return super.add(e);
-
         }
 
         private void makeSpaceIfNotAvailable() {
@@ -1298,6 +1298,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             }
         }
 
+        @Override
         public boolean offer(E e) {
             this.makeSpaceIfNotAvailable();
             return super.offer(e);
