@@ -1297,12 +1297,6 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 this.remove();
             }
         }
-
-        @Override
-        public boolean offer(E e) {
-            this.makeSpaceIfNotAvailable();
-            return super.offer(e);
-        }
     }
 
     /**
