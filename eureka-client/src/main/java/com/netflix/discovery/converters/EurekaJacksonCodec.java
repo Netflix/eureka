@@ -334,7 +334,6 @@ public class EurekaJacksonCodec {
                 jgen.writeStringField(ELEM_SID, info.getSID());
             }
 
-            jgen.writeStringField(ELEM_STATUS, info.getStatus().name());
             jgen.writeStringField(ELEM_OVERRIDDEN_STATUS, info.getOverriddenStatus().name());
 
             jgen.writeFieldName(ELEM_PORT);
@@ -367,6 +366,7 @@ public class EurekaJacksonCodec {
                 }
             }
             autoMarshalEligible(info, jgen);
+            jgen.writeStringField(ELEM_STATUS, info.getStatus().name());
 
             jgen.writeEndObject();
         }
