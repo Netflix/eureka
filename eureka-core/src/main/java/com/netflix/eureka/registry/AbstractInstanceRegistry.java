@@ -19,11 +19,12 @@ package com.netflix.eureka.registry;
 import javax.annotation.Nullable;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.AbstractQueue;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -172,8 +173,12 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     @Override
     public void clearRegistry() {
         overriddenInstanceStatusMap.clear();
-        recentCanceledQueue.clear();
-        recentRegisteredQueue.clear();
+        synchronized (recentCanceledQueue) {
+            recentCanceledQueue.clear();
+        }
+        synchronized (recentRegisteredQueue) {
+            recentRegisteredQueue.clear();
+        }
         recentlyChangedQueue.clear();
         registry.clear();
     }
@@ -1157,12 +1162,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      */
     @Override
     public List<Pair<Long, String>> getLastNRegisteredInstances() {
-        List<Pair<Long, String>> list = new ArrayList<Pair<Long, String>>();
-
+        List<Pair<Long, String>> list;
         synchronized (recentRegisteredQueue) {
-            for (Pair<Long, String> aRecentRegisteredQueue : recentRegisteredQueue) {
-                list.add(aRecentRegisteredQueue);
-            }
+            list = new ArrayList<Pair<Long, String>>(recentRegisteredQueue);
         }
         Collections.reverse(list);
         return list;
@@ -1175,11 +1177,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      */
     @Override
     public List<Pair<Long, String>> getLastNCanceledInstances() {
-        List<Pair<Long, String>> list = new ArrayList<Pair<Long, String>>();
+        List<Pair<Long, String>> list;
         synchronized (recentCanceledQueue) {
-            for (Pair<Long, String> aRecentCanceledQueue : recentCanceledQueue) {
-                list.add(aRecentCanceledQueue);
-            }
+            list = new ArrayList<Pair<Long, String>>(recentCanceledQueue);
         }
         Collections.reverse(list);
         return list;
@@ -1279,23 +1279,110 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     }
 
-    private static class CircularQueue<E> extends LinkedList<E> {
-        private final int size;
+    /* visible for testing */  static class CircularQueue<E> extends AbstractQueue<E> {
+        private final Object[] storage;
+        private int tail = 0;
+        private int head = 0;
+        private int size = 0;
 
-        public CircularQueue(int size) {
-            this.size = size;
+        CircularQueue(int capacity) {
+            this.storage = new Object[capacity];
         }
 
         @Override
-        public boolean add(E e) {
-            this.makeSpaceIfNotAvailable();
-            return super.add(e);
+        public Iterator<E> iterator() {
+            return new Iterator<E>() {
+                int counter = 0;
+                int index = head;
+
+                @Override
+                public boolean hasNext() {
+                    return counter < size;
+                }
+
+                @Override
+                @SuppressWarnings("unchecked")
+                public E next() {
+                    counter++;
+                    E value = (E) storage[index];
+                    index = inc(index);
+                    return value;
+                }
+            };
         }
 
-        private void makeSpaceIfNotAvailable() {
-            if (this.size() == size) {
-                this.remove();
+        @Override
+        public int size() {
+            return size;
+        }
+
+        @Override
+        public boolean offer(E e) {
+            storage[tail] = e;
+            if (tail == head && size == storage.length) {
+                head = inc(head);
             }
+            tail = inc(tail);
+            if (size < storage.length) {
+                size++;
+            }
+            return true;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public E poll() {
+            if (size == 0) {
+                return null;
+            }
+            E value = (E) storage[head];
+            head = inc(head);
+            size--;
+            return value;
+        }
+
+        private int inc(int index) {
+            if (++index == storage.length) {
+                index = 0;
+            }
+            return index;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public E peek() {
+            if (size == 0) {
+                return null;
+            }
+            return (E) storage[head];
+        }
+
+        @Override
+        public void clear() {
+            Arrays.fill(storage, null);
+            head = 0;
+            tail = 0;
+            size = 0;
+        }
+
+        @Override
+        public Object[] toArray() {
+            Object[] target = new Object[size];
+
+            if (size == 0) {
+                return target;
+            }
+
+            // tail is behind head -> storage is full from the head till the end
+            if (tail <= head) {
+                System.arraycopy(storage, head, target, 0, storage.length - head);
+                System.arraycopy(storage, 0, target, storage.length - head, tail);
+            }
+            else {
+                System.arraycopy(storage, head, target, 0, tail - head);
+            }
+
+            return target;
         }
     }
 

@@ -1,5 +1,8 @@
 package com.netflix.eureka.registry;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import com.netflix.appinfo.InstanceInfo;
@@ -7,6 +10,8 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.AbstractTester;
+import com.netflix.eureka.registry.AbstractInstanceRegistry.CircularQueue;
+import com.netflix.eureka.registry.AbstractInstanceRegistry.EvictionTask;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -267,5 +272,48 @@ public class InstanceRegistryTest extends AbstractTester {
         assertThat(testTask.getCompensationTimeMs(), is(0l));
         assertThat(testTask.getCompensationTimeMs(), is(10l));
         assertThat(testTask.getCompensationTimeMs(), is(0l));
+    }
+
+    @Test
+    public void testCircularQueue() throws Exception {
+        CircularQueue<Integer> queue = new CircularQueue<>(5);
+
+        Assert.assertEquals(0, queue.size());
+        Assert.assertNull(queue.peek());
+        Assert.assertEquals(Collections.emptyList(), new ArrayList<>(queue));
+
+        queue.add(1);
+        queue.add(2);
+        queue.add(3);
+        queue.add(4);
+
+        Assert.assertEquals(4, queue.size());
+        Assert.assertEquals(Arrays.asList(1, 2, 3, 4), new ArrayList<>(queue));
+
+        queue.offer(5);
+
+        Assert.assertEquals(5, queue.size());
+        Assert.assertEquals(Arrays.asList(1, 2, 3, 4, 5), new ArrayList<>(queue));
+
+        queue.offer(6);
+
+        Assert.assertEquals(5, queue.size());
+        Assert.assertEquals(Arrays.asList(2, 3, 4, 5, 6), new ArrayList<>(queue));
+
+        Integer poll = queue.poll();
+
+        Assert.assertEquals(4, queue.size());
+        Assert.assertEquals((Object) 2, poll);
+        Assert.assertEquals(Arrays.asList(3, 4, 5, 6), new ArrayList<>(queue));
+
+        queue.add(7);
+
+        Assert.assertEquals(5, queue.size());
+        Assert.assertEquals(Arrays.asList(3, 4, 5, 6, 7), new ArrayList<>(queue));
+
+        queue.clear();
+
+        Assert.assertEquals(0, queue.size());
+        Assert.assertEquals(Collections.emptyList(), new ArrayList<>(queue));
     }
 }
