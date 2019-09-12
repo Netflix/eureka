@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
@@ -1303,6 +1304,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 @Override
                 @SuppressWarnings("unchecked")
                 public E next() {
+                    if (!hasNext()) {
+                        throw new NoSuchElementException();
+                    }
                     counter++;
                     E value = (E) storage[index];
                     index = inc(index);
