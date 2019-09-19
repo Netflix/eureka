@@ -285,7 +285,7 @@ public class DeserializerStringCache implements Function<String, String> {
     private interface CharBuffer {
 
         public static CharBuffer wrap(JsonParser source, Supplier<String> stringSource) throws IOException {
-            return new ArrayCharBuffer(source, stringSource);
+            return stringSource == null ? wrap(source) : wrap(stringSource.get());
         }
 
         public static CharBuffer wrap(JsonParser source) throws IOException {
@@ -303,21 +303,15 @@ public class DeserializerStringCache implements Function<String, String> {
         OfInt chars();
 
         static class ArrayCharBuffer implements CharBuffer {
-            private char[] source;
-            private int offset;
+            private final char[] source;
+            private final int offset;
             private final int length;
             private int hash;
-            private Supplier<String> valueTransform;
 
             ArrayCharBuffer(JsonParser source) throws IOException {
                 this.source = source.getTextCharacters();
                 this.offset = source.getTextOffset();
                 this.length = source.getTextLength();
-            }
-
-            ArrayCharBuffer(JsonParser source, Supplier<String> valueTransform) throws IOException {
-                this(source);
-                this.valueTransform = valueTransform;
             }
 
             @Override
@@ -375,9 +369,8 @@ public class DeserializerStringCache implements Function<String, String> {
 
             @Override
             public String consume(BiConsumer<CharBuffer, String> valueConsumer) {
-                String key = new String(this.source, offset, length);
-                String value = valueTransform == null ? key : valueTransform.get();
-                valueConsumer.accept(new StringCharBuffer(key), value);
+                String value = new String(this.source, offset, length);
+                valueConsumer.accept(new StringCharBuffer(value), value);
                 return value;
             }
 
