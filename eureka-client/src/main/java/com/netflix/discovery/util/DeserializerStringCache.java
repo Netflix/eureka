@@ -283,6 +283,7 @@ public class DeserializerStringCache implements Function<String, String> {
     }
 
     private interface CharBuffer {
+        static final int DEFAULT_VARIANT = -1;
 
         public static CharBuffer wrap(JsonParser source, Supplier<String> stringSource) throws IOException {
             return new ArrayCharBuffer(source, stringSource);
@@ -300,24 +301,29 @@ public class DeserializerStringCache implements Function<String, String> {
 
         int length();
 
+        int variant();
+
         OfInt chars();
 
         static class ArrayCharBuffer implements CharBuffer {
-            private char[] source;
-            private int offset;
+            private final char[] source;
+            private final int offset;
             private final int length;
-            private int hash;
-            private Supplier<String> valueTransform;
+            private final Supplier<String> valueTransform;
+            private final int variant;
+            private final int hash;
 
             ArrayCharBuffer(JsonParser source) throws IOException {
-                this.source = source.getTextCharacters();
-                this.offset = source.getTextOffset();
-                this.length = source.getTextLength();
+                this(source, null);
             }
 
             ArrayCharBuffer(JsonParser source, Supplier<String> valueTransform) throws IOException {
-                this(source);
+                this.source = source.getTextCharacters();
+                this.offset = source.getTextOffset();
+                this.length = source.getTextLength();
                 this.valueTransform = valueTransform;
+                this.variant = valueTransform == null ? DEFAULT_VARIANT : System.identityHashCode(valueTransform.getClass());
+                this.hash =  31 * arrayHash(this.source, offset, length) + variant;
             }
 
             @Override
@@ -326,10 +332,12 @@ public class DeserializerStringCache implements Function<String, String> {
             }
 
             @Override
+            public int variant() {
+                return variant;
+            }
+
+            @Override
             public int hashCode() {
-                if (hash == 0 && length != 0) {
-                    hash = arrayHash(source, offset, length);
-                }
                 return hash;
             }
 
@@ -338,13 +346,15 @@ public class DeserializerStringCache implements Function<String, String> {
                 if (other instanceof CharBuffer) {
                     CharBuffer otherBuffer = (CharBuffer) other;
                     if (otherBuffer.length() == length) {
-                        OfInt otherText = otherBuffer.chars();
-                        for (int i = offset; i < length; i++) {
-                            if (source[i] != otherText.nextInt()) {
-                                return false;
+                        if (otherBuffer.variant() == variant) {
+                            OfInt otherText = otherBuffer.chars();
+                            for (int i = offset; i < length; i++) {
+                                if (source[i] != otherText.nextInt()) {
+                                    return false;
+                                }
                             }
-                        }
                         return true;
+                        }
                     }
                 }
                 return false;
@@ -370,14 +380,14 @@ public class DeserializerStringCache implements Function<String, String> {
 
             @Override
             public String toString() {
-                return new String(this.source, offset, length);
+                return valueTransform  == null ? new String(this.source, offset, length) : valueTransform.get();
             }
 
             @Override
             public String consume(BiConsumer<CharBuffer, String> valueConsumer) {
                 String key = new String(this.source, offset, length);
                 String value = valueTransform == null ? key : valueTransform.get();
-                valueConsumer.accept(new StringCharBuffer(key), value);
+                valueConsumer.accept(new StringCharBuffer(key, variant), value);
                 return value;
             }
 
@@ -394,30 +404,45 @@ public class DeserializerStringCache implements Function<String, String> {
         }
 
         static class StringCharBuffer implements CharBuffer {
-            private String source;
+            private final String source;
+            private final int variant;
+            private final int hashCode;
 
             StringCharBuffer(String source) {
-                this.source = source;
+                this(source, -1);
             }
+
+            StringCharBuffer(String source, int variant) {
+                this.source = source;
+                this.variant = variant;
+                this.hashCode = 31 * source.hashCode() + variant;
+            }            
 
             @Override
             public int hashCode() {
-                return source.hashCode();
+                return hashCode;
+            }
+
+            @Override
+            public int variant() {
+                return variant;
             }
 
             @Override
             public boolean equals(Object other) {
                 if (other instanceof CharBuffer) {
                     CharBuffer otherBuffer = (CharBuffer) other;
-                    int length = source.length();
-                    if (otherBuffer.length() == length) {
-                        OfInt otherText = otherBuffer.chars();
-                        for (int i = 0; i < length; i++) {
-                            if (source.charAt(i) != otherText.nextInt()) {
-                                return false;
+                    if (otherBuffer.variant() == variant) {
+                        int length = source.length();
+                        if (otherBuffer.length() == length) {
+                            OfInt otherText = otherBuffer.chars();
+                            for (int i = 0; i < length; i++) {
+                                if (source.charAt(i) != otherText.nextInt()) {
+                                    return false;
+                                }
                             }
+                            return true;
                         }
-                        return true;
                     }
                 }
                 return false;
