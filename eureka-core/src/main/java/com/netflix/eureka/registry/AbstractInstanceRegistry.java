@@ -19,6 +19,7 @@ package com.netflix.eureka.registry;
 import javax.annotation.Nullable;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.AbstractQueue;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,6 +31,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -231,11 +233,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 lease.setServiceUpTimestamp(existingLease.getServiceUpTimestamp());
             }
             gMap.put(registrant.getId(), lease);
-            synchronized (recentRegisteredQueue) {
-                recentRegisteredQueue.add(new Pair<Long, String>(
-                        System.currentTimeMillis(),
-                        registrant.getAppName() + "(" + registrant.getId() + ")"));
-            }
+            recentRegisteredQueue.add(new Pair<Long, String>(
+                    System.currentTimeMillis(),
+                    registrant.getAppName() + "(" + registrant.getId() + ")"));
             // This is where the initial state transfer of overridden status happens
             if (!InstanceStatus.UNKNOWN.equals(registrant.getOverriddenStatus())) {
                 logger.debug("Found overridden status {} for instance {}. Checking to see if needs to be add to the "
@@ -303,9 +303,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             if (gMap != null) {
                 leaseToCancel = gMap.remove(id);
             }
-            synchronized (recentCanceledQueue) {
-                recentCanceledQueue.add(new Pair<Long, String>(System.currentTimeMillis(), appName + "(" + id + ")"));
-            }
+            recentCanceledQueue.add(new Pair<Long, String>(System.currentTimeMillis(), appName + "(" + id + ")"));
             InstanceStatus instanceStatus = overriddenInstanceStatusMap.remove(id);
             if (instanceStatus != null) {
                 logger.debug("Removed instance id {} from the overridden map which has value {}", id, instanceStatus.name());
@@ -1156,13 +1154,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      */
     @Override
     public List<Pair<Long, String>> getLastNRegisteredInstances() {
-        List<Pair<Long, String>> list = new ArrayList<Pair<Long, String>>();
-
-        synchronized (recentRegisteredQueue) {
-            for (Pair<Long, String> aRecentRegisteredQueue : recentRegisteredQueue) {
-                list.add(aRecentRegisteredQueue);
-            }
-        }
+        List<Pair<Long, String>> list = new ArrayList<Pair<Long, String>>(recentRegisteredQueue);
         Collections.reverse(list);
         return list;
     }
@@ -1174,12 +1166,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      */
     @Override
     public List<Pair<Long, String>> getLastNCanceledInstances() {
-        List<Pair<Long, String>> list = new ArrayList<Pair<Long, String>>();
-        synchronized (recentCanceledQueue) {
-            for (Pair<Long, String> aRecentCanceledQueue : recentCanceledQueue) {
-                list.add(aRecentCanceledQueue);
-            }
-        }
+        List<Pair<Long, String>> list = new ArrayList<Pair<Long, String>>(recentCanceledQueue);
         Collections.reverse(list);
         return list;
     }
@@ -1278,29 +1265,52 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     }
 
-    private class CircularQueue<E> extends ConcurrentLinkedQueue<E> {
-        private int size = 0;
+    /* visible for testing */ static class CircularQueue<E> extends AbstractQueue<E> {
 
-        public CircularQueue(int size) {
-            this.size = size;
+        private final ArrayBlockingQueue<E> delegate;
+        private final int capacity;
+
+        public CircularQueue(int capacity) {
+            this.capacity = capacity;
+            this.delegate = new ArrayBlockingQueue<>(capacity);
         }
 
         @Override
-        public boolean add(E e) {
-            this.makeSpaceIfNotAvailable();
-            return super.add(e);
-
+        public Iterator<E> iterator() {
+            return delegate.iterator();
         }
 
-        private void makeSpaceIfNotAvailable() {
-            if (this.size() == size) {
-                this.remove();
-            }
+        @Override
+        public int size() {
+            return delegate.size();
         }
 
+        @Override
         public boolean offer(E e) {
-            this.makeSpaceIfNotAvailable();
-            return super.offer(e);
+            while (!delegate.offer(e)) {
+                delegate.poll();
+            }
+            return true;
+        }
+
+        @Override
+        public E poll() {
+            return delegate.poll();
+        }
+
+        @Override
+        public E peek() {
+            return delegate.peek();
+        }
+
+        @Override
+        public void clear() {
+            delegate.clear();
+        }
+
+        @Override
+        public Object[] toArray() {
+            return delegate.toArray();
         }
     }
 
