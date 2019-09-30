@@ -21,18 +21,17 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.AbstractQueue;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -174,12 +173,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     @Override
     public void clearRegistry() {
         overriddenInstanceStatusMap.clear();
-        synchronized (recentCanceledQueue) {
-            recentCanceledQueue.clear();
-        }
-        synchronized (recentRegisteredQueue) {
-            recentRegisteredQueue.clear();
-        }
+        recentCanceledQueue.clear();
+        recentRegisteredQueue.clear();
         recentlyChangedQueue.clear();
         registry.clear();
     }
@@ -238,11 +233,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 lease.setServiceUpTimestamp(existingLease.getServiceUpTimestamp());
             }
             gMap.put(registrant.getId(), lease);
-            synchronized (recentRegisteredQueue) {
-                recentRegisteredQueue.add(new Pair<Long, String>(
-                        System.currentTimeMillis(),
-                        registrant.getAppName() + "(" + registrant.getId() + ")"));
-            }
+            recentRegisteredQueue.add(new Pair<Long, String>(
+                    System.currentTimeMillis(),
+                    registrant.getAppName() + "(" + registrant.getId() + ")"));
             // This is where the initial state transfer of overridden status happens
             if (!InstanceStatus.UNKNOWN.equals(registrant.getOverriddenStatus())) {
                 logger.debug("Found overridden status {} for instance {}. Checking to see if needs to be add to the "
@@ -310,9 +303,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             if (gMap != null) {
                 leaseToCancel = gMap.remove(id);
             }
-            synchronized (recentCanceledQueue) {
-                recentCanceledQueue.add(new Pair<Long, String>(System.currentTimeMillis(), appName + "(" + id + ")"));
-            }
+            recentCanceledQueue.add(new Pair<Long, String>(System.currentTimeMillis(), appName + "(" + id + ")"));
             InstanceStatus instanceStatus = overriddenInstanceStatusMap.remove(id);
             if (instanceStatus != null) {
                 logger.debug("Removed instance id {} from the overridden map which has value {}", id, instanceStatus.name());
@@ -1163,10 +1154,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      */
     @Override
     public List<Pair<Long, String>> getLastNRegisteredInstances() {
-        List<Pair<Long, String>> list;
-        synchronized (recentRegisteredQueue) {
-            list = new ArrayList<Pair<Long, String>>(recentRegisteredQueue);
-        }
+        List<Pair<Long, String>> list = new ArrayList<Pair<Long, String>>(recentRegisteredQueue);
         Collections.reverse(list);
         return list;
     }
@@ -1178,10 +1166,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      */
     @Override
     public List<Pair<Long, String>> getLastNCanceledInstances() {
-        List<Pair<Long, String>> list;
-        synchronized (recentCanceledQueue) {
-            list = new ArrayList<Pair<Long, String>>(recentCanceledQueue);
-        }
+        List<Pair<Long, String>> list = new ArrayList<Pair<Long, String>>(recentCanceledQueue);
         Collections.reverse(list);
         return list;
     }
@@ -1280,113 +1265,52 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     }
 
-    /* visible for testing */  static class CircularQueue<E> extends AbstractQueue<E> {
-        private final Object[] storage;
-        private int tail = 0;
-        private int head = 0;
-        private int size = 0;
+    /* visible for testing */ static class CircularQueue<E> extends AbstractQueue<E> {
 
-        CircularQueue(int capacity) {
-            this.storage = new Object[capacity];
+        private final ArrayBlockingQueue<E> delegate;
+        private final int capacity;
+
+        public CircularQueue(int capacity) {
+            this.capacity = capacity;
+            this.delegate = new ArrayBlockingQueue<>(capacity);
         }
 
         @Override
         public Iterator<E> iterator() {
-            return new Iterator<E>() {
-                int counter = 0;
-                int index = head;
-
-                @Override
-                public boolean hasNext() {
-                    return counter < size;
-                }
-
-                @Override
-                @SuppressWarnings("unchecked")
-                public E next() {
-                    if (!hasNext()) {
-                        throw new NoSuchElementException();
-                    }
-                    counter++;
-                    E value = (E) storage[index];
-                    index = inc(index);
-                    return value;
-                }
-            };
+            return delegate.iterator();
         }
 
         @Override
         public int size() {
-            return size;
+            return delegate.size();
         }
 
         @Override
         public boolean offer(E e) {
-            storage[tail] = e;
-            if (tail == head && size == storage.length) {
-                head = inc(head);
-            }
-            tail = inc(tail);
-            if (size < storage.length) {
-                size++;
+            while (!delegate.offer(e)) {
+                delegate.poll();
             }
             return true;
         }
 
         @Override
-        @SuppressWarnings("unchecked")
         public E poll() {
-            if (size == 0) {
-                return null;
-            }
-            E value = (E) storage[head];
-            head = inc(head);
-            size--;
-            return value;
-        }
-
-        private int inc(int index) {
-            if (++index == storage.length) {
-                index = 0;
-            }
-            return index;
+            return delegate.poll();
         }
 
         @Override
-        @SuppressWarnings("unchecked")
         public E peek() {
-            if (size == 0) {
-                return null;
-            }
-            return (E) storage[head];
+            return delegate.peek();
         }
 
         @Override
         public void clear() {
-            Arrays.fill(storage, null);
-            head = 0;
-            tail = 0;
-            size = 0;
+            delegate.clear();
         }
 
         @Override
         public Object[] toArray() {
-            Object[] target = new Object[size];
-
-            if (size == 0) {
-                return target;
-            }
-
-            // tail is behind head -> storage is full from the head till the end
-            if (tail <= head) {
-                System.arraycopy(storage, head, target, 0, storage.length - head);
-                System.arraycopy(storage, 0, target, storage.length - head, tail);
-            }
-            else {
-                System.arraycopy(storage, head, target, 0, tail - head);
-            }
-
-            return target;
+            return delegate.toArray();
         }
     }
 
