@@ -33,7 +33,7 @@ import com.netflix.eureka.Version;
 public final class CurrentRequestVersion {
 
     private static final ThreadLocal<Version> CURRENT_REQ_VERSION =
-            new ThreadLocal<Version>();
+            new ThreadLocal<>();
 
     private CurrentRequestVersion() {
     }
@@ -48,9 +48,19 @@ public final class CurrentRequestVersion {
 
     /**
      * Sets the current {@link Version}.
+     *
+     * Use {@link #remove()} as soon as the version is no longer required
+     * in order to purge the ThreadLocal used for storing it.
      */
     public static void set(Version version) {
         CURRENT_REQ_VERSION.set(version);
+    }
+
+    /**
+     * Clears the {@link ThreadLocal} used to store the version.
+     */
+    public static void remove() {
+        CURRENT_REQ_VERSION.remove();
     }
 
 }

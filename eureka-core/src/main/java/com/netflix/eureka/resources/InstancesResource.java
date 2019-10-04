@@ -62,6 +62,7 @@ public class InstancesResource {
                             @PathParam("id") String id) {
         CurrentRequestVersion.set(Version.toEnum(version));
         List<InstanceInfo> list = registry.getInstancesById(id);
+        CurrentRequestVersion.remove();
         if (list != null && !list.isEmpty()) {
             return Response.ok(list.get(0)).build();
         } else {

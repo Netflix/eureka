@@ -176,6 +176,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             logger.error("Cannot shutdown ReplicaAwareInstanceRegistry", t);
         }
         numberOfReplicationsLastMin.stop();
+        timer.cancel();
 
         super.shutdown();
     }
@@ -647,7 +648,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                                                  String id, InstanceInfo info, InstanceStatus newStatus,
                                                  PeerEurekaNode node) {
         try {
-            InstanceInfo infoFromRegistry = null;
+            InstanceInfo infoFromRegistry;
             CurrentRequestVersion.set(Version.V2);
             switch (action) {
                 case Cancel:
@@ -672,6 +673,8 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             }
         } catch (Throwable t) {
             logger.error("Cannot replicate information to {} for action {}", node.getServiceUrl(), action.name(), t);
+        } finally {
+            CurrentRequestVersion.remove();
         }
     }
 
@@ -686,6 +689,8 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             node.statusUpdate(asgName, newStatus);
         } catch (Throwable e) {
             logger.error("Cannot replicate ASG status information to {}", node.getServiceUrl(), e);
+        } finally {
+            CurrentRequestVersion.remove();
         }
     }
 

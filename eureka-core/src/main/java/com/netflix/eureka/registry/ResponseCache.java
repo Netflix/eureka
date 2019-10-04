@@ -35,4 +35,10 @@ public interface ResponseCache {
      * @return compressed payload which contains information about the applications.
      */
     byte[] getGZIP(Key key);
+
+    /**
+     * Performs a shutdown of this cache by stopping internal threads and unregistering
+     * Servo monitors.
+     */
+    void stop();
 }

@@ -23,7 +23,6 @@ import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLSocketFactory;
-import org.apache.http.conn.ssl.X509HostnameVerifier;
 import org.apache.http.impl.conn.SchemeRegistryFactory;
 import org.apache.http.params.CoreProtocolPNames;
 import org.apache.http.params.HttpConnectionParams;
@@ -74,6 +73,12 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
     public void destroyResources() {
         apacheHttpClientConnectionCleaner.shutdown();
         apacheHttpClient.destroy();
+
+        final Object connectionManager =
+                jerseyClientConfig.getProperty(ApacheHttpClient4Config.PROPERTY_CONNECTION_MANAGER);
+        if (connectionManager instanceof MonitoredConnectionManager) {
+            ((MonitoredConnectionManager) connectionManager).shutdown();
+        }
     }
 
     public static class EurekaJerseyClientBuilder {

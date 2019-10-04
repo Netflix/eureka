@@ -49,7 +49,7 @@ public class ApacheHttpClientConnectionCleaner {
 
                 @Override
                 public Thread newThread(Runnable r) {
-                    Thread thread = new Thread(r, "Eureka-JerseyClient-Conn-Cleaner" + threadNumber.incrementAndGet());
+                    Thread thread = new Thread(r, "Apache-HttpClient-Conn-Cleaner" + threadNumber.incrementAndGet());
                     thread.setDaemon(true);
                     return thread;
                 }
@@ -87,6 +87,7 @@ public class ApacheHttpClientConnectionCleaner {
     public void shutdown() {
         cleanIdle(0);
         eurekaConnCleaner.shutdown();
+        Monitors.unregisterObject(this);
     }
 
     public void cleanIdle(long delayMs) {

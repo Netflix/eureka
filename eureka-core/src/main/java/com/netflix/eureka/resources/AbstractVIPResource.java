@@ -69,6 +69,7 @@ abstract class AbstractVIPResource {
         );
 
         String payLoad = responseCache.get(cacheKey);
+        CurrentRequestVersion.remove();
 
         if (payLoad != null) {
             logger.debug("Found: {}", entityName);
