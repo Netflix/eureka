@@ -52,6 +52,7 @@ import javax.ws.rs.core.Response.Status;
 
 import com.netflix.discovery.shared.resolver.EndpointRandomizer;
 import com.netflix.discovery.shared.resolver.ResolverUtils;
+import com.netflix.discovery.shared.transport.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,12 +72,6 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.resolver.ClosableResolver;
 import com.netflix.discovery.shared.resolver.aws.ApplicationsResolver;
-import com.netflix.discovery.shared.transport.EurekaHttpClient;
-import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
-import com.netflix.discovery.shared.transport.EurekaHttpClients;
-import com.netflix.discovery.shared.transport.EurekaHttpResponse;
-import com.netflix.discovery.shared.transport.EurekaTransportConfig;
-import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
 import com.netflix.discovery.shared.transport.jersey.Jersey1DiscoveryClientOptionalArgs;
 import com.netflix.discovery.shared.transport.jersey.Jersey1TransportClientFactories;
@@ -864,18 +859,29 @@ public class DiscoveryClient implements EurekaClient {
             httpResponse = eurekaTransport.registrationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
             logger.debug(PREFIX + "{} - Heartbeat status: {}", appPathIdentifier, httpResponse.getStatusCode());
             if (httpResponse.getStatusCode() == Status.NOT_FOUND.getStatusCode()) {
-                REREGISTER_COUNTER.increment();
-                logger.info(PREFIX + "{} - Re-registering apps/{}", appPathIdentifier, instanceInfo.getAppName());
-                long timestamp = instanceInfo.setIsDirtyWithTime();
-                boolean success = register();
-                if (success) {
-                    instanceInfo.unsetIsDirty(timestamp);
-                }
-                return success;
+                return doRegister();
             }
             return httpResponse.getStatusCode() == Status.OK.getStatusCode();
+        } catch (TransportException e){
+            return doRegister();
         } catch (Throwable e) {
             logger.error(PREFIX + "{} - was unable to send heartbeat!", appPathIdentifier, e);
+            return false;
+        }
+    }
+
+    private boolean doRegister(){
+        try {
+            REREGISTER_COUNTER.increment();
+            logger.info(PREFIX + "{} - Re-registering apps/{}", appPathIdentifier, instanceInfo.getAppName());
+            long timestamp = instanceInfo.setIsDirtyWithTime();
+            boolean success = register();
+            if (success) {
+                instanceInfo.unsetIsDirty(timestamp);
+            }
+            return success;
+        }catch (Throwable e){
+            logger.error(PREFIX + "{} - was unable to register", appPathIdentifier, e);
             return false;
         }
     }
