@@ -47,6 +47,7 @@ class AcceptorExecutor<ID, T> {
 
     private static final Logger logger = LoggerFactory.getLogger(AcceptorExecutor.class);
 
+    private final String id;
     private final int maxBufferSize;
     private final int maxBatchingSize;
     private final long maxBatchingDelay;
@@ -94,6 +95,7 @@ class AcceptorExecutor<ID, T> {
                      long maxBatchingDelay,
                      long congestionRetryDelayMs,
                      long networkFailureRetryMs) {
+        this.id = id;
         this.maxBufferSize = maxBufferSize;
         this.maxBatchingSize = maxBatchingSize;
         this.maxBatchingDelay = maxBatchingDelay;
@@ -148,6 +150,7 @@ class AcceptorExecutor<ID, T> {
 
     void shutdown() {
         if (isShutdown.compareAndSet(false, true)) {
+            Monitors.unregisterObject(id, this);
             acceptorThread.interrupt();
         }
     }

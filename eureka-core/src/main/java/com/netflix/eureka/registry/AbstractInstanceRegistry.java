@@ -1219,6 +1219,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         deltaRetentionTimer.cancel();
         evictionTimer.cancel();
         renewsLastMin.stop();
+        responseCache.stop();
     }
 
     @com.netflix.servo.annotations.Monitor(name = "numOfElementsinInstanceCache", description = "Number of overrides in the instance Cache", type = DataSourceType.GAUGE)

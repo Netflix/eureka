@@ -146,6 +146,9 @@ public class DiscoveryClient implements EurekaClient {
     private final ThreadPoolExecutor heartbeatExecutor;
     private final ThreadPoolExecutor cacheRefreshExecutor;
 
+    private TimedSupervisorTask cacheRefreshTask;
+    private TimedSupervisorTask heartbeatTask;
+
     private final Provider<HealthCheckHandler> healthCheckHandlerProvider;
     private final Provider<HealthCheckCallback> healthCheckCallbackProvider;
     private final PreRegistrationHandler preRegistrationHandler;
@@ -622,7 +625,7 @@ public class DiscoveryClient implements EurekaClient {
      */
     @Override
     public List<InstanceInfo> getInstancesById(String id) {
-        List<InstanceInfo> instancesList = new ArrayList<InstanceInfo>();
+        List<InstanceInfo> instancesList = new ArrayList<>();
         for (Application app : this.getApplications()
                 .getRegisteredApplications()) {
             InstanceInfo instanceInfo = app.getByInstanceId(id);
@@ -925,6 +928,8 @@ public class DiscoveryClient implements EurekaClient {
 
             heartbeatStalenessMonitor.shutdown();
             registryStalenessMonitor.shutdown();
+
+            Monitors.unregisterObject(this);
 
             logger.info("Completed shut down of DiscoveryClient");
         }
@@ -1269,16 +1274,17 @@ public class DiscoveryClient implements EurekaClient {
             // registry cache refresh timer
             int registryFetchIntervalSeconds = clientConfig.getRegistryFetchIntervalSeconds();
             int expBackOffBound = clientConfig.getCacheRefreshExecutorExponentialBackOffBound();
+            cacheRefreshTask = new TimedSupervisorTask(
+                    "cacheRefresh",
+                    scheduler,
+                    cacheRefreshExecutor,
+                    registryFetchIntervalSeconds,
+                    TimeUnit.SECONDS,
+                    expBackOffBound,
+                    new CacheRefreshThread()
+            );
             scheduler.schedule(
-                    new TimedSupervisorTask(
-                            "cacheRefresh",
-                            scheduler,
-                            cacheRefreshExecutor,
-                            registryFetchIntervalSeconds,
-                            TimeUnit.SECONDS,
-                            expBackOffBound,
-                            new CacheRefreshThread()
-                    ),
+                    cacheRefreshTask,
                     registryFetchIntervalSeconds, TimeUnit.SECONDS);
         }
 
@@ -1288,16 +1294,17 @@ public class DiscoveryClient implements EurekaClient {
             logger.info("Starting heartbeat executor: " + "renew interval is: {}", renewalIntervalInSecs);
 
             // Heartbeat timer
+            heartbeatTask = new TimedSupervisorTask(
+                    "heartbeat",
+                    scheduler,
+                    heartbeatExecutor,
+                    renewalIntervalInSecs,
+                    TimeUnit.SECONDS,
+                    expBackOffBound,
+                    new HeartbeatThread()
+            );
             scheduler.schedule(
-                    new TimedSupervisorTask(
-                            "heartbeat",
-                            scheduler,
-                            heartbeatExecutor,
-                            renewalIntervalInSecs,
-                            TimeUnit.SECONDS,
-                            expBackOffBound,
-                            new HeartbeatThread()
-                    ),
+                    heartbeatTask,
                     renewalIntervalInSecs, TimeUnit.SECONDS);
 
             // InstanceInfo replicator
@@ -1348,6 +1355,12 @@ public class DiscoveryClient implements EurekaClient {
         }
         if (scheduler != null) {
             scheduler.shutdownNow();
+        }
+        if (cacheRefreshTask != null) {
+            cacheRefreshTask.cancel();
+        }
+        if (heartbeatTask != null) {
+            heartbeatTask.cancel();
         }
     }
 

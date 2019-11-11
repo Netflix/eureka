@@ -1,7 +1,9 @@
 package com.netflix.eureka.util.batcher;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,6 +31,8 @@ class TaskExecutors<ID, T> {
 
     private static final Logger logger = LoggerFactory.getLogger(TaskExecutors.class);
 
+    private static final Map<String, TaskExecutorMetrics> registeredMonitors = new HashMap<>();
+
     private final AtomicBoolean isShutdown;
     private final List<Thread> workerThreads;
 
@@ -51,6 +55,7 @@ class TaskExecutors<ID, T> {
             for (Thread workerThread : workerThreads) {
                 workerThread.interrupt();
             }
+            registeredMonitors.forEach(Monitors::unregisterObject);
         }
     }
 
@@ -60,12 +65,8 @@ class TaskExecutors<ID, T> {
                                                             final AcceptorExecutor<ID, T> acceptorExecutor) {
         final AtomicBoolean isShutdown = new AtomicBoolean();
         final TaskExecutorMetrics metrics = new TaskExecutorMetrics(name);
-        return new TaskExecutors<>(new WorkerRunnableFactory<ID, T>() {
-            @Override
-            public WorkerRunnable<ID, T> create(int idx) {
-                return new SingleTaskWorkerRunnable<>("TaskNonBatchingWorker-" + name + '-' + idx, isShutdown, metrics, processor, acceptorExecutor);
-            }
-        }, workerCount, isShutdown);
+        registeredMonitors.put(name, metrics);
+        return new TaskExecutors<>(idx -> new SingleTaskWorkerRunnable<>("TaskNonBatchingWorker-" + name + '-' + idx, isShutdown, metrics, processor, acceptorExecutor), workerCount, isShutdown);
     }
 
     static <ID, T> TaskExecutors<ID, T> batchExecutors(final String name,
@@ -74,12 +75,8 @@ class TaskExecutors<ID, T> {
                                                        final AcceptorExecutor<ID, T> acceptorExecutor) {
         final AtomicBoolean isShutdown = new AtomicBoolean();
         final TaskExecutorMetrics metrics = new TaskExecutorMetrics(name);
-        return new TaskExecutors<>(new WorkerRunnableFactory<ID, T>() {
-            @Override
-            public WorkerRunnable<ID, T> create(int idx) {
-                return new BatchWorkerRunnable<>("TaskBatchingWorker-" +name + '-' + idx, isShutdown, metrics, processor, acceptorExecutor);
-            }
-        }, workerCount, isShutdown);
+        registeredMonitors.put(name, metrics);
+        return new TaskExecutors<>(idx -> new BatchWorkerRunnable<>("TaskBatchingWorker-" + name + '-' + idx, isShutdown, metrics, processor, acceptorExecutor), workerCount, isShutdown);
     }
 
     static class TaskExecutorMetrics {

@@ -349,6 +349,7 @@ public class PeerEurekaNode {
     public void shutDown() {
         batchingDispatcher.shutdown();
         nonBatchingDispatcher.shutdown();
+        replicationClient.shutdown();
     }
 
     /**

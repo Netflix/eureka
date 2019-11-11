@@ -31,6 +31,7 @@ public class TimedSupervisorTask extends TimerTask {
     private final Counter throwableCounter;
     private final LongGauge threadPoolLevelGauge;
 
+    private final String name;
     private final ScheduledExecutorService scheduler;
     private final ThreadPoolExecutor executor;
     private final long timeoutMillis;
@@ -41,6 +42,7 @@ public class TimedSupervisorTask extends TimerTask {
 
     public TimedSupervisorTask(String name, ScheduledExecutorService scheduler, ThreadPoolExecutor executor,
                                int timeout, TimeUnit timeUnit, int expBackOffBound, Runnable task) {
+        this.name = name;
         this.scheduler = scheduler;
         this.executor = executor;
         this.timeoutMillis = timeUnit.toMillis(timeout);
@@ -100,5 +102,11 @@ public class TimedSupervisorTask extends TimerTask {
                 scheduler.schedule(this, delay.get(), TimeUnit.MILLISECONDS);
             }
         }
+    }
+
+    @Override
+    public boolean cancel() {
+        Monitors.unregisterObject(name, this);
+        return super.cancel();
     }
 }

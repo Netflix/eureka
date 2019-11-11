@@ -50,7 +50,7 @@ public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactor
         withReadTimeout(clientConfig.getEurekaServerReadTimeoutSeconds() * 1000);
         withMaxConnectionsPerHost(clientConfig.getEurekaServerTotalConnectionsPerHost());
         withMaxTotalConnections(clientConfig.getEurekaServerTotalConnections());
-        withConnectionIdleTimeout(clientConfig.getEurekaConnectionIdleTimeoutSeconds() * 1000);
+        withConnectionIdleTimeout(clientConfig.getEurekaConnectionIdleTimeoutSeconds());
         withEncoder(clientConfig.getEncoderName());
         return withDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept());
     }
