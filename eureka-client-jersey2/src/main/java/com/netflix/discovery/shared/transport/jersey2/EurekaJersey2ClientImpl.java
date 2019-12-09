@@ -85,6 +85,9 @@ public class EurekaJersey2ClientImpl implements EurekaJersey2Client {
         try {
             jerseyClientConfig = clientConfig;
             jerseyClientConfig.register(DiscoveryJerseyProvider.class);
+            // Disable json autodiscovery, since json (de)serialization is provided by DiscoveryJerseyProvider
+            jerseyClientConfig.property(ClientProperties.JSON_PROCESSING_FEATURE_DISABLE, Boolean.TRUE);
+            jerseyClientConfig.property(ClientProperties.MOXY_JSON_FEATURE_DISABLE, Boolean.TRUE);
             jerseyClientConfig.connectorProvider(new ApacheConnectorProvider());
             jerseyClientConfig.property(ClientProperties.CONNECT_TIMEOUT, connectionTimeout);
             jerseyClientConfig.property(ClientProperties.READ_TIMEOUT, readTimeout);
