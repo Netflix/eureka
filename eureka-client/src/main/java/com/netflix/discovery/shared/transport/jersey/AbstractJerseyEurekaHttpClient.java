@@ -1,14 +1,5 @@
 package com.netflix.discovery.shared.transport.jersey;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response.Status;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.Application;
@@ -24,6 +15,15 @@ import com.sun.jersey.api.client.WebResource.Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response.Status;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
 import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEurekaHttpResponse;
 
 /**
@@ -32,6 +32,7 @@ import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEureka
 public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractJerseyEurekaHttpClient.class);
+    protected static final String HTML = "html";
 
     protected final Client jerseyClient;
     protected final String serviceUrl;
@@ -101,7 +102,8 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
             addExtraHeaders(requestBuilder);
             response = requestBuilder.put(ClientResponse.class);
             EurekaHttpResponseBuilder<InstanceInfo> eurekaResponseBuilder = anEurekaHttpResponse(response.getStatus(), InstanceInfo.class).headers(headersOf(response));
-            if (response.hasEntity()) {
+            if (response.hasEntity() &&
+                    !HTML.equals(response.getType().getSubtype())) { //don't try and deserialize random html errors from the server
                 eurekaResponseBuilder.entity(response.getEntity(InstanceInfo.class));
             }
             return eurekaResponseBuilder.build();
