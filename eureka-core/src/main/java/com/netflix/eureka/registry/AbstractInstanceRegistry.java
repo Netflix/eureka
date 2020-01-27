@@ -326,11 +326,20 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 }
                 invalidateCache(appName, vip, svip);
                 logger.info("Cancelled instance {}/{} (replication={})", appName, id, isReplication);
-                return true;
             }
         } finally {
             read.unlock();
         }
+
+        synchronized (lock) {
+            if (this.expectedNumberOfClientsSendingRenews > 0) {
+                // Since the client wants to cancel it, reduce the number of clients to send renews.
+                this.expectedNumberOfClientsSendingRenews = this.expectedNumberOfClientsSendingRenews - 1;
+                updateRenewsPerMinThreshold();
+            }
+        }
+
+        return true;
     }
 
     /**
