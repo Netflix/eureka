@@ -295,6 +295,11 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
     }
 
     @Override
+    public boolean shouldBroadcastPublicIpv4Addr() {
+        return configInstance.getBooleanProperty(namespace + ADVERTISE_PUBLIC_IPV4_ADDR, super.shouldBroadcastPublicIpv4Addr()).get();
+    }
+
+    @Override
     public String getNamespace() {
         return this.namespace;
     }

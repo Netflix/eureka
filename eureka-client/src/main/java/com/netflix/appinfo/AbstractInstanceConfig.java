@@ -211,6 +211,8 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
         return hostInfo.first();
     }
 
+    public boolean shouldBroadcastPublicIpv4Addr () { return false; }
+
     private static Pair<String, String> getHostInfo() {
         Pair<String, String> pair;
         try {

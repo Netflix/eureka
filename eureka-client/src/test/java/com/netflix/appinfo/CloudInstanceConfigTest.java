@@ -8,6 +8,8 @@ import static com.netflix.appinfo.AmazonInfo.MetaDataKey.localIpv4;
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.publicHostname;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertEquals;
+
 
 /**
  * @author David Liu
@@ -38,6 +40,16 @@ public class CloudInstanceConfigTest {
         assertThat(config.resolveDefaultAddress(false), is(dummyDefault));
     }
 
+    @Test
+    public void testBroadcastPublicIpv4Address() {
+        AmazonInfo info = (AmazonInfo) instanceInfo.getDataCenterInfo();
+
+        config = createConfig(info);
+
+        // this should work because the test utils class sets the ipAddr to the public IP of the instance
+        assertEquals(instanceInfo.getIPAddr(), config.getIpAddress());
+    }
+
     private CloudInstanceConfig createConfig(AmazonInfo info) {
 
         return new CloudInstanceConfig(info) {
@@ -53,6 +65,9 @@ public class CloudInstanceConfigTest {
             public String getHostName(boolean refresh) {
                 return dummyDefault;
             }
+
+            @Override
+            public boolean shouldBroadcastPublicIpv4Addr() { return true; }
         };
     }
 }
