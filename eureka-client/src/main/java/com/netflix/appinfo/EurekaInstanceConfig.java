@@ -221,13 +221,6 @@ public interface EurekaInstanceConfig {
      */
     String getIpAddress();
 
-
-    /**
-     * Indicates if the public ipv4 address of the instance should be advertised.
-     * @return true if the public ipv4 address of the instance should be advertised, false otherwise .
-     */
-    boolean shouldBroadcastPublicIpv4Addr();
-
     /**
      * Gets the relative status page {@link java.net.URL} <em>Path</em> for this
      * instance. The status page URL is then constructed out of the
