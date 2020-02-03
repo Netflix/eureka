@@ -128,7 +128,6 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig implements Ref
 
     @Override
     public String getIpAddress() {
-        String publicIpv4Addr = amazonInfoHolder.get().get(MetaDataKey.publicIpv4);
         return this.shouldBroadcastPublicIpv4Addr() ?  getPublicIpv4Addr() : getPrivateIpv4Addr();
     }
 

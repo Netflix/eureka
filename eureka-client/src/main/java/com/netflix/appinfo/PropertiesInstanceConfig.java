@@ -299,7 +299,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
      * @return true if the public ipv4 address of the instance should be advertised, false otherwise .
      */
     public boolean shouldBroadcastPublicIpv4Addr() {
-        return configInstance.getBooleanProperty(namespace + ADVERTISE_PUBLIC_IPV4_ADDR, super.shouldBroadcastPublicIpv4Addr()).get();
+        return configInstance.getBooleanProperty(namespace + BROADCAST_PUBLIC_IPV4_ADDR_KEY, super.shouldBroadcastPublicIpv4Addr()).get();
     }
 
     @Override
