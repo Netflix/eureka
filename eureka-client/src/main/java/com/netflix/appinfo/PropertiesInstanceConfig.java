@@ -294,6 +294,14 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
         return result == null ? new String[0] : result.split(",");
     }
 
+    /**
+     * Indicates if the public ipv4 address of the instance should be advertised.
+     * @return true if the public ipv4 address of the instance should be advertised, false otherwise .
+     */
+    public boolean shouldBroadcastPublicIpv4Addr() {
+        return configInstance.getBooleanProperty(namespace + BROADCAST_PUBLIC_IPV4_ADDR_KEY, super.shouldBroadcastPublicIpv4Addr()).get();
+    }
+
     @Override
     public String getNamespace() {
         return this.namespace;

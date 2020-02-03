@@ -36,6 +36,7 @@ final class PropertyBasedInstanceConfigConstants {
     static final String INSTANCE_METADATA_PREFIX = "metadata";
 
     static final String DEFAULT_ADDRESS_RESOLUTION_ORDER_KEY = "defaultAddressResolutionOrder";
+    static final String BROADCAST_PUBLIC_IPV4_ADDR_KEY = "broadcastPublicIpv4";
     static final String TRAFFIC_ENABLED_ON_INIT_KEY = "traffic.enabled";
 
 
