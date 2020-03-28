@@ -189,6 +189,9 @@ public class DiscoveryClient implements EurekaClient {
     protected final EurekaTransportConfig transportConfig;
 
     private final long initTimestampMs;
+    private final int initRegistrySize;
+
+    private final Stats stats = new Stats();
 
     private static final class EurekaTransport {
         private ClosableResolver bootstrapResolver;
@@ -381,8 +384,10 @@ public class DiscoveryClient implements EurekaClient {
             DiscoveryManager.getInstance().setEurekaClientConfig(config);
 
             initTimestampMs = System.currentTimeMillis();
+            initRegistrySize = this.getApplications().size();
+            registrySize = initRegistrySize;
             logger.info("Discovery Client initialized at timestamp {} with initial instances count: {}",
-                    initTimestampMs, this.getApplications().size());
+                    initTimestampMs, initRegistrySize);
 
             return;  // no need to setup up an network tasks and we are done
         }
@@ -465,8 +470,10 @@ public class DiscoveryClient implements EurekaClient {
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
 
         initTimestampMs = System.currentTimeMillis();
+        initRegistrySize = this.getApplications().size();
+        registrySize = initRegistrySize;
         logger.info("Discovery Client initialized at timestamp {} with initial instances count: {}",
-                initTimestampMs, this.getApplications().size());
+                initTimestampMs, initRegistrySize);
     }
 
     private void scheduleServerEndpointTask(EurekaTransport eurekaTransport,
@@ -1741,6 +1748,55 @@ public class DiscoveryClient implements EurekaClient {
         } else {
             return delay;
         }
+    }
+
+    /**
+     * Gets stats for the DiscoveryClient.
+     *
+     * @return The DiscoveryClientStats instance.
+     */
+    public Stats getStats() {
+        return stats;
+    }
+
+    /**
+     * Stats is used to track useful attributes of the DiscoveryClient. It includes helpers that can aid
+     * debugging and log analysis.
+     */
+    public class Stats {
+
+        private Stats() {}
+
+        public int initLocalRegistrySize() {
+            return initRegistrySize;
+        }
+
+        public long initTimestampMs() {
+            return initTimestampMs;
+        }
+
+        public int localRegistrySize() {
+            return registrySize;
+        }
+
+        public long lastSuccessfulRegistryFetchTimestampMs() {
+            return lastSuccessfulRegistryFetchTimestamp;
+        }
+
+        public long lastSuccessfulHeartbeatTimestampMs() {
+            return lastSuccessfulHeartbeatTimestamp;
+        }
+
+        /**
+         * Used to determine if the Discovery client's first attempt to fetch from the service registry succeeded with
+         * non-empty results.
+         *
+         * @return true if succeeded, failed otherwise
+         */
+        public boolean initSucceeded() {
+            return initLocalRegistrySize() > 0 && initTimestampMs() > 0;
+        }
+
     }
 
 }
