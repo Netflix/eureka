@@ -32,9 +32,6 @@ public class InstanceInfoReplicatorTest {
     @Before
     public void setUp() throws Exception {
         discoveryClient = mock(DiscoveryClient.class);
-        HealthCheckHandler healthCheckHandler = mock(HealthCheckHandler.class);
-        when(discoveryClient.getHealthCheckHandler()).thenReturn(healthCheckHandler);
-        when(healthCheckHandler.getStatus(any(InstanceInfo.InstanceStatus.class))).thenReturn(null);
 
         InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder()
                 .setIPAddr("10.10.101.00")
