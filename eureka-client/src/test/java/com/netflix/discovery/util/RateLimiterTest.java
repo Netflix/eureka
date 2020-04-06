@@ -44,7 +44,8 @@ public class RateLimiterTest {
     }
 
     private void testEvenLoad(RateLimiter rateLimiter, long start, int burstSize, int averageRate, long step) {
-        for (long currentTime = start; currentTime < 3; currentTime += step) {
+        long end = start + averageRate * step;
+        for (long currentTime = start; currentTime < end; currentTime += step) {
             assertTrue(rateLimiter.acquire(burstSize, averageRate, currentTime));
         }
     }
