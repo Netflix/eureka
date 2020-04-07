@@ -37,7 +37,7 @@ allprojects {
         servoVersion = '0.12.21'
         governatorVersion = '1.17.5'
         archaiusVersion = '0.7.6'
-        jacksonVersion = '2.9.4'
+        jacksonVersion = '2.9.10'
         woodstoxVersion = '5.2.1'
 
         // test deps
