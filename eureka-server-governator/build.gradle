@@ -1,5 +1,5 @@
 apply plugin: 'war'
-apply plugin: 'jetty'
+apply plugin: 'org.gretty'
 
 dependencies {
     compile project(':eureka-core')
@@ -28,6 +28,6 @@ war {
     from (project(':eureka-resources').file('build/resources/main'))
 }
 
-jettyRun.doFirst {
+gretty {
     contextPath 'eureka'
 }

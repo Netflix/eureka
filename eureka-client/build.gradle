@@ -16,6 +16,8 @@ dependencies {
     compile "com.sun.jersey:jersey-client:${jerseyVersion}"
     compile "com.sun.jersey.contribs:jersey-apache-client4:${jerseyVersion}"
     compile "org.apache.httpcomponents:httpclient:${apacheHttpClientVersion}"
+    compile "com.google.code.findbugs:jsr305:${jsr305Version}"
+    compile "commons-configuration:commons-configuration:${commonsConfigurationVersion}"
     compile "com.google.inject:guice:${guiceVersion}"
 
     compile "com.github.vlsi.compactmap:compactmap:1.2.1"
