@@ -7,7 +7,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.provider.Serializer;
@@ -23,6 +22,7 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
 @XStreamAlias("status")
 public class StatusInfo {
     private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss Z";
+    private static final boolean ARCHAIUS_EXISTS = classExists("com.netflix.config.ConfigurationManager");
 
     public static final class Builder {
 
@@ -68,8 +68,10 @@ public class StatusInfo {
             }
 
             result.generalStats.put("server-uptime", getUpTime());
-            result.generalStats.put("environment", ConfigurationManager
-                    .getDeploymentContext().getDeploymentEnvironment());
+            if (ARCHAIUS_EXISTS) {
+                result.generalStats.put("environment", ConfigurationManager
+                        .getDeploymentContext().getDeploymentEnvironment());
+            }
 
             Runtime runtime = Runtime.getRuntime();
             int totalMem = (int) (runtime.totalMemory() / 1048576);
@@ -143,4 +145,14 @@ public class StatusInfo {
         SimpleDateFormat format = new SimpleDateFormat(DATE_FORMAT);
         return format.format(new Date());
     }
+
+    private static boolean classExists(String className) {
+        try  {
+            Class.forName(className);
+            return true;
+        }  catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
 }
