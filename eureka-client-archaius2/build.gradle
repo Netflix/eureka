@@ -13,6 +13,7 @@ dependencies {
 
     // archaius2
     compile "com.netflix.archaius:archaius2-core:${archaius2Version}"
+    compile "com.netflix.archaius:archaius2-api:${archaius2Version}"
 
     testCompile project(':eureka-test-utils')
 
