@@ -1034,7 +1034,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             lease = leaseMap.get(id);
         }
         if (lease != null
-                && (!isLeaseExpirationEnabled() || !lease.isExpired())) {
+                && (isLeaseExpirationEnabled() || !lease.isExpired())) {
             return decorateInstanceInfo(lease);
         } else if (includeRemoteRegions) {
             for (RemoteRegionRegistry remoteRegistry : this.regionNameVSRemoteRegistry.values()) {
