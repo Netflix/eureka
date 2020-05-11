@@ -18,13 +18,22 @@ package com.netflix.discovery.shared.resolver;
 
 import java.util.List;
 
+import com.netflix.appinfo.AmazonInfo;
+import com.netflix.appinfo.DataCenterInfo;
+import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.MyDataCenterInfo;
+import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
 import com.netflix.discovery.shared.resolver.aws.SampleCluster;
+import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Tomasz Bak
@@ -58,5 +67,29 @@ public class ResolverUtilsTest {
 
         secondList.set(0, SampleCluster.UsEast1b.build().get(0));
         assertThat(ResolverUtils.identical(firstList, secondList), is(false));
+    }
+
+    @Test
+    public void testInstanceInfoToEndpoint() throws Exception {
+        EurekaClientConfig clientConfig = mock(EurekaClientConfig.class);
+        when(clientConfig.getEurekaServerURLContext()).thenReturn("/eureka");
+        when(clientConfig.getRegion()).thenReturn("region");
+
+        EurekaTransportConfig transportConfig = mock(EurekaTransportConfig.class);
+        when(transportConfig.applicationsResolverUseIp()).thenReturn(false);
+
+        AmazonInfo amazonInfo = AmazonInfo.Builder.newBuilder().addMetadata(AmazonInfo.MetaDataKey.availabilityZone,
+                "us-east-1c").build();
+        InstanceInfo instanceWithAWSInfo = InstanceInfo.Builder.newBuilder().setAppName("appName")
+                .setHostName("hostName").setPort(8080).setDataCenterInfo(amazonInfo).build();
+        AwsEndpoint awsEndpoint = ResolverUtils.instanceInfoToEndpoint(clientConfig, transportConfig, instanceWithAWSInfo);
+        assertEquals("zone not equals.", "us-east-1c", awsEndpoint.getZone());
+
+        MyDataCenterInfo myDataCenterInfo = new MyDataCenterInfo(DataCenterInfo.Name.MyOwn);
+        InstanceInfo instanceWithMyDataInfo = InstanceInfo.Builder.newBuilder().setAppName("appName")
+                .setHostName("hostName").setPort(8080).setDataCenterInfo(myDataCenterInfo)
+                .add("zone", "us-east-1c").build();
+        awsEndpoint = ResolverUtils.instanceInfoToEndpoint(clientConfig, transportConfig, instanceWithMyDataInfo);
+        assertEquals("zone not equals.", "us-east-1c", awsEndpoint.getZone());
     }
 }
