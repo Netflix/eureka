@@ -1,5 +1,4 @@
 apply plugin: 'nebula.test-jar'
-apply plugin: 'nebula.provided-base'
 
 configurations.all {
     // jersey2
@@ -27,9 +26,9 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
 
     // Eureka client uses JSON encoding by default
-    provided "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${jacksonVersion}"
+    compileOnly "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${jacksonVersion}"
     // Prefered jackson Stax serializer. Default Oracle has issues (adds empty namespace) and is slower
-    provided "com.fasterxml.woodstox:woodstox-core:${woodstoxVersion}"
+    compileOnly "com.fasterxml.woodstox:woodstox-core:${woodstoxVersion}"
 
     runtime "org.codehaus.jettison:jettison:${jettisonVersion}"
 
