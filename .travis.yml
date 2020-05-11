@@ -1,4 +1,3 @@
-sudo: false
 dist: trusty
 language: java
 jdk:
