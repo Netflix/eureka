@@ -19,7 +19,7 @@ dependencies {
     compile "commons-configuration:commons-configuration:${commonsConfigurationVersion}"
     compile "com.google.inject:guice:${guiceVersion}"
 
-    compile "com.github.vlsi.compactmap:compactmap:1.2.1"
+    compile "com.github.vlsi.compactmap:compactmap:2.0"
 
     compile "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
     compile "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
