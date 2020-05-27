@@ -120,6 +120,8 @@ public final class ResolverUtils {
         DataCenterInfo dataCenterInfo = instanceInfo.getDataCenterInfo();
         if (dataCenterInfo instanceof AmazonInfo) {
             zone = ((AmazonInfo) dataCenterInfo).get(AmazonInfo.MetaDataKey.availabilityZone);
+        } else {
+            zone = instanceInfo.getMetadata().get("zone");
         }
 
         String networkAddress;
