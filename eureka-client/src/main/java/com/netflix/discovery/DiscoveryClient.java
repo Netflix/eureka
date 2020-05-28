@@ -193,6 +193,8 @@ public class DiscoveryClient implements EurekaClient {
 
     private final Stats stats = new Stats();
 
+    private final Map<InstanceStatus, Set<EurekaInstanceStatusChangeGate>> statusGates = new ConcurrentHashMap<>();
+
     private static final class EurekaTransport {
         private ClosableResolver bootstrapResolver;
         private TransportClientFactory transportClientFactory;
@@ -1430,6 +1432,10 @@ public class DiscoveryClient implements EurekaClient {
         }
 
         if (null != status) {
+            if (!isAllowed(status)) {
+                status = InstanceStatus.DOWN;
+            }
+            // TODO what about requirements for
             applicationInfoManager.setInstanceStatus(status);
         }
     }
@@ -1797,6 +1803,36 @@ public class DiscoveryClient implements EurekaClient {
             return initLocalRegistrySize() > 0 && initTimestampMs() > 0;
         }
 
+    }
+
+    /**
+     * Adds a gate when updating to the given `InstanceStatus`.
+     * @param status The desired status
+     * @param gate Defines the condition that must be met to allow the status update
+     * @return `true` if a new gate was added otherwise `false`
+     */
+    public boolean addGate(InstanceStatus status, EurekaInstanceStatusChangeGate gate) {
+        Set<EurekaInstanceStatusChangeGate> gates = statusGates.getOrDefault(status, new CopyOnWriteArraySet<>());
+        if (gates.add(gate)) {
+            statusGates.put(status, gates);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Returns `true` if all of the corresponding gates allow the update to the given `InstanceStatus`.
+     * @param newStatus The desired status
+     * @return `true` if all gates allow update
+     */
+    private boolean isAllowed(InstanceStatus newStatus) {
+        Set<EurekaInstanceStatusChangeGate> gates = statusGates.getOrDefault(newStatus, new CopyOnWriteArraySet<>());
+        for (EurekaInstanceStatusChangeGate gate : gates) {
+            if (!gate.isAllowed(newStatus)) {
+                return false;
+            }
+        }
+        return true;
     }
 
 }
