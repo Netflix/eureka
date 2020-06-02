@@ -39,8 +39,8 @@ public class JerseyApplicationClient extends AbstractJerseyEurekaHttpClient {
     @Override
     protected void addExtraHeaders(Builder webResource) {
         if (additionalHeaders != null) {
-            for (String key : additionalHeaders.keySet()) {
-                webResource.header(key, additionalHeaders.get(key));
+            for (Map.Entry<String, String> entry : additionalHeaders.entrySet()) {
+                webResource.header(entry.getKey(), entry.getValue());
             }
         }
     }
