@@ -1,4 +1,4 @@
-dist: focal
+dist: xenial
 language: java
 jdk:
 - oraclejdk8
