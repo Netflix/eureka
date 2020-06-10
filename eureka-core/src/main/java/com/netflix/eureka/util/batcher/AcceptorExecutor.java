@@ -222,13 +222,14 @@ class AcceptorExecutor<ID, T> {
                 drainReprocessQueue();
                 drainAcceptorQueue();
 
-                if (!isShutdown.get()) {
-                    // If all queues are empty, block for a while on the acceptor queue
-                    if (reprocessQueue.isEmpty() && acceptorQueue.isEmpty() && pendingTasks.isEmpty()) {
-                        TaskHolder<ID, T> taskHolder = acceptorQueue.poll(10, TimeUnit.MILLISECONDS);
-                        if (taskHolder != null) {
-                            appendTaskHolder(taskHolder);
-                        }
+                if (isShutdown.get()) {
+                    break;
+                }
+                // If all queues are empty, block for a while on the acceptor queue
+                if (reprocessQueue.isEmpty() && acceptorQueue.isEmpty() && pendingTasks.isEmpty()) {
+                    TaskHolder<ID, T> taskHolder = acceptorQueue.poll(10, TimeUnit.MILLISECONDS);
+                    if (taskHolder != null) {
+                        appendTaskHolder(taskHolder);
                     }
                 }
             } while (!reprocessQueue.isEmpty() || !acceptorQueue.isEmpty() || pendingTasks.isEmpty());
