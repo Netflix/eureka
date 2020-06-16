@@ -13,6 +13,7 @@ final class PropertyBasedClientConfigConstants {
 
     static final String REGISTRATION_ENABLED_KEY = "registration.enabled";
     static final String FETCH_REGISTRY_ENABLED_KEY = "shouldFetchRegistry";
+    static final String SHOULD_ENFORCE_FETCH_REGISTRY_AT_INIT_KEY = "shouldEnforceFetchRegistryAtInit";
 
     static final String REGISTRY_REFRESH_INTERVAL_KEY = "client.refresh.interval";
     static final String REGISTRATION_REPLICATION_INTERVAL_KEY = "appinfo.replicate.interval";

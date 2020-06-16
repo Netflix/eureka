@@ -177,6 +177,10 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
         return prefixedConfig.getBoolean(FETCH_REGISTRY_ENABLED_KEY, true);
     }
 
+    public boolean shouldEnforceFetchRegistryAtInit() {
+        return prefixedConfig.getBoolean(SHOULD_ENFORCE_FETCH_REGISTRY_AT_INIT_KEY, false);
+    }
+
     public String getRegistryRefreshSingleVipAddress() {
         return prefixedConfig.getString(FETCH_SINGLE_VIP_ONLY_KEY, null);
     }
