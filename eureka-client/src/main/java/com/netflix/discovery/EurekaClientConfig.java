@@ -456,6 +456,16 @@ public interface EurekaClientConfig {
     boolean shouldFetchRegistry();
 
     /**
+     * If set to true, the {@link EurekaClient} initialization should throw an exception at constructor time
+     * if an initial fetch of eureka registry information from the remote servers is unsuccessful.
+     *
+     * Note that if {@link #shouldFetchRegistry()} is set to false, then this config is a no-op
+     *
+     * @return true or false for whether the client initialization should enforce an initial fetch
+     */
+    boolean shouldEnforceFetchRegistryAtInit();
+
+    /**
      * Indicates whether the client is only interested in the registry information for a single VIP.
      *
      * @return the address of the VIP (name:port).

@@ -243,6 +243,7 @@ public class DiscoveryClientResource extends ExternalResource {
         ConfigurationManager.getConfigInstance().clearProperty("eureka.fetchRemoteRegionsRegistry");
         ConfigurationManager.getConfigInstance().clearProperty("eureka.myregion.availabilityZones");
         ConfigurationManager.getConfigInstance().clearProperty("eureka.serviceUrl.default");
+        ConfigurationManager.getConfigInstance().clearProperty("eureka.shouldEnforceFetchRegistryAtInit");
     }
 
     public static EurekaClient setupDiscoveryClient(InstanceInfo clientInstanceInfo) {

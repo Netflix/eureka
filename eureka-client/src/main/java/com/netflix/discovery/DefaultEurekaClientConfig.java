@@ -425,6 +425,12 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 namespace + FETCH_REGISTRY_ENABLED_KEY, true).get();
     }
 
+    @Override
+    public boolean shouldEnforceFetchRegistryAtInit() {
+        return configInstance.getBooleanProperty(
+                namespace + SHOULD_ENFORCE_FETCH_REGISTRY_AT_INIT_KEY, false).get();
+    }
+
     /*
      * (non-Javadoc)
      *

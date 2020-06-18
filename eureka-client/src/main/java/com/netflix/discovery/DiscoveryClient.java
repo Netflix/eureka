@@ -435,8 +435,24 @@ public class DiscoveryClient implements EurekaClient {
             throw new RuntimeException("Failed to initialize DiscoveryClient!", e);
         }
 
-        if (clientConfig.shouldFetchRegistry() && !fetchRegistry(false)) {
-            fetchRegistryFromBackup();
+        if (clientConfig.shouldFetchRegistry()) {
+            try {
+                boolean primaryFetchRegistryResult = fetchRegistry(false);
+                if (!primaryFetchRegistryResult) {
+                    logger.info("Initial registry fetch from primary servers failed");
+                }
+                boolean backupFetchRegistryResult = true;
+                if (!primaryFetchRegistryResult && !fetchRegistryFromBackup()) {
+                    backupFetchRegistryResult = false;
+                    logger.info("Initial registry fetch from backup servers failed");
+                }
+                if (!primaryFetchRegistryResult && !backupFetchRegistryResult && clientConfig.shouldEnforceFetchRegistryAtInit()) {
+                    throw new IllegalStateException("Fetch registry error at startup. Initial fetch failed.");
+                }
+            } catch (Throwable th) {
+                logger.error("Fetch registry error at startup: {}", th.getMessage());
+                throw new IllegalStateException(th);
+            }
         }
 
         // call and execute the pre registration handler before all background tasks (inc registration) is started
@@ -1543,8 +1559,10 @@ public class DiscoveryClient implements EurekaClient {
     /**
      * Fetch the registry information from back up registry if all eureka server
      * urls are unreachable.
+     *
+     * @return true if the registry was fetched
      */
-    private void fetchRegistryFromBackup() {
+    private boolean fetchRegistryFromBackup() {
         try {
             @SuppressWarnings("deprecation")
             BackupRegistry backupRegistryInstance = newBackupRegistryInstance();
@@ -1568,6 +1586,7 @@ public class DiscoveryClient implements EurekaClient {
                     localRegionApps.set(applications);
                     logTotalInstances();
                     logger.info("Fetched registry successfully from the backup");
+                    return true;
                 }
             } else {
                 logger.warn("No backup registry instance defined & unable to find any discovery servers.");
@@ -1575,6 +1594,7 @@ public class DiscoveryClient implements EurekaClient {
         } catch (Throwable e) {
             logger.warn("Cannot fetch applications from apps although backup registry was specified", e);
         }
+        return false;
     }
 
     /**
