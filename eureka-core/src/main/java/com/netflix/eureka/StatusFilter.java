@@ -60,8 +60,8 @@ public class StatusFilter implements Filter {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
         InstanceStatus status = myInfo.getStatus();
         if (status != InstanceStatus.UP && response instanceof HttpServletResponse) {
-            HttpServletResponse httpRespone = (HttpServletResponse) response;
-            httpRespone.sendError(SC_TEMPORARY_REDIRECT,
+            HttpServletResponse httpResponse = (HttpServletResponse) response;
+            httpResponse.sendError(SC_TEMPORARY_REDIRECT,
                     "Current node is currently not ready to serve requests -- current status: "
                             + status + " - try another DS node: ");
         }
