@@ -80,7 +80,7 @@ public interface InstanceRegistry extends LeaseManager<InstanceInfo>, LookupServ
 
     int getNumOfRenewsPerMinThreshold();
 
-    int isBelowRenewThresold();
+    int isBelowRenewThreshold();
 
     List<Pair<Long, String>> getLastNRegisteredInstances();
 
