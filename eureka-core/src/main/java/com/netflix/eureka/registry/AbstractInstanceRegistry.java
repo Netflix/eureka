@@ -401,8 +401,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     @Override
     public void storeOverriddenStatusIfRequired(String id, InstanceStatus overriddenStatus) {
         InstanceStatus instanceStatus = overriddenInstanceStatusMap.get(id);
-        if ((instanceStatus == null)
-                || (!overriddenStatus.equals(instanceStatus))) {
+        if (!overriddenStatus.equals(instanceStatus)) {
             // We might not have the overridden status if the server got restarted -this will help us maintain
             // the overridden state from the replica
             logger.info(
@@ -431,7 +430,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     @Override
     public void storeOverriddenStatusIfRequired(String appName, String id, InstanceStatus overriddenStatus) {
         InstanceStatus instanceStatus = overriddenInstanceStatusMap.get(id);
-        if ((instanceStatus == null) || (!overriddenStatus.equals(instanceStatus))) {
+        if (!overriddenStatus.equals(instanceStatus)) {
             // We might not have the overridden status if the server got
             // restarted -this will help us maintain the overridden state
             // from the replica
