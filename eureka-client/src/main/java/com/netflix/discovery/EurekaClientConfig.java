@@ -16,8 +16,9 @@
 
 package com.netflix.discovery;
 
-import javax.annotation.Nullable;
 import java.util.List;
+
+import javax.annotation.Nullable;
 
 import com.google.inject.ImplementedBy;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
@@ -286,7 +287,7 @@ public interface EurekaClientConfig {
     /**
      * Indicates whether the client should explicitly unregister itself from the remote server
      * on client shutdown.
-     * 
+     *
      * @return true if this instance should unregister with eureka on client shutdown, false otherwise
      */
     default boolean shouldUnregisterOnShutdown() {
@@ -457,13 +458,15 @@ public interface EurekaClientConfig {
 
     /**
      * If set to true, the {@link EurekaClient} initialization should throw an exception at constructor time
-     * if an initial fetch of eureka registry information from the remote servers is unsuccessful.
+     * if the initial fetch of eureka registry information from the remote servers is unsuccessful.
      *
-     * Note that if {@link #shouldFetchRegistry()} is set to false, then this config is a no-op
+     * Note that if {@link #shouldFetchRegistry()} is set to false, then this config is a no-op.
      *
-     * @return true or false for whether the client initialization should enforce an initial fetch
+     * @return true or false for whether the client initialization should enforce an initial fetch.
      */
-    boolean shouldEnforceFetchRegistryAtInit();
+    default boolean shouldEnforceFetchRegistryAtInit() {
+        return false;
+    }
 
     /**
      * Indicates whether the client is only interested in the registry information for a single VIP.
