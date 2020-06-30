@@ -2,7 +2,7 @@ os: linux
 dist: focal
 language: java
 jdk:
-- oraclejdk9
+- openjdk8
 install: ./installViaTravis.sh
 script: ./buildViaTravis.sh
 env:
