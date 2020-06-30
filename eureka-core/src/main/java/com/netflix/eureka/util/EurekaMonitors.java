@@ -42,9 +42,9 @@ import com.netflix.servo.monitor.Monitors;
 public enum EurekaMonitors {
     RENEW("renewCounter", "Number of total renews seen since startup"),
     CANCEL("cancelCounter", "Number of total cancels seen since startup"),
-    GET_ALL_CACHE_MISS("getAllCacheMissCounter", "Number of total registery queries seen since startup"),
+    GET_ALL_CACHE_MISS("getAllCacheMissCounter", "Number of total registry queries seen since startup"),
     GET_ALL_CACHE_MISS_DELTA("getAllCacheMissDeltaCounter",
-            "Number of total registery queries for delta seen since startup"),
+            "Number of total registry queries for delta seen since startup"),
     GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS("getAllWithRemoteRegionCacheMissCounter",
             "Number of total registry with remote region queries seen since startup"),
     GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS_DELTA("getAllWithRemoteRegionCacheMissDeltaCounter",

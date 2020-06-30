@@ -485,7 +485,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     if (InstanceStatus.UP.equals(newStatus)) {
                         lease.serviceUp();
                     }
-                    // This is NAC overriden status
+                    // This is NAC overridden status
                     overriddenInstanceStatusMap.put(id, newStatus);
                     // Set it for transfer of overridden status to replica on
                     // replica start up
