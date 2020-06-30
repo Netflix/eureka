@@ -1,8 +1,10 @@
 package com.netflix.discovery;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.util.RateLimiter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,19 +89,15 @@ class InstanceInfoReplicator implements Runnable {
     public boolean onDemandUpdate() {
         if (rateLimiter.acquire(burstSize, allowedRatePerMinute)) {
             if (!scheduler.isShutdown()) {
-                scheduler.submit(new Runnable() {
-                    @Override
-                    public void run() {
+                scheduler.submit(()->{
                         logger.debug("Executing on-demand update of local InstanceInfo");
-    
+
                         Future latestPeriodic = scheduledPeriodicRef.get();
                         if (latestPeriodic != null && !latestPeriodic.isDone()) {
                             logger.debug("Canceling the latest scheduled update, it will be rescheduled at the end of on demand update");
                             latestPeriodic.cancel(false);
                         }
-    
-                        InstanceInfoReplicator.this.run();
-                    }
+                        this.run();
                 });
                 return true;
             } else {
@@ -111,7 +109,7 @@ class InstanceInfoReplicator implements Runnable {
             return false;
         }
     }
-
+    @Override
     public void run() {
         try {
             discoveryClient.refreshInstanceInfo();
