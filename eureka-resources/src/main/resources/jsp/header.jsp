@@ -26,7 +26,7 @@
   %>
   <h4 id="uptime">Current time: <%=StatusResource.getCurrentTimeAsString() %>, Uptime: <%=StatusInfo.getUpTime()%></h4>
   <hr id="uptime">Lease expiration enabled: <%=registry.isLeaseExpirationEnabled() %>, Renews threshold: <%=registry.getNumOfRenewsPerMinThreshold() %>, Renews (last min):  <%=registry.getNumOfRenewsInLastMin() %></hr>
-  <% if (registry.isBelowRenewThreshold() == 1) {
+  <% if (registry.isBelowRenewThresold() == 1) {
  	  if (!registry.isSelfPreservationModeEnabled()) {
    %>
   <h4 id="uptime"><font size="+1" color="red"><b>RENEWALS ARE LESSER THAN THE THRESHOLD.THE SELF PRESERVATION MODE IS TURNED OFF.THIS MAY NOT PROTECT INSTANCE EXPIRY IN CASE OF NETWORK/OTHER PROBLEMS.</b></font></h4>
