@@ -615,7 +615,7 @@ public final class Converters {
 
                 long longValue = 0;
                 try {
-                    longValue = Long.valueOf(nodeValue).longValue();
+                    longValue = Long.parseLong(nodeValue);
                 } catch (NumberFormatException ne) {
                     continue;
                 }

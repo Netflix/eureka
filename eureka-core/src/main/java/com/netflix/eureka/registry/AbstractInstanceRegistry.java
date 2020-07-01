@@ -485,7 +485,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     if (InstanceStatus.UP.equals(newStatus)) {
                         lease.serviceUp();
                     }
-                    // This is NAC overriden status
+                    // This is NAC overridden status
                     overriddenInstanceStatusMap.put(id, newStatus);
                     // Set it for transfer of overridden status to replica on
                     // replica start up
@@ -493,7 +493,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     long replicaDirtyTimestamp = 0;
                     info.setStatusWithoutDirty(newStatus);
                     if (lastDirtyTimestamp != null) {
-                        replicaDirtyTimestamp = Long.valueOf(lastDirtyTimestamp);
+                        replicaDirtyTimestamp = Long.parseLong(lastDirtyTimestamp);
                     }
                     // If the replication's dirty timestamp is more than the existing one, just update
                     // it to the replica's.
@@ -554,7 +554,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     info.setStatusWithoutDirty(newStatus);
                     long replicaDirtyTimestamp = 0;
                     if (lastDirtyTimestamp != null) {
-                        replicaDirtyTimestamp = Long.valueOf(lastDirtyTimestamp);
+                        replicaDirtyTimestamp = Long.parseLong(lastDirtyTimestamp);
                     }
                     // If the replication's dirty timestamp is more than the existing one, just update
                     // it to the replica's.
