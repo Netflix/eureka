@@ -1,7 +1,8 @@
-dist: trusty
+os: linux
+dist: xenial
 language: java
 jdk:
-- oraclejdk8
+- openjdk8
 install: ./installViaTravis.sh
 script: ./buildViaTravis.sh
 env:
