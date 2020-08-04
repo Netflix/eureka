@@ -191,8 +191,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      * @see com.netflix.eureka.lease.LeaseManager#register(java.lang.Object, int, boolean)
      */
     public void register(InstanceInfo registrant, int leaseDuration, boolean isReplication) {
+        read.lock();
         try {
-            read.lock();
             Map<String, Lease<InstanceInfo>> gMap = registry.get(registrant.getAppName());
             REGISTER.increment(isReplication);
             if (gMap == null) {
@@ -295,8 +295,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      * in the remote peers as valid cancellations, so self preservation mode would not kick-in.
      */
     protected boolean internalCancel(String appName, String id, boolean isReplication) {
+        read.lock();
         try {
-            read.lock();
             CANCEL.increment(isReplication);
             Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
             Lease<InstanceInfo> leaseToCancel = null;
@@ -462,8 +462,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     public boolean statusUpdate(String appName, String id,
                                 InstanceStatus newStatus, String lastDirtyTimestamp,
                                 boolean isReplication) {
+        read.lock();
         try {
-            read.lock();
             STATUS_UPDATE.increment(isReplication);
             Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
             Lease<InstanceInfo> lease = null;
@@ -528,8 +528,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                                         InstanceStatus newStatus,
                                         String lastDirtyTimestamp,
                                         boolean isReplication) {
+        read.lock();
         try {
-            read.lock();
             STATUS_OVERRIDE_DELETE.increment(isReplication);
             Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
             Lease<InstanceInfo> lease = null;
@@ -874,8 +874,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         Applications apps = new Applications();
         apps.setVersion(responseCache.getVersionDelta().get());
         Map<String, Application> applicationInstancesMap = new HashMap<String, Application>();
+        write.lock();
         try {
-            write.lock();
             Iterator<RecentlyChangedItem> iter = this.recentlyChangedQueue.iterator();
             logger.debug("The number of elements in the delta queue is : {}",
                     this.recentlyChangedQueue.size());
@@ -954,8 +954,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         Applications apps = new Applications();
         apps.setVersion(responseCache.getVersionDeltaWithRegions().get());
         Map<String, Application> applicationInstancesMap = new HashMap<String, Application>();
+        write.lock();
         try {
-            write.lock();
             Iterator<RecentlyChangedItem> iter = this.recentlyChangedQueue.iterator();
             logger.debug("The number of elements in the delta queue is :{}", this.recentlyChangedQueue.size());
             while (iter.hasNext()) {
