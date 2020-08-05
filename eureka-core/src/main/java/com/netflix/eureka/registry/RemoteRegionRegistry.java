@@ -20,6 +20,7 @@ import javax.ws.rs.core.MediaType;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -477,7 +478,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
 
     @Override
     public List<InstanceInfo> getInstancesById(String id) {
-        List<InstanceInfo> list = Collections.emptyList();
+        List<InstanceInfo> list = new ArrayList<>(1);
 
         for (Application app : applications.get().getRegisteredApplications()) {
             InstanceInfo info = app.getByInstanceId(id);
@@ -486,7 +487,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
                 return list;
             }
         }
-        return list;
+        return Collections.emptyList();
     }
 
     public Applications getApplicationDeltas() {
