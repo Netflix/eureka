@@ -32,8 +32,8 @@ public class StringCache {
     public String cachedValueOf(final String str) {
         if (str != null && (lengthLimit < 0 || str.length() <= lengthLimit)) {
             // Return value from cache if available
+            lock.readLock().lock();
             try {
-                lock.readLock().lock();
                 WeakReference<String> ref = cache.get(str);
                 if (ref != null) {
                     return ref.get();
@@ -43,8 +43,8 @@ public class StringCache {
             }
 
             // Update cache with new content
+            lock.writeLock().lock();
             try {
-                lock.writeLock().lock();
                 WeakReference<String> ref = cache.get(str);
                 if (ref != null) {
                     return ref.get();
@@ -59,8 +59,8 @@ public class StringCache {
     }
 
     public int size() {
+        lock.readLock().lock();
         try {
-            lock.readLock().lock();
             return cache.size();
         } finally {
             lock.readLock().unlock();

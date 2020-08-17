@@ -147,7 +147,9 @@ public class Route53Binder implements AwsBinder {
             Thread.sleep(1000);
             // check change not overwritten
             ResourceRecordSet resourceRecordSet = getResourceRecordSet(rrs.getResourceRecordSet().getName(), rrs.getHostedZone());
-            return resourceRecordSet.getResourceRecords().equals(rrs.getResourceRecordSet().getResourceRecords());
+            if (resourceRecordSet != null) {
+                return resourceRecordSet.getResourceRecords().equals(rrs.getResourceRecordSet().getResourceRecords());
+            }
         }
         return false;
     }

@@ -280,7 +280,6 @@ public class EndpointUtils {
             Set<String> ec2UrlsForZone = DnsResolver.getCNamesFromTxtRecord(dnsName);
             for (String ec2Url : ec2UrlsForZone) {
                 logger.debug("The eureka url for the dns name {} is {}", dnsName, ec2Url);
-                ec2UrlsForZone.add(ec2Url);
             }
             if (DiscoveryUrlType.CNAME.equals(type)) {
                 return ec2UrlsForZone;
