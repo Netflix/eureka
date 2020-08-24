@@ -856,9 +856,9 @@ public class DiscoveryClient implements EurekaClient {
                 logger.debug(PREFIX + "{} -  refresh status: {}", appPathIdentifier, response.getStatusCode());
                 return response.getEntity();
             }
-            logger.error(PREFIX + "{} - was unable to refresh its cache! status = {}", appPathIdentifier, response.getStatusCode());
+            logger.info(PREFIX + "{} - was unable to refresh its cache! status = {}", appPathIdentifier, response.getStatusCode());
         } catch (Throwable th) {
-            logger.error(PREFIX + "{} - was unable to refresh its cache! status = {}", appPathIdentifier, th.getMessage(), th);
+            logger.info(PREFIX + "{} - was unable to refresh its cache! status = {}", appPathIdentifier, th.getMessage());
         }
         return null;
     }
@@ -1015,7 +1015,7 @@ public class DiscoveryClient implements EurekaClient {
             applications.setAppsHashCode(applications.getReconcileHashCode());
             logTotalInstances();
         } catch (Throwable e) {
-            logger.error(PREFIX + "{} - was unable to refresh its cache! status = {}", appPathIdentifier, e.getMessage(), e);
+            logger.info(PREFIX + "{} - was unable to refresh its cache! status = {}", appPathIdentifier, e.getMessage());
             return false;
         } finally {
             if (tracer != null) {
