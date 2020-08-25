@@ -31,6 +31,7 @@ import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.TransportException;
 import com.netflix.discovery.shared.transport.TransportUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +81,8 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
                 TransportUtils.shutdown(delegateRef.getAndSet(currentEurekaClientRef.get()));
                 return response;
             } catch (Exception e) {
-                logger.error("Request execution error. endpoint={}", serviceEndpoint, e);
+                logger.info("Request execution error. endpoint={}, exception={} stacktrace={}", serviceEndpoint,
+                        e.getMessage(), ExceptionUtils.getStackTrace(e));
                 TransportUtils.shutdown(currentEurekaClientRef.get());
                 throw e;
             }
@@ -88,7 +90,8 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
             try {
                 return requestExecutor.execute(currentEurekaClient);
             } catch (Exception e) {
-                logger.error("Request execution error. endpoint={}", serviceEndpoint, e);
+                logger.info("Request execution error. endpoint={} exception={} stacktrace={}", serviceEndpoint,
+                        e.getMessage(), ExceptionUtils.getStackTrace(e));
                 delegateRef.compareAndSet(currentEurekaClient, null);
                 currentEurekaClient.shutdown();
                 throw e;
