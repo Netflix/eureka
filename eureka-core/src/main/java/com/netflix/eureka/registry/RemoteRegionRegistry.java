@@ -499,6 +499,6 @@ public class RemoteRegionRegistry implements LookupService<String> {
             return false;
         }
         String enabled = serverConfig.getExperimental("transport.enabled");
-        return enabled != null && "true".equalsIgnoreCase(enabled);
+        return "true".equalsIgnoreCase(enabled);
     }
 }

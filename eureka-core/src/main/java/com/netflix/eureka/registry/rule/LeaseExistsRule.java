@@ -27,8 +27,7 @@ public class LeaseExistsRule implements InstanceStatusOverrideRule {
                 existingStatus = existingLease.getHolder().getStatus();
             }
             // Allow server to have its way when the status is UP or OUT_OF_SERVICE
-            if ((existingStatus != null)
-                    && (InstanceInfo.InstanceStatus.OUT_OF_SERVICE.equals(existingStatus)
+            if ((InstanceInfo.InstanceStatus.OUT_OF_SERVICE.equals(existingStatus)
                     || InstanceInfo.InstanceStatus.UP.equals(existingStatus))) {
                 logger.debug("There is already an existing lease with status {}  for instance {}",
                         existingLease.getHolder().getStatus().name(),
