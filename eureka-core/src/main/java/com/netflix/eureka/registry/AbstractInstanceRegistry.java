@@ -375,7 +375,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     logger.info(
                             "The instance status {} is different from overridden instance status {} for instance {}. "
                                     + "Hence setting the status to overridden status", instanceInfo.getStatus().name(),
-                                    instanceInfo.getOverriddenStatus().name(),
+                                    overriddenInstanceStatus.name(),
                                     instanceInfo.getId());
                     instanceInfo.setStatusWithoutDirty(overriddenInstanceStatus);
 
