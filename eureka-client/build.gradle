@@ -30,7 +30,7 @@ dependencies {
     // Prefered jackson Stax serializer. Default Oracle has issues (adds empty namespace) and is slower
     compileOnly "com.fasterxml.woodstox:woodstox-core:${woodstoxVersion}"
 
-    runtime "org.codehaus.jettison:jettison:${jettisonVersion}"
+    runtimeOnly "org.codehaus.jettison:jettison:${jettisonVersion}"
 
     testCompile project(':eureka-test-utils')
     testCompile "junit:junit:${junit_version}"

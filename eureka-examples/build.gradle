@@ -5,7 +5,7 @@ dependencies {
     compile files('conf')
 
     compile "com.netflix.governator:governator:${governatorVersion}"
-    runtime 'org.slf4j:slf4j-simple:1.7.7'
+    runtimeOnly 'org.slf4j:slf4j-simple:1.7.7'
 }
 
 startScripts.enabled = false
