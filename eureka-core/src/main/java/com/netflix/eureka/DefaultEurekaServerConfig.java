@@ -521,7 +521,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
                 logger.error("Error reading eureka remote region urls from property {}. "
                                 + "Invalid entry {} for remote region url. The entry must contain region name and url "
                                 + "separated by a {}. Ignoring this entry.",
-                        new String[]{propName, remoteRegionUrlWithNamePair, pairSplitChar});
+                        propName, remoteRegionUrlWithNamePair, pairSplitChar);
             } else {
                 String regionName = pairSplit[0];
                 String regionUrl = pairSplit[1];
