@@ -33,5 +33,7 @@ public class Names {
 
     public static final String METRIC_REPLICATION_PREFIX = METRIC_PREFIX + "replication.";
 
+    public static final String METRIC_REGISTRY_PREFIX = METRIC_PREFIX + "registry.";
+
     public static final String REMOTE = "remote";
 }

@@ -214,6 +214,19 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
                         (10 * 60 * 1000)).get();
     }
 
+    /*
+     * (non-Javadoc)
+     *
+     * @see
+     * com.netflix.eureka.EurekaServerConfig#getAppAndVipMetricsUpdateIntervalMs()
+     */
+    @Override
+    public int getAppAndVipMetricsUpdateIntervalMs() {
+        return configInstance
+                .getIntProperty(namespace + "getAppAndVipMetricsUpdateIntervalMs",
+                        (30 * 1000)).get();
+    }
+
     @Override
     public int getRenewalThresholdUpdateIntervalMs() {
         return configInstance.getIntProperty(

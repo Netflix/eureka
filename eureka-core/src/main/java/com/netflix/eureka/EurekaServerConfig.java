@@ -159,6 +159,20 @@ public interface EurekaServerConfig {
     int getPeerEurekaNodesUpdateIntervalMs();
 
     /**
+     * The interval at which the Application and VIP Metrics are updated. Note that these are
+     * stored in a DynamicGauge which auto-expires old values, so setting this lower than the
+     * gauge expiration will lead to intermittent metrics reporting.
+     *
+     * Set to 0 to disable these metrics entirely.
+     * <p>
+     * <em>The changes are effective at runtime.</em>
+     * </p>
+     *
+     * @return timer in milliseconds indicating the interval.
+     */
+    int getAppAndVipMetricsUpdateIntervalMs();
+
+    /**
      * If set to true, the replicated data send in the request will be always compressed.
      * This does not define response path, which is driven by "Accept-Encoding" header.
      */

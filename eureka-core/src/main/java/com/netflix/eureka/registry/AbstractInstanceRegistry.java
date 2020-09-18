@@ -31,15 +31,12 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Function;
 
 import com.google.common.cache.CacheBuilder;
 import com.netflix.appinfo.InstanceInfo;
@@ -51,15 +48,20 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.Pair;
 import com.netflix.eureka.EurekaServerConfig;
+import com.netflix.eureka.Names;
 import com.netflix.eureka.lease.Lease;
 import com.netflix.eureka.registry.rule.InstanceStatusOverrideRule;
 import com.netflix.eureka.resources.ServerCodecs;
 import com.netflix.eureka.util.MeasuredRate;
 import com.netflix.servo.annotations.DataSourceType;
+import com.netflix.servo.monitor.DynamicGauge;
+import com.netflix.servo.tag.BasicTagList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.netflix.eureka.util.EurekaMonitors.*;
+import static java.util.stream.Collectors.counting;
+import static java.util.stream.Collectors.groupingBy;
 
 /**
  * Handles all registry requests from eureka clients.
@@ -110,6 +112,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     protected final ServerCodecs serverCodecs;
     protected volatile ResponseCache responseCache;
 
+    private final ScheduledExecutorService metricsExecutorService;
+
     /**
      * Create a new, empty instance registry.
      */
@@ -125,6 +129,109 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         this.deltaRetentionTimer.schedule(getDeltaRetentionTask(),
                 serverConfig.getDeltaRetentionTimerIntervalInMs(),
                 serverConfig.getDeltaRetentionTimerIntervalInMs());
+
+        this.metricsExecutorService = Executors.newSingleThreadScheduledExecutor(
+                new ThreadFactory() {
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        Thread thread = new Thread(r, "Eureka-MetricsExecutorService");
+                        thread.setDaemon(true);
+                        return thread;
+                    }
+                }
+        );
+
+        if (serverConfig.getAppAndVipMetricsUpdateIntervalMs() != 0) {
+            try {
+                Runnable metricsUpdateTask = new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            updateAppAndVipMetrics();
+                        } catch (Throwable e) {
+                            logger.error("Failed to update the metrics", e);
+                        }
+
+                    }
+                };
+                metricsExecutorService.scheduleWithFixedDelay(
+                        metricsUpdateTask,
+                        serverConfig.getAppAndVipMetricsUpdateIntervalMs(),
+                        serverConfig.getAppAndVipMetricsUpdateIntervalMs(),
+                        TimeUnit.MILLISECONDS
+                );
+            } catch(Exception e){
+                throw new IllegalStateException(e);
+            }
+        }
+    }
+
+    private void updateAppAndVipMetrics() {
+        // Helper class to make it easier to aggregate the data we want
+        class CompoundKey {
+            final boolean expired;
+            final String vipAddress;
+            final String status;
+            final String overriddenStatus;
+
+            public CompoundKey(final boolean expired,
+                               final String vipAddress,
+                               final String status,
+                               final String overriddenStatus) {
+                this.expired = expired;
+                this.vipAddress = vipAddress;
+                this.status = status;
+                this.overriddenStatus = overriddenStatus;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (o == this)
+                    return true;
+                if (!(o instanceof CompoundKey))
+                    return false;
+                final CompoundKey other = (CompoundKey) o;
+                return this.expired == other.expired &&
+                        this.vipAddress.equals(other.vipAddress) &&
+                        this.status.equals(other.status) &&
+                        this.overriddenStatus.equals(other.overriddenStatus);
+            }
+
+            @Override
+            public int hashCode() {
+                int result = 17;
+                result = 31 * result + (expired ? 1 : 0);
+                result = 31 * result + vipAddress.hashCode();
+                result = 31 * result + status.hashCode();
+                result = 31 * result + overriddenStatus.hashCode();
+                return result;
+            }
+        }
+
+        registry.forEach((appName, leases) -> {
+            // For this app, count up how many instances have the same (expired, vip, status, overriddenStatus)
+            final Map<CompoundKey, Long> countedKeys = leases.values().stream().map(lease -> {
+                final InstanceInfo instance = lease.getHolder();
+                return new CompoundKey(
+                        lease.isExpired(),
+                        instance.getVIPAddress(),
+                        instance.getStatus().toString(),
+                        instance.getOverriddenStatus().toString());
+            }).collect(groupingBy(Function.identity(), counting()));
+
+            // Then record a gauge, with appropriate tags, for that count
+            countedKeys.forEach((compoundKey, count) -> {
+                DynamicGauge.set(
+                        Names.METRIC_REGISTRY_PREFIX + "instances",
+                        BasicTagList.of(
+                                "app", appName,
+                                "expired", compoundKey.expired ? "true" : "false",
+                                "vipAddress", compoundKey.vipAddress,
+                                "status", compoundKey.status,
+                                "overriddenStatus", compoundKey.overriddenStatus),
+                        count);
+            });
+        });
     }
 
     @Override
