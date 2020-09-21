@@ -110,6 +110,10 @@ public class EurekaBootStrap implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent event) {
         try {
+            final String javaVersion = System.getProperty("java.version");
+            if (!javaVersion.startsWith("1.8")) {
+                logger.error("*********** Eureka is supported on Java 1.8 only, you're running version {} ***********", javaVersion);
+            }
             initEurekaEnvironment();
             initEurekaServerContext();
 
