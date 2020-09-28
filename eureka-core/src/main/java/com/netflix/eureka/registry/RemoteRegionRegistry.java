@@ -52,6 +52,7 @@ import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerIdentity;
 import com.netflix.eureka.resources.ServerCodecs;
 import com.netflix.eureka.transport.EurekaServerHttpClients;
+import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
 import com.sun.jersey.api.client.ClientResponse;
@@ -59,6 +60,8 @@ import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static com.netflix.eureka.Names.METRIC_REGISTRY_PREFIX;
 
 /**
  * Handles all registry operations that needs to be done on a eureka service running in an other region.
@@ -90,6 +93,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
     private final EurekaServerConfig serverConfig;
     private volatile boolean readyForServingData;
     private final EurekaHttpClient eurekaHttpClient;
+    private long timeOfLastSuccessfulRemoteFetch = System.currentTimeMillis();
 
     @Inject
     public RemoteRegionRegistry(EurekaServerConfig serverConfig,
@@ -240,6 +244,11 @@ public class RemoteRegionRegistry implements LookupService<String> {
                 tracer.stop();
             }
         }
+
+        if (success) {
+            timeOfLastSuccessfulRemoteFetch = System.currentTimeMillis();
+        }
+
         return success;
     }
 
@@ -500,5 +509,10 @@ public class RemoteRegionRegistry implements LookupService<String> {
         }
         String enabled = serverConfig.getExperimental("transport.enabled");
         return enabled != null && "true".equalsIgnoreCase(enabled);
+    }
+
+    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "secondsSinceLastSuccessfulRemoteFetch", type = DataSourceType.GAUGE)
+    public long getTimeOfLastSuccessfulRemoteFetch() {
+        return (System.currentTimeMillis() - timeOfLastSuccessfulRemoteFetch) / 1000;
     }
 }
