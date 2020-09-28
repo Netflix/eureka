@@ -60,6 +60,8 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import static com.netflix.eureka.Names.METRIC_REGISTRY_PREFIX;
+
 /**
  * Handles replication of all operations to {@link AbstractInstanceRegistry} to peer
  * <em>Eureka</em> nodes to keep them all in sync.
@@ -353,6 +355,12 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         return shouldAllowAccess(true);
     }
 
+    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "shouldAllowAccess", type = DataSourceType.GAUGE)
+    public int shouldAllowAccessMetric() {
+        return shouldAllowAccess() ? 1 : 0;
+    }
+
+
     /**
      * @deprecated use {@link com.netflix.eureka.cluster.PeerEurekaNodes#getPeerEurekaNodes()} directly.
      *
@@ -476,6 +484,11 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             return true;
         }
         return numberOfRenewsPerMinThreshold > 0 && getNumOfRenewsInLastMin() > numberOfRenewsPerMinThreshold;
+    }
+
+    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "isLeaseExpirationEnabled", type = DataSourceType.GAUGE)
+    public int isLeaseExpirationEnabledMetric() {
+        return isLeaseExpirationEnabled() ? 1 : 0;
     }
 
     /**
