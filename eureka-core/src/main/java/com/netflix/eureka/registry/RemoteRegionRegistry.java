@@ -94,6 +94,8 @@ public class RemoteRegionRegistry implements LookupService<String> {
     private volatile boolean readyForServingData;
     private final EurekaHttpClient eurekaHttpClient;
     private long timeOfLastSuccessfulRemoteFetch = System.currentTimeMillis();
+    private long deltaSuccesses = 0;
+    private long deltaMismatches = 0;
 
     @Inject
     public RemoteRegionRegistry(EurekaServerConfig serverConfig,
@@ -283,8 +285,11 @@ public class RemoteRegionRegistry implements LookupService<String> {
             }
 
             // There is a diff in number of instances for some reason
-            if ((!reconcileHashCode.equals(delta.getAppsHashCode()))) {
+            if (!reconcileHashCode.equals(delta.getAppsHashCode())) {
+                deltaMismatches++;
                 return reconcileAndLogDifference(delta, reconcileHashCode);
+            } else {
+                deltaSuccesses++;
             }
         }
 
@@ -514,5 +519,15 @@ public class RemoteRegionRegistry implements LookupService<String> {
     @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "secondsSinceLastSuccessfulRemoteFetch", type = DataSourceType.GAUGE)
     public long getTimeOfLastSuccessfulRemoteFetch() {
         return (System.currentTimeMillis() - timeOfLastSuccessfulRemoteFetch) / 1000;
+    }
+
+    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "remoteDeltaSuccesses", type = DataSourceType.COUNTER)
+    public long getRemoteFetchSuccesses() {
+        return deltaSuccesses;
+    }
+
+    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "remoteDeltaMismatches", type = DataSourceType.COUNTER)
+    public long getRemoteFetchMismatches() {
+        return deltaMismatches;
     }
 }
