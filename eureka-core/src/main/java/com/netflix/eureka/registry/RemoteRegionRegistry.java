@@ -207,6 +207,12 @@ public class RemoteRegionRegistry implements LookupService<String> {
                         remoteRegionFetchTask
                 ),
                 serverConfig.getRemoteRegionRegistryFetchInterval(), TimeUnit.SECONDS);
+
+        try {
+            Monitors.registerObject(this);
+        } catch (Throwable e) {
+            logger.warn("Cannot register the JMX monitor for the RemoteRegionRegistry :", e);
+        }
     }
 
     /**
