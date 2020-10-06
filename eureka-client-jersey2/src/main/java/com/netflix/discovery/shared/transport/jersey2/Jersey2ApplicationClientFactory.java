@@ -27,6 +27,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -192,12 +193,13 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
         }
 
         private void addSSLConfiguration(ClientBuilder clientBuilder) {
+            FileInputStream fin = null;
             try {
                 if (systemSSL) {
                     clientBuilder.sslContext(SSLContext.getDefault());
                 } else if (trustStoreFileName != null) {
                     KeyStore trustStore = KeyStore.getInstance(KEY_STORE_TYPE);
-                    FileInputStream fin = new FileInputStream(trustStoreFileName);
+                    fin = new FileInputStream(trustStoreFileName);
                     trustStore.load(fin, trustStorePassword.toCharArray());
                     clientBuilder.trustStore(trustStore);
                 } else if (sslContext != null) {
@@ -205,6 +207,14 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
                 }
             } catch (Exception ex) {
                 throw new IllegalArgumentException("Cannot setup SSL for Jersey2 client", ex);
+            }
+            finally {
+                if (fin != null) {
+                    try {
+                        fin.close();
+                    } catch (IOException ignore) {
+                    }
+                }
             }
         }
 
