@@ -174,6 +174,7 @@ public class InstanceInfoGenerator {
         String privateHostname = "ip-10.0" + appIndex + "." + appInstanceId + ".compute.internal";
         String publicIp = "20.0." + appIndex + '.' + appInstanceId;
         String privateIp = "192.168." + appIndex + '.' + appInstanceId;
+        String ipv6 = "::FFFF:" + publicIp;
 
         String instanceId = String.format("i-%04d%04d", appIndex, appInstanceId);
         if (taggedId) {
@@ -190,6 +191,7 @@ public class InstanceInfoGenerator {
                 .addMetadata(MetaDataKey.localIpv4, privateIp)
                 .addMetadata(MetaDataKey.publicHostname, hostName)
                 .addMetadata(MetaDataKey.publicIpv4, publicIp)
+                .addMetadata(MetaDataKey.ipv6, ipv6)
                 .build();
 
         String unsecureURL = "http://" + hostName + ":8080";
