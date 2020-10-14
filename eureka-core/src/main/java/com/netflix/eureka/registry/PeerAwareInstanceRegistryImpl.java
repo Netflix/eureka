@@ -512,6 +512,11 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         return serverConfig.shouldEnableSelfPreservation();
     }
 
+    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "isSelfPreservationModeEnabled", type = DataSourceType.GAUGE)
+    public int isSelfPreservationModeEnabledMetric() {
+        return isSelfPreservationModeEnabled() ? 1 : 0;
+    }
+
     @Override
     public InstanceInfo getNextServerFromEureka(String virtualHostname, boolean secure) {
         // TODO Auto-generated method stub
