@@ -4,6 +4,7 @@ import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.junit.Before;
 import org.junit.Test;
 
+import static com.netflix.appinfo.AmazonInfo.MetaDataKey.ipv6;
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.localIpv4;
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.publicHostname;
 import static org.hamcrest.CoreMatchers.is;
@@ -37,6 +38,10 @@ public class CloudInstanceConfigTest {
 
         info.getMetadata().remove(localIpv4.getName());
         config = createConfig(info);
+        assertThat(config.resolveDefaultAddress(false), is(info.get(ipv6)));
+
+        info.getMetadata().remove(ipv6.getName());
+        config = createConfig(info);
         assertThat(config.resolveDefaultAddress(false), is(dummyDefault));
     }
 
@@ -57,7 +62,8 @@ public class CloudInstanceConfigTest {
             public String[] getDefaultAddressResolutionOrder() {
                 return new String[] {
                         publicHostname.name(),
-                        localIpv4.name()
+                        localIpv4.name(),
+                        ipv6.name()
                 };
             }
 

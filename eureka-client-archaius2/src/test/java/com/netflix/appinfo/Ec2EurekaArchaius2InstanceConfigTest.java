@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import java.util.Collections;
 
+import static com.netflix.appinfo.AmazonInfo.MetaDataKey.ipv6;
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.localIpv4;
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.publicHostname;
 import static org.hamcrest.CoreMatchers.is;
@@ -37,6 +38,10 @@ public class Ec2EurekaArchaius2InstanceConfigTest {
 
         info.getMetadata().remove(localIpv4.getName());
         config = createConfig(info);
+        assertThat(config.resolveDefaultAddress(false), is(info.get(ipv6)));
+
+        info.getMetadata().remove(ipv6.getName());
+        config = createConfig(info);
         assertThat(config.resolveDefaultAddress(false), is(dummyDefault));
     }
 
@@ -47,7 +52,8 @@ public class Ec2EurekaArchaius2InstanceConfigTest {
             public String[] getDefaultAddressResolutionOrder() {
                 return new String[] {
                         publicHostname.name(),
-                        localIpv4.name()
+                        localIpv4.name(),
+                        ipv6.name()
                 };
             }
 
