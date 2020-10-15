@@ -95,7 +95,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     @Override
     public int getRegistryFetchIntervalSeconds() {
         return configInstance.getIntProperty(
-                namespace + REGISTRY_REFRESH_INTERVAL_KEY, 30).get();
+                namespace + REGISTRY_REFRESH_INTERVAL_KEY, 45).get();
     }
 
     /*
