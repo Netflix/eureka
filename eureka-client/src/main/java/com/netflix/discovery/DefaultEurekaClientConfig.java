@@ -415,7 +415,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     @Override
     public int getEurekaConnectionIdleTimeoutSeconds() {
         return configInstance.getIntProperty(
-                namespace + EUREKA_SERVER_CONNECTION_IDLE_TIMEOUT_KEY, 30)
+                namespace + EUREKA_SERVER_CONNECTION_IDLE_TIMEOUT_KEY, 45)
                 .get();
     }
 
