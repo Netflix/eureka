@@ -8,7 +8,7 @@ dependencies {
     compile 'org.slf4j:slf4j-log4j12:1.6.1'
     compile 'org.glassfish.jaxb:jaxb-runtime:2.3.3'
 
-    runtimeOnly 'xerces:xercesImpl:2.4.0'
+    runtimeOnly 'xerces:xercesImpl:2.12.0'
     runtimeOnly 'org.codehaus.jettison:jettison:1.2'
 
     providedCompile "javax.servlet:servlet-api:$servletVersion"
@@ -21,7 +21,7 @@ dependencies {
 
 task copyLibs(type: Copy) {
     into 'testlibs/WEB-INF/libs'
-    from configurations.runtime	
+    from configurations.runtime
 }
 
 war {
