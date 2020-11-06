@@ -1,6 +1,7 @@
 package com.netflix.appinfo;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import com.netflix.discovery.CommonConstants;
@@ -29,7 +30,7 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
     };
 
     private final AmazonInfoConfig amazonInfoConfig;
-    private final RefreshableAmazonInfoProvider amazonInfoHolder;
+    private final Provider<AmazonInfo> amazonInfoHolder;
 
     @Inject
     public Ec2EurekaArchaius2InstanceConfig(Config configInstance, AmazonInfoConfig amazonInfoConfig) {
@@ -38,6 +39,12 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
 
     /* visible for testing */ Ec2EurekaArchaius2InstanceConfig(Config configInstance, AmazonInfo info) {
         this(configInstance, new Archaius2AmazonInfoConfig(configInstance), CommonConstants.DEFAULT_CONFIG_NAMESPACE, info, false);
+    }
+
+    public Ec2EurekaArchaius2InstanceConfig(Config configInstance, Provider<AmazonInfo> amazonInfoProvider) {
+        super(configInstance, CommonConstants.DEFAULT_CONFIG_NAMESPACE);
+        this.amazonInfoConfig = null;
+        this.amazonInfoHolder = amazonInfoProvider;
     }
 
     public Ec2EurekaArchaius2InstanceConfig(Config configInstance, AmazonInfoConfig amazonInfoConfig, String namespace) {
@@ -73,8 +80,8 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
     
     @Override
     public String getHostName(boolean refresh) {
-        if (refresh) {
-            amazonInfoHolder.refresh();
+        if (refresh && this.amazonInfoHolder instanceof RefreshableAmazonInfoProvider) {
+            ((RefreshableAmazonInfoProvider)amazonInfoHolder).refresh();
         }
         return amazonInfoHolder.get().get(MetaDataKey.publicHostname);
     }
@@ -98,7 +105,9 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
      */
     @Deprecated
     public synchronized void refreshAmazonInfo() {
-        amazonInfoHolder.refresh();
+        if (this.amazonInfoHolder instanceof RefreshableAmazonInfoProvider) {
+            ((RefreshableAmazonInfoProvider)amazonInfoHolder).refresh();
+        }
     }
 
     @Override
