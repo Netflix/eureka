@@ -20,7 +20,8 @@ At Netflix, Eureka is used for the following purposes apart from playing a criti
 
 Building
 ----------
-The build requires java8 because of some required libraries that are java8 (servo), but the source and target compatibility are still set to 1.7.
+The build requires `java8` because of some required libraries that are `java8` (`servo`), but the source and target compatibility are still set to `1.7`.
+Note that tags should be checked out to perform a build.
 
 
 Support
