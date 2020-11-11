@@ -4,6 +4,7 @@ import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.Ec2EurekaArchaius2InstanceConfig;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.archaius.api.Config;
+import com.netflix.discovery.DiscoveryManager;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -26,6 +27,9 @@ public class CustomAmazonInfoProviderInstanceConfigFactory implements EurekaInst
     public EurekaInstanceConfig get() {
         if (eurekaInstanceConfig == null) {
             eurekaInstanceConfig = new Ec2EurekaArchaius2InstanceConfig(configInstance, amazonInfoProvider);
+
+            // Copied from CompositeInstanceConfigFactory.get
+            DiscoveryManager.getInstance().setEurekaInstanceConfig(eurekaInstanceConfig);
         }
 
         return eurekaInstanceConfig;
