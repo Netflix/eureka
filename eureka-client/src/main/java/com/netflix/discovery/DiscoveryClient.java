@@ -1349,11 +1349,7 @@ public class DiscoveryClient implements EurekaClient {
 
                 @Override
                 public void notify(StatusChangeEvent statusChangeEvent) {
-                    if (statusChangeEvent.getStatus() == InstanceStatus.DOWN) {
-                        logger.error("Saw local status change event {}", statusChangeEvent);
-                    } else {
-                        logger.info("Saw local status change event {}", statusChangeEvent);
-                    }
+                    logger.info("Saw local status change event {}", statusChangeEvent);
                     instanceInfoReplicator.onDemandUpdate();
                 }
             };
