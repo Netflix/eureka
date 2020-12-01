@@ -86,6 +86,33 @@ public class GzipEncodingEnforcingFilterTest {
         assertEquals("Expected Accept-Encoding gzip", "gzip\n", res);
     }
 
+    @Test
+    public void testForceGzipOtherHeader() throws Exception {
+        noneGzipRequest();
+        when(request.getHeader("Test")).thenReturn("ok");
+        when(request.getHeaders("Test")).thenReturn(new Enumeration() {
+            private int c = 0;
+
+            @Override
+            public boolean hasMoreElements() {
+                return c == 0;
+            }
+
+            @Override
+            public Object nextElement() {
+                c++;
+                return "ok";
+            }
+        });
+        filter.doFilter(request, response, filterChain);
+        String res = "";
+        Enumeration values = filteredRequest.getHeaders("Test");
+        while (values.hasMoreElements()) {
+            res = res + values.nextElement() + "\n";
+        }
+        assertEquals("Expected Test ok", "ok\n", res);
+    }
+
     private void gzipRequest() {
         when(request.getMethod()).thenReturn("GET");
         when(request.getHeader(ACCEPT_ENCODING_HEADER)).thenReturn("gzip");
