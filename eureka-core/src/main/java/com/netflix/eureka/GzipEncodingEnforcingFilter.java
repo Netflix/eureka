@@ -60,7 +60,7 @@ public class GzipEncodingEnforcingFilter implements Filter {
                 if (HttpHeaders.ACCEPT_ENCODING.equals(name)) {
                     return new EnumWrapper<String>("gzip");
                 }
-                return new EnumWrapper<String>(super.getHeaders(name), HttpHeaders.ACCEPT_ENCODING);
+                return super.getHeaders(name);
             }
 
             @Override
