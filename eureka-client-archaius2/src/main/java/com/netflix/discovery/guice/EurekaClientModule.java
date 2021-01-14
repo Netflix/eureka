@@ -4,6 +4,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.name.Names;
 import com.netflix.appinfo.providers.EurekaInstanceConfigFactory;
+import com.netflix.discovery.CommonConstants;
 
 /**
  * How to use:
@@ -39,11 +40,11 @@ import com.netflix.appinfo.providers.EurekaInstanceConfigFactory;
 public class EurekaClientModule extends AbstractModule {
 
     protected LinkedBindingBuilder<String> bindEurekaInstanceConfigNamespace() {
-        return bind(String.class).annotatedWith(Names.named(InternalEurekaClientModule.INSTANCE_CONFIG_NAMESPACE_KEY));
+        return bind(String.class).annotatedWith(Names.named(CommonConstants.INSTANCE_CONFIG_NAMESPACE_KEY));
     }
 
     protected LinkedBindingBuilder<String> bindEurekaClientConfigNamespace() {
-        return bind(String.class).annotatedWith(Names.named(InternalEurekaClientModule.CLIENT_CONFIG_NAMESPACE_KEY));
+        return bind(String.class).annotatedWith(Names.named(CommonConstants.CLIENT_CONFIG_NAMESPACE_KEY));
     }
 
     protected LinkedBindingBuilder<EurekaInstanceConfigFactory> bindEurekaInstanceConfigFactory() {

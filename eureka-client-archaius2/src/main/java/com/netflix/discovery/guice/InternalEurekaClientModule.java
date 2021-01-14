@@ -31,20 +31,17 @@ import javax.inject.Singleton;
 
 final class InternalEurekaClientModule extends AbstractModule {
 
-    static final String INSTANCE_CONFIG_NAMESPACE_KEY = "eureka.instance.config.namespace";
-    static final String CLIENT_CONFIG_NAMESPACE_KEY = "eureka.client.config.namespace";
-
     @Singleton
     static class ModuleConfig {
         @Inject
         Config config;
 
         @Inject(optional = true)
-        @Named(InternalEurekaClientModule.INSTANCE_CONFIG_NAMESPACE_KEY)
+        @Named(CommonConstants.INSTANCE_CONFIG_NAMESPACE_KEY)
         String instanceConfigNamespace;
 
         @Inject(optional = true)
-        @Named(InternalEurekaClientModule.CLIENT_CONFIG_NAMESPACE_KEY)
+        @Named(CommonConstants.CLIENT_CONFIG_NAMESPACE_KEY)
         String clientConfigNamespace;
 
         @Inject(optional = true)

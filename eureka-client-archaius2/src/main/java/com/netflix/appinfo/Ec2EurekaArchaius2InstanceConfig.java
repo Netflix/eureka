@@ -47,6 +47,12 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
         this.amazonInfoHolder = amazonInfoProvider;
     }
 
+    public Ec2EurekaArchaius2InstanceConfig(Config configInstance, Provider<AmazonInfo> amazonInfoProvider, String namespace) {
+        super(configInstance, namespace);
+        this.amazonInfoConfig = null;
+        this.amazonInfoHolder = amazonInfoProvider;
+    }
+
     public Ec2EurekaArchaius2InstanceConfig(Config configInstance, AmazonInfoConfig amazonInfoConfig, String namespace) {
         this(configInstance, amazonInfoConfig, namespace, null, true);
     }
