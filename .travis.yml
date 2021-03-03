@@ -3,14 +3,16 @@ dist: xenial
 language: java
 jdk:
 - openjdk8
-install: ./installViaTravis.sh
-script: ./buildViaTravis.sh
+install: "./installViaTravis.sh"
+script: "./buildViaTravis.sh"
 env:
   global:
-  - secure: H5Gre2D7TjPp0UzMgWAlH6m/MifDk0JEQPTLU1Qr+Dm6fBSfozjYs1y29hk9beM936IDGdihYPRon6t1ZNWX1vQKGrmva2ynMwXs12y/F6GEEgjLRVLpX+JAfANZzVDcnIhdWEb8mWQ4ESh0+i2mOMJFwWFhGy2WQuobHCkrn3E=
-  - secure: eFCW3J9zX0eNMk1PCHGy4EXFGp5PiozIyvO6SB2kna0Jt6CdY3UA/STgpRtReT1iTW/C/lyYb+h6H8FISvTkJhVKITDoVcOpwUXCYxQdXEvhL633z9LYQcKexricKzP2hpePcmEGmNcVNxn9mrIRdo28ds4XOT7dpU54+ZmLTpU=
-  - secure: T3ROxa73aSSYdwjPJUzjqkMjxHV+g4scdI5pJzTIsQ3fwaoZ3cPubLPOy2pYx59a4MhpdNuT1or/yr/khToPYHxHgj9pGZ8JHLRYjzEEmfDj2WyhVWeYC88Q+4Ncc2JSMT5lHKS/j+N3R9pZf/Cuy9keyvLEKQlXBOBPBf7MWcc=
-  - secure: fIXSx1SIXJF8//Qo9zmLWKn+APW1sYxw8V1U47kfQTw3Ks2RTg8J7z7gdP4YObWrrrMjZgtCJOWolCNdCPJd8bxypv8o4YAw4w/nDrs/m7p0HcIirZypEGWYuju3g1JkZzQkvCIXIYMfHL0jlYMvjsY9Pjn5rgpFGqEW6lloOCE=
+  - secure: Hnx5B8Ubo+Of0wzXY9Vv8Bna7dk+CJaMUswYIvbEG26DCGXCNvNa61YoOzCg+hQGyqC90PFnCwwvtqyjk/meePZMd268p5vQIm0v8dcl3xYaSAr4WyGhbfqfTv7kZ1pmw1Ukn+JRqt9fV5CbPJ7zh6NtX59GTL8zMIqh8JwLpgg=
+  - secure: TaYL6JWsvbza6Q0dhxdmkil8cJpjG0CTmjdU5lJloscNhYTtZefhl9BMWyUjab5qQ9/lO6EG1cwzRehjhPanVz7HF0MDzIvVUKPwvzXkU/tyz4o6Bn5N1mVgjOGEQ9lLdi+0eRppnmIMRgkAmg/R3aHOsEQMQGVB6ztGEs7qSlI=
+  - secure: jUB1UJO55I8UR39JsbH1gWX7/hpFa8giVyrCJaXeIephNPtP0pd/erMYUjbNxbU2uub5VLuSzHVKUFbg32dG/x+du5LiKbpoZt0FqOjkbZAXLb8S8DP1AW28cigvtubzRQVvBu29bJKthRRr0l9oIqbH5yY329AOGdV/eHTt5c4=
+  - secure: QU9AWwz8lH+Ciexj9Ebie7XByaByJzYtzYrAu/A08sd6jAWs++e6jTuPQOITNxVmTEsUaQGkD69qIfq9P+bXiQiKNaXEaRUeW3FxjZB51rZ46yo2gc+ES4ehmjF0KcLUF6/jg/r2aMaDwWCFG717KE01cbki4qHrJR8EbhMBtak=
+  - secure: Xw3pQwFujSwwQGmFPKpQCuBo/KQirZlcQCO4VNEBYfEFgEQ5oIQDix/WJvcTHuVtRzg7oyiYT62TmSxQxEeuq4QtsHfx4XWhnhHhB1yVPq1UCxcjsLoI0ZPjf68GaidAj7WAAwI+UE8jNsl250AITLqVtPD4igG8pihXjs4Kb1k=
+  - secure: qVEHVj3cCoJwSYZDRON/9KjgmzjYgLgEYdJT2cfTOVw/KILCJ2XRwUBAWaAovi6CGzu36zXbsgkE2ZIZEkdIelQv9kzNVslXekeFrOPWl59IqW6sIxeKtXW8BPdaUQSghmtwezq6Z4Qg0ZdVnljpg/OkhlXKXL3Iy6MFrEw5HzY=
 cache:
   directories:
-  - $HOME/.gradle/caches
+  - "$HOME/.gradle/caches"
