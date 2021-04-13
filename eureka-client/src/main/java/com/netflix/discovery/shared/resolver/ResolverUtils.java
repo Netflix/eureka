@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,8 +41,6 @@ import org.slf4j.LoggerFactory;
 public final class ResolverUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(ResolverUtils.class);
-
-    private static final String LOCAL_IPV4_ADDRESS = SystemUtil.getServerIPv4();
 
     private static final Pattern ZONE_RE = Pattern.compile("(txt\\.)?([^.]+).*");
 
@@ -81,7 +80,7 @@ public final class ResolverUtils {
     }
 
     /**
-     * Randomize server list using local IPv4 address hash as a seed.
+     * Randomize server list.
      *
      * @return a copy of the original list with elements in the random order
      */
@@ -90,14 +89,7 @@ public final class ResolverUtils {
         if (randomList.size() < 2) {
             return randomList;
         }
-        Random random = new Random(LOCAL_IPV4_ADDRESS.hashCode());
-        int last = randomList.size() - 1;
-        for (int i = 0; i < last; i++) {
-            int pos = random.nextInt(randomList.size() - i);
-            if (pos != i) {
-                Collections.swap(randomList, i, pos);
-            }
-        }
+        Collections.shuffle(randomList,ThreadLocalRandom.current());
         return randomList;
     }
 
