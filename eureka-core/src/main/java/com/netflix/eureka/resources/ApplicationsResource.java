@@ -150,6 +150,10 @@ public class ApplicationsResource {
                 keyType, CurrentRequestVersion.get(), EurekaAccept.fromString(eurekaAccept), regions
         );
 
+        return getResponse(acceptEncoding, returnMediaType, cacheKey);
+    }
+
+    private Response getResponse(@HeaderParam(HEADER_ACCEPT_ENCODING) String acceptEncoding, String returnMediaType, Key cacheKey) {
         Response response;
         if (acceptEncoding != null && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
             response = Response.ok(responseCache.getGZIP(cacheKey))
@@ -233,16 +237,6 @@ public class ApplicationsResource {
 
         final Response response;
 
-        if (acceptEncoding != null && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
-             response = Response.ok(responseCache.getGZIP(cacheKey))
-                    .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE)
-                    .header(HEADER_CONTENT_TYPE, returnMediaType)
-                    .build();
-        } else {
-            response = Response.ok(responseCache.get(cacheKey)).build();
-        }
-
-        CurrentRequestVersion.remove();
-        return response;
+        return getResponse(acceptEncoding, returnMediaType, cacheKey);
     }
 }

@@ -24,6 +24,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 
 import com.netflix.eureka.EurekaServerContext;
 import com.netflix.eureka.EurekaServerContextHolder;
@@ -106,14 +107,14 @@ public class ASGResource {
                                  @QueryParam("value") String newStatus,
                                  @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
         if (awsAsgUtil == null) {
-            return Response.status(400).build();
+            return Response.status(Status.BAD_REQUEST).build();
         }
 
         try {
             logger.info("Trying to update ASG Status for ASG {} to {}", asgName, newStatus);
             ASGStatus asgStatus = ASGStatus.valueOf(newStatus.toUpperCase());
             awsAsgUtil.setStatus(asgName, (!ASGStatus.DISABLED.equals(asgStatus)));
-            registry.statusUpdate(asgName, asgStatus, Boolean.valueOf(isReplication));
+            registry.statusUpdate(asgName, asgStatus, Boolean.parseBoolean(isReplication));
             logger.debug("Updated ASG Status for ASG {} to {}", asgName, asgStatus);
 
         } catch (Throwable e) {

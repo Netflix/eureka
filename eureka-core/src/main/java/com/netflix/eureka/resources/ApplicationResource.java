@@ -147,19 +147,19 @@ public class ApplicationResource {
         logger.debug("Registering instance {} (replication={})", info.getId(), isReplication);
         // validate that the instanceinfo contains all the necessary required fields
         if (isBlank(info.getId())) {
-            return Response.status(400).entity("Missing instanceId").build();
+            return Response.status(Status.BAD_REQUEST).entity("Missing instanceId").build();
         } else if (isBlank(info.getHostName())) {
-            return Response.status(400).entity("Missing hostname").build();
+            return Response.status(Status.BAD_REQUEST).entity("Missing hostname").build();
         } else if (isBlank(info.getIPAddr())) {
-            return Response.status(400).entity("Missing ip address").build();
+            return Response.status(Status.BAD_REQUEST).entity("Missing ip address").build();
         } else if (isBlank(info.getAppName())) {
-            return Response.status(400).entity("Missing appName").build();
+            return Response.status(Status.BAD_REQUEST).entity("Missing appName").build();
         } else if (!appName.equals(info.getAppName())) {
-            return Response.status(400).entity("Mismatched appName, expecting " + appName + " but was " + info.getAppName()).build();
+            return Response.status(Status.BAD_REQUEST).entity("Mismatched appName, expecting " + appName + " but was " + info.getAppName()).build();
         } else if (info.getDataCenterInfo() == null) {
-            return Response.status(400).entity("Missing dataCenterInfo").build();
+            return Response.status(Status.BAD_REQUEST).entity("Missing dataCenterInfo").build();
         } else if (info.getDataCenterInfo().getName() == null) {
-            return Response.status(400).entity("Missing dataCenterInfo Name").build();
+            return Response.status(Status.BAD_REQUEST).entity("Missing dataCenterInfo Name").build();
         }
 
         // handle cases where clients may be registering with bad DataCenterInfo with missing data
@@ -170,7 +170,7 @@ public class ApplicationResource {
                 boolean experimental = "true".equalsIgnoreCase(serverConfig.getExperimental("registration.validation.dataCenterInfoId"));
                 if (experimental) {
                     String entity = "DataCenterInfo of type " + dataCenterInfo.getClass() + " must contain a valid id";
-                    return Response.status(400).entity(entity).build();
+                    return Response.status(Status.BAD_REQUEST).entity(entity).build();
                 } else if (dataCenterInfo instanceof AmazonInfo) {
                     AmazonInfo amazonInfo = (AmazonInfo) dataCenterInfo;
                     String effectiveId = amazonInfo.get(AmazonInfo.MetaDataKey.instanceId);
@@ -184,7 +184,7 @@ public class ApplicationResource {
         }
 
         registry.register(info, "true".equals(isReplication));
-        return Response.status(204).build();  // 204 to be backwards compatible
+        return Response.status(Status.NO_CONTENT).build();  // 204 to be backwards compatible
     }
 
     /**
