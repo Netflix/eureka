@@ -120,7 +120,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         this.recentCanceledQueue = new CircularQueue<Pair<Long, String>>(1000);
         this.recentRegisteredQueue = new CircularQueue<Pair<Long, String>>(1000);
 
-        this.renewsLastMin = new MeasuredRate(1000 * 60);
+        this.renewsLastMin = new MeasuredRate(1000 * 60 * 1);
 
         this.deltaRetentionTimer.schedule(getDeltaRetentionTask(),
                 serverConfig.getDeltaRetentionTimerIntervalInMs(),
@@ -352,54 +352,39 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         RENEW.increment(isReplication);
         Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
         Lease<InstanceInfo> leaseToRenew = null;
-
         if (gMap != null) {
             leaseToRenew = gMap.get(id);
         }
-
         if (leaseToRenew == null) {
             RENEW_NOT_FOUND.increment(isReplication);
             logger.warn("DS: Registry: lease doesn't exist, registering resource: {} - {}", appName, id);
             return false;
-        }
+        } else {
+            InstanceInfo instanceInfo = leaseToRenew.getHolder();
+            if (instanceInfo != null) {
+                // touchASGCache(instanceInfo.getASGName());
+                InstanceStatus overriddenInstanceStatus = this.getOverriddenInstanceStatus(
+                        instanceInfo, leaseToRenew, isReplication);
+                if (overriddenInstanceStatus == InstanceStatus.UNKNOWN) {
+                    logger.info("Instance status UNKNOWN possibly due to deleted override for instance {}"
+                            + "; re-register required", instanceInfo.getId());
+                    RENEW_NOT_FOUND.increment(isReplication);
+                    return false;
+                }
+                if (!instanceInfo.getStatus().equals(overriddenInstanceStatus)) {
+                    logger.info(
+                            "The instance status {} is different from overridden instance status {} for instance {}. "
+                                    + "Hence setting the status to overridden status", instanceInfo.getStatus().name(),
+                                    overriddenInstanceStatus.name(),
+                                    instanceInfo.getId());
+                    instanceInfo.setStatusWithoutDirty(overriddenInstanceStatus);
 
-        InstanceInfo instanceInfo = leaseToRenew.getHolder();
-
-        if (instanceInfo == null) {
-            logger.warn("instanceInfo is null .");
-            return false;
-        }
-
-        if (!validateInstanceStatus(isReplication, leaseToRenew, instanceInfo)){
-            return false;
-        }
-
+                }
+            }
             renewsLastMin.increment();
             leaseToRenew.renew();
             return true;
-    }
-
-
-
-    private boolean validateInstanceStatus(boolean isReplication, Lease<InstanceInfo> leaseToRenew, InstanceInfo instanceInfo) {
-        InstanceStatus overriddenInstanceStatus = this.getOverriddenInstanceStatus(
-                instanceInfo, leaseToRenew, isReplication);
-        if (overriddenInstanceStatus == InstanceStatus.UNKNOWN) {
-            logger.info("Instance status UNKNOWN possibly due to deleted override for instance {}"
-                    + "; re-register required", instanceInfo.getId());
-            RENEW_NOT_FOUND.increment(isReplication);
-            return false;
         }
-        if (!instanceInfo.getStatus().equals(overriddenInstanceStatus)) {
-            logger.info(
-                    "The instance status {} is different from overridden instance status {} for instance {}. "
-                            + "Hence setting the status to overridden status", instanceInfo.getStatus().name(),
-                    overriddenInstanceStatus.name(),
-                    instanceInfo.getId());
-            instanceInfo.setStatusWithoutDirty(overriddenInstanceStatus);
-
-        }
-        return true;
     }
 
     /**
@@ -416,7 +401,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     @Override
     public void storeOverriddenStatusIfRequired(String id, InstanceStatus overriddenStatus) {
         InstanceStatus instanceStatus = overriddenInstanceStatusMap.get(id);
-        if ((!overriddenStatus.equals(instanceStatus))) {
+        if ((instanceStatus == null)
+                || (!overriddenStatus.equals(instanceStatus))) {
             // We might not have the overridden status if the server got restarted -this will help us maintain
             // the overridden state from the replica
             logger.info(
@@ -445,7 +431,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     @Override
     public void storeOverriddenStatusIfRequired(String appName, String id, InstanceStatus overriddenStatus) {
         InstanceStatus instanceStatus = overriddenInstanceStatusMap.get(id);
-        if ((!overriddenStatus.equals(instanceStatus))) {
+        if ((instanceStatus == null) || (!overriddenStatus.equals(instanceStatus))) {
             // We might not have the overridden status if the server got
             // restarted -this will help us maintain the overridden state
             // from the replica
@@ -594,7 +580,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      */
     @Override
     public void evict() {
-        evict(0L);
+        evict(0l);
     }
 
     public void evict(long additionalLeaseMs) {
@@ -1088,9 +1074,10 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     public List<InstanceInfo> getInstancesById(String id, boolean includeRemoteRegions) {
         List<InstanceInfo> list = new ArrayList<InstanceInfo>();
 
-        for (Entry<String, Map<String, Lease<InstanceInfo>>> stringMapEntry : registry.entrySet()) {
+        for (Iterator<Entry<String, Map<String, Lease<InstanceInfo>>>> iter =
+                     registry.entrySet().iterator(); iter.hasNext(); ) {
 
-            Map<String, Lease<InstanceInfo>> leaseMap = stringMapEntry.getValue();
+            Map<String, Lease<InstanceInfo>> leaseMap = iter.next().getValue();
             if (leaseMap != null) {
                 Lease<InstanceInfo> lease = leaseMap.get(id);
 
@@ -1098,6 +1085,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     continue;
                 }
 
+                if (list == Collections.EMPTY_LIST) {
+                    list = new ArrayList<InstanceInfo>();
+                }
                 list.add(decorateInstanceInfo(lease));
             }
         }
@@ -1270,13 +1260,13 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         long getCompensationTimeMs() {
             long currNanos = getCurrentTimeNano();
             long lastNanos = lastExecutionNanosRef.getAndSet(currNanos);
-            if (lastNanos == 0L) {
-                return 0L;
+            if (lastNanos == 0l) {
+                return 0l;
             }
 
             long elapsedMs = TimeUnit.NANOSECONDS.toMillis(currNanos - lastNanos);
             long compensationTime = elapsedMs - serverConfig.getEvictionIntervalTimerInMs();
-            return Math.max(compensationTime, 0L);
+            return compensationTime <= 0l ? 0l : compensationTime;
         }
 
         long getCurrentTimeNano() {  // for testing
