@@ -107,6 +107,26 @@ public class InstanceInfoTest {
     }
 
     @Test
+    public void testNullUrlEntries() throws Exception {
+        Builder builder = newBuilder()
+                .setAppName("test")
+                .setNamespace("eureka.")
+                .setHostName("localhost")
+                .setPort(80)
+                .setSecurePort(443)
+                .setHealthCheckUrls(null, null, null)
+                .setStatusPageUrl(null, null)
+                .setHomePageUrl(null, null)
+                .enablePort(PortType.SECURE, true);
+
+        // No URLs for healthcheck , status , homepage
+        InstanceInfo noHealtcheckInstanceInfo = builder.build();
+        assertThat(noHealtcheckInstanceInfo.getHealthCheckUrls().size(), is(equalTo(0)));
+        assertThat(noHealtcheckInstanceInfo.getStatusPageUrl(), nullValue());
+        assertThat(noHealtcheckInstanceInfo.getHomePageUrl(), nullValue());
+    }
+
+    @Test
     public void testGetIdWithInstanceIdUsed() {
         InstanceInfo baseline = InstanceInfoGenerator.takeOne();
         String dataCenterInfoId = ((UniqueIdentifier) baseline.getDataCenterInfo()).getId();
