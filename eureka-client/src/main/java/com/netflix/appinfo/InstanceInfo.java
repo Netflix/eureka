@@ -669,7 +669,7 @@ public class InstanceInfo {
             if (explicitUrl != null) {
                 result.healthCheckUrl = explicitUrl.replace(
                         hostNameInterpolationExpression, result.hostName);
-            } else if (result.isUnsecurePortEnabled) {
+            } else if (result.isUnsecurePortEnabled && relativeUrl != null) {
                 result.healthCheckUrl = HTTP_PROTOCOL + result.hostName + COLON
                         + result.port + relativeUrl;
             }
@@ -677,7 +677,7 @@ public class InstanceInfo {
             if (secureExplicitUrl != null) {
                 result.secureHealthCheckUrl = secureExplicitUrl.replace(
                         hostNameInterpolationExpression, result.hostName);
-            } else if (result.isSecurePortEnabled) {
+            } else if (result.isSecurePortEnabled && relativeUrl != null) {
                 result.secureHealthCheckUrl = HTTPS_PROTOCOL + result.hostName
                         + COLON + result.securePort + relativeUrl;
             }
