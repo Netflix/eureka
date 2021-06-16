@@ -77,7 +77,7 @@ public class DiscoveryClientEventBusTest {
     @Test
     public void testStatusChangeEvent() throws Exception {
         final CountDownLatch eventLatch = new CountDownLatch(1);
-        final List<StatusChangeEvent> receivedEvents = new ArrayList<StatusChangeEvent>();
+        final List<StatusChangeEvent> receivedEvents = new ArrayList<>();
         EventBus eventBus = discoveryClientResource.getEventBus();
         eventBus.registerSubscriber(new Object() {
             @Subscribe

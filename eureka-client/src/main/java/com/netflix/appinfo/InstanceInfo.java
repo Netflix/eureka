@@ -1102,7 +1102,7 @@ public class InstanceInfo {
      */
     @JsonIgnore
     public Set<String> getHealthCheckUrls() {
-        Set<String> healthCheckUrlSet = new LinkedHashSet<String>();
+        Set<String> healthCheckUrlSet = new LinkedHashSet<>();
         if (this.isUnsecurePortEnabled && healthCheckUrl != null && !healthCheckUrl.isEmpty()) {
             healthCheckUrlSet.add(healthCheckUrl);
         }

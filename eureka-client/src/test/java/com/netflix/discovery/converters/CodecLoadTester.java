@@ -24,8 +24,8 @@ import com.netflix.discovery.util.InstanceInfoGenerator;
  */
 public class CodecLoadTester {
 
-    private final List<InstanceInfo> instanceInfoList = new ArrayList<InstanceInfo>();
-    private final List<Application> applicationList = new ArrayList<Application>();
+    private final List<InstanceInfo> instanceInfoList = new ArrayList<>();
+    private final List<Application> applicationList = new ArrayList<>();
     private final Applications applications;
 
     private final EntityBodyConverter xstreamCodec = new EntityBodyConverter();

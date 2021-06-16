@@ -88,7 +88,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     // CircularQueues here for debugging/statistics purposes only
     private final CircularQueue<Pair<Long, String>> recentRegisteredQueue;
     private final CircularQueue<Pair<Long, String>> recentCanceledQueue;
-    private ConcurrentLinkedQueue<RecentlyChangedItem> recentlyChangedQueue = new ConcurrentLinkedQueue<RecentlyChangedItem>();
+    private ConcurrentLinkedQueue<RecentlyChangedItem> recentlyChangedQueue = new ConcurrentLinkedQueue<>();
 
     private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     private final Lock read = readWriteLock.readLock();
@@ -99,7 +99,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     private Timer evictionTimer = new Timer("Eureka-EvictionTimer", true);
     private final MeasuredRate renewsLastMin;
 
-    private final AtomicReference<EvictionTask> evictionTaskRef = new AtomicReference<EvictionTask>();
+    private final AtomicReference<EvictionTask> evictionTaskRef = new AtomicReference<>();
 
     protected String[] allKnownRemoteRegions = EMPTY_STR_ARRAY;
     protected volatile int numberOfRenewsPerMinThreshold;
@@ -228,7 +228,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 }
                 logger.debug("No previous lease information found; it is new registration");
             }
-            Lease<InstanceInfo> lease = new Lease<InstanceInfo>(registrant, leaseDuration);
+            Lease<InstanceInfo> lease = new Lease<>(registrant, leaseDuration);
             if (existingLease != null) {
                 lease.setServiceUpTimestamp(existingLease.getServiceUpTimestamp());
             }
@@ -1072,7 +1072,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      */
     @Deprecated
     public List<InstanceInfo> getInstancesById(String id, boolean includeRemoteRegions) {
-        List<InstanceInfo> list = new ArrayList<InstanceInfo>();
+        List<InstanceInfo> list = new ArrayList<>();
 
         for (Iterator<Entry<String, Map<String, Lease<InstanceInfo>>>> iter =
                      registry.entrySet().iterator(); iter.hasNext(); ) {
@@ -1086,7 +1086,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 }
 
                 if (list == Collections.EMPTY_LIST) {
-                    list = new ArrayList<InstanceInfo>();
+                    list = new ArrayList<>();
                 }
                 list.add(decorateInstanceInfo(lease));
             }
@@ -1163,7 +1163,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      */
     @Override
     public List<Pair<Long, String>> getLastNRegisteredInstances() {
-        List<Pair<Long, String>> list = new ArrayList<Pair<Long, String>>(recentRegisteredQueue);
+        List<Pair<Long, String>> list = new ArrayList<>(recentRegisteredQueue);
         Collections.reverse(list);
         return list;
     }
@@ -1175,7 +1175,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      */
     @Override
     public List<Pair<Long, String>> getLastNCanceledInstances() {
-        List<Pair<Long, String>> list = new ArrayList<Pair<Long, String>>(recentCanceledQueue);
+        List<Pair<Long, String>> list = new ArrayList<>(recentCanceledQueue);
         Collections.reverse(list);
         return list;
     }

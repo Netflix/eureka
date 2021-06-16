@@ -343,7 +343,7 @@ public class EIPManager implements AwsBinder {
      * @return collection of EIPs.
      */
     private Collection<String> getEIPsFromServiceUrls(List<String> ec2Urls) {
-        List<String> returnedUrls = new ArrayList<String>();
+        List<String> returnedUrls = new ArrayList<>();
         String region = clientConfig.getRegion();
         String regionPhrase = "";
         if (!US_EAST_1.equals(region)) {
