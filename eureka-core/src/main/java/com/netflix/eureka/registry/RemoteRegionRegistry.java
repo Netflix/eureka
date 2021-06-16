@@ -88,8 +88,8 @@ public class RemoteRegionRegistry implements LookupService<String> {
     private final AtomicLong fetchRegistryGeneration = new AtomicLong(0);
     private final Lock fetchRegistryUpdateLock = new ReentrantLock();
 
-    private final AtomicReference<Applications> applications = new AtomicReference<Applications>(new Applications());
-    private final AtomicReference<Applications> applicationsDelta = new AtomicReference<Applications>(new Applications());
+    private final AtomicReference<Applications> applications = new AtomicReference<>(new Applications());
+    private final AtomicReference<Applications> applicationsDelta = new AtomicReference<>(new Applications());
     private final EurekaServerConfig serverConfig;
     private volatile boolean readyForServingData;
     private final EurekaHttpClient eurekaHttpClient;

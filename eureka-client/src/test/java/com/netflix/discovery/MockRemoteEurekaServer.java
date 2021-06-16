@@ -47,7 +47,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
     private final AtomicBoolean sentRegistry = new AtomicBoolean();
 
     public final BlockingQueue<String> registrationStatusesQueue = new LinkedBlockingQueue<>();
-    public final List<String> registrationStatuses = new ArrayList<String>();
+    public final List<String> registrationStatuses = new ArrayList<>();
 
     public final AtomicLong registerCount = new AtomicLong(0);
     public final AtomicLong heartbeatCount = new AtomicLong(0);

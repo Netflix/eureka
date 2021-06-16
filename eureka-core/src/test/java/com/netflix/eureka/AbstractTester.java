@@ -51,9 +51,9 @@ public class AbstractTester {
     public static final String LOCAL_REGION_INSTANCE_2_HOSTNAME = "blahloc2";
     public static final String REMOTE_ZONE = "us-east-1c";
 
-    protected final List<Pair<String, String>> registeredApps = new ArrayList<Pair<String, String>>();
-    protected final Map<String, Application> remoteRegionApps = new HashMap<String, Application>();
-    protected final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
+    protected final List<Pair<String, String>> registeredApps = new ArrayList<>();
+    protected final Map<String, Application> remoteRegionApps = new HashMap<>();
+    protected final Map<String, Application> remoteRegionAppsDelta = new HashMap<>();
 
     protected MockRemoteEurekaServer mockRemoteEurekaServer;
     protected EurekaServerConfig serverConfig;

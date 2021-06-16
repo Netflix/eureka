@@ -67,7 +67,7 @@ public class Applications {
     private static class VipIndexSupport {
         final AbstractQueue<InstanceInfo> instances = new ConcurrentLinkedQueue<>();
         final AtomicLong roundRobinIndex = new AtomicLong(0);
-        final AtomicReference<List<InstanceInfo>> vipList = new AtomicReference<List<InstanceInfo>>(Collections.emptyList());
+        final AtomicReference<List<InstanceInfo>> vipList = new AtomicReference<>(Collections.emptyList());
 
         public AtomicLong getRoundRobinIndex() {
             return roundRobinIndex;

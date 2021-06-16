@@ -230,7 +230,7 @@ public final class EurekaEntityFunctions {
     public static Applications mergeApplications(Applications first, Applications second) {
         Set<String> firstNames = selectApplicationNames(first);
         Set<String> secondNames = selectApplicationNames(second);
-        Set<String> allNames = new HashSet<String>(firstNames);
+        Set<String> allNames = new HashSet<>(firstNames);
         allNames.addAll(secondNames);
 
         Applications merged = new Applications();

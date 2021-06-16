@@ -98,7 +98,7 @@ public class EndpointUtils {
         // list of available zones
         Map<String, List<String>> zoneDnsNamesMap = getZoneBasedDiscoveryUrlsFromRegion(clientConfig, region);
         Set<String> availableZones = zoneDnsNamesMap.keySet();
-        List<String> zones = new ArrayList<String>(availableZones);
+        List<String> zones = new ArrayList<>(availableZones);
         if (zones.isEmpty()) {
             throw new RuntimeException("No available zones configured for the instanceZone " + instanceZone);
         }
@@ -136,10 +136,10 @@ public class EndpointUtils {
         }
 
         // Now get the eureka urls for all the zones in the order and return it
-        List<String> serviceUrls = new ArrayList<String>();
+        List<String> serviceUrls = new ArrayList<>();
         for (String zone : zones) {
             for (String zoneCname : zoneDnsNamesMap.get(zone)) {
-                List<String> ec2Urls = new ArrayList<String>(getEC2DiscoveryUrlsFromZone(zoneCname, DiscoveryUrlType.CNAME));
+                List<String> ec2Urls = new ArrayList<>(getEC2DiscoveryUrlsFromZone(zoneCname, DiscoveryUrlType.CNAME));
                 // Rearrange the list to distribute the load in case of multiple servers
                 if (ec2Urls.size() > 1) {
                     randomizer.randomize(ec2Urls);
@@ -188,7 +188,7 @@ public class EndpointUtils {
      * @return The list of all eureka service urls for the eureka client to talk to
      */
     public static List<String> getServiceUrlsFromConfig(EurekaClientConfig clientConfig, String instanceZone, boolean preferSameZone) {
-        List<String> orderedUrls = new ArrayList<String>();
+        List<String> orderedUrls = new ArrayList<>();
         String region = getRegion(clientConfig);
         String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
         if (availZones == null || availZones.length == 0) {
@@ -319,7 +319,7 @@ public class EndpointUtils {
             discoveryDnsName = "txt." + region + "." + clientConfig.getEurekaServerDNSName();
 
             logger.debug("The region url to be looked up is {} :", discoveryDnsName);
-            Set<String> zoneCnamesForRegion = new TreeSet<String>(DnsResolver.getCNamesFromTxtRecord(discoveryDnsName));
+            Set<String> zoneCnamesForRegion = new TreeSet<>(DnsResolver.getCNamesFromTxtRecord(discoveryDnsName));
             Map<String, List<String>> zoneCnameMapForRegion = new TreeMap<String, List<String>>();
             for (String zoneCname : zoneCnamesForRegion) {
                 String zone = null;

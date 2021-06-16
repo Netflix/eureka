@@ -142,7 +142,7 @@ public final class DnsResolver {
             }
         }
 
-        Set<String> cnamesSet = new TreeSet<String>();
+        Set<String> cnamesSet = new TreeSet<>();
         if (txtRecord == null || txtRecord.trim().isEmpty()) {
             return cnamesSet;
         }

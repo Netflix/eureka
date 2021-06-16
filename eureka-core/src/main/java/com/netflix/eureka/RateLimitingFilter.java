@@ -89,7 +89,7 @@ public class RateLimitingFilter implements Filter {
 
     private static final Logger logger = LoggerFactory.getLogger(RateLimitingFilter.class);
 
-    private static final Set<String> DEFAULT_PRIVILEGED_CLIENTS = new HashSet<String>(
+    private static final Set<String> DEFAULT_PRIVILEGED_CLIENTS = new HashSet<>(
             Arrays.asList(EurekaClientIdentity.DEFAULT_CLIENT_NAME, EurekaServerIdentity.DEFAULT_SERVER_NAME)
     );
 

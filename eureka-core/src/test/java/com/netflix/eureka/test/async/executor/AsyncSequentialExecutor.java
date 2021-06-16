@@ -53,7 +53,7 @@ public class AsyncSequentialExecutor {
      * @param task task to run.
      */
     protected <T> AsyncResult<T> run(Callable<T> task) {
-        final AsyncResult<T> result = new ConcreteAsyncResult<T>();
+        final AsyncResult<T> result = new ConcreteAsyncResult<>();
         new Thread(new Runnable() {
             @Override
             public void run() {

@@ -88,7 +88,7 @@ public class AwsAsgUtil implements AsgClient {
 
     private static final String accountId = getAccountId();
 
-    private Map<String, Credentials> stsCredentials = new HashMap<String, Credentials>();
+    private Map<String, Credentials> stsCredentials = new HashMap<>();
 
     private final ExecutorService cacheReloadExecutor = new ThreadPoolExecutor(
             1, 10, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
@@ -422,7 +422,7 @@ public class AwsAsgUtil implements AsgClient {
      * @return the set of ASG cacheKeys (asgName + accountId).
      */
     private Set<CacheKey> getCacheKeys() {
-        Set<CacheKey> cacheKeys = new HashSet<CacheKey>();
+        Set<CacheKey> cacheKeys = new HashSet<>();
         Applications apps = registry.getApplicationsFromLocalRegionOnly();
         for (Application app : apps.getRegisteredApplications()) {
             for (InstanceInfo instanceInfo : app.getInstances()) {

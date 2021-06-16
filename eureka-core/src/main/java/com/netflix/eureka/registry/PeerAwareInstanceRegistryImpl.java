@@ -563,7 +563,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      */
     @Override
     public List<Application> getSortedApplications() {
-        List<Application> apps = new ArrayList<Application>(getApplications().getRegisteredApplications());
+        List<Application> apps = new ArrayList<>(getApplications().getRegisteredApplications());
         Collections.sort(apps, APP_COMPARATOR);
         return apps;
     }

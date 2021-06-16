@@ -153,7 +153,7 @@ public class DiscoveryClient implements EurekaClient {
     private final Provider<HealthCheckHandler> healthCheckHandlerProvider;
     private final Provider<HealthCheckCallback> healthCheckCallbackProvider;
     private final PreRegistrationHandler preRegistrationHandler;
-    private final AtomicReference<Applications> localRegionApps = new AtomicReference<Applications>();
+    private final AtomicReference<Applications> localRegionApps = new AtomicReference<>();
     private final Lock fetchRegistryUpdateLock = new ReentrantLock();
     // monotonically increasing generation counter to ensure stale threads do not reset registry to an older version
     private final AtomicLong fetchRegistryGeneration;
@@ -635,7 +635,7 @@ public class DiscoveryClient implements EurekaClient {
         String localRegion = instanceRegionChecker.getLocalRegion();
         if (!remoteRegionVsApps.isEmpty()) {
             Set<String> regions = remoteRegionVsApps.keySet();
-            Set<String> toReturn = new HashSet<String>(regions);
+            Set<String> toReturn = new HashSet<>(regions);
             toReturn.add(localRegion);
             return toReturn;
         } else {
@@ -775,7 +775,7 @@ public class DiscoveryClient implements EurekaClient {
     public List<InstanceInfo> getInstancesByVipAddressAndAppName(
             String vipAddress, String appName, boolean secure) {
 
-        List<InstanceInfo> result = new ArrayList<InstanceInfo>();
+        List<InstanceInfo> result = new ArrayList<>();
         if (vipAddress == null && appName == null) {
             throw new IllegalArgumentException(
                     "Supplied VIP Address and application name cannot both be null");
