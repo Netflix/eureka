@@ -211,7 +211,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
     @Override
     public Map<String, String> getMetadataMap() {
         String metadataNamespace = namespace + INSTANCE_METADATA_PREFIX + ".";
-        Map<String, String> metadataMap = new LinkedHashMap<String, String>();
+        Map<String, String> metadataMap = new LinkedHashMap<>();
         Configuration config = (Configuration) configInstance.getBackingConfigurationSource();
         String subsetPrefix = metadataNamespace.charAt(metadataNamespace.length() - 1) == '.'
                 ? metadataNamespace.substring(0, metadataNamespace.length() - 1)

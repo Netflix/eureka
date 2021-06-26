@@ -512,7 +512,7 @@ public final class Converters {
                     if (info.getName() == Name.Amazon) {
                         Map<String, String> metadataMap = (Map<String, String>) context
                                 .convertAnother(info, Map.class);
-                        Map<String, String> metadataMapInter = new HashMap<String, String>(metadataMap.size());
+                        Map<String, String> metadataMapInter = new HashMap<>(metadataMap.size());
                         for (Map.Entry<String, String> entry : metadataMap.entrySet()) {
                             metadataMapInter.put(StringCache.intern(entry.getKey()), StringCache.intern(entry.getValue()));
                         }

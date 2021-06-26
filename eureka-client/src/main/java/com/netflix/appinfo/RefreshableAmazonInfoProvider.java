@@ -61,7 +61,7 @@ public class RefreshableAmazonInfoProvider implements Provider<AmazonInfo> {
                 // The property to not validate instance ids may be set for
                 // development and in that scenario, populate instance id
                 // and public hostname with the hostname of the machine
-                Map<String, String> metadataMap = new HashMap<String, String>();
+                Map<String, String> metadataMap = new HashMap<>();
                 metadataMap.put(AmazonInfo.MetaDataKey.instanceId.getName(), fallbackAddressProvider.getFallbackIp());
                 metadataMap.put(AmazonInfo.MetaDataKey.publicHostname.getName(), fallbackAddressProvider.getFallbackHostname());
                 info.setMetadata(metadataMap);
