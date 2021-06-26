@@ -9,6 +9,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.netflix.discovery.util.StringUtil.isBlankOrNull;
+
 /**
  * A holder class for AmazonInfo that exposes some APIs to allow for refreshes.
  */
@@ -119,10 +121,10 @@ public class RefreshableAmazonInfoProvider implements Provider<AmazonInfo> {
         if (newInfo.getMetadata().isEmpty()) {
             logger.warn("Newly resolved AmazonInfo is empty, skipping an update cycle");
         } else if (!newInfo.equals(oldInfo)) {
-            if (isBlank(newInfo.get(AmazonInfo.MetaDataKey.instanceId))) {
+            if (isBlankOrNull(newInfo.get(AmazonInfo.MetaDataKey.instanceId))) {
                 logger.warn("instanceId is blank, skipping an update cycle");
                 return false;
-            } else if (isBlank(newInfo.get(AmazonInfo.MetaDataKey.localIpv4))) {
+            } else if (isBlankOrNull(newInfo.get(AmazonInfo.MetaDataKey.localIpv4))) {
                 logger.warn("localIpv4 is blank, skipping an update cycle");
                 return false;
             } else {
@@ -146,9 +148,5 @@ public class RefreshableAmazonInfoProvider implements Provider<AmazonInfo> {
             return true;
         }
         return false;
-    }
-
-    private static boolean isBlank(String str) {
-        return str == null || str.isEmpty();
     }
 }

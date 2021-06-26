@@ -34,4 +34,11 @@ public final class StringUtil {
         }
         return sb.substring(1);
     }
+
+    /**
+     * Checks if String is Blank or null
+     */
+    public static boolean isBlankOrNull(String str) {
+        return str == null || str.isEmpty();
+    }
 }

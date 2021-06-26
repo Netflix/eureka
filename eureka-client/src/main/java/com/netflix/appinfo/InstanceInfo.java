@@ -41,6 +41,8 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.netflix.discovery.util.StringUtil.isBlankOrNull;
+
 /**
  * The class that holds information required for registration with
  * <tt>Eureka Server</tt> and to be discovered by other components.
@@ -453,7 +455,7 @@ public class InstanceInfo {
          * @return the {@link InstanceInfo} builder.
          */
         public Builder setHostName(String hostName) {
-            if (hostName == null || hostName.isEmpty()) {
+            if (isBlankOrNull(hostName)) {
                 logger.warn("Passed in hostname is blank, not setting it");
                 return this;
             }
@@ -940,11 +942,11 @@ public class InstanceInfo {
      */
     @JsonIgnore
     public String getId() {
-        if (instanceId != null && !instanceId.isEmpty()) {
+        if (isBlankOrNull(instanceId)) {
             return instanceId;
         } else if (dataCenterInfo instanceof UniqueIdentifier) {
             String uniqueId = ((UniqueIdentifier) dataCenterInfo).getId();
-            if (uniqueId != null && !uniqueId.isEmpty()) {
+            if (!isBlankOrNull(uniqueId)) {
                 return uniqueId;
             }
         }

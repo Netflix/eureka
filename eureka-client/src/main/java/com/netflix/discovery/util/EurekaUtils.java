@@ -3,6 +3,8 @@ package com.netflix.discovery.util;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.InstanceInfo;
 
+import static com.netflix.discovery.util.StringUtil.isBlankOrNull;
+
 /**
  * A collection of utility functions that is useful to simplify operations on
  * {@link com.netflix.appinfo.ApplicationInfoManager}, {@link com.netflix.appinfo.InstanceInfo}
@@ -25,7 +27,7 @@ public final class EurekaUtils {
             defaultPrivateIp = ((AmazonInfo) instanceInfo.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.localIpv4);
         }
 
-        if (isNullOrEmpty(defaultPrivateIp)) {
+        if (isBlankOrNull(defaultPrivateIp)) {
             // no other information, best effort
             defaultPrivateIp = instanceInfo.getIPAddr();
         }
@@ -61,14 +63,10 @@ public final class EurekaUtils {
         if (instanceInfo.getDataCenterInfo() instanceof AmazonInfo) {
             AmazonInfo info = (AmazonInfo) instanceInfo.getDataCenterInfo();
             String vpcId = info.get(AmazonInfo.MetaDataKey.vpcId);
-            return !isNullOrEmpty(vpcId);
+            return !isBlankOrNull(vpcId);
         }
 
         return false;
-    }
-
-    private static boolean isNullOrEmpty(String str) {
-        return str == null || str.isEmpty();
     }
 
 }

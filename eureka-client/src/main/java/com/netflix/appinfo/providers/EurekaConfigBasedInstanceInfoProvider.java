@@ -16,6 +16,8 @@ import com.netflix.appinfo.UniqueIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.netflix.discovery.util.StringUtil.isBlankOrNull;
+
 /**
  * InstanceInfo provider that constructs the InstanceInfo this this instance using
  * EurekaInstanceConfig.
@@ -59,7 +61,7 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
 
             // set the appropriate id for the InstanceInfo, falling back to datacenter Id if applicable, else hostname
             String instanceId = config.getInstanceId();
-            if (instanceId == null || instanceId.isEmpty()) {
+            if (isBlankOrNull(instanceId)) {
                 DataCenterInfo dataCenterInfo = config.getDataCenterInfo();
                 if (dataCenterInfo instanceof UniqueIdentifier) {
                     instanceId = ((UniqueIdentifier) dataCenterInfo).getId();

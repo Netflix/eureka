@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
 
+import static com.netflix.discovery.util.StringUtil.isBlankOrNull;
+
 /**
  * An {@link InstanceInfo} configuration for AWS cloud deployments.
  *
@@ -106,7 +108,7 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig implements Ref
             try {
                 AmazonInfo.MetaDataKey key = AmazonInfo.MetaDataKey.valueOf(name);
                 String address = amazonInfoHolder.get().get(key);
-                if (address != null && !address.isEmpty()) {
+                if (!isBlankOrNull(address)) {
                     result = address;
                     break;
                 }

@@ -13,6 +13,8 @@ import com.netflix.discovery.converters.wrappers.CodecWrappers.XStreamJson;
 import com.netflix.discovery.converters.wrappers.CodecWrappers.XStreamXml;
 import com.netflix.discovery.converters.wrappers.DecoderWrapper;
 
+import static com.netflix.discovery.util.StringUtil.isBlankOrNull;
+
 /**
  * @author David Liu
  */
@@ -39,7 +41,7 @@ public enum EurekaAccept {
     }
 
     public static EurekaAccept fromString(String name) {
-        if (name == null || name.isEmpty()) {
+        if (isBlankOrNull(name)) {
             return full;
         }
 

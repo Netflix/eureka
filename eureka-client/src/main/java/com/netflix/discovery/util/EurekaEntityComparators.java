@@ -10,6 +10,8 @@ import com.netflix.appinfo.LeaseInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 
+import static com.netflix.discovery.util.StringUtil.isBlankOrNull;
+
 /**
  * For test use.
  *
@@ -338,11 +340,11 @@ public final class EurekaEntityComparators {
     public static class RawIdHandleEmptyEqualFunc implements EqualFunc<InstanceInfo> {
         @Override
         public boolean equals(InstanceInfo first, InstanceInfo second) {
-            String firstId = (first.getInstanceId() == null || first.getInstanceId().isEmpty())
+            String firstId = (isBlankOrNull(first.getInstanceId()))
                     ? null
                     : first.getInstanceId();
 
-            String secondId = (second.getInstanceId() == null || second.getInstanceId().isEmpty())
+            String secondId = (isBlankOrNull(second.getInstanceId()))
                     ? null
                     : second.getInstanceId();
 
