@@ -1,8 +1,8 @@
 package com.netflix.discovery.internal.util;
 
 import com.netflix.archaius.api.Config;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 /**
@@ -15,12 +15,12 @@ public class InternalPrefixedConfigTest {
         Config configInstance = Mockito.mock(Config.class);
 
         InternalPrefixedConfig config = new InternalPrefixedConfig(configInstance);
-        Assert.assertEquals("", config.getNamespace());
+        Assertions.assertEquals("", config.getNamespace());
 
         config = new InternalPrefixedConfig(configInstance, "foo");
-        Assert.assertEquals("foo.", config.getNamespace());
+        Assertions.assertEquals("foo.", config.getNamespace());
 
         config = new InternalPrefixedConfig(configInstance, "foo", "bar");
-        Assert.assertEquals("foo.bar.", config.getNamespace());
+        Assertions.assertEquals("foo.bar.", config.getNamespace());
     }
 }

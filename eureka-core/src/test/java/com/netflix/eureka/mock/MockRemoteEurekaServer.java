@@ -15,7 +15,7 @@ import com.netflix.discovery.converters.jackson.EurekaJsonJacksonCodec;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.*;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.junit.rules.ExternalResource;
 import org.mortbay.jetty.Request;
 import org.mortbay.jetty.Server;
@@ -67,7 +67,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
         try {
             stop();
         } catch (Exception e) {
-            Assert.fail(e.getMessage());
+            Assertions.fail(e.getMessage());
         }
     }
 
@@ -116,13 +116,13 @@ public class MockRemoteEurekaServer extends ExternalResource {
             String authVersion = request.getHeader(AbstractEurekaIdentity.AUTH_VERSION_HEADER_KEY);
             String authId = request.getHeader(AbstractEurekaIdentity.AUTH_ID_HEADER_KEY);
 
-            Assert.assertNotNull(authName);
-            Assert.assertNotNull(authVersion);
-            Assert.assertNotNull(authId);
+            Assertions.assertNotNull(authName);
+            Assertions.assertNotNull(authVersion);
+            Assertions.assertNotNull(authId);
 
-            Assert.assertTrue(!authName.equals(ServerRequestAuthFilter.UNKNOWN));
-            Assert.assertTrue(!authVersion.equals(ServerRequestAuthFilter.UNKNOWN));
-            Assert.assertTrue(!authId.equals(ServerRequestAuthFilter.UNKNOWN));
+            Assertions.assertTrue(!authName.equals(ServerRequestAuthFilter.UNKNOWN));
+            Assertions.assertTrue(!authVersion.equals(ServerRequestAuthFilter.UNKNOWN));
+            Assertions.assertTrue(!authId.equals(ServerRequestAuthFilter.UNKNOWN));
 
             for (FilterHolder filterHolder : this.getFilters()) {
                 filterHolder.getFilter().doFilter(request, response, new FilterChain() {

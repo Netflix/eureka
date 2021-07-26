@@ -2,12 +2,11 @@ package com.netflix.eureka.cluster.protocol;
 
 import com.netflix.discovery.converters.EurekaJacksonCodec;
 import com.netflix.discovery.shared.transport.ClusterSampleData;
-
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * @author Tomasz Bak

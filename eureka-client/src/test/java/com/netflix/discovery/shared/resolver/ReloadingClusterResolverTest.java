@@ -22,11 +22,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
 import com.netflix.discovery.shared.resolver.aws.SampleCluster;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * @author Tomasz Bak
@@ -37,7 +38,8 @@ public class ReloadingClusterResolverTest {
 
     private ReloadingClusterResolver<AwsEndpoint> resolver;
 
-    @Test(timeout = 30000)
+    @Test
+    @Timeout(30000)
     public void testDataAreReloadedPeriodically() throws Exception {
         List<AwsEndpoint> firstEndpointList = SampleCluster.UsEast1a.build();
         factory.setEndpoints(firstEndpointList);
@@ -53,7 +55,8 @@ public class ReloadingClusterResolverTest {
         assertThat(awaitUpdate(resolver, secondEndpointList), is(true));
     }
 
-    @Test(timeout = 30000)
+    @Test
+    @Timeout(30000)
     public void testIdenticalListsDoNotCauseReload() throws Exception {
         List<AwsEndpoint> firstEndpointList = SampleCluster.UsEast1a.build();
         factory.setEndpoints(firstEndpointList);

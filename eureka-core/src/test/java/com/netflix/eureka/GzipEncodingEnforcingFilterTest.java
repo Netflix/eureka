@@ -16,11 +16,11 @@
 
 package com.netflix.eureka;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -32,13 +32,13 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Enumeration;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 /**
  * @author Kebe Liu
  */
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class GzipEncodingEnforcingFilterTest {
 
     private static final String ACCEPT_ENCODING_HEADER = "Accept-Encoding";
@@ -55,7 +55,7 @@ public class GzipEncodingEnforcingFilterTest {
 
     private GzipEncodingEnforcingFilter filter;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         filter = new GzipEncodingEnforcingFilter();
         filterChain = new FilterChain() {
@@ -71,7 +71,7 @@ public class GzipEncodingEnforcingFilterTest {
         gzipRequest();
         filter.doFilter(request, response, filterChain);
         Enumeration values = filteredRequest.getHeaders(ACCEPT_ENCODING_HEADER);
-        assertEquals("Expected Accept-Encoding null", null, values);
+        assertEquals(null, values, "Expected Accept-Encoding null");
     }
 
     @Test
@@ -83,7 +83,7 @@ public class GzipEncodingEnforcingFilterTest {
         while (values.hasMoreElements()) {
             res = res + values.nextElement() + "\n";
         }
-        assertEquals("Expected Accept-Encoding gzip", "gzip\n", res);
+        assertEquals("gzip\n", res, "Expected Accept-Encoding gzip");
     }
 
     @Test
@@ -110,7 +110,7 @@ public class GzipEncodingEnforcingFilterTest {
         while (values.hasMoreElements()) {
             res = res + values.nextElement() + "\n";
         }
-        assertEquals("Expected Test ok", "ok\n", res);
+        assertEquals("ok\n", res, "Expected Test ok");
     }
 
     private void gzipRequest() {

@@ -6,12 +6,12 @@ import javax.ws.rs.core.Response.Status;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.eureka.AbstractTester;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class InstanceResourceTest extends AbstractTester {
 
@@ -20,7 +20,7 @@ public class InstanceResourceTest extends AbstractTester {
     private InstanceResource instanceResource;
 
     @Override
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
         applicationResource = new ApplicationResource(testInstanceInfo.getAppName(), serverContext.getServerConfig(), serverContext.getRegistry());

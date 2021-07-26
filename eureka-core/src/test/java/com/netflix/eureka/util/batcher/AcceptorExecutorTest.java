@@ -21,14 +21,14 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka.util.batcher.TaskProcessor.ProcessingResult;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * @author Tomasz Bak
@@ -44,7 +44,7 @@ public class AcceptorExecutorTest {
 
     private AcceptorExecutor<Integer, String> acceptorExecutor;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         acceptorExecutor = new AcceptorExecutor<>(
                 "TEST", MAX_BUFFER_SIZE, WORK_LOAD_SIZE, MAX_BATCHING_DELAY_MS,
@@ -52,7 +52,7 @@ public class AcceptorExecutorTest {
         );
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         acceptorExecutor.shutdown();
     }

@@ -26,13 +26,13 @@ import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.eureka.util.EurekaMonitors;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Tomasz Bak
  */
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class RateLimitingFilterTest {
 
     private static final String FULL_FETCH = "base/apps";
@@ -63,7 +63,7 @@ public class RateLimitingFilterTest {
 
     private RateLimitingFilter filter;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         RateLimitingFilter.reset();
 
@@ -112,7 +112,7 @@ public class RateLimitingFilterTest {
         long rateLimiterCounter = EurekaMonitors.RATE_LIMITED.getCount();
         filter.doFilter(request, response, filterChain);
 
-        assertEquals("Expected rate limiter counter increase", rateLimiterCounter + 1, EurekaMonitors.RATE_LIMITED.getCount());
+        assertEquals(rateLimiterCounter + 1, EurekaMonitors.RATE_LIMITED.getCount(), "Expected rate limiter counter increase");
         verify(response, times(1)).setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
     }
 
@@ -129,7 +129,7 @@ public class RateLimitingFilterTest {
         long rateLimiterCounter = EurekaMonitors.RATE_LIMITED.getCount();
         filter.doFilter(request, response, filterChain);
 
-        assertEquals("Expected rate limiter counter increase", rateLimiterCounter + 1, EurekaMonitors.RATE_LIMITED.getCount());
+        assertEquals(rateLimiterCounter + 1, EurekaMonitors.RATE_LIMITED.getCount(), "Expected rate limiter counter increase");
         verify(response, times(1)).setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
     }
 
@@ -149,7 +149,7 @@ public class RateLimitingFilterTest {
         long rateLimiterCounter = EurekaMonitors.RATE_LIMITED_CANDIDATES.getCount();
         filter.doFilter(request, response, filterChain);
 
-        assertEquals("Expected rate limiter counter increase", rateLimiterCounter + 1, EurekaMonitors.RATE_LIMITED_CANDIDATES.getCount());
+        assertEquals(rateLimiterCounter + 1, EurekaMonitors.RATE_LIMITED_CANDIDATES.getCount(), "Expected rate limiter counter increase");
         // We just test the counter
         verify(response, times(0)).setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
     }

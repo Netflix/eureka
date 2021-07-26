@@ -14,15 +14,15 @@ import com.netflix.eureka.cluster.TestableHttpReplicationClient.RequestType;
 import com.netflix.eureka.cluster.protocol.ReplicationInstance;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -42,13 +42,13 @@ public class PeerEurekaNodeTest {
     private final InstanceInfo instanceInfo = ClusterSampleData.newInstanceInfo(1);
     private PeerEurekaNode peerEurekaNode;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         httpReplicationClient.withNetworkStatusCode(200);
         httpReplicationClient.withBatchReply(200);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         if (peerEurekaNode != null) {
             peerEurekaNode.shutDown();

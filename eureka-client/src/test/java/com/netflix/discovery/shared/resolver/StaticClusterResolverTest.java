@@ -16,13 +16,13 @@
 
 package com.netflix.discovery.shared.resolver;
 
-import java.net.URL;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
+import java.net.URL;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * @author Tomasz Bak

@@ -1,15 +1,15 @@
 package com.netflix.appinfo;
 
 import com.netflix.discovery.util.InstanceInfoGenerator;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.amiId;
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.instanceId;
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.localIpv4;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * @author David Liu
@@ -18,7 +18,7 @@ public class RefreshableAmazonInfoProviderTest {
 
     private InstanceInfo instanceInfo;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         instanceInfo = InstanceInfoGenerator.takeOne();
     }

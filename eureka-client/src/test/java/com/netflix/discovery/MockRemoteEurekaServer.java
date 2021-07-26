@@ -21,7 +21,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.junit.rules.ExternalResource;
 import org.mortbay.jetty.Request;
 import org.mortbay.jetty.Server;
@@ -65,7 +65,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
         try {
             stop();
         } catch (Exception e) {
-            Assert.fail(e.getMessage());
+            Assertions.fail(e.getMessage());
         }
     }
 
@@ -141,9 +141,9 @@ public class MockRemoteEurekaServer extends ExternalResource {
             String authVersion = request.getHeader(AbstractEurekaIdentity.AUTH_VERSION_HEADER_KEY);
             String authId = request.getHeader(AbstractEurekaIdentity.AUTH_ID_HEADER_KEY);
 
-            Assert.assertEquals(EurekaClientIdentity.DEFAULT_CLIENT_NAME, authName);
-            Assert.assertNotNull(authVersion);
-            Assert.assertNotNull(authId);
+            Assertions.assertEquals(EurekaClientIdentity.DEFAULT_CLIENT_NAME, authName);
+            Assertions.assertNotNull(authVersion);
+            Assertions.assertNotNull(authId);
 
             String pathInfo = request.getPathInfo();
             System.out.println("Eureka port: " + port + ". " + System.currentTimeMillis() +

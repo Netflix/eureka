@@ -9,7 +9,7 @@ import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.resources.ServerCodecs;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 
 /**

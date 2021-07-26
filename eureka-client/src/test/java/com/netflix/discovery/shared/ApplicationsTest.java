@@ -1,11 +1,6 @@
 package com.netflix.discovery.shared;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
@@ -16,8 +11,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.google.common.collect.Iterables;
@@ -205,13 +200,13 @@ public class ApplicationsTest {
         applications.addApplication(application);
 
         List<InstanceInfo> instanceInfos = application.getInstances();
-        Assert.assertEquals(1, instanceInfos.size());
-        Assert.assertTrue(instanceInfos.contains(instanceInfo));
+        Assertions.assertEquals(1, instanceInfos.size());
+        Assertions.assertTrue(instanceInfos.contains(instanceInfo));
 
         List<Application> appsList = applications.getRegisteredApplications();
-        Assert.assertEquals(1, appsList.size());
-        Assert.assertTrue(appsList.contains(application));
-        Assert.assertEquals(application, applications.getRegisteredApplications(application.getName()));
+        Assertions.assertEquals(1, appsList.size());
+        Assertions.assertTrue(appsList.contains(application));
+        Assertions.assertEquals(application, applications.getRegisteredApplications(application.getName()));
     }
 
     @Test
@@ -236,9 +231,9 @@ public class ApplicationsTest {
         applications.addApplication(application);
         
         List<Application> appsList = applications.getRegisteredApplications();
-        Assert.assertEquals(1, appsList.size());
-        Assert.assertTrue(appsList.contains(application));
-        Assert.assertEquals(application, applications.getRegisteredApplications(application.getName()));
+        Assertions.assertEquals(1, appsList.size());
+        Assertions.assertTrue(appsList.contains(application));
+        Assertions.assertEquals(application, applications.getRegisteredApplications(application.getName()));
     }
     
     @Test
@@ -262,9 +257,9 @@ public class ApplicationsTest {
         Applications applications = new Applications("UP_1_", -1L, Arrays.asList(application));
         
         List<Application> appsList = applications.getRegisteredApplications();
-        Assert.assertEquals(1, appsList.size());
-        Assert.assertTrue(appsList.contains(application));
-        Assert.assertEquals(application, applications.getRegisteredApplications(application.getName()));
+        Assertions.assertEquals(1, appsList.size());
+        Assertions.assertTrue(appsList.contains(application));
+        Assertions.assertEquals(application, applications.getRegisteredApplications(application.getName()));
     }
     
     @Test

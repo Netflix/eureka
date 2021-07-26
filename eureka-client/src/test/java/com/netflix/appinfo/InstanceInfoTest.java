@@ -5,23 +5,23 @@ import com.netflix.appinfo.InstanceInfo.PortType;
 import com.netflix.config.ConcurrentCompositeConfiguration;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.util.InstanceInfoGenerator;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import static com.netflix.appinfo.InstanceInfo.Builder.newBuilder;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 /**
  * Created by jzarfoss on 2/12/14.
  */
 public class InstanceInfoTest {
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         ((ConcurrentCompositeConfiguration) ConfigurationManager.getConfigInstance()).clearOverrideProperty("NETFLIX_APP_GROUP");
         ((ConcurrentCompositeConfiguration) ConfigurationManager.getConfigInstance()).clearOverrideProperty("eureka.appGroup");
@@ -45,7 +45,7 @@ public class InstanceInfoTest {
         InstanceInfo smallII2 = new InstanceInfo(smallII1);
 
         assertNotSame(smallII1, smallII2);
-        Assert.assertEquals(smallII1, smallII2);
+        Assertions.assertEquals(smallII1, smallII2);
 
 
         InstanceInfo fullII1 = newBuilder().setMetadata(null)
@@ -64,7 +64,7 @@ public class InstanceInfoTest {
         InstanceInfo fullII2 = new InstanceInfo(fullII1);
 
         assertNotSame(fullII1, fullII2);
-        Assert.assertEquals(fullII1, fullII2);
+        Assertions.assertEquals(fullII1, fullII2);
     }
 
     @Test
@@ -73,7 +73,7 @@ public class InstanceInfoTest {
         ((ConcurrentCompositeConfiguration) ConfigurationManager.getConfigInstance()).setOverrideProperty("NETFLIX_APP_GROUP",
                 appGroup);
         MyDataCenterInstanceConfig config = new MyDataCenterInstanceConfig();
-        Assert.assertEquals("Unexpected app group name", appGroup, config.getAppGroupName());
+        Assertions.assertEquals(appGroup, config.getAppGroupName(), "Unexpected app group name");
     }
 
     @Test
@@ -82,7 +82,7 @@ public class InstanceInfoTest {
         ((ConcurrentCompositeConfiguration) ConfigurationManager.getConfigInstance()).setOverrideProperty("eureka.appGroup",
                 appGroup);
         MyDataCenterInstanceConfig config = new MyDataCenterInstanceConfig();
-        Assert.assertEquals("Unexpected app group name", appGroup, config.getAppGroupName());
+        Assertions.assertEquals(appGroup, config.getAppGroupName(), "Unexpected app group name");
     }
 
     @Test

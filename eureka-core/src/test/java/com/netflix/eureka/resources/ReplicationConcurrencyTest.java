@@ -12,8 +12,8 @@ import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.eureka.cluster.PeerEurekaNodes;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import java.util.Collections;
 
@@ -42,7 +42,7 @@ public class ReplicationConcurrencyTest {
     private InstanceInfo server1Sees;
     private InstanceInfo server2Sees;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         InstanceInfo seed = InstanceInfoGenerator.takeOne();
         id = seed.getId();

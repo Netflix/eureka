@@ -12,10 +12,10 @@ import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.aws.AwsAsgUtil;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
@@ -33,7 +33,7 @@ public class AwsAsgUtilTest {
     private AwsAsgUtil awsAsgUtil;
     private InstanceInfo instanceInfo;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         ConfigurationManager.getConfigInstance().setProperty("eureka.awsAccessId", "fakeId");
         ConfigurationManager.getConfigInstance().setProperty("eureka.awsSecretKey", "fakeKey");
@@ -58,14 +58,14 @@ public class AwsAsgUtilTest {
         awsAsgUtil = spy(new AwsAsgUtil(serverConfig, clientConfig, registry));
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         ConfigurationManager.getConfigInstance().clear();
     }
 
     @Test
     public void testDefaultAsgStatus() {
-        Assert.assertEquals(true, awsAsgUtil.isASGEnabled(instanceInfo));
+        Assertions.assertEquals(true, awsAsgUtil.isASGEnabled(instanceInfo));
     }
 
     @Test

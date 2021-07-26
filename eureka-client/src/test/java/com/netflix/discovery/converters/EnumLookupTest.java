@@ -1,7 +1,7 @@
 package com.netflix.discovery.converters;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class EnumLookupTest {
     
@@ -18,9 +18,9 @@ public class EnumLookupTest {
     public void testLookup() {
         EnumLookup<TestEnum> lookup = new EnumLookup<>(TestEnum.class, v->v.name.toCharArray());
         char[] buffer = "zeroonetwothreefour".toCharArray();
-        Assert.assertSame(TestEnum.VAL_ONE, lookup.find(buffer, 4, 3));
-        Assert.assertSame(TestEnum.VAL_TWO, lookup.find(buffer, 7, 3));
-        Assert.assertSame(TestEnum.VAL_THREE, lookup.find(buffer, 10, 5));
+        Assertions.assertSame(TestEnum.VAL_ONE, lookup.find(buffer, 4, 3));
+        Assertions.assertSame(TestEnum.VAL_TWO, lookup.find(buffer, 7, 3));
+        Assertions.assertSame(TestEnum.VAL_THREE, lookup.find(buffer, 10, 5));
     }
 
 }

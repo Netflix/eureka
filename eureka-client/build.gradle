@@ -33,7 +33,9 @@ dependencies {
     runtimeOnly "org.codehaus.jettison:jettison:${jettisonVersion}"
 
     testCompile project(':eureka-test-utils')
-    testCompile "junit:junit:${junit_version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${junit_version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${junit_version}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junit_version}"
     testCompile 'org.mortbay.jetty:jetty:6.1H.22'
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
     testCompile "org.mock-server:mockserver-netty:${mockserverVersion}"

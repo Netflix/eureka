@@ -24,7 +24,7 @@ import com.netflix.discovery.shared.transport.EurekaHttpClientCompatibilityTestS
 import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.jersey2.Jersey2ApplicationClientFactory.Jersey2ApplicationClientFactoryBuilder;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 
 /**
  * @author Tomasz Bak
@@ -34,7 +34,7 @@ public class AbstractJersey2EurekaHttpClientTest extends EurekaHttpClientCompati
     private AbstractJersey2EurekaHttpClient jersey2HttpClient;
 
     @Override
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         if (jersey2HttpClient != null) {
             jersey2HttpClient.shutdown();

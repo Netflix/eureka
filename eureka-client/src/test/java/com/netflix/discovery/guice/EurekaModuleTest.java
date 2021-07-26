@@ -16,10 +16,10 @@ import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import com.netflix.governator.InjectorBuilder;
 import com.netflix.governator.LifecycleInjector;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author David Liu
@@ -28,7 +28,7 @@ public class EurekaModuleTest {
 
     private LifecycleInjector injector;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         ConfigurationManager.getConfigInstance().setProperty("eureka.region", "default");
         ConfigurationManager.getConfigInstance().setProperty("eureka.shouldFetchRegistry", "false");
@@ -48,7 +48,7 @@ public class EurekaModuleTest {
                 .createInjector();
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         if (injector != null) {
             injector.shutdown();
@@ -60,22 +60,22 @@ public class EurekaModuleTest {
     @Test
     public void testDI() {
         InstanceInfo instanceInfo = injector.getInstance(InstanceInfo.class);
-        Assert.assertEquals(ApplicationInfoManager.getInstance().getInfo(), instanceInfo);
+        Assertions.assertEquals(ApplicationInfoManager.getInstance().getInfo(), instanceInfo);
 
         EurekaClient eurekaClient = injector.getInstance(EurekaClient.class);
         DiscoveryClient discoveryClient = injector.getInstance(DiscoveryClient.class);
 
-        Assert.assertEquals(DiscoveryManager.getInstance().getEurekaClient(), eurekaClient);
-        Assert.assertEquals(DiscoveryManager.getInstance().getDiscoveryClient(), discoveryClient);
-        Assert.assertEquals(eurekaClient, discoveryClient);
+        Assertions.assertEquals(DiscoveryManager.getInstance().getEurekaClient(), eurekaClient);
+        Assertions.assertEquals(DiscoveryManager.getInstance().getDiscoveryClient(), discoveryClient);
+        Assertions.assertEquals(eurekaClient, discoveryClient);
 
         EurekaClientConfig eurekaClientConfig = injector.getInstance(EurekaClientConfig.class);
-        Assert.assertEquals(DiscoveryManager.getInstance().getEurekaClientConfig(), eurekaClientConfig);
+        Assertions.assertEquals(DiscoveryManager.getInstance().getEurekaClientConfig(), eurekaClientConfig);
 
         EurekaInstanceConfig eurekaInstanceConfig = injector.getInstance(EurekaInstanceConfig.class);
-        Assert.assertEquals(DiscoveryManager.getInstance().getEurekaInstanceConfig(), eurekaInstanceConfig);
+        Assertions.assertEquals(DiscoveryManager.getInstance().getEurekaInstanceConfig(), eurekaInstanceConfig);
 
         Binding<TransportClientFactories> binding = injector.getExistingBinding(Key.get(TransportClientFactories.class));
-        Assert.assertNull(binding);  // no bindings so defaulting to default of jersey1
+        Assertions.assertNull(binding);  // no bindings so defaulting to default of jersey1
     }
 }

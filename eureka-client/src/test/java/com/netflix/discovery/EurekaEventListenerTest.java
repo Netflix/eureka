@@ -4,10 +4,10 @@ import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEureka
 import static com.netflix.discovery.util.EurekaEntityFunctions.toApplications;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
@@ -16,12 +16,11 @@ import java.io.IOException;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
-import org.junit.Test;
-
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.junit.resource.DiscoveryClientResource;
 import com.netflix.discovery.shared.Applications;
@@ -43,19 +42,19 @@ public class EurekaEventListenerTest {
     /**
      * Share server stub by all tests.
      */
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() throws IOException {
         eurekaHttpServer = new SimpleEurekaHttpServer(requestHandler);
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownClass() throws Exception {
         if (eurekaHttpServer != null) {
             eurekaHttpServer.shutdown();
         }
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         reset(requestHandler);
         when(requestHandler.register(any(InstanceInfo.class))).thenReturn(EurekaHttpResponse.status(204));

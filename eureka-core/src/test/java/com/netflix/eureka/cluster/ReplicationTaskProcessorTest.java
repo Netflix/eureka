@@ -7,12 +7,12 @@ import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.netflix.eureka.cluster.TestableInstanceReplicationTask.ProcessingState;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 import com.netflix.eureka.util.batcher.TaskProcessor.ProcessingResult;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static com.netflix.eureka.cluster.TestableInstanceReplicationTask.aReplicationTask;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * @author Tomasz Bak
@@ -23,7 +23,7 @@ public class ReplicationTaskProcessorTest {
 
     private ReplicationTaskProcessor replicationTaskProcessor;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         replicationTaskProcessor = new ReplicationTaskProcessor("peerId#test", replicationClient);
     }

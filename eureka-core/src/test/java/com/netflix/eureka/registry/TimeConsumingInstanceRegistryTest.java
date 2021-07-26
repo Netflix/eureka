@@ -9,8 +9,8 @@ import com.netflix.eureka.test.async.executor.AsyncResult;
 import com.netflix.eureka.test.async.executor.AsyncSequentialExecutor;
 import com.netflix.eureka.test.async.executor.SequentialEvents;
 import com.netflix.eureka.test.async.executor.SingleEvent;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * Time consuming test case for {@link InstanceRegistry}.
@@ -157,10 +157,10 @@ public class TimeConsumingInstanceRegistryTest extends AbstractTester {
         AsyncResult<AsyncSequentialExecutor.ResultStatus> remoteRegionAddMoreInstancesResult = executor.run(remoteRegionAddMoreInstancesEvents);
         AsyncResult<AsyncSequentialExecutor.ResultStatus> checkResult = executor.run(checkEvents);
 
-        Assert.assertEquals("Register application and instances failed", AsyncSequentialExecutor.ResultStatus.DONE, registerMyLocalAppAndInstancesResult.getResult());
-        Assert.assertEquals("Show registry status failed", AsyncSequentialExecutor.ResultStatus.DONE, showRegistryStatusEventResult.getResult());
-        Assert.assertEquals("Renew lease did not succeed", AsyncSequentialExecutor.ResultStatus.DONE, renewResult.getResult());
-        Assert.assertEquals("More instances are registered to remote region did not succeed", AsyncSequentialExecutor.ResultStatus.DONE, remoteRegionAddMoreInstancesResult.getResult());
-        Assert.assertEquals("Check failed", AsyncSequentialExecutor.ResultStatus.DONE, checkResult.getResult());
+        Assertions.assertEquals(AsyncSequentialExecutor.ResultStatus.DONE, registerMyLocalAppAndInstancesResult.getResult(), "Register application and instances failed");
+        Assertions.assertEquals(AsyncSequentialExecutor.ResultStatus.DONE, showRegistryStatusEventResult.getResult(), "Show registry status failed");
+        Assertions.assertEquals(AsyncSequentialExecutor.ResultStatus.DONE, renewResult.getResult(), "Renew lease did not succeed");
+        Assertions.assertEquals(AsyncSequentialExecutor.ResultStatus.DONE, remoteRegionAddMoreInstancesResult.getResult(), "More instances are registered to remote region did not succeed");
+        Assertions.assertEquals(AsyncSequentialExecutor.ResultStatus.DONE, checkResult.getResult(), "Check failed");
     }
 }

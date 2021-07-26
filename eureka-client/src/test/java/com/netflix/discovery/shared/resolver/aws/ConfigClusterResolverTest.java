@@ -5,15 +5,15 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.MyDataCenterInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.util.InstanceInfoGenerator;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -37,7 +37,7 @@ public class ConfigClusterResolverTest {
     );
     private ConfigClusterResolver resolver;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         when(clientConfig.shouldUseDnsForFetchingServiceUrls()).thenReturn(false);
         when(clientConfig.getRegion()).thenReturn("us-east-1");

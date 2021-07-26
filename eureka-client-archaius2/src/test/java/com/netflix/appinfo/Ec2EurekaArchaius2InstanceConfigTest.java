@@ -2,8 +2,8 @@ package com.netflix.appinfo;
 
 import com.netflix.archaius.config.MapConfig;
 import com.netflix.discovery.util.InstanceInfoGenerator;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
@@ -11,7 +11,7 @@ import static com.netflix.appinfo.AmazonInfo.MetaDataKey.ipv6;
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.localIpv4;
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.publicHostname;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * @author David Liu
@@ -21,7 +21,7 @@ public class Ec2EurekaArchaius2InstanceConfigTest {
     private String dummyDefault = "dummyDefault";
     private InstanceInfo instanceInfo;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         instanceInfo = InstanceInfoGenerator.takeOne();
     }

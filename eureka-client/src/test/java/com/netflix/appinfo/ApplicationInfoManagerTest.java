@@ -2,17 +2,17 @@ package com.netflix.appinfo;
 
 import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.util.InstanceInfoGenerator;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.localIpv4;
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.publicHostname;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyBoolean;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
@@ -26,7 +26,7 @@ public class ApplicationInfoManagerTest {
     private InstanceInfo instanceInfo;
     private ApplicationInfoManager applicationInfoManager;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         AmazonInfo initialAmazonInfo = AmazonInfo.Builder.newBuilder().build();
 

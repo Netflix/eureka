@@ -3,8 +3,8 @@ package com.netflix.discovery;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.config.ConfigurationManager;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Nitesh Kant
@@ -22,7 +22,7 @@ public class InstanceRegionCheckerTest {
         InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder().setAppName("app").setDataCenterInfo(dcInfo).build();
         String instanceRegion = checker.getInstanceRegion(instanceInfo);
 
-        Assert.assertEquals("Invalid instance region.", "us-east-1", instanceRegion);
+        Assertions.assertEquals("us-east-1", instanceRegion, "Invalid instance region.");
     }
 
     @Test
@@ -37,7 +37,7 @@ public class InstanceRegionCheckerTest {
                 dcInfo).build();
         String instanceRegion = checker.getInstanceRegion(instanceInfo);
 
-        Assert.assertEquals("Invalid instance region.", "us-east-1", instanceRegion);
+        Assertions.assertEquals("us-east-1", instanceRegion, "Invalid instance region.");
     }
 
     @Test
@@ -52,7 +52,7 @@ public class InstanceRegionCheckerTest {
                 dcInfo).build();
         String instanceRegion = checker.getInstanceRegion(instanceInfo);
 
-        Assert.assertNull("Invalid instance region.", instanceRegion);
+        Assertions.assertNull(instanceRegion, "Invalid instance region.");
     }
 
     @Test
@@ -66,7 +66,7 @@ public class InstanceRegionCheckerTest {
         InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder().setAppName("abc").setDataCenterInfo(dcInfo).build();
         String instanceRegion = checker.getInstanceRegion(instanceInfo);
 
-        Assert.assertEquals("Invalid instance region.", "us-east-1", instanceRegion);
+        Assertions.assertEquals("us-east-1", instanceRegion, "Invalid instance region.");
     }
 
     @Test
@@ -80,6 +80,6 @@ public class InstanceRegionCheckerTest {
         InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder().setAppName("abc").setDataCenterInfo(dcInfo).build();
         String instanceRegion = checker.getInstanceRegion(instanceInfo);
 
-        Assert.assertNull("Invalid instance region.", instanceRegion);
+        Assertions.assertNull(instanceRegion, "Invalid instance region.");
     }
 }

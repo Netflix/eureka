@@ -1,5 +1,8 @@
 dependencies {
     compile project(':eureka-core')
-    compile "junit:junit:${junit_version}"
+    implementation "org.junit.jupiter:junit-jupiter-api:${junit_version}"
+    implementation "org.junit.jupiter:junit-jupiter-params:${junit_version}"
+    implementation "org.hamcrest:hamcrest:2.2"
+    runtimeOnly "org.junit.jupiter:junit-jupiter-engine:${junit_version}"
     compile "org.mockito:mockito-core:${mockitoVersion}"
 }

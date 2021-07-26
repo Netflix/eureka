@@ -14,9 +14,9 @@ import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.resolver.ResolverUtils;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Nitesh Kant
@@ -78,7 +78,7 @@ public class BackUpRegistryTest {
         );
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         client.shutdown();
         ConfigurationManager.getConfigInstance().clear();
@@ -90,9 +90,9 @@ public class BackUpRegistryTest {
         Applications applications = client.getApplications();
         List<Application> registeredApplications = applications.getRegisteredApplications();
         System.out.println("***" + registeredApplications);
-        Assert.assertNotNull("Local region apps not found.", registeredApplications);
-        Assert.assertEquals("Local apps size not as expected.", 1, registeredApplications.size());
-        Assert.assertEquals("Local region apps not present.", LOCAL_REGION_APP_NAME, registeredApplications.get(0).getName());
+        Assertions.assertNotNull(registeredApplications, "Local region apps not found.");
+        Assertions.assertEquals(1, registeredApplications.size(), "Local apps size not as expected.");
+        Assertions.assertEquals(LOCAL_REGION_APP_NAME, registeredApplications.get(0).getName(), "Local region apps not present.");
     }
 
     @Test
@@ -100,8 +100,8 @@ public class BackUpRegistryTest {
         setUp(true);
         Applications applications = client.getApplications();
         List<Application> registeredApplications = applications.getRegisteredApplications();
-        Assert.assertNotNull("Local region apps not found.", registeredApplications);
-        Assert.assertEquals("Local apps size not as expected.", 2, registeredApplications.size()); // Remote region comes with no instances.
+        Assertions.assertNotNull(registeredApplications, "Local region apps not found.");
+        Assertions.assertEquals(2, registeredApplications.size(), "Local apps size not as expected."); // Remote region comes with no instances.
         Application localRegionApp = null;
         Application remoteRegionApp = null;
         for (Application registeredApplication : registeredApplications) {
@@ -111,8 +111,8 @@ public class BackUpRegistryTest {
                 remoteRegionApp = registeredApplication;
             }
         }
-        Assert.assertNotNull("Local region apps not present.", localRegionApp);
-        Assert.assertTrue("Remote region instances returned for local query.", null == remoteRegionApp || remoteRegionApp.getInstances().isEmpty());
+        Assertions.assertNotNull(localRegionApp, "Local region apps not present.");
+        Assertions.assertTrue(null == remoteRegionApp || remoteRegionApp.getInstances().isEmpty(), "Remote region instances returned for local query.");
     }
 
     @Test
@@ -120,9 +120,9 @@ public class BackUpRegistryTest {
         setUp(true);
         Applications applications = client.getApplicationsForARegion(REMOTE_REGION);
         List<Application> registeredApplications = applications.getRegisteredApplications();
-        Assert.assertNotNull("Remote region apps not found.", registeredApplications);
-        Assert.assertEquals("Remote apps size not as expected.", 1, registeredApplications.size());
-        Assert.assertEquals("Remote region apps not present.", REMOTE_REGION_APP_NAME, registeredApplications.get(0).getName());
+        Assertions.assertNotNull(registeredApplications, "Remote region apps not found.");
+        Assertions.assertEquals(1, registeredApplications.size(), "Remote apps size not as expected.");
+        Assertions.assertEquals(REMOTE_REGION_APP_NAME, registeredApplications.get(0).getName(), "Remote region apps not present.");
     }
 
     @Test
@@ -130,7 +130,7 @@ public class BackUpRegistryTest {
         setUp(true);
         Applications applications = client.getApplications();
 
-        Assert.assertEquals("UP_1_", applications.getAppsHashCode());
+        Assertions.assertEquals("UP_1_", applications.getAppsHashCode());
     }
 
     private void setupBackupMock() {

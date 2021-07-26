@@ -6,10 +6,10 @@ import com.netflix.appinfo.LeaseInfo;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.util.InstanceInfoGenerator;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.List;
@@ -26,7 +26,7 @@ public class DiscoveryClientRegisterUpdateTest {
     private MockRemoteEurekaServer mockLocalEurekaServer;
     private TestClient client;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         mockLocalEurekaServer = new MockRemoteEurekaServer();
         mockLocalEurekaServer.start();
@@ -66,7 +66,7 @@ public class DiscoveryClientRegisterUpdateTest {
         mockLocalEurekaServer.registerCount.set(0l);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         client.shutdown();
         mockLocalEurekaServer.stop();
@@ -85,7 +85,7 @@ public class DiscoveryClientRegisterUpdateTest {
         // give some execution time
         expectStatus(InstanceInfo.InstanceStatus.DOWN, 5, TimeUnit.SECONDS);
 
-        Assert.assertTrue(mockLocalEurekaServer.registerCount.get() >= 3);  // at least 3
+        Assertions.assertTrue(mockLocalEurekaServer.registerCount.get() >= 3);  // at least 3
     }
 
     /**
@@ -101,14 +101,14 @@ public class DiscoveryClientRegisterUpdateTest {
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.UP);
         expectStatus(InstanceInfo.InstanceStatus.UP, 5, TimeUnit.SECONDS);
 
-        Assert.assertTrue(mockLocalEurekaServer.registerCount.get() >= 2);  // at least 2
+        Assertions.assertTrue(mockLocalEurekaServer.registerCount.get() >= 2);  // at least 2
     }
 
     @Test
     public void registerUpdateShutdownTest() throws Exception {
-        Assert.assertEquals(1, applicationInfoManager.getStatusChangeListeners().size());
+        Assertions.assertEquals(1, applicationInfoManager.getStatusChangeListeners().size());
         client.shutdown();
-        Assert.assertEquals(0, applicationInfoManager.getStatusChangeListeners().size());
+        Assertions.assertEquals(0, applicationInfoManager.getStatusChangeListeners().size());
         Mockito.verify(client, Mockito.times(1)).unregister();
     }
 
@@ -118,12 +118,12 @@ public class DiscoveryClientRegisterUpdateTest {
 
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
         client = new TestClient(applicationInfoManager, new DefaultEurekaClientConfig());
-        Assert.assertEquals(0, applicationInfoManager.getStatusChangeListeners().size());
+        Assertions.assertEquals(0, applicationInfoManager.getStatusChangeListeners().size());
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.DOWN);
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.UP);
         Thread.sleep(400);
         client.shutdown();
-        Assert.assertEquals(0, applicationInfoManager.getStatusChangeListeners().size());
+        Assertions.assertEquals(0, applicationInfoManager.getStatusChangeListeners().size());
     }
 
     @Test
@@ -148,7 +148,7 @@ public class DiscoveryClientRegisterUpdateTest {
 
     private void expectStatus(InstanceInfo.InstanceStatus expected, long timeout, TimeUnit timeUnit) throws InterruptedException {
             String status = mockLocalEurekaServer.registrationStatusesQueue.poll(timeout, timeUnit);
-            Assert.assertEquals(expected.name(), status);
+            Assertions.assertEquals(expected.name(), status);
     }
 
     private static <T> T getLast(List<T> list) {

@@ -16,10 +16,10 @@ import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.governator.InjectorBuilder;
 import com.netflix.governator.LifecycleInjector;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author David Liu
@@ -28,7 +28,7 @@ public class Ec2EurekaClientModuleTest {
 
     private LifecycleInjector injector;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         injector = InjectorBuilder
                 .fromModules(
@@ -58,7 +58,7 @@ public class Ec2EurekaClientModuleTest {
                 .createInjector();
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         if (injector != null) {
             injector.shutdown();
@@ -69,28 +69,28 @@ public class Ec2EurekaClientModuleTest {
     @Test
     public void testDI() {
         InstanceInfo instanceInfo = injector.getInstance(InstanceInfo.class);
-        Assert.assertEquals(ApplicationInfoManager.getInstance().getInfo(), instanceInfo);
+        Assertions.assertEquals(ApplicationInfoManager.getInstance().getInfo(), instanceInfo);
 
         VipAddressResolver vipAddressResolver = injector.getInstance(VipAddressResolver.class);
-        Assert.assertTrue(vipAddressResolver instanceof Archaius2VipAddressResolver);
+        Assertions.assertTrue(vipAddressResolver instanceof Archaius2VipAddressResolver);
 
         EurekaClient eurekaClient = injector.getInstance(EurekaClient.class);
         DiscoveryClient discoveryClient = injector.getInstance(DiscoveryClient.class);
 
-        Assert.assertEquals(DiscoveryManager.getInstance().getEurekaClient(), eurekaClient);
-        Assert.assertEquals(DiscoveryManager.getInstance().getDiscoveryClient(), discoveryClient);
-        Assert.assertEquals(eurekaClient, discoveryClient);
+        Assertions.assertEquals(DiscoveryManager.getInstance().getEurekaClient(), eurekaClient);
+        Assertions.assertEquals(DiscoveryManager.getInstance().getDiscoveryClient(), discoveryClient);
+        Assertions.assertEquals(eurekaClient, discoveryClient);
 
         EurekaClientConfig eurekaClientConfig = injector.getInstance(EurekaClientConfig.class);
-        Assert.assertEquals(DiscoveryManager.getInstance().getEurekaClientConfig(), eurekaClientConfig);
+        Assertions.assertEquals(DiscoveryManager.getInstance().getEurekaClientConfig(), eurekaClientConfig);
 
         EurekaInstanceConfig eurekaInstanceConfig = injector.getInstance(EurekaInstanceConfig.class);
-        Assert.assertEquals(DiscoveryManager.getInstance().getEurekaInstanceConfig(), eurekaInstanceConfig);
-        Assert.assertTrue(eurekaInstanceConfig instanceof Ec2EurekaArchaius2InstanceConfig);
+        Assertions.assertEquals(DiscoveryManager.getInstance().getEurekaInstanceConfig(), eurekaInstanceConfig);
+        Assertions.assertTrue(eurekaInstanceConfig instanceof Ec2EurekaArchaius2InstanceConfig);
 
         ApplicationInfoManager applicationInfoManager = injector.getInstance(ApplicationInfoManager.class);
         InstanceInfo myInfo = applicationInfoManager.getInfo();
-        Assert.assertTrue(myInfo.getDataCenterInfo() instanceof AmazonInfo);
-        Assert.assertEquals(DataCenterInfo.Name.Amazon, myInfo.getDataCenterInfo().getName());
+        Assertions.assertTrue(myInfo.getDataCenterInfo() instanceof AmazonInfo);
+        Assertions.assertEquals(DataCenterInfo.Name.Amazon, myInfo.getDataCenterInfo().getName());
     }
 }

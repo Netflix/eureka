@@ -15,11 +15,11 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.EurekaEntityFunctions;
 import com.netflix.discovery.util.InstanceInfoGenerator;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.mockserver.client.server.MockServerClient;
 import org.mockserver.junit.MockServerRule;
 import org.mockserver.matchers.Times;
@@ -78,12 +78,12 @@ public class DiscoveryClientRedirectTest {
 
     private final InstanceInfoGenerator dataGenerator = InstanceInfoGenerator.newBuilder(2, 1).withMetaData(true).build();
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         targetServerBaseUri = "http://localhost:" + targetServerMockRule.getHttpPort();
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         if (redirectServerMockClient != null) {
             redirectServerMockClient.reset();
@@ -148,7 +148,7 @@ public class DiscoveryClientRedirectTest {
     }
 
     // There is an issue with using mock-server for this test case.  For now it is verified manually that it works.
-    @Ignore
+    @Disabled
     @Test
     public void testClientRegistrationFollowsRedirectsAndPinsToTargetServer() throws Exception {
     }

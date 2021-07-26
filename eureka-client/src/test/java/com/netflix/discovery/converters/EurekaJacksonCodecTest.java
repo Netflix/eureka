@@ -1,6 +1,6 @@
 package com.netflix.discovery.converters;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -10,14 +10,13 @@ import java.util.Iterator;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.Test;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Tomasz Bak

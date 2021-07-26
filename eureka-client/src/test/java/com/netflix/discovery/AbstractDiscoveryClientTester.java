@@ -1,15 +1,15 @@
 package com.netflix.discovery;
 
 import com.netflix.discovery.junit.resource.DiscoveryClientResource;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 /**
  * @author Nitesh Kant
  */
 public abstract class AbstractDiscoveryClientTester extends BaseDiscoveryClientTester {
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
         setupProperties();
@@ -20,7 +20,7 @@ public abstract class AbstractDiscoveryClientTester extends BaseDiscoveryClientT
         setupDiscoveryClient();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         shutdownDiscoveryClient();
         DiscoveryClientResource.clearDiscoveryClientConfig();

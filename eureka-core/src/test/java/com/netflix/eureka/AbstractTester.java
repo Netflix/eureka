@@ -27,8 +27,8 @@ import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl;
 import com.netflix.eureka.resources.DefaultServerCodecs;
 import com.netflix.eureka.resources.ServerCodecs;
 import com.netflix.eureka.test.async.executor.SingleEvent;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -61,7 +61,7 @@ public class AbstractTester {
     protected EurekaClient client;
     protected PeerAwareInstanceRegistryImpl registry;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         ConfigurationManager.getConfigInstance().clearProperty("eureka.remoteRegion.global.appWhiteList");
         ConfigurationManager.getConfigInstance().setProperty("eureka.responseCacheAutoExpirationInSeconds", "10");
@@ -130,7 +130,7 @@ public class AbstractTester {
         return new MockRemoteEurekaServer(0 /* use ephemeral */, remoteRegionApps, remoteRegionAppsDelta);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         for (Pair<String, String> registeredApp : registeredApps) {
             System.out.println("Canceling application: " + registeredApp.first() + " from local registry.");

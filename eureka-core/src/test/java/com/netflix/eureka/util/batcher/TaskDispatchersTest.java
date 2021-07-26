@@ -24,13 +24,13 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.eureka.util.batcher.TaskProcessor.ProcessingResult;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author Tomasz Bak
@@ -48,7 +48,7 @@ public class TaskDispatchersTest {
 
     private TaskDispatcher<Integer, ProcessingResult> dispatcher;
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         if (dispatcher != null) {
             dispatcher.shutdown();

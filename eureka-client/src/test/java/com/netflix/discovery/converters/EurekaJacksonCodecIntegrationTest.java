@@ -12,9 +12,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.junit.Test;
-
 import com.netflix.discovery.shared.Applications;
+import org.junit.jupiter.api.Test;
 
 /**
  * this integration test parses the response of a Eureka discovery server,
@@ -23,7 +22,7 @@ import com.netflix.discovery.shared.Applications;
  * tests below are @Ignore'd.
  *
  */
-@org.junit.Ignore
+@org.junit.jupiter.api.Disabled
 public class EurekaJacksonCodecIntegrationTest {
     private static final int UNREASONABLE_TIMEOUT_MS = 500;
     private final EurekaJacksonCodec codec = new EurekaJacksonCodec("", "");

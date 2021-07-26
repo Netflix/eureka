@@ -21,9 +21,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import com.netflix.eureka.util.batcher.TaskProcessor.ProcessingResult;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static com.netflix.eureka.util.batcher.RecordingProcessor.permanentErrorTaskHolder;
 import static com.netflix.eureka.util.batcher.RecordingProcessor.successfulTaskHolder;
@@ -49,13 +49,13 @@ public class TaskExecutorsTest {
 
     private TaskExecutors<Integer, ProcessingResult> taskExecutors;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         when(acceptorExecutor.requestWorkItem()).thenReturn(taskQueue);
         when(acceptorExecutor.requestWorkItems()).thenReturn(taskBatchQueue);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         taskExecutors.shutdown();
     }

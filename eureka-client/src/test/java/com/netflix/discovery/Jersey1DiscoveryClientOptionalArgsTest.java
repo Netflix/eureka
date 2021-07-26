@@ -3,9 +3,8 @@ package com.netflix.discovery;
 import javax.inject.Provider;
 
 import com.netflix.discovery.shared.transport.jersey.Jersey1DiscoveryClientOptionalArgs;
-import org.junit.Before;
-import org.junit.Test;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import com.netflix.appinfo.HealthCheckCallback;
 import com.netflix.appinfo.HealthCheckHandler;
 
@@ -16,7 +15,7 @@ public class Jersey1DiscoveryClientOptionalArgsTest {
     
     private Jersey1DiscoveryClientOptionalArgs args;
     
-    @Before
+    @BeforeEach
     public void before() {
         args = new Jersey1DiscoveryClientOptionalArgs();
     }

@@ -1,7 +1,7 @@
 package com.netflix.discovery.converters.wrappers;
 
 import junit.framework.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;

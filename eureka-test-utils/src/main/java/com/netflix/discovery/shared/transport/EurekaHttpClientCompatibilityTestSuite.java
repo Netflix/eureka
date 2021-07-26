@@ -27,15 +27,15 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEurekaHttpResponse;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -61,12 +61,12 @@ public abstract class EurekaHttpClientCompatibilityTestSuite {
     protected EurekaHttpClientCompatibilityTestSuite() {
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         httpServer = new SimpleEurekaHttpServer(requestHandler, transportEventListener);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         httpServer.shutdown();
     }

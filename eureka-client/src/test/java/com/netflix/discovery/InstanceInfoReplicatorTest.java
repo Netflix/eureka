@@ -4,19 +4,17 @@ import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.HealthCheckHandler;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.LeaseInfo;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * @author David Liu
@@ -29,7 +27,7 @@ public class InstanceInfoReplicatorTest {
     private DiscoveryClient discoveryClient;
     private InstanceInfoReplicator replicator;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         discoveryClient = mock(DiscoveryClient.class);
 
@@ -51,7 +49,7 @@ public class InstanceInfoReplicatorTest {
         this.replicator = new InstanceInfoReplicator(discoveryClient, instanceInfo, refreshRateSeconds, burstSize);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         replicator.stop();
     }

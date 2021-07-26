@@ -10,10 +10,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class TimedSupervisorTaskTest {
 
@@ -30,7 +30,7 @@ public class TimedSupervisorTaskTest {
     private AtomicLong maxConcurrentTestTasks;
     private AtomicLong testTaskCounter;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         scheduler = Executors.newScheduledThreadPool(4,
                 new ThreadFactoryBuilder()
@@ -55,7 +55,7 @@ public class TimedSupervisorTaskTest {
         testTaskCounter = new AtomicLong(0);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         if (executor != null) {
             executor.shutdownNow();
@@ -78,12 +78,12 @@ public class TimedSupervisorTaskTest {
 
         helperExecutor.submit(supervisorTask).get();
 
-        Assert.assertEquals(1, maxConcurrentTestTasks.get());
-        Assert.assertEquals(0, testTaskCounter.get());
+        Assertions.assertEquals(1, maxConcurrentTestTasks.get());
+        Assertions.assertEquals(0, testTaskCounter.get());
 
-        Assert.assertEquals(1, testTaskStartCounter.get());
-        Assert.assertEquals(1, testTaskSuccessfulCounter.get());
-        Assert.assertEquals(0, testTaskInterruptedCounter.get());
+        Assertions.assertEquals(1, testTaskStartCounter.get());
+        Assertions.assertEquals(1, testTaskSuccessfulCounter.get());
+        Assertions.assertEquals(0, testTaskInterruptedCounter.get());
     }
 
     @Test
@@ -95,12 +95,12 @@ public class TimedSupervisorTaskTest {
         helperExecutor.submit(supervisorTask).get();
         Thread.sleep(500);  // wait a little bit for the subtask interrupt handler
 
-        Assert.assertEquals(1, maxConcurrentTestTasks.get());
-        Assert.assertEquals(1, testTaskCounter.get());
+        Assertions.assertEquals(1, maxConcurrentTestTasks.get());
+        Assertions.assertEquals(1, testTaskCounter.get());
 
-        Assert.assertEquals(1, testTaskStartCounter.get());
-        Assert.assertEquals(0, testTaskSuccessfulCounter.get());
-        Assert.assertEquals(1, testTaskInterruptedCounter.get());
+        Assertions.assertEquals(1, testTaskStartCounter.get());
+        Assertions.assertEquals(0, testTaskSuccessfulCounter.get());
+        Assertions.assertEquals(1, testTaskInterruptedCounter.get());
     }
 
     @Test
@@ -113,12 +113,12 @@ public class TimedSupervisorTaskTest {
 
         Thread.sleep(500);  // wait a little bit for the subtask interrupt handlers
 
-        Assert.assertEquals(3, maxConcurrentTestTasks.get());
-        Assert.assertEquals(3, testTaskCounter.get());
+        Assertions.assertEquals(3, maxConcurrentTestTasks.get());
+        Assertions.assertEquals(3, testTaskCounter.get());
 
-        Assert.assertEquals(3, testTaskStartCounter.get());
-        Assert.assertEquals(0, testTaskSuccessfulCounter.get());
-        Assert.assertEquals(0, testTaskInterruptedCounter.get());
+        Assertions.assertEquals(3, testTaskStartCounter.get());
+        Assertions.assertEquals(0, testTaskSuccessfulCounter.get());
+        Assertions.assertEquals(0, testTaskInterruptedCounter.get());
     }
 
     @Test
@@ -130,10 +130,10 @@ public class TimedSupervisorTaskTest {
         scheduler.schedule(supervisorTask, 0, TimeUnit.SECONDS);
         Thread.sleep(5000);  // let the scheduler run for long enough for some results
 
-        Assert.assertEquals(1, maxConcurrentTestTasks.get());
-        Assert.assertEquals(0, testTaskCounter.get());
+        Assertions.assertEquals(1, maxConcurrentTestTasks.get());
+        Assertions.assertEquals(0, testTaskCounter.get());
 
-        Assert.assertEquals(0, testTaskInterruptedCounter.get());
+        Assertions.assertEquals(0, testTaskInterruptedCounter.get());
     }
 
     @Test
@@ -145,11 +145,11 @@ public class TimedSupervisorTaskTest {
         scheduler.schedule(supervisorTask, 0, TimeUnit.SECONDS);
         Thread.sleep(5000);  // let the scheduler run for long enough for some results
 
-        Assert.assertEquals(1, maxConcurrentTestTasks.get());
-        Assert.assertTrue(0 != testTaskCounter.get());  // tasks are been cancelled
+        Assertions.assertEquals(1, maxConcurrentTestTasks.get());
+        Assertions.assertTrue(0 != testTaskCounter.get());  // tasks are been cancelled
 
 
-        Assert.assertEquals(0, testTaskSuccessfulCounter.get());
+        Assertions.assertEquals(0, testTaskSuccessfulCounter.get());
     }
 
     private class TestTask implements Runnable {

@@ -7,9 +7,9 @@ import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.Version;
 import com.netflix.eureka.resources.DefaultServerCodecs;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
@@ -24,7 +24,7 @@ public class ResponseCacheTest extends AbstractTester {
     private PeerAwareInstanceRegistry testRegistry;
 
     @Override
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
         // create a new registry that is sync'ed up with the default registry in the AbstractTester,
@@ -48,10 +48,10 @@ public class ResponseCacheTest extends AbstractTester {
         Key key = new Key(Key.EntityType.Application, REMOTE_REGION_APP_NAME,
                 Key.KeyType.JSON, Version.V1, EurekaAccept.full);
         String response = cache.get(key, false);
-        Assert.assertNotNull("Cache get returned null.", response);
+        Assertions.assertNotNull(response, "Cache get returned null.");
 
         testRegistry.cancel(REMOTE_REGION_APP_NAME, REMOTE_REGION_INSTANCE_1_HOSTNAME, true);
-        Assert.assertNull("Cache after invalidate did not return null for write view.", cache.get(key, true));
+        Assertions.assertNull(cache.get(key, true), "Cache after invalidate did not return null for write view.");
     }
 
     @Test
@@ -63,10 +63,10 @@ public class ResponseCacheTest extends AbstractTester {
                 Key.KeyType.JSON, Version.V1, EurekaAccept.full, new String[]{REMOTE_REGION}
         );
 
-        Assert.assertNotNull("Cache get returned null.", cache.get(key, false));
+        Assertions.assertNotNull(cache.get(key, false), "Cache get returned null.");
 
         testRegistry.cancel(REMOTE_REGION_APP_NAME, REMOTE_REGION_INSTANCE_1_HOSTNAME, true);
-        Assert.assertNull("Cache after invalidate did not return null.", cache.get(key));
+        Assertions.assertNull(cache.get(key), "Cache after invalidate did not return null.");
     }
 
     @Test
@@ -83,12 +83,12 @@ public class ResponseCacheTest extends AbstractTester {
                 Key.KeyType.JSON, Version.V1, EurekaAccept.full, new String[]{REMOTE_REGION}
         );
 
-        Assert.assertNotNull("Cache get returned null.", cache.get(key1, false));
-        Assert.assertNotNull("Cache get returned null.", cache.get(key2, false));
+        Assertions.assertNotNull(cache.get(key1, false), "Cache get returned null.");
+        Assertions.assertNotNull(cache.get(key2, false), "Cache get returned null.");
 
         testRegistry.cancel(REMOTE_REGION_APP_NAME, REMOTE_REGION_INSTANCE_1_HOSTNAME, true);
 
-        Assert.assertNull("Cache after invalidate did not return null.", cache.get(key1, true));
-        Assert.assertNull("Cache after invalidate did not return null.", cache.get(key2, true));
+        Assertions.assertNull(cache.get(key1, true), "Cache after invalidate did not return null.");
+        Assertions.assertNull(cache.get(key2, true), "Cache after invalidate did not return null.");
     }
 }

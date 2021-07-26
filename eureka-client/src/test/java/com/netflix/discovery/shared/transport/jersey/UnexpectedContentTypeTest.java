@@ -5,10 +5,10 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.resolver.DefaultEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
@@ -35,7 +35,7 @@ public class UnexpectedContentTypeTest {
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort().dynamicHttpsPort()); // No-args constructor defaults to port 8080
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         TransportClientFactory clientFactory = JerseyEurekaHttpClientFactory.newBuilder()
                 .withClientName(CLIENT_APP_NAME)
@@ -74,7 +74,7 @@ public class UnexpectedContentTypeTest {
         assertThat(response.getEntity()).as("instance info").isNull();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         if (jerseyHttpClient != null) {
             jerseyHttpClient.shutdown();

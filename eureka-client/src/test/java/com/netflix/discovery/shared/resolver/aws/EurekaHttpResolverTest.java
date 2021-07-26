@@ -8,15 +8,15 @@ import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import com.netflix.discovery.util.InstanceInfoGenerator;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -36,7 +36,7 @@ public class EurekaHttpResolverTest {
     private String vipAddress;
     private EurekaHttpResolver resolver;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         when(clientConfig.getEurekaServerURLContext()).thenReturn("context");
         when(clientConfig.getRegion()).thenReturn("region");
@@ -50,7 +50,7 @@ public class EurekaHttpResolverTest {
         resolver = new EurekaHttpResolver(clientConfig, transportConfig, clientFactory, vipAddress);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
     }
 

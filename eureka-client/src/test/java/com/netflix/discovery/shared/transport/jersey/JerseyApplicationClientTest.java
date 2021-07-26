@@ -23,14 +23,14 @@ import com.netflix.discovery.shared.resolver.DefaultEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientCompatibilityTestSuite;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 
 public class JerseyApplicationClientTest extends EurekaHttpClientCompatibilityTestSuite {
 
     private JerseyApplicationClient jerseyHttpClient;
 
     @Override
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         if (jerseyHttpClient != null) {
             jerseyHttpClient.shutdown();

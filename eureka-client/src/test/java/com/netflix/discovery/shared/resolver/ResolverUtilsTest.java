@@ -26,14 +26,14 @@ import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
 import com.netflix.discovery.shared.resolver.aws.SampleCluster;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.sameInstance;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -115,13 +115,13 @@ public class ResolverUtilsTest {
         InstanceInfo instanceWithAWSInfo = InstanceInfo.Builder.newBuilder().setAppName("appName")
                 .setHostName("hostName").setPort(8080).setDataCenterInfo(amazonInfo).build();
         AwsEndpoint awsEndpoint = ResolverUtils.instanceInfoToEndpoint(clientConfig, transportConfig, instanceWithAWSInfo);
-        assertEquals("zone not equals.", "us-east-1c", awsEndpoint.getZone());
+        assertEquals("us-east-1c", awsEndpoint.getZone(), "zone not equals.");
 
         MyDataCenterInfo myDataCenterInfo = new MyDataCenterInfo(DataCenterInfo.Name.MyOwn);
         InstanceInfo instanceWithMyDataInfo = InstanceInfo.Builder.newBuilder().setAppName("appName")
                 .setHostName("hostName").setPort(8080).setDataCenterInfo(myDataCenterInfo)
                 .add("zone", "us-east-1c").build();
         awsEndpoint = ResolverUtils.instanceInfoToEndpoint(clientConfig, transportConfig, instanceWithMyDataInfo);
-        assertEquals("zone not equals.", "us-east-1c", awsEndpoint.getZone());
+        assertEquals("us-east-1c", awsEndpoint.getZone(), "zone not equals.");
     }
 }

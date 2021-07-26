@@ -18,15 +18,14 @@ package com.netflix.eureka.aws;
 
 import com.google.common.collect.Lists;
 import com.netflix.discovery.EurekaClientConfig;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -37,7 +36,7 @@ public class EIPManagerTest {
     private EurekaClientConfig config = mock(EurekaClientConfig.class);
     private EIPManager eipManager;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         when(config.shouldUseDnsForFetchingServiceUrls()).thenReturn(Boolean.FALSE);
         eipManager = new EIPManager(null, config, null, null);
@@ -69,12 +68,14 @@ public class EIPManagerTest {
         assertTrue(returnValue.contains("101.202.33.44"));
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void shouldThrowExceptionWhenNoElasticNames() {
-        when(config.getRegion()).thenReturn("eu-west-1");
-        List<String> hosts = Lists.newArrayList("example.com", "5.6.7.8");
-        when(config.getEurekaServerServiceUrls(any(String.class))).thenReturn(hosts);
+        assertThrows(RuntimeException.class, () -> {
+            when(config.getRegion()).thenReturn("eu-west-1");
+            List<String> hosts = Lists.newArrayList("example.com", "5.6.7.8");
+            when(config.getEurekaServerServiceUrls(any(String.class))).thenReturn(hosts);
 
-        eipManager.getCandidateEIPs("i-123", "eu-west-1a");
+            eipManager.getCandidateEIPs("i-123", "eu-west-1a");
+        });
     }
 }

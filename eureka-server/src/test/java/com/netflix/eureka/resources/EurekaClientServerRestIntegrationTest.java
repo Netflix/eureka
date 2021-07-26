@@ -26,15 +26,15 @@ import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 import com.netflix.eureka.transport.JerseyReplicationClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -67,7 +67,7 @@ public class EurekaClientServerRestIntegrationTest {
 
     private static String eurekaServiceUrl;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         injectEurekaConfiguration();
         startServer();
@@ -92,7 +92,7 @@ public class EurekaClientServerRestIntegrationTest {
         );
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         removeEurekaConfiguration();
         if (jerseyReplicationClient != null) {

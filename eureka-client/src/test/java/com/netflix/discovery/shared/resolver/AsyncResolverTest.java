@@ -2,17 +2,17 @@ package com.netflix.discovery.shared.resolver;
 
 import com.netflix.discovery.shared.resolver.aws.SampleCluster;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyLong;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -31,7 +31,7 @@ public class AsyncResolverTest {
 
     private AsyncResolver resolver;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         when(transportConfig.getAsyncExecutorThreadPoolSize()).thenReturn(3);
         when(transportConfig.getAsyncResolverRefreshIntervalMs()).thenReturn(200);
@@ -46,7 +46,7 @@ public class AsyncResolverTest {
         ));
     }
 
-    @After
+    @AfterEach
     public void shutDown() {
         resolver.shutdown();
     }
