@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 public class DiscoveryManager {
     private static final Logger logger = LoggerFactory.getLogger(DiscoveryManager.class);
     private DiscoveryClient discoveryClient;
+    private EurekaClient clientOverride;
 
     private EurekaInstanceConfig eurekaInstanceConfig;
     private EurekaClientConfig eurekaClientConfig;
@@ -56,6 +57,10 @@ public class DiscoveryManager {
 
     public void setDiscoveryClient(DiscoveryClient discoveryClient) {
         this.discoveryClient = discoveryClient;
+    }
+
+    public void setClientOverride(EurekaClient eurekaClient) {
+        this.clientOverride = eurekaClient;
     }
 
     public void setEurekaClientConfig(EurekaClientConfig eurekaClientConfig) {
@@ -107,7 +112,7 @@ public class DiscoveryManager {
     }
 
     public LookupService getLookupService() {
-        return discoveryClient;
+        return getEurekaClient();
     }
 
     /**
@@ -127,6 +132,9 @@ public class DiscoveryManager {
      * @return the client that is used to talk to eureka.
      */
     public EurekaClient getEurekaClient() {
+        if (clientOverride != null) {
+            return clientOverride;
+        }
         return discoveryClient;
     }
 
