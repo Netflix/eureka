@@ -642,7 +642,7 @@ public class EurekaJacksonCodec {
                                 metadataMap.put(key, value);
                             }
                         };   
-                        builder.setMetadata(metadataMap == null ? Collections.emptyMap() : Collections.synchronizedMap(metadataMap));
+                        builder.setMetadata(metadataMap == null ? Collections.emptyMap() : metadataMap);
                         break;
                     default:                    
                         autoUnmarshalEligible(jp.getCurrentName(), jp.getValueAsString(), builder.getRawInstance());
