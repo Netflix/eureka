@@ -1,6 +1,6 @@
 Eureka
 ======
-[![Build Status](https://travis-ci.com/Netflix/eureka.svg?branch=master)](https://travis-ci.com/Netflix/eureka)
+[![build](https://github.com/Netflix/eureka/actions/workflows/nebula-snapshot.yml/badge.svg)](https://github.com/Netflix/eureka/actions/workflows/nebula-snapshot.yml)
 
 Eureka is a RESTful (Representational State Transfer) service that is primarily used in the AWS cloud for the purpose of
 discovery, load balancing and failover of middle-tier servers. It plays a critical role in Netflix mid-tier infra.
