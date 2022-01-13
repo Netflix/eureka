@@ -17,7 +17,7 @@
 package com.netflix.eureka.resources;
 
 import javax.annotation.Nullable;
-import javax.inject.Inject;
+import com.google.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;

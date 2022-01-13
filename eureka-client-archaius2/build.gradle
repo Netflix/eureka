@@ -9,7 +9,7 @@ sourceSets {
 }
 
 dependencies {
-    compile project(':eureka-client')
+    compile project(':eureka-client-core')
 
     // archaius2
     compile "com.netflix.archaius:archaius2-core:${archaius2Version}"

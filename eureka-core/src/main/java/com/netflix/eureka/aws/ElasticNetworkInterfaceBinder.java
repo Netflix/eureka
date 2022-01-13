@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.inject.Inject;
+import com.google.inject.Inject;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;

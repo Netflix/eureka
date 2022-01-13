@@ -14,7 +14,6 @@ import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.decorator.MetricsCollectingEurekaHttpClient;
-import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
 import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 
 public class Jersey2TransportClientFactories implements TransportClientFactories<ClientRequestFilter> {
@@ -58,12 +57,6 @@ public class Jersey2TransportClientFactories implements TransportClientFactories
                 jerseyFactory.shutdown();
             }
         };
-    }
-
-    @Override
-    public TransportClientFactory newTransportClientFactory(Collection<ClientRequestFilter> additionalFilters,
-            EurekaJerseyClient providedJerseyClient) {
-        throw new UnsupportedOperationException();
     }
 
 }

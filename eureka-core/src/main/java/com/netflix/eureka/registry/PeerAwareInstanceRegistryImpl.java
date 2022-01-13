@@ -57,8 +57,8 @@ import com.netflix.servo.monitor.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 
 import static com.netflix.eureka.Names.METRIC_REGISTRY_PREFIX;
 

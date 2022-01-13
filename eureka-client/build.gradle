@@ -1,36 +1,11 @@
 apply plugin: 'nebula.test-jar'
 
-configurations.all {
-    // jersey2
-    exclude group: 'org.glassfish.jersey'
-}
-
 dependencies {
-    compile "com.netflix.netflix-commons:netflix-eventbus:0.3.0"
-    compile 'com.thoughtworks.xstream:xstream:1.4.18'
-    compile "com.netflix.archaius:archaius-core:${archaiusVersion}"
-    compile 'javax.ws.rs:jsr311-api:1.1.1'
-    compile "com.netflix.servo:servo-core:${servoVersion}"
+    compile project(':eureka-client-core')
+
     compile "com.sun.jersey:jersey-core:${jerseyVersion}"
     compile "com.sun.jersey:jersey-client:${jerseyVersion}"
     compile "com.sun.jersey.contribs:jersey-apache-client4:${jerseyVersion}"
-    compile "org.apache.httpcomponents:httpclient:${apacheHttpClientVersion}"
-    compile "com.google.code.findbugs:jsr305:${jsr305Version}"
-    compile "commons-configuration:commons-configuration:${commonsConfigurationVersion}"
-    compile "com.google.inject:guice:${guiceVersion}"
-
-    compile "com.github.vlsi.compactmap:compactmap:2.0"
-
-    compile "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
-    compile "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
-    compile "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
-
-    // Eureka client uses JSON encoding by default
-    compileOnly "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${jacksonVersion}"
-    // Prefered jackson Stax serializer. Default Oracle has issues (adds empty namespace) and is slower
-    compileOnly "com.fasterxml.woodstox:woodstox-core:${woodstoxVersion}"
-
-    runtimeOnly "org.codehaus.jettison:jettison:${jettisonVersion}"
 
     testCompile project(':eureka-test-utils')
     testCompile "junit:junit:${junit_version}"

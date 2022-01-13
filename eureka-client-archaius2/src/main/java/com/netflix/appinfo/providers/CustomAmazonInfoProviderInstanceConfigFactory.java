@@ -8,9 +8,9 @@ import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.DiscoveryManager;
 
 import com.google.inject.Inject;
-import javax.inject.Named;
+import com.google.inject.name.Named;
 import javax.inject.Provider;
-import javax.inject.Singleton;
+import com.google.inject.Singleton;
 
 @Singleton
 public class CustomAmazonInfoProviderInstanceConfigFactory implements EurekaInstanceConfigFactory {

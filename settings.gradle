@@ -1,6 +1,7 @@
 rootProject.name='eureka' 
-include 'eureka-client',
-        'eureka-client-jersey2',
+include 'eureka-client-core',
+		'eureka-client',
+		'eureka-client-jersey2',
         'eureka-client-archaius2',
         'eureka-server',
         'eureka-server-governator',

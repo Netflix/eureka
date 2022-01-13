@@ -45,13 +45,14 @@ import java.util.concurrent.locks.ReentrantLock;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import javax.inject.Provider;
-import javax.inject.Singleton;
+import com.google.inject.Singleton;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.ws.rs.core.Response.Status;
 
 import com.netflix.discovery.shared.resolver.EndpointRandomizer;
 import com.netflix.discovery.shared.resolver.ResolverUtils;
+import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,10 +79,6 @@ import com.netflix.discovery.shared.transport.EurekaHttpClients;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
-import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
-import com.netflix.discovery.shared.transport.jersey.Jersey1DiscoveryClientOptionalArgs;
-import com.netflix.discovery.shared.transport.jersey.Jersey1TransportClientFactories;
-import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import com.netflix.discovery.util.ThresholdLevelsMetric;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Counter;
@@ -231,10 +228,6 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
-    public static class DiscoveryClientOptionalArgs extends Jersey1DiscoveryClientOptionalArgs {
-
-    }
-
     /**
      * Assumes applicationInfoManager is already initialized
      *
@@ -243,16 +236,6 @@ public class DiscoveryClient implements EurekaClient {
     @Deprecated
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
         this(myInfo, config, null);
-    }
-
-    /**
-     * Assumes applicationInfoManager is already initialized
-     *
-     * @deprecated use constructor that takes ApplicationInfoManager instead of InstanceInfo directly
-     */
-    @Deprecated
-    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
-        this(ApplicationInfoManager.getInstance(), config, args);
     }
 
     /**
@@ -265,14 +248,6 @@ public class DiscoveryClient implements EurekaClient {
 
     public DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config) {
         this(applicationInfoManager, config, null);
-    }
-
-    /**
-     * @deprecated use the version that take {@link com.netflix.discovery.AbstractDiscoveryClientOptionalArgs} instead
-     */
-    @Deprecated
-    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
-        this(applicationInfoManager, config, (AbstractDiscoveryClientOptionalArgs) args);
     }
 
     public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args) {
@@ -493,40 +468,24 @@ public class DiscoveryClient implements EurekaClient {
                 initTimestampMs, initRegistrySize);
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     private void scheduleServerEndpointTask(EurekaTransport eurekaTransport,
                                             AbstractDiscoveryClientOptionalArgs args) {
 
-            
-        Collection<?> additionalFilters = args == null
-                ? Collections.emptyList()
-                : args.additionalFilters;
-
-        EurekaJerseyClient providedJerseyClient = args == null
-                ? null
-                : args.eurekaJerseyClient;
-        
-        TransportClientFactories argsTransportClientFactories = null;
-        if (args != null && args.getTransportClientFactories() != null) {
-            argsTransportClientFactories = args.getTransportClientFactories();
+        if (args == null) {
+            throw new IllegalArgumentException("args can not be null");
         }
-        
+            
+        Collection<?> additionalFilters = args.additionalFilters;
+
         // Ignore the raw types warnings since the client filter interface changed between jersey 1/2
-        @SuppressWarnings("rawtypes")
-        TransportClientFactories transportClientFactories = argsTransportClientFactories == null
-                ? new Jersey1TransportClientFactories()
-                : argsTransportClientFactories;
+        TransportClientFactories transportClientFactories = args.getTransportClientFactories();
                 
-        Optional<SSLContext> sslContext = args == null
-                ? Optional.empty()
-                : args.getSSLContext();
-        Optional<HostnameVerifier> hostnameVerifier = args == null
-                ? Optional.empty()
-                : args.getHostnameVerifier();
+        Optional<SSLContext> sslContext =  args.getSSLContext();
+        Optional<HostnameVerifier> hostnameVerifier = args.getHostnameVerifier();
 
         // If the transport factory was not supplied with args, assume they are using jersey 1 for passivity
-        eurekaTransport.transportClientFactory = providedJerseyClient == null
-                ? transportClientFactories.newTransportClientFactory(clientConfig, additionalFilters, applicationInfoManager.getInfo(), sslContext, hostnameVerifier)
-                : transportClientFactories.newTransportClientFactory(additionalFilters, providedJerseyClient);
+        eurekaTransport.transportClientFactory =  transportClientFactories.newTransportClientFactory(clientConfig, additionalFilters, applicationInfoManager.getInfo(), sslContext, hostnameVerifier);
 
         ApplicationsResolver.ApplicationsSource applicationsSource = new ApplicationsResolver.ApplicationsSource() {
             @Override
