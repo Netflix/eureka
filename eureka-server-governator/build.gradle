@@ -3,7 +3,7 @@ apply plugin: 'org.gretty'
 
 dependencies {
     compile project(':eureka-core')
-    compile project(':eureka-client')
+    compile project(':eureka-client-core')
     compile "com.netflix.governator:governator:${governatorVersion}"
     compile "com.netflix.governator:governator-servlet:${governatorVersion}"
     compile "com.sun.jersey:jersey-server:${jerseyVersion}"

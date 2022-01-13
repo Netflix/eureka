@@ -51,7 +51,7 @@ public class EurekaHttpResolver implements ClusterResolver<AwsEndpoint> {
         );
     }
 
-    /* visible for testing */ EurekaHttpResolver(EurekaClientConfig clientConfig,
+    public EurekaHttpResolver(EurekaClientConfig clientConfig,
                                                  EurekaTransportConfig transportConfig,
                                                  EurekaHttpClientFactory clientFactory,
                                                  String vipAddress) {

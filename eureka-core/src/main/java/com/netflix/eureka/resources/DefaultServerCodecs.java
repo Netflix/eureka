@@ -7,8 +7,8 @@ import com.netflix.discovery.converters.wrappers.EncoderWrapper;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.registry.Key;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 
 /**
  * @author David Liu

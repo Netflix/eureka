@@ -1,7 +1,7 @@
 package com.netflix.eureka.cluster;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;

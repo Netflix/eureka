@@ -1,7 +1,7 @@
 apply plugin: 'war'
 
 dependencies {
-    compile project(':eureka-client')
+    compile project(':eureka-client-core')
     compile project(':eureka-core')
     compile "com.sun.jersey:jersey-server:$jerseyVersion"
     compile "com.sun.jersey:jersey-servlet:$jerseyVersion"

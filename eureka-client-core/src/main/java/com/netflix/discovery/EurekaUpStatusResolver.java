@@ -2,7 +2,7 @@ package com.netflix.discovery;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.inject.Singleton;
+import com.google.inject.Singleton;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.inject.Inject;

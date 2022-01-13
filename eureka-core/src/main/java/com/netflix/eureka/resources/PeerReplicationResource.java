@@ -16,7 +16,7 @@
 
 package com.netflix.eureka.resources;
 
-import javax.inject.Inject;
+import com.google.inject.Inject;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;

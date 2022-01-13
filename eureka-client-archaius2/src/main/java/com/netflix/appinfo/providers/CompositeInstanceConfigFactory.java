@@ -15,8 +15,8 @@ import com.netflix.discovery.internal.util.InternalPrefixedConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 

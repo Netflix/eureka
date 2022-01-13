@@ -40,7 +40,6 @@ import com.netflix.discovery.shared.resolver.StaticClusterResolver;
 import com.netflix.discovery.shared.resolver.aws.ApplicationsResolver;
 import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
 import com.netflix.discovery.shared.resolver.aws.EurekaHttpResolver;
-import com.netflix.discovery.shared.resolver.aws.TestEurekaHttpResolver;
 import com.netflix.discovery.shared.transport.jersey.Jersey1TransportClientFactories;
 import com.netflix.discovery.util.EurekaEntityComparators;
 import com.netflix.discovery.util.InstanceInfoGenerator;
@@ -302,4 +301,11 @@ public class EurekaHttpClientsTest {
             return latch.await(timeout, unit);
         }
     }
+
+    static class TestEurekaHttpResolver extends EurekaHttpResolver {
+        public TestEurekaHttpResolver(EurekaClientConfig clientConfig, EurekaTransportConfig transportConfig, EurekaHttpClientFactory clientFactory, String vipAddress) {
+            super(clientConfig, transportConfig, clientFactory, vipAddress);
+        }
+    }
+
 }

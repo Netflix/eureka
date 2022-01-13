@@ -16,7 +16,7 @@
 
 package com.netflix.eureka;
 
-import javax.inject.Singleton;
+import com.google.inject.Singleton;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;

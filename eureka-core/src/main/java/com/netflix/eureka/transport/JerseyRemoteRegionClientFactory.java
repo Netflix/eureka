@@ -16,7 +16,7 @@
 
 package com.netflix.eureka.transport;
 
-import javax.inject.Inject;
+import com.google.inject.Inject;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collections;

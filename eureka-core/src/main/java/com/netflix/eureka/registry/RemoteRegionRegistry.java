@@ -15,7 +15,7 @@
  */
 package com.netflix.eureka.registry;
 
-import javax.inject.Inject;
+import com.google.inject.Inject;
 import javax.ws.rs.core.MediaType;
 import java.net.InetAddress;
 import java.net.URL;

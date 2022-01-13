@@ -24,7 +24,7 @@ configurations.all {
 }
 
 dependencies {
-    compile project(':eureka-client')
+    compile project(':eureka-client-core')
     compile 'org.glassfish.jersey.core:jersey-client:2.23.1'
     compile 'org.glassfish.jersey.connectors:jersey-apache-connector:2.23.1'
 

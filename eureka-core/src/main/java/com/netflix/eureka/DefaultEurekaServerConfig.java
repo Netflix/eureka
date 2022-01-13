@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
-import javax.inject.Singleton;
+import com.google.inject.Singleton;
 
 import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicBooleanProperty;
