@@ -20,5 +20,5 @@ dependencies {
     testCompile "org.mock-server:mockserver-netty:${mockserverVersion}"
     testCompile "com.jcraft:jzlib:1.1.3" // netty dependency
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
-    testRuntime 'org.slf4j:slf4j-simple:1.7.10'
+    testRuntime "org.slf4j:slf4j-simple:${slf4jVersion}"
 }

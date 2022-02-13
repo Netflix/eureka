@@ -9,7 +9,7 @@ dependencies {
     compile "com.sun.jersey:jersey-server:${jerseyVersion}"
     compile "com.sun.jersey:jersey-servlet:${jerseyVersion}"
     compile "com.sun.jersey.contribs:jersey-guice:${jerseyVersion}"
-    compile 'org.slf4j:slf4j-log4j12:1.6.1'
+    compile "org.slf4j:slf4j-log4j12:${slf4jVersion}"
     runtimeOnly 'org.codehaus.jettison:jettison:1.2'
     providedCompile "javax.servlet:servlet-api:${servletVersion}"
 

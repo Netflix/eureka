@@ -45,9 +45,9 @@ allprojects {
         servoVersion = '0.12.21'
         governatorVersion = '1.17.5'
         archaiusVersion = '0.7.6'
-        jacksonVersion = '2.10.5'
-        jacksonDatabindVersion = '2.10.5.1'
+        jacksonVersion = '2.11.4'
         woodstoxVersion = '5.2.1'
+        slf4jVersion = '1.7.36'
 
         // test deps
         jetty_version = '7.2.0.v20101020'
