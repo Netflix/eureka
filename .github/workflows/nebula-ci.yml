@@ -16,11 +16,12 @@ jobs:
         java: [ 8 ]
     name: CI with Java ${{ matrix.java }}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Setup jdk
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v3
         with:
           java-version: ${{ matrix.java }}
+          distribution: 'zulu'
       - uses: actions/cache@v1
         id: gradle-cache
         with:
