@@ -52,7 +52,8 @@ import org.slf4j.LoggerFactory;
 public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
     private static final String AWS_API_VERSION = "latest";
-    private static final String AWS_METADATA_URL = "http://169.254.169.254/" + AWS_API_VERSION + "/meta-data/";
+    private static final String AWS_HTTP_ADDRESS = "http://169.254.169.254/";
+    private static final String AWS_METADATA_URL = AWS_HTTP_ADDRESS + AWS_API_VERSION + "/meta-data/";
 
     public enum MetaDataKey {
         instanceId("instance-id"),  // always have this first as we use it as a fail fast mechanism
@@ -78,7 +79,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
             @Override
             public URL getURL(String prepend, String append) throws MalformedURLException {
-                return new URL("http://169.254.169.254/" + AWS_API_VERSION + "/dynamic/instance-identity/document");
+                return new URL(AWS_HTTP_ADDRESS + AWS_API_VERSION + "/dynamic/instance-identity/document");
             }
 
             // no need to use a json deserializer, do a custom regex parse
