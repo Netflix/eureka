@@ -11,7 +11,7 @@ dependencies {
     runtimeOnly 'xerces:xercesImpl:2.12.0'
     runtimeOnly 'org.codehaus.jettison:jettison:1.2'
 
-    providedCompile "javax.servlet:servlet-api:$servletVersion"
+    providedCompile "jakarta.servlet:jakarta.servlet-api:$servletVersion"
 
     testCompile project(':eureka-test-utils')
     testCompile "org.mockito:mockito-core:${mockitoVersion}"

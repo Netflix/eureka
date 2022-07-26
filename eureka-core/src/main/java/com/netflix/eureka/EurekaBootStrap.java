@@ -16,9 +16,9 @@
 
 package com.netflix.eureka;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
 import java.util.Date;
 
 import com.netflix.appinfo.ApplicationInfoManager;
@@ -105,7 +105,7 @@ public class EurekaBootStrap implements ServletContextListener {
      * Initializes Eureka, including syncing up with other Eureka peers and publishing the registry.
      *
      * @see
-     * javax.servlet.ServletContextListener#contextInitialized(javax.servlet.ServletContextEvent)
+     * jakarta.servlet.ServletContextListener#contextInitialized(jakarta.servlet.ServletContextEvent)
      */
     @Override
     public void contextInitialized(ServletContextEvent event) {
@@ -234,7 +234,7 @@ public class EurekaBootStrap implements ServletContextListener {
     /**
      * Handles Eureka cleanup, including shutting down all monitors and yielding all EIPs.
      *
-     * @see javax.servlet.ServletContextListener#contextDestroyed(javax.servlet.ServletContextEvent)
+     * @see jakarta.servlet.ServletContextListener#contextDestroyed(jakarta.servlet.ServletContextEvent)
      */
     @Override
     public void contextDestroyed(ServletContextEvent event) {

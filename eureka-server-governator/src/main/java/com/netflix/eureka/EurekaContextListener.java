@@ -7,8 +7,8 @@ import com.netflix.governator.LifecycleInjector;
 import com.netflix.governator.guice.servlet.GovernatorServletContextListener;
 import com.thoughtworks.xstream.XStream;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextEvent;
 
 /**
  * @author David Liu

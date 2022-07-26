@@ -35,7 +35,7 @@ allprojects {
         githubProjectName = 'eureka'
 
         awsVersion = '1.11.277'
-        servletVersion = '2.5'
+        servletVersion = '5.0.0'
         jerseyVersion = '1.19.1'
         jettisonVersion = '1.4.0'
         apacheHttpClientVersion = '4.5.3'

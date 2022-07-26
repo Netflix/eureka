@@ -40,5 +40,5 @@ dependencies {
     testCompile "com.netflix.governator:governator:${governatorVersion}"
     testCompile "com.github.tomakehurst:wiremock-jre8:2.25.1"
     testCompile "org.assertj:assertj-core:3.11.1"
-    testCompile "javax.servlet:javax.servlet-api:4.0.1"
+    testCompile "jakarta.servlet:jakarta.servlet-api:5.0.0"
 }
