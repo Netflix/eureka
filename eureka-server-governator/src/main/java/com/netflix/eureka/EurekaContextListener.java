@@ -45,7 +45,8 @@ public class EurekaContextListener extends GovernatorServletContextListener {
         JsonXStream.getInstance().registerConverter(new V1AwareInstanceInfoConverter(), XStream.PRIORITY_VERY_HIGH);
         XmlXStream.getInstance().registerConverter(new V1AwareInstanceInfoConverter(), XStream.PRIORITY_VERY_HIGH);
 
-        LifecycleInjector injector = EurekaInjectorCreator.createInjector();
+        // FIXME 2.0
+        LifecycleInjector injector = null; // EurekaInjectorCreator.createInjector();
         serverContext = injector.getInstance(EurekaServerContext.class);
         return injector;
     }

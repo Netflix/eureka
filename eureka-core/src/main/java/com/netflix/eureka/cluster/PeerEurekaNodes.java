@@ -21,7 +21,6 @@ import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.resources.ServerCodecs;
-import com.netflix.eureka.transport.JerseyReplicationClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -195,7 +194,7 @@ public class PeerEurekaNodes {
     }
 
     protected PeerEurekaNode createPeerEurekaNode(String peerEurekaNodeUrl) {
-        HttpReplicationClient replicationClient = JerseyReplicationClient.createReplicationClient(serverConfig, serverCodecs, peerEurekaNodeUrl);
+        HttpReplicationClient replicationClient = null; // FIXME 2.0 JerseyReplicationClient.createReplicationClient(serverConfig, serverCodecs, peerEurekaNodeUrl);
         String targetHost = hostFromUrl(peerEurekaNodeUrl);
         if (targetHost == null) {
             targetHost = "host";

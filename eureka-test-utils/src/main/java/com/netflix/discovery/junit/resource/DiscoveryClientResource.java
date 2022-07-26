@@ -19,6 +19,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.LeaseInfo;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.config.ConfigurationManager;
+import com.netflix.discovery.AbstractDiscoveryClientOptionalArgs;
 import com.netflix.discovery.CacheRefreshedEvent;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryClient;
@@ -26,7 +27,6 @@ import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.transport.SimpleEurekaHttpServer;
-import com.netflix.discovery.shared.transport.jersey.Jersey1DiscoveryClientOptionalArgs;
 import com.netflix.eventbus.impl.EventBusImpl;
 import com.netflix.eventbus.spi.EventBus;
 import com.netflix.eventbus.spi.InvalidSubscriberException;
@@ -96,7 +96,8 @@ public class DiscoveryClientResource extends ExternalResource {
                 applicationInfoManager = createApplicationManager();
                 EurekaClientConfig clientConfig = createEurekaClientConfig();
 
-                Jersey1DiscoveryClientOptionalArgs optionalArgs = new Jersey1DiscoveryClientOptionalArgs();
+                // FIXME 2.0
+                AbstractDiscoveryClientOptionalArgs optionalArgs = null; //new Jersey1DiscoveryClientOptionalArgs();
                 eventBus = new EventBusImpl();
                 optionalArgs.setEventBus(eventBus);
 

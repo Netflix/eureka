@@ -24,7 +24,6 @@ import com.netflix.discovery.shared.resolver.EndpointRandomizer;
 import com.netflix.discovery.shared.resolver.ResolverUtils;
 import com.netflix.discovery.shared.transport.EurekaArchaius2TransportConfig;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
-import com.netflix.discovery.shared.transport.jersey.Jersey1DiscoveryClientOptionalArgs;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -76,7 +75,8 @@ final class InternalEurekaClientModule extends AbstractModule {
 
 
         // Default to the jersey1 discovery client optional args
-        bind(AbstractDiscoveryClientOptionalArgs.class).to(Jersey1DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
+        // FIXME 2.0
+//        bind(AbstractDiscoveryClientOptionalArgs.class).to(Jersey1DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
     }
 
     @Provides

@@ -37,7 +37,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.discovery.EurekaClientConfig;
-import com.netflix.discovery.EurekaIdentityHeaderFilter;
 import com.netflix.discovery.TimedSupervisorTask;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
@@ -46,8 +45,6 @@ import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.StaticClusterResolver;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
-import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
-import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerIdentity;
 import com.netflix.eureka.resources.ServerCodecs;
@@ -79,7 +76,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
     private static final Logger logger = LoggerFactory.getLogger(RemoteRegionRegistry.class);
 
     private final ApacheHttpClient4 discoveryApacheClient;
-    private final EurekaJerseyClient discoveryJerseyClient;
+//    private final EurekaJerseyClient discoveryJerseyClient;
     private final com.netflix.servo.monitor.Timer fetchRegistryTimer;
     private final URL remoteRegionURL;
 
@@ -107,6 +104,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
         this.remoteRegionURL = remoteRegionURL;
         this.fetchRegistryTimer = Monitors.newTimer(this.remoteRegionURL.toString() + "_FetchRegistry");
 
+        /* FIXME: 2.0
         EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
                 .withUserAgent("Java-EurekaClient-RemoteRegion")
                 .withEncoderWrapper(serverCodecs.getFullJsonCodec())
@@ -130,12 +128,14 @@ public class RemoteRegionRegistry implements LookupService<String> {
                     );
         }
         discoveryJerseyClient = clientBuilder.build();
-        discoveryApacheClient = discoveryJerseyClient.getClient();
+         */
+        discoveryApacheClient = null; // discoveryJerseyClient.getClient();
 
         // should we enable GZip decoding of responses based on Response Headers?
         if (serverConfig.shouldGZipContentFromRemoteRegion()) {
             // compressed only if there exists a 'Content-Encoding' header whose value is "gzip"
-            discoveryApacheClient.addFilter(new GZIPContentEncodingFilter(false));
+            // FIXME 2.0
+            // discoveryApacheClient.addFilter(new GZIPContentEncodingFilter(false));
         }
 
         String ip = null;
@@ -145,7 +145,8 @@ public class RemoteRegionRegistry implements LookupService<String> {
             logger.warn("Cannot find localhost ip", e);
         }
         EurekaServerIdentity identity = new EurekaServerIdentity(ip);
-        discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
+        // FIXME 2.0
+        // discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
 
         // Configure new transport layer (candidate for injecting in the future)
         EurekaHttpClient newEurekaHttpClient = null;

@@ -14,7 +14,6 @@ import com.netflix.discovery.converters.KeyFormatter;
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.discovery.converters.jackson.EurekaJsonJacksonCodec;
 import com.netflix.discovery.converters.jackson.EurekaXmlJacksonCodec;
-import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClientImpl;
 
 /**
  * This is just a helper class during transition when multiple codecs are supported. One day this should all go away

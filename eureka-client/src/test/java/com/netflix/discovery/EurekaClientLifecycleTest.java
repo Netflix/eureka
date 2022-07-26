@@ -19,7 +19,6 @@ import com.netflix.discovery.shared.resolver.ResolverUtils;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.SimpleEurekaHttpServer;
-import com.netflix.discovery.shared.transport.jersey.Jersey1DiscoveryClientOptionalArgs;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.netflix.governator.guice.LifecycleInjector;
 import com.netflix.governator.lifecycle.LifecycleManager;
@@ -87,7 +86,8 @@ public class EurekaClientLifecycleTest {
                             protected void configure() {
                                 bind(EurekaInstanceConfig.class).to(LocalEurekaInstanceConfig.class);
                                 bind(EurekaClientConfig.class).to(LocalEurekaClientConfig.class);
-                                bind(AbstractDiscoveryClientOptionalArgs.class).to(Jersey1DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
+                                // FIXME: 2.0
+                                // bind(AbstractDiscoveryClientOptionalArgs.class).to(Jersey1DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
                                 bind(EndpointRandomizer.class).toInstance(ResolverUtils::randomize);
                             }
                         }
@@ -124,7 +124,8 @@ public class EurekaClientLifecycleTest {
                                 bind(EurekaInstanceConfig.class).to(LocalEurekaInstanceConfig.class);
                                 bind(EurekaClientConfig.class).to(BadServerEurekaClientConfig1.class);
                                 bind(BackupRegistry.class).toInstance(backupRegistry);
-                                bind(AbstractDiscoveryClientOptionalArgs.class).to(Jersey1DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
+                                // FIXME: 2.0
+                                // bind(AbstractDiscoveryClientOptionalArgs.class).to(Jersey1DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
                                 bind(EndpointRandomizer.class).toInstance(ResolverUtils::randomize);
                             }
                         }
@@ -147,7 +148,8 @@ public class EurekaClientLifecycleTest {
                             protected void configure() {
                                 bind(EurekaInstanceConfig.class).to(LocalEurekaInstanceConfig.class);
                                 bind(EurekaClientConfig.class).to(BadServerEurekaClientConfig2.class);
-                                bind(AbstractDiscoveryClientOptionalArgs.class).to(Jersey1DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
+                                // FIXME: 2.0
+                                // bind(AbstractDiscoveryClientOptionalArgs.class).to(Jersey1DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
                                 bind(EndpointRandomizer.class).toInstance(ResolverUtils::randomize);
                             }
                         }

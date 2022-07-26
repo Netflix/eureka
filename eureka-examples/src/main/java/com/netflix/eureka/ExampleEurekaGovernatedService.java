@@ -4,7 +4,6 @@ import com.google.inject.AbstractModule;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.config.DynamicPropertyFactory;
-import com.netflix.discovery.guice.EurekaModule;
 import com.netflix.governator.InjectorBuilder;
 import com.netflix.governator.LifecycleInjector;
 
@@ -23,8 +22,9 @@ public class ExampleEurekaGovernatedService {
     private static LifecycleInjector init() throws Exception {
         System.out.println("Creating injector for Example Service");
 
+        //FIXME: 2.0
         LifecycleInjector injector = InjectorBuilder
-                .fromModules(new EurekaModule(), new ExampleServiceModule())
+                .fromModules(/*new EurekaModule(), */new ExampleServiceModule())
                 .overrideWith(new AbstractModule() {
                     @Override
                     protected void configure() {

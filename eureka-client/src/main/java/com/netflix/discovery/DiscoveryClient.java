@@ -78,10 +78,6 @@ import com.netflix.discovery.shared.transport.EurekaHttpClients;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
-import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
-import com.netflix.discovery.shared.transport.jersey.Jersey1DiscoveryClientOptionalArgs;
-import com.netflix.discovery.shared.transport.jersey.Jersey1TransportClientFactories;
-import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import com.netflix.discovery.util.ThresholdLevelsMetric;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Counter;
@@ -231,10 +227,6 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
-    public static class DiscoveryClientOptionalArgs extends Jersey1DiscoveryClientOptionalArgs {
-
-    }
-
     /**
      * Assumes applicationInfoManager is already initialized
      *
@@ -243,16 +235,6 @@ public class DiscoveryClient implements EurekaClient {
     @Deprecated
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
         this(myInfo, config, null);
-    }
-
-    /**
-     * Assumes applicationInfoManager is already initialized
-     *
-     * @deprecated use constructor that takes ApplicationInfoManager instead of InstanceInfo directly
-     */
-    @Deprecated
-    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
-        this(ApplicationInfoManager.getInstance(), config, args);
     }
 
     /**
@@ -265,14 +247,6 @@ public class DiscoveryClient implements EurekaClient {
 
     public DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config) {
         this(applicationInfoManager, config, null);
-    }
-
-    /**
-     * @deprecated use the version that take {@link com.netflix.discovery.AbstractDiscoveryClientOptionalArgs} instead
-     */
-    @Deprecated
-    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
-        this(applicationInfoManager, config, (AbstractDiscoveryClientOptionalArgs) args);
     }
 
     public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args) {
@@ -501,7 +475,9 @@ public class DiscoveryClient implements EurekaClient {
                 ? Collections.emptyList()
                 : args.additionalFilters;
 
-        EurekaJerseyClient providedJerseyClient = args == null
+        // FIXME: 2.0 Jersey 1 is no longer default
+
+        /*EurekaJerseyClient providedJerseyClient = args == null
                 ? null
                 : args.eurekaJerseyClient;
         
@@ -514,7 +490,7 @@ public class DiscoveryClient implements EurekaClient {
         @SuppressWarnings("rawtypes")
         TransportClientFactories transportClientFactories = argsTransportClientFactories == null
                 ? new Jersey1TransportClientFactories()
-                : argsTransportClientFactories;
+                : argsTransportClientFactories;*/
                 
         Optional<SSLContext> sslContext = args == null
                 ? Optional.empty()
@@ -524,9 +500,9 @@ public class DiscoveryClient implements EurekaClient {
                 : args.getHostnameVerifier();
 
         // If the transport factory was not supplied with args, assume they are using jersey 1 for passivity
-        eurekaTransport.transportClientFactory = providedJerseyClient == null
+        /* eurekaTransport.transportClientFactory = providedJerseyClient == null
                 ? transportClientFactories.newTransportClientFactory(clientConfig, additionalFilters, applicationInfoManager.getInfo(), sslContext, hostnameVerifier)
-                : transportClientFactories.newTransportClientFactory(additionalFilters, providedJerseyClient);
+                : transportClientFactories.newTransportClientFactory(additionalFilters, providedJerseyClient); */
 
         ApplicationsResolver.ApplicationsSource applicationsSource = new ApplicationsResolver.ApplicationsSource() {
             @Override

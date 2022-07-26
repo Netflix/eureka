@@ -15,15 +15,14 @@ import com.netflix.discovery.shared.resolver.DefaultEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
-import com.netflix.discovery.shared.transport.jersey.JerseyEurekaHttpClientFactory;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.netflix.eureka.EurekaServerConfig;
+import com.netflix.eureka.cluster.HttpReplicationClient;
 import com.netflix.eureka.cluster.protocol.ReplicationInstance;
 import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
-import com.netflix.eureka.transport.JerseyReplicationClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.AfterClass;
@@ -57,7 +56,7 @@ public class EurekaClientServerRestIntegrationTest {
     private static TransportClientFactory httpClientFactory;
 
     private static EurekaHttpClient jerseyEurekaClient;
-    private static JerseyReplicationClient jerseyReplicationClient;
+    private static HttpReplicationClient jerseyReplicationClient;
 
     /**
      * We do not include ASG data to prevent server from consulting AWS for its status.
@@ -73,23 +72,25 @@ public class EurekaClientServerRestIntegrationTest {
         startServer();
         createEurekaServerConfig();
 
-        httpClientFactory = JerseyEurekaHttpClientFactory.newBuilder()
+        // FIXME 2.0
+        httpClientFactory = null; /* JerseyEurekaHttpClientFactory.newBuilder()
                 .withClientName("testEurekaClient")
                 .withConnectionTimeout(1000)
                 .withReadTimeout(1000)
                 .withMaxConnectionsPerHost(1)
                 .withMaxTotalConnections(1)
                 .withConnectionIdleTimeout(1000)
-                .build();
+                .build(); */
 
         jerseyEurekaClient = httpClientFactory.newClient(new DefaultEndpoint(eurekaServiceUrl));
 
         ServerCodecs serverCodecs = new DefaultServerCodecs(eurekaServerConfig);
-        jerseyReplicationClient = JerseyReplicationClient.createReplicationClient(
+        // FIXME 2.0
+        jerseyReplicationClient = null; /* JerseyReplicationClient.createReplicationClient(
                 eurekaServerConfig,
                 serverCodecs,
                 eurekaServiceUrl
-        );
+        ); */
     }
 
     @AfterClass

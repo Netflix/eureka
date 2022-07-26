@@ -14,8 +14,6 @@ import com.google.inject.Inject;
 import com.netflix.appinfo.HealthCheckCallback;
 import com.netflix.appinfo.HealthCheckHandler;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
-import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
-import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import com.netflix.eventbus.spi.EventBus;
 
 /**
@@ -30,12 +28,8 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
 
     Collection<T> additionalFilters;
 
-    EurekaJerseyClient eurekaJerseyClient;
-    
     TransportClientFactory transportClientFactory;
     
-    TransportClientFactories transportClientFactories;
-
     private Set<EurekaEventListener> eventListeners;
 
     private Optional<SSLContext> sslContext = Optional.empty();
@@ -85,24 +79,10 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
         this.additionalFilters = additionalFilters;
     }
 
-    @Inject(optional = true) 
-    public void setEurekaJerseyClient(EurekaJerseyClient eurekaJerseyClient) {
-        this.eurekaJerseyClient = eurekaJerseyClient;
-    }
-    
     Set<EurekaEventListener> getEventListeners() {
         return eventListeners == null ? Collections.<EurekaEventListener>emptySet() : eventListeners;
     }
-    
-    public TransportClientFactories getTransportClientFactories() {
-        return transportClientFactories;
-    }
 
-    @Inject(optional = true)
-    public void setTransportClientFactories(TransportClientFactories transportClientFactories) {
-        this.transportClientFactories = transportClientFactories;
-    }
-    
     public Optional<SSLContext> getSSLContext() {
         return sslContext;
     }

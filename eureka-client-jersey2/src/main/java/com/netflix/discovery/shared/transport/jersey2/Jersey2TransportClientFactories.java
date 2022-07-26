@@ -14,13 +14,12 @@ import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.decorator.MetricsCollectingEurekaHttpClient;
-import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
 import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 
 public class Jersey2TransportClientFactories implements TransportClientFactories<ClientRequestFilter> {
-    
+
     private static final Jersey2TransportClientFactories INSTANCE = new Jersey2TransportClientFactories();
-    
+
     public static Jersey2TransportClientFactories getInstance() {
         return INSTANCE;
     }
@@ -31,7 +30,7 @@ public class Jersey2TransportClientFactories implements TransportClientFactories
                                                                    final InstanceInfo myInstanceInfo) {
         return newTransportClientFactory(clientConfig, additionalFilters, myInstanceInfo, Optional.empty(), Optional.empty());
     }
-    
+
     @Override
     public TransportClientFactory newTransportClientFactory(EurekaClientConfig clientConfig,
             Collection<ClientRequestFilter> additionalFilters, InstanceInfo myInstanceInfo,
@@ -58,12 +57,6 @@ public class Jersey2TransportClientFactories implements TransportClientFactories
                 jerseyFactory.shutdown();
             }
         };
-    }
-
-    @Override
-    public TransportClientFactory newTransportClientFactory(Collection<ClientRequestFilter> additionalFilters,
-            EurekaJerseyClient providedJerseyClient) {
-        throw new UnsupportedOperationException();
     }
 
 }
