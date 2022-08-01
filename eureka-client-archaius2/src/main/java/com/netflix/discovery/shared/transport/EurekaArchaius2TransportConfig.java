@@ -6,7 +6,7 @@ import com.netflix.archaius.api.annotations.ConfigurationSource;
 import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.internal.util.InternalPrefixedConfig;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import static com.netflix.discovery.shared.transport.PropertyBasedTransportConfigConstants.*;
 

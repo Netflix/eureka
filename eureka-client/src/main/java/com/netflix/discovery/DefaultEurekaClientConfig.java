@@ -16,8 +16,8 @@
 
 package com.netflix.discovery;
 
-import javax.annotation.Nullable;
-import javax.inject.Singleton;
+import jakarta.annotation.Nullable;
+import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

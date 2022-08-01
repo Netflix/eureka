@@ -18,7 +18,7 @@ package com.netflix.appinfo;
 import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.providers.MyDataCenterInstanceConfigProvider;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 /**
  * An {@link InstanceInfo} configuration for the non-AWS datacenter.

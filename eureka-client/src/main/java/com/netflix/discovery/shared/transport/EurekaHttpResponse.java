@@ -16,8 +16,8 @@
 
 package com.netflix.discovery.shared.transport;
 
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;

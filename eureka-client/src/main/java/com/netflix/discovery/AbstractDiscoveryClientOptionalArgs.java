@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 

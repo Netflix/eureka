@@ -1,6 +1,6 @@
 package com.netflix.eureka.cluster;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;

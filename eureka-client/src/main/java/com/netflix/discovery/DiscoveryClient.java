@@ -42,13 +42,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import javax.annotation.Nullable;
-import javax.annotation.PreDestroy;
-import javax.inject.Provider;
-import javax.inject.Singleton;
+import jakarta.annotation.Nullable;
+import jakarta.annotation.PreDestroy;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
-import javax.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.Response.Status;
 
 import com.netflix.discovery.shared.resolver.EndpointRandomizer;
 import com.netflix.discovery.shared.resolver.ResolverUtils;

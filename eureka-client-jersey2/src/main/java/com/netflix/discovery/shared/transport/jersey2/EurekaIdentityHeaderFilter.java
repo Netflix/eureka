@@ -2,8 +2,8 @@ package com.netflix.discovery.shared.transport.jersey2;
 
 import java.io.IOException;
 
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientRequestFilter;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
 
 import com.netflix.appinfo.AbstractEurekaIdentity;
 

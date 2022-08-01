@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
-import javax.ws.rs.client.ClientRequestFilter;
+import jakarta.ws.rs.client.ClientRequestFilter;
 
 import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.appinfo.InstanceInfo;

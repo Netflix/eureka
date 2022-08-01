@@ -9,15 +9,17 @@ dependencies {
     compile "com.netflix.netflix-commons:netflix-eventbus:0.3.0"
     compile 'com.thoughtworks.xstream:xstream:1.4.18'
     compile "com.netflix.archaius:archaius-core:${archaiusVersion}"
-    compile 'javax.ws.rs:jsr311-api:1.1.1'
+    compile 'jakarta.ws.rs:jakarta.ws.rs-api:3.0.0'
+    compile 'jakarta.inject:jakarta.inject-api:2.0.1'
     compile "com.netflix.servo:servo-core:${servoVersion}"
-    compile "com.sun.jersey:jersey-core:${jerseyVersion}"
-    compile "com.sun.jersey:jersey-client:${jerseyVersion}"
-    compile "com.sun.jersey.contribs:jersey-apache-client4:${jerseyVersion}"
+    // compile "com.sun.jersey:jersey-core:${jerseyVersion}"
+    // compile "com.sun.jersey:jersey-client:${jerseyVersion}"
+    // compile "com.sun.jersey.contribs:jersey-apache-client4:${jerseyVersion}"
     compile "org.apache.httpcomponents:httpclient:${apacheHttpClientVersion}"
     compile "com.google.code.findbugs:jsr305:${jsr305Version}"
     compile "commons-configuration:commons-configuration:${commonsConfigurationVersion}"
-    compile "com.google.inject:guice:${guiceVersion}"
+    //compile "com.google.inject:guice:${guiceVersion}"
+    compile 'com.guicedee.services:guice:1.2.2.1'
 
     compile "com.github.vlsi.compactmap:compactmap:2.0"
 
@@ -34,7 +36,8 @@ dependencies {
 
     testCompile project(':eureka-test-utils')
     testCompile "junit:junit:${junit_version}"
-    testCompile 'org.mortbay.jetty:jetty:6.1H.22'
+    testCompile 'org.eclipse.jetty:jetty-server:11.0.11'
+    testCompile 'org.eclipse.jetty:jetty-servlet:11.0.11'
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
     testCompile "org.mock-server:mockserver-netty:${mockserverVersion}"
     testCompile "com.netflix.governator:governator:${governatorVersion}"

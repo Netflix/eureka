@@ -15,12 +15,13 @@ import com.netflix.discovery.converters.jackson.EurekaJsonJacksonCodec;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.*;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
-import org.mortbay.jetty.Request;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.servlet.FilterHolder;
-import org.mortbay.jetty.servlet.ServletHandler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletHandler;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -51,7 +52,8 @@ public class MockRemoteEurekaServer extends ExternalResource {
         handler.addFilterWithMapping(ServerRequestAuthFilter.class, "/*", 1).setFilter(new ServerRequestAuthFilter(serverContext));
         handler.addFilterWithMapping(RateLimitingFilter.class, "/*", 1).setFilter(new RateLimitingFilter(serverContext));
         server = new Server(port);
-        server.addHandler(handler);
+        // FIXME: 2.0
+        server.setHandler(handler);
         System.out.println(String.format(
                 "Created eureka server mock with applications map %s and applications delta map %s",
                 stringifyAppMap(applicationMap), stringifyAppMap(applicationDeltaMap)));
@@ -73,7 +75,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
 
     public void start() throws Exception {
         server.start();
-        port = server.getConnectors()[0].getLocalPort();
+        port = ((NetworkConnector) server.getConnectors()[0]).getLocalPort();
     }
 
     public void stop() throws Exception {
@@ -105,7 +107,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
     private class AppsResourceHandler extends ServletHandler {
 
         @Override
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response, int dispatch)
+        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 throws IOException, ServletException {
 
             if (simulateNotReady) {

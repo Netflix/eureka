@@ -1,6 +1,6 @@
 package com.netflix.appinfo.providers;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
 
 import com.google.inject.Inject;
 import com.netflix.appinfo.EurekaInstanceConfig;

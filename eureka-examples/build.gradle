@@ -3,6 +3,7 @@ apply plugin: 'application'
 dependencies {
     compile project(':eureka-client')
     compile files('conf')
+    compile 'jakarta.inject:jakarta.inject-api:2.0.1'
 
     compile "com.netflix.governator:governator:${governatorVersion}"
     runtimeOnly 'org.slf4j:slf4j-simple:1.7.7'

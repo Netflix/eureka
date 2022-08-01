@@ -16,8 +16,8 @@
 
 package com.netflix.discovery.shared.transport.decorator;
 
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.dns.DnsService;

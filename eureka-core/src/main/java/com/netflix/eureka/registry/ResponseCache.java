@@ -1,6 +1,6 @@
 package com.netflix.eureka.registry;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**

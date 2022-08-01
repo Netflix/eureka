@@ -3,7 +3,7 @@ package com.netflix.discovery;
 import java.util.List;
 import java.util.Set;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import com.google.inject.ImplementedBy;
 import com.netflix.appinfo.ApplicationInfoManager;

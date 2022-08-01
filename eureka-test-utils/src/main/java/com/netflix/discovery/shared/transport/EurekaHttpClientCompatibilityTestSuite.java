@@ -16,8 +16,8 @@
 
 package com.netflix.discovery.shared.transport;
 
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;

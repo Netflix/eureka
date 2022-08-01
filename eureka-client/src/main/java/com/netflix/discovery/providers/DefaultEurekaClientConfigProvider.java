@@ -1,6 +1,6 @@
 package com.netflix.discovery.providers;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
 
 import com.google.inject.Inject;
 import com.netflix.discovery.DefaultEurekaClientConfig;

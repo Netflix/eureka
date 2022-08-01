@@ -15,8 +15,8 @@
  */
 package com.netflix.eureka.registry;
 
-import javax.inject.Inject;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.core.MediaType;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -52,9 +52,9 @@ import com.netflix.eureka.transport.EurekaServerHttpClients;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
-import com.sun.jersey.client.apache4.ApacheHttpClient4;
+//import com.sun.jersey.api.client.ClientResponse;
+//import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
+//import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +75,7 @@ import static com.netflix.eureka.Names.METRIC_REGISTRY_PREFIX;
 public class RemoteRegionRegistry implements LookupService<String> {
     private static final Logger logger = LoggerFactory.getLogger(RemoteRegionRegistry.class);
 
-    private final ApacheHttpClient4 discoveryApacheClient;
+//    private final ApacheHttpClient4 discoveryApacheClient;
 //    private final EurekaJerseyClient discoveryJerseyClient;
     private final com.netflix.servo.monitor.Timer fetchRegistryTimer;
     private final URL remoteRegionURL;
@@ -128,8 +128,8 @@ public class RemoteRegionRegistry implements LookupService<String> {
                     );
         }
         discoveryJerseyClient = clientBuilder.build();
-         */
         discoveryApacheClient = null; // discoveryJerseyClient.getClient();
+         */
 
         // should we enable GZip decoding of responses based on Response Headers?
         if (serverConfig.shouldGZipContentFromRemoteRegion()) {
@@ -363,10 +363,10 @@ public class RemoteRegionRegistry implements LookupService<String> {
      * @param response
      *            the HttpResponse object.
      */
-    private void closeResponse(ClientResponse response) {
+    private void closeResponse(/*ClientResponse*/ Object response) {
         if (response != null) {
             try {
-                response.close();
+                // response.close();
             } catch (Throwable th) {
                 logger.error("Cannot release response resource :", th);
             }
@@ -416,7 +416,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
                 logger.error("Can't get a response from {}", this.remoteRegionURL, t);
             }
         } else {
-            ClientResponse response = null;
+            /*ClientResponse response = null;
             try {
                 String urlPath = delta ? "apps/delta" : "apps/";
 
@@ -433,7 +433,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
                 logger.error("Can't get a response from {}", this.remoteRegionURL, t);
             } finally {
                 closeResponse(response);
-            }
+            }*/
         }
         return null;
     }

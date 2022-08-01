@@ -1,8 +1,8 @@
 package com.netflix.discovery;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 
 import com.google.common.base.Supplier;
 import com.google.inject.AbstractModule;

@@ -5,8 +5,8 @@ import com.netflix.archaius.api.annotations.ConfigurationSource;
 import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.internal.util.InternalPrefixedConfig;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import static com.netflix.appinfo.PropertyBasedAmazonInfoConfigConstants.*;
 

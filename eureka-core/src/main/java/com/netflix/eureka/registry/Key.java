@@ -3,7 +3,7 @@ package com.netflix.eureka.registry;
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.eureka.Version;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.util.Arrays;
 
 public class Key {

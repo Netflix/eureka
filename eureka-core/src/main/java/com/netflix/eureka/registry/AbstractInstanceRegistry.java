@@ -16,7 +16,7 @@
 
 package com.netflix.eureka.registry;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.AbstractQueue;

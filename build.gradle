@@ -36,7 +36,6 @@ allprojects {
 
         awsVersion = '1.11.277'
         servletVersion = '5.0.0'
-        jerseyVersion = '1.19.1'
         jettisonVersion = '1.4.0'
         apacheHttpClientVersion = '4.5.3'
         commonsConfigurationVersion = '1.10'
@@ -52,7 +51,7 @@ allprojects {
         // test deps
         jetty_version = '7.2.0.v20101020'
         junit_version = '4.11'
-        mockitoVersion = '1.10.19'
+        mockitoVersion = '4.6.1'
         mockserverVersion = '3.9.2'
     }
 }

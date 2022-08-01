@@ -1,7 +1,7 @@
 package com.netflix.appinfo.providers;
 
-import javax.inject.Singleton;
-import javax.inject.Provider;
+import jakarta.inject.Singleton;
+import jakarta.inject.Provider;
 import java.util.Map;
 
 import com.google.inject.Inject;

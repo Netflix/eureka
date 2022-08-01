@@ -3,8 +3,8 @@ package com.netflix.appinfo;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import com.google.common.collect.Sets;
 import com.netflix.archaius.api.Config;

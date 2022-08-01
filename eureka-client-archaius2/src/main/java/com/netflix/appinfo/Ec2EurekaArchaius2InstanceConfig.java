@@ -1,8 +1,8 @@
 package com.netflix.appinfo;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 
 import com.netflix.discovery.CommonConstants;
 import org.slf4j.Logger;

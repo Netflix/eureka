@@ -1,8 +1,8 @@
 package com.netflix.discovery.shared.transport.jersey2;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.Invocation.Builder;
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.Invocation.Builder;
+import jakarta.ws.rs.core.MultivaluedMap;
 import java.util.List;
 import java.util.Map;
 

@@ -16,7 +16,7 @@
 
 package com.netflix.discovery.shared;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.util.AbstractQueue;
 import java.util.ArrayList;
 import java.util.Collections;

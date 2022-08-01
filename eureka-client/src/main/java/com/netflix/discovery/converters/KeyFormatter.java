@@ -1,7 +1,7 @@
 package com.netflix.discovery.converters;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import com.netflix.discovery.EurekaClientConfig;
 

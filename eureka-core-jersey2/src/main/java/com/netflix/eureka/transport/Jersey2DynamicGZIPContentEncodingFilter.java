@@ -2,11 +2,11 @@ package com.netflix.eureka.transport;
 
 import com.netflix.eureka.EurekaServerConfig;
 
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientRequestFilter;
-import javax.ws.rs.client.ClientResponseContext;
-import javax.ws.rs.client.ClientResponseFilter;
-import javax.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
+import jakarta.ws.rs.client.ClientResponseContext;
+import jakarta.ws.rs.client.ClientResponseFilter;
+import jakarta.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 
 public class Jersey2DynamicGZIPContentEncodingFilter implements ClientRequestFilter, ClientResponseFilter {

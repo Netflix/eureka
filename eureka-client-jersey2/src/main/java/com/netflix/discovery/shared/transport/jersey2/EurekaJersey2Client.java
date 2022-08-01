@@ -1,6 +1,6 @@
 package com.netflix.discovery.shared.transport.jersey2;
 
-import javax.ws.rs.client.Client;
+import jakarta.ws.rs.client.Client;
 
 /**
  * @author David Liu
