@@ -141,6 +141,29 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
     }
 
     @Override
+    public EurekaHttpResponse<Void> updateMetadata(String appName, String id, String key, String value) {
+        String urlPath = "apps/" + appName + '/' + id + "/metadata";
+        ClientResponse response = null;
+        try {
+            Builder requestBuilder = jerseyClient.resource(serviceUrl)
+                    .path(urlPath)
+                    .queryParam("key", key)
+                    .queryParam("value", value)
+                    .getRequestBuilder();
+            addExtraHeaders(requestBuilder);
+            response = requestBuilder.put(ClientResponse.class);
+            return anEurekaHttpResponse(response.getStatus()).headers(headersOf(response)).build();
+        } finally {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Jersey HTTP PUT {}{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
+            }
+            if (response != null) {
+                response.close();
+            }
+        }
+    }
+
+    @Override
     public EurekaHttpResponse<Void> deleteStatusOverride(String appName, String id, InstanceInfo info) {
         String urlPath = "apps/" + appName + '/' + id + "/status";
         ClientResponse response = null;

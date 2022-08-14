@@ -1817,4 +1817,40 @@ public class DiscoveryClient implements EurekaClient {
 
     }
 
+    /**
+     * Update status with the eureka service by making the appropriate REST call.
+     */
+    public boolean updateStatus(InstanceStatus newStatus) throws Throwable {
+        logger.info(PREFIX + "{}: update status...", appPathIdentifier);
+        EurekaHttpResponse<Void> httpResponse;
+        try {
+            httpResponse = eurekaTransport.registrationClient.statusUpdate(instanceInfo.getAppName(), instanceInfo.getId(), newStatus, instanceInfo);
+        } catch (Exception e) {
+            logger.warn(PREFIX + "{} - update status {}", appPathIdentifier, e.getMessage(), e);
+            throw e;
+        }
+        if (logger.isInfoEnabled()) {
+            logger.info(PREFIX + "{} - update status: {}", appPathIdentifier, httpResponse.getStatusCode());
+        }
+        return httpResponse.getStatusCode() == Status.NO_CONTENT.getStatusCode();
+    }
+
+    /**
+     * Update metadata with the eureka service by making the appropriate REST call.
+     */
+    public boolean updateMetadata(String key, String value) throws Throwable {
+        logger.info(PREFIX + "{}: update status...", appPathIdentifier);
+        EurekaHttpResponse<Void> httpResponse;
+        try {
+            httpResponse = eurekaTransport.registrationClient.updateMetadata(instanceInfo.getAppName(), instanceInfo.getId(), key, value);
+        } catch (Exception e) {
+            logger.warn(PREFIX + "{} - update status {}", appPathIdentifier, e.getMessage(), e);
+            throw e;
+        }
+        if (logger.isInfoEnabled()) {
+            logger.info(PREFIX + "{} - update status: {}", appPathIdentifier, httpResponse.getStatusCode());
+        }
+        return httpResponse.getStatusCode() == Status.NO_CONTENT.getStatusCode();
+    }
+
 }

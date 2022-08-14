@@ -40,7 +40,8 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
         GetSecureVip,
         GetApplication,
         GetInstance,
-        GetApplicationInstance
+        GetApplicationInstance,
+        UpdateMetadata,
     }
 
     public interface RequestExecutor<R> {
@@ -95,6 +96,21 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
             @Override
             public RequestType getRequestType() {
                 return RequestType.SendHeartBeat;
+            }
+        });
+    }
+
+    @Override
+    public EurekaHttpResponse<Void> updateMetadata(final String appName, final String id, final String key, final String value) {
+        return execute(new RequestExecutor<Void>() {
+            @Override
+            public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
+                return delegate.updateMetadata(appName, id, key, value);
+            }
+
+            @Override
+            public RequestType getRequestType() {
+                return RequestType.UpdateMetadata;
             }
         });
     }

@@ -143,6 +143,11 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
     }
 
     @Override
+    public EurekaHttpResponse<Void> updateMetadata(String appName, String id, String key, String value) {
+        throw new IllegalStateException("method not supported");
+    }
+
+    @Override
     public EurekaHttpResponse<InstanceInfo> getInstance(String appName, String id) {
         throw new IllegalStateException("method not supported");
     }
@@ -183,7 +188,7 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
     public void shutdown() {
     }
 
-    public enum RequestType {Heartbeat, Register, Cancel, StatusUpdate, DeleteStatusOverride, AsgStatusUpdate, Batch}
+    public enum RequestType {Heartbeat, Register, Cancel, StatusUpdate, DeleteStatusOverride, AsgStatusUpdate, Batch, UpdateMetadata}
 
     public static class HandledRequest {
         private final RequestType requestType;

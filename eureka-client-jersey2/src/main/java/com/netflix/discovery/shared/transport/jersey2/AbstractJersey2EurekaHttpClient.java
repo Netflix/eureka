@@ -205,6 +205,30 @@ public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClien
     }
 
     @Override
+    public EurekaHttpResponse<Void> updateMetadata(String appName, String id, String key, String value) {
+        String urlPath = "apps/" + appName + '/' + id + "/metadata";
+        Response response = null;
+        try {
+            Builder requestBuilder = jerseyClient.target(serviceUrl)
+                    .path(urlPath)
+                    .queryParam("key", key)
+                    .queryParam("value", value)
+                    .request();
+            addExtraProperties(requestBuilder);
+            addExtraHeaders(requestBuilder);
+            response = requestBuilder.put(Entity.entity("{}", MediaType.APPLICATION_JSON_TYPE)); // Jersey2 refuses to handle PUT with no body
+            return anEurekaHttpResponse(response.getStatus()).headers(headersOf(response)).build();
+        } finally {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Jersey2 HTTP PUT {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
+            }
+            if (response != null) {
+                response.close();
+            }
+        }
+    }
+
+    @Override
     public EurekaHttpResponse<Applications> getApplications(String... regions) {
         return getApplicationsInternal("apps/", regions);
     }

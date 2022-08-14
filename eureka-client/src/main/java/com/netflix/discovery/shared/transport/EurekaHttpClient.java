@@ -36,5 +36,7 @@ public interface EurekaHttpClient {
 
     EurekaHttpResponse<InstanceInfo> getInstance(String id);
 
+    EurekaHttpResponse<Void> updateMetadata(String appName, String id, String key, String value);
+
     void shutdown();
 }
