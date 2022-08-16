@@ -147,8 +147,7 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         try {
             Builder requestBuilder = jerseyClient.resource(serviceUrl)
                     .path(urlPath)
-                    .queryParam("key", key)
-                    .queryParam("value", value)
+                    .queryParam(key, value)
                     .getRequestBuilder();
             addExtraHeaders(requestBuilder);
             response = requestBuilder.put(ClientResponse.class);
