@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Netflix, Inc.
+ * Copyright 2022 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,29 +14,19 @@
  * limitations under the License.
  */
 
-apply plugin: 'nebula.test-jar'
-
-configurations.all {
-    // jersey1
-    exclude group: 'com.sun.jersey'
-    exclude group: 'com.sun.jersey.contribs'
-    exclude module: 'jsr311-api'
-}
-
 dependencies {
-    compile project(':eureka-client')
-    compile 'org.glassfish.jersey.core:jersey-client:3.0.5'
-    compile 'org.glassfish.jersey.inject:jersey-hk2:3.0.5'
-    compile 'org.glassfish.jersey.connectors:jersey-apache-connector:3.0.5'
+    testCompile project(':eureka-core-jersey2')
 
     testCompile (project(':eureka-test-utils')) {
         // exclude all transitives to avoid bringing in jersey1 eureka-core
         transitive = false
     }
-    // bring in jersey2 compatible eureka-core-jersey2 directly
-    testCompile project(':eureka-core-jersey2')
 
+    testCompile project(':eureka-test-utils')
     testCompile "junit:junit:${junit_version}"
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
-    testCompile "com.netflix.governator:governator:${governatorVersion}"
+    testCompile 'org.eclipse.jetty:jetty-server:11.0.11'
+    testCompile 'org.eclipse.jetty:jetty-servlet:11.0.11'
+    testRuntime 'org.slf4j:slf4j-simple:2.0.0-beta1'
+
 }

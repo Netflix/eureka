@@ -15,6 +15,7 @@ import com.netflix.discovery.converters.jackson.EurekaJsonJacksonCodec;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.*;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
@@ -137,6 +138,9 @@ public class MockRemoteEurekaServer extends ExternalResource {
             }
 
             String pathInfo = request.getPathInfo();
+            if (pathInfo == null) {
+                pathInfo = target; // FIXME: 2.0
+            }
             System.out.println(
                     "Eureka resource mock, received request on path: " + pathInfo + ". HTTP method: |" + request
                             .getMethod() + '|');

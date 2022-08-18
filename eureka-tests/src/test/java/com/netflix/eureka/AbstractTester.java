@@ -1,8 +1,14 @@
 package com.netflix.eureka;
 
+import com.netflix.discovery.Jersey2DiscoveryClientOptionalArgs;
+import com.netflix.discovery.shared.resolver.DefaultEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
+import com.netflix.discovery.shared.transport.jersey2.AbstractJersey2EurekaHttpClient;
+import com.netflix.discovery.shared.transport.jersey2.Jersey2ApplicationClientFactory;
+import com.netflix.discovery.shared.transport.jersey2.Jersey2TransportClientFactories;
 import jakarta.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,8 +82,9 @@ public class AbstractTester {
         mockRemoteEurekaServer = newMockRemoteServer();
         mockRemoteEurekaServer.start();
 
+        String serviceUri = "http://localhost:" + mockRemoteEurekaServer.getPort() + MockRemoteEurekaServer.EUREKA_API_BASE_PATH;
         ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegionUrlsWithName",
-                REMOTE_REGION_NAME + ";http://localhost:" + mockRemoteEurekaServer.getPort() + MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
+                REMOTE_REGION_NAME + ";" + serviceUri);
 
         serverConfig = spy(new DefaultEurekaServerConfig());
         InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
@@ -87,17 +94,20 @@ public class AbstractTester {
         builder.setLeaseInfo(LeaseInfo.Builder.newBuilder().build());
         builder.setDataCenterInfo(getDataCenterInfo());
 
-        ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
-                "http://localhost:" + mockRemoteEurekaServer.getPort() + MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
+        ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default", serviceUri);
 
         DefaultEurekaClientConfig clientConfig = new DefaultEurekaClientConfig();
         // setup config in advance, used in initialize converter
-        ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), builder.build());
+        InstanceInfo instanceInfo = builder.build();
+        ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), instanceInfo);
 
-        client = new DiscoveryClient(applicationInfoManager, clientConfig);
+        Jersey2DiscoveryClientOptionalArgs args = new Jersey2DiscoveryClientOptionalArgs();
+        args.setTransportClientFactories(new Jersey2TransportClientFactories());
+        client = new DiscoveryClient(applicationInfoManager, clientConfig, args);
 
         ServerCodecs serverCodecs = new DefaultServerCodecs(serverConfig);
-        EurekaHttpClient eurekaHttpClient = null; // FIXME 2.0
+        EurekaHttpClient eurekaHttpClient = Jersey2TransportClientFactories.getInstance().newTransportClientFactory(clientConfig,
+                Collections.emptyList(), instanceInfo).newClient(new DefaultEndpoint(serviceUri));
         registry = makePeerAwareInstanceRegistry(serverConfig, clientConfig, serverCodecs, client, eurekaHttpClient);
         serverContext = new DefaultEurekaServerContext(
                 serverConfig,

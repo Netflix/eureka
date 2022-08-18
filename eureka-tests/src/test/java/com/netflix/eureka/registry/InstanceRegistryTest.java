@@ -13,7 +13,9 @@ import com.netflix.eureka.AbstractTester;
 import com.netflix.eureka.registry.AbstractInstanceRegistry.CircularQueue;
 import com.netflix.eureka.registry.AbstractInstanceRegistry.EvictionTask;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -26,12 +28,14 @@ import static org.mockito.Mockito.when;
 public class InstanceRegistryTest extends AbstractTester {
 
     @Test
+    //@Ignore
     public void testSoftDepRemoteUp() throws Exception {
         Assert.assertTrue("Registry access disallowed when remote region is UP.", registry.shouldAllowAccess(false));
         Assert.assertTrue("Registry access disallowed when remote region is UP.", registry.shouldAllowAccess(true));
     }
 
     @Test
+    //@Ignore
     public void testGetAppsFromAllRemoteRegions() throws Exception {
         Applications apps = registry.getApplicationsFromAllRemoteRegions();
         List<Application> registeredApplications = apps.getRegisteredApplications();
@@ -67,6 +71,7 @@ public class InstanceRegistryTest extends AbstractTester {
     }
 
     @Test
+    //@Ignore
     public void testAppsHashCodeAfterRefresh() throws InterruptedException {
         Assert.assertEquals("UP_1_", registry.getApplicationsFromAllRemoteRegions().getAppsHashCode());
 
@@ -90,6 +95,7 @@ public class InstanceRegistryTest extends AbstractTester {
     }
 
     @Test
+    //@Ignore
     public void testGetAppsFromLocalRegionOnly() throws Exception {
         registerInstanceLocally(createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME));
 
@@ -102,6 +108,7 @@ public class InstanceRegistryTest extends AbstractTester {
     }
 
     @Test
+    //@Ignore
     public void testGetAppsFromBothRegions() throws Exception {
         registerInstanceLocally(createRemoteInstance(LOCAL_REGION_INSTANCE_2_HOSTNAME));
         registerInstanceLocally(createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME));
@@ -129,6 +136,7 @@ public class InstanceRegistryTest extends AbstractTester {
     }
 
     @Test
+    //@Ignore
     public void testStatusOverrideSetAndRemoval() throws Exception {
         InstanceInfo seed = createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
         seed.setLastDirtyTimestamp(100l);
@@ -162,6 +170,7 @@ public class InstanceRegistryTest extends AbstractTester {
     }
 
     @Test
+    //@Ignore
     public void testStatusOverrideWithRenewAppliedToAReplica() throws Exception {
         InstanceInfo seed = createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
         seed.setLastDirtyTimestamp(100l);
@@ -200,6 +209,7 @@ public class InstanceRegistryTest extends AbstractTester {
     }
 
     @Test
+    //@Ignore
     public void testStatusOverrideStartingStatus() throws Exception {
         // Regular registration first
         InstanceInfo myInstance = createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
@@ -219,6 +229,7 @@ public class InstanceRegistryTest extends AbstractTester {
     }
 
     @Test
+    //@Ignore
     public void testStatusOverrideWithExistingLeaseUp() throws Exception {
         // Without an override we expect to get the existing UP lease when we re-register with OUT_OF_SERVICE.
         // First, we are "up".
@@ -238,6 +249,7 @@ public class InstanceRegistryTest extends AbstractTester {
     }
 
     @Test
+    //@Ignore
     public void testStatusOverrideWithExistingLeaseOutOfService() throws Exception {
         // Without an override we expect to get the existing OUT_OF_SERVICE lease when we re-register with UP.
         // First, we are "out of service".
@@ -257,10 +269,11 @@ public class InstanceRegistryTest extends AbstractTester {
     }
 
     @Test
+    //@Ignore
     public void testEvictionTaskCompensationTime() throws Exception {
         long evictionTaskPeriodNanos = serverConfig.getEvictionIntervalTimerInMs() * 1000000;
 
-        AbstractInstanceRegistry.EvictionTask testTask = spy(registry.new EvictionTask());
+        AbstractInstanceRegistry.EvictionTask testTask = Mockito.spy(registry.new EvictionTask());
 
         when(testTask.getCurrentTimeNano())
                 .thenReturn(1l)  // less than the period
@@ -275,6 +288,7 @@ public class InstanceRegistryTest extends AbstractTester {
     }
 
     @Test
+    //@Ignore
     public void testCircularQueue() throws Exception {
         CircularQueue<Integer> queue = new CircularQueue<>(5);
 

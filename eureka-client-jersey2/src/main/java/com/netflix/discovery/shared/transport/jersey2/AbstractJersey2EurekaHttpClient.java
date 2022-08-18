@@ -266,6 +266,9 @@ public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClien
                 applications = response.readEntity(Applications.class);
             }
             return anEurekaHttpResponse(response.getStatus(), applications).headers(headersOf(response)).build();
+        } catch (Exception e) {
+            logger.debug("Error getting applications", e);
+            throw new RuntimeException(e);
         } finally {
             if (logger.isDebugEnabled()) {
                 logger.debug("Jersey2 HTTP GET {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
