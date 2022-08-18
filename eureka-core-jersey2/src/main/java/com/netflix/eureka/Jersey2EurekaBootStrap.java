@@ -3,6 +3,7 @@ package com.netflix.eureka;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.eureka.cluster.Jersey2PeerEurekaNodes;
 import com.netflix.eureka.cluster.PeerEurekaNodes;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
@@ -29,5 +30,11 @@ public class Jersey2EurekaBootStrap extends EurekaBootStrap {
         );
         
         return peerEurekaNodes;
+    }
+
+    @Override
+    protected EurekaHttpClient getEurekaHttpClient() {
+        // FIXME 2.0
+        return null;
     }
 }

@@ -36,6 +36,7 @@ import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.eureka.registry.rule.DownOrStartingRule;
 import com.netflix.eureka.registry.rule.FirstMatchWinsCompositeRule;
 import com.netflix.eureka.registry.rule.InstanceStatusOverrideRule;
@@ -131,9 +132,9 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             EurekaServerConfig serverConfig,
             EurekaClientConfig clientConfig,
             ServerCodecs serverCodecs,
-            EurekaClient eurekaClient
+            EurekaClient eurekaClient, EurekaHttpClient eurekaHttpClient
     ) {
-        super(serverConfig, clientConfig, serverCodecs);
+        super(serverConfig, clientConfig, serverCodecs, eurekaHttpClient);
         this.eurekaClient = eurekaClient;
         this.numberOfReplicationsLastMin = new MeasuredRate(1000 * 60 * 1);
         // We first check if the instance is STARTING or DOWN, then we check explicit overrides,

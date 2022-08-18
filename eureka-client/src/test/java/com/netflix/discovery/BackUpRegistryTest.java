@@ -14,6 +14,7 @@ import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.resolver.ResolverUtils;
+import jakarta.inject.Provider;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -73,7 +74,7 @@ public class BackUpRegistryTest {
                 applicationInfoManager,
                 new DefaultEurekaClientConfig(),
                 null,
-                Providers.of((BackupRegistry)backupRegistry),
+                () -> backupRegistry,
                 ResolverUtils::randomize
         );
     }

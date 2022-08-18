@@ -26,7 +26,7 @@ import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.TransportException;
 import org.junit.Test;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 
 import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEurekaHttpResponse;
 import static org.junit.Assert.fail;
@@ -50,7 +50,7 @@ public class RedirectingEurekaHttpClientTest {
     private final DnsService dnsService = mock(DnsService.class);
 
     public void setupRedirect() {
-        when(factory.newClient(Matchers.<EurekaEndpoint>anyVararg())).thenReturn(sourceClient, redirectedClient);
+        when(factory.newClient(ArgumentMatchers.any())).thenReturn(sourceClient, redirectedClient);
         when(sourceClient.getApplications()).thenReturn(
                 anEurekaHttpResponse(302, Applications.class)
                         .headers(HttpHeaders.LOCATION, "http://another.discovery.test/eureka/v2/apps")
@@ -64,7 +64,7 @@ public class RedirectingEurekaHttpClientTest {
 
     @Test
     public void testNonRedirectedRequestsAreServedByFirstClient() throws Exception {
-        when(factory.newClient(Matchers.<EurekaEndpoint>anyVararg())).thenReturn(sourceClient);
+        when(factory.newClient(ArgumentMatchers.any())).thenReturn(sourceClient);
         when(sourceClient.getApplications()).thenReturn(
                 anEurekaHttpResponse(200, new Applications()).type(MediaType.APPLICATION_JSON_TYPE).build()
         );
@@ -72,7 +72,7 @@ public class RedirectingEurekaHttpClientTest {
         RedirectingEurekaHttpClient httpClient = new RedirectingEurekaHttpClient(SERVICE_URL, factory, dnsService);
         httpClient.getApplications();
 
-        verify(factory, times(1)).newClient(Matchers.<EurekaEndpoint>anyVararg());
+        verify(factory, times(1)).newClient(ArgumentMatchers.any());
         verify(sourceClient, times(1)).getApplications();
     }
 
@@ -85,7 +85,7 @@ public class RedirectingEurekaHttpClientTest {
         // First call pins client to resolved IP
         httpClient.getApplications();
 
-        verify(factory, times(2)).newClient(Matchers.<EurekaEndpoint>anyVararg());
+        verify(factory, times(2)).newClient(ArgumentMatchers.any());
         verify(sourceClient, times(1)).getApplications();
         verify(dnsService, times(1)).resolveIp("another.discovery.test");
         verify(redirectedClient, times(1)).getApplications();
@@ -93,7 +93,7 @@ public class RedirectingEurekaHttpClientTest {
         // Second call goes straight to the same address
         httpClient.getApplications();
 
-        verify(factory, times(2)).newClient(Matchers.<EurekaEndpoint>anyVararg());
+        verify(factory, times(2)).newClient(ArgumentMatchers.any());
         verify(sourceClient, times(1)).getApplications();
         verify(dnsService, times(1)).resolveIp("another.discovery.test");
         verify(redirectedClient, times(2)).getApplications();
@@ -123,7 +123,7 @@ public class RedirectingEurekaHttpClientTest {
 
         httpClient.getApplications();
 
-        verify(factory, times(2)).newClient(Matchers.<EurekaEndpoint>anyVararg());
+        verify(factory, times(2)).newClient(ArgumentMatchers.any());
         verify(sourceClient, times(1)).getApplications();
         verify(dnsService, times(1)).resolveIp("another.discovery.test");
         verify(redirectedClient, times(1)).getApplications();

@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import jakarta.annotation.Nullable;
 import jakarta.annotation.PreDestroy;
 import jakarta.inject.Provider;
@@ -475,23 +476,17 @@ public class DiscoveryClient implements EurekaClient {
                 ? Collections.emptyList()
                 : args.additionalFilters;
 
-        // FIXME: 2.0 Jersey 1 is no longer default
-
-        /*EurekaJerseyClient providedJerseyClient = args == null
-                ? null
-                : args.eurekaJerseyClient;
-        
-        TransportClientFactories argsTransportClientFactories = null;
-        if (args != null && args.getTransportClientFactories() != null) {
-            argsTransportClientFactories = args.getTransportClientFactories();
-        }
-        
-        // Ignore the raw types warnings since the client filter interface changed between jersey 1/2
         @SuppressWarnings("rawtypes")
-        TransportClientFactories transportClientFactories = argsTransportClientFactories == null
-                ? new Jersey1TransportClientFactories()
-                : argsTransportClientFactories;*/
-                
+        // Ignore the raw types warnings since the client filter interface changed between jersey 1/2
+        TransportClientFactories transportClientFactories = null;
+        if (args != null && args.getTransportClientFactories() != null) {
+            transportClientFactories = args.getTransportClientFactories();
+        }
+
+        if (transportClientFactories == null) {
+            throw new IllegalArgumentException("transportClientFactories may not be null");
+        }
+
         Optional<SSLContext> sslContext = args == null
                 ? Optional.empty()
                 : args.getSSLContext();
@@ -500,9 +495,8 @@ public class DiscoveryClient implements EurekaClient {
                 : args.getHostnameVerifier();
 
         // If the transport factory was not supplied with args, assume they are using jersey 1 for passivity
-        /* eurekaTransport.transportClientFactory = providedJerseyClient == null
-                ? transportClientFactories.newTransportClientFactory(clientConfig, additionalFilters, applicationInfoManager.getInfo(), sslContext, hostnameVerifier)
-                : transportClientFactories.newTransportClientFactory(additionalFilters, providedJerseyClient); */
+        eurekaTransport.transportClientFactory = transportClientFactories.newTransportClientFactory(clientConfig,
+                additionalFilters, applicationInfoManager.getInfo(), sslContext, hostnameVerifier);
 
         ApplicationsResolver.ApplicationsSource applicationsSource = new ApplicationsResolver.ApplicationsSource() {
             @Override

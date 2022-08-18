@@ -1,5 +1,6 @@
 package com.netflix.eureka;
 
+import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import jakarta.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -96,7 +97,8 @@ public class AbstractTester {
         client = new DiscoveryClient(applicationInfoManager, clientConfig);
 
         ServerCodecs serverCodecs = new DefaultServerCodecs(serverConfig);
-        registry = makePeerAwareInstanceRegistry(serverConfig, clientConfig, serverCodecs, client);
+        EurekaHttpClient eurekaHttpClient = null; // FIXME 2.0
+        registry = makePeerAwareInstanceRegistry(serverConfig, clientConfig, serverCodecs, client, eurekaHttpClient);
         serverContext = new DefaultEurekaServerContext(
                 serverConfig,
                 serverCodecs,
@@ -120,10 +122,10 @@ public class AbstractTester {
     }
 
     protected PeerAwareInstanceRegistryImpl makePeerAwareInstanceRegistry(EurekaServerConfig serverConfig,
-                                                                      EurekaClientConfig clientConfig,
-                                                                      ServerCodecs serverCodecs,
-                                                                      EurekaClient eurekaClient) {
-        return new TestPeerAwareInstanceRegistry(serverConfig, clientConfig, serverCodecs, eurekaClient);
+                                                                          EurekaClientConfig clientConfig,
+                                                                          ServerCodecs serverCodecs,
+                                                                          EurekaClient eurekaClient, EurekaHttpClient eurekaHttpClient) {
+        return new TestPeerAwareInstanceRegistry(serverConfig, clientConfig, serverCodecs, eurekaHttpClient, eurekaClient);
     }
 
     protected MockRemoteEurekaServer newMockRemoteServer() {
@@ -229,8 +231,9 @@ public class AbstractTester {
         public TestPeerAwareInstanceRegistry(EurekaServerConfig serverConfig,
                                              EurekaClientConfig clientConfig,
                                              ServerCodecs serverCodecs,
+                                             EurekaHttpClient eurekaHttpClient,
                                              EurekaClient eurekaClient) {
-            super(serverConfig, clientConfig, serverCodecs, eurekaClient);
+            super(serverConfig, clientConfig, serverCodecs, eurekaClient, eurekaHttpClient);
         }
 
         @Override

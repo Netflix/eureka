@@ -16,6 +16,7 @@
 
 package com.netflix.eureka;
 
+import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
@@ -64,7 +65,7 @@ import org.slf4j.LoggerFactory;
  * @author Karthik Ranganathan, Greg Kim, David Liu
  *
  */
-public class EurekaBootStrap implements ServletContextListener {
+public abstract class EurekaBootStrap implements ServletContextListener {
     private static final Logger logger = LoggerFactory.getLogger(EurekaBootStrap.class);
 
     private static final String TEST = "test";
@@ -171,13 +172,15 @@ public class EurekaBootStrap implements ServletContextListener {
             applicationInfoManager = eurekaClient.getApplicationInfoManager();
         }
 
+        EurekaHttpClient eurekaHttpClient = getEurekaHttpClient();
+
         PeerAwareInstanceRegistry registry;
         if (isAws(applicationInfoManager.getInfo())) {
             registry = new AwsInstanceRegistry(
                     eurekaServerConfig,
                     eurekaClient.getEurekaClientConfig(),
                     serverCodecs,
-                    eurekaClient
+                    eurekaClient, eurekaHttpClient
             );
             awsBinder = new AwsBinderDelegate(eurekaServerConfig, eurekaClient.getEurekaClientConfig(), registry, applicationInfoManager);
             awsBinder.start();
@@ -186,7 +189,7 @@ public class EurekaBootStrap implements ServletContextListener {
                     eurekaServerConfig,
                     eurekaClient.getEurekaClientConfig(),
                     serverCodecs,
-                    eurekaClient
+                    eurekaClient, eurekaHttpClient
             );
         }
 
@@ -218,18 +221,10 @@ public class EurekaBootStrap implements ServletContextListener {
         // Register all monitoring statistics.
         EurekaMonitors.registerAllStats();
     }
-    
-    protected PeerEurekaNodes getPeerEurekaNodes(PeerAwareInstanceRegistry registry, EurekaServerConfig eurekaServerConfig, EurekaClientConfig eurekaClientConfig, ServerCodecs serverCodecs, ApplicationInfoManager applicationInfoManager) {
-        PeerEurekaNodes peerEurekaNodes = new PeerEurekaNodes(
-                registry,
-                eurekaServerConfig,
-                eurekaClientConfig,
-                serverCodecs,
-                applicationInfoManager
-        );
-        
-        return peerEurekaNodes;
-    }
+
+    protected abstract EurekaHttpClient getEurekaHttpClient();
+
+    protected abstract PeerEurekaNodes getPeerEurekaNodes(PeerAwareInstanceRegistry registry, EurekaServerConfig eurekaServerConfig, EurekaClientConfig eurekaClientConfig, ServerCodecs serverCodecs, ApplicationInfoManager applicationInfoManager);
 
     /**
      * Handles Eureka cleanup, including shutting down all monitors and yielding all EIPs.

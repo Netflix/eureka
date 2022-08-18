@@ -1,5 +1,6 @@
 package com.netflix.discovery.junit.resource;
 
+import com.netflix.discovery.Jersey2DiscoveryClientOptionalArgs;
 import jakarta.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.ArrayList;
@@ -96,8 +97,7 @@ public class DiscoveryClientResource extends ExternalResource {
                 applicationInfoManager = createApplicationManager();
                 EurekaClientConfig clientConfig = createEurekaClientConfig();
 
-                // FIXME 2.0
-                AbstractDiscoveryClientOptionalArgs optionalArgs = null; //new Jersey1DiscoveryClientOptionalArgs();
+                AbstractDiscoveryClientOptionalArgs optionalArgs = new Jersey2DiscoveryClientOptionalArgs();
                 eventBus = new EventBusImpl();
                 optionalArgs.setEventBus(eventBus);
 

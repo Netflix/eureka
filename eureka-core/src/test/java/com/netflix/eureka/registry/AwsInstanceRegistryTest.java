@@ -7,6 +7,7 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.LeaseInfo;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.resources.ServerCodecs;
 import org.junit.Test;
@@ -70,10 +71,10 @@ public class AwsInstanceRegistryTest extends InstanceRegistryTest {
 
     @Override
     protected PeerAwareInstanceRegistryImpl makePeerAwareInstanceRegistry(EurekaServerConfig serverConfig,
-                                                                      EurekaClientConfig clientConfig,
-                                                                      ServerCodecs serverCodecs,
-                                                                      EurekaClient eurekaClient) {
-        return new TestAwsInstanceRegistry(serverConfig, clientConfig, serverCodecs, eurekaClient);
+                                                                          EurekaClientConfig clientConfig,
+                                                                          ServerCodecs serverCodecs,
+                                                                          EurekaClient eurekaClient, EurekaHttpClient eurekaHttpClient) {
+        return new TestAwsInstanceRegistry(serverConfig, clientConfig, serverCodecs, eurekaHttpClient, eurekaClient);
     }
 
 
@@ -82,8 +83,9 @@ public class AwsInstanceRegistryTest extends InstanceRegistryTest {
         public TestAwsInstanceRegistry(EurekaServerConfig serverConfig,
                                              EurekaClientConfig clientConfig,
                                              ServerCodecs serverCodecs,
+                                             EurekaHttpClient eurekaHttpClient,
                                              EurekaClient eurekaClient) {
-            super(serverConfig, clientConfig, serverCodecs, eurekaClient);
+            super(serverConfig, clientConfig, serverCodecs, eurekaClient, eurekaHttpClient);
         }
 
         @Override

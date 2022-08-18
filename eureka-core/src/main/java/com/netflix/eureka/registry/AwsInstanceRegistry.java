@@ -18,6 +18,7 @@ package com.netflix.eureka.registry;
 
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.aws.AwsAsgUtil;
 import com.netflix.eureka.cluster.PeerEurekaNodes;
@@ -48,8 +49,8 @@ public class AwsInstanceRegistry extends PeerAwareInstanceRegistryImpl {
     public AwsInstanceRegistry(EurekaServerConfig serverConfig,
                                EurekaClientConfig clientConfig,
                                ServerCodecs serverCodecs,
-                               EurekaClient eurekaClient) {
-        super(serverConfig, clientConfig, serverCodecs, eurekaClient);
+                               EurekaClient eurekaClient, EurekaHttpClient eurekaHttpClient) {
+        super(serverConfig, clientConfig, serverCodecs, eurekaClient, eurekaHttpClient);
     }
 
     @Override

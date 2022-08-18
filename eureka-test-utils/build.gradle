@@ -1,5 +1,5 @@
 dependencies {
-    compile project(':eureka-core')
+    compile project(':eureka-core-jersey2')
     compile "junit:junit:${junit_version}"
     compile "org.mockito:mockito-core:${mockitoVersion}"
 }

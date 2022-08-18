@@ -83,7 +83,12 @@ public class StatusUtilTest {
         EurekaServerConfig mockServerConfig = mock(EurekaServerConfig.class);
         when(mockServerConfig.getHealthStatusMinNumberOfAvailablePeers()).thenReturn(minimum);
         
-        PeerEurekaNodes peerEurekaNodes = new PeerEurekaNodes(mockRegistry, mockServerConfig, mockClientConfig, null, mockAppInfoManager);
+        PeerEurekaNodes peerEurekaNodes = new PeerEurekaNodes(mockRegistry, mockServerConfig, mockClientConfig, null, mockAppInfoManager) {
+            @Override
+            protected PeerEurekaNode createPeerEurekaNode(String peerEurekaNodeUrl) {
+                return null;
+            }
+        };
         PeerEurekaNodes spyPeerEurekaNodes = spy(peerEurekaNodes);
         when(spyPeerEurekaNodes.getPeerEurekaNodes()).thenReturn(mockNodes);
         

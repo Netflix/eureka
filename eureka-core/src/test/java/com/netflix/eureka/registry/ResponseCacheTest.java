@@ -2,6 +2,7 @@ package com.netflix.eureka.registry;
 
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.discovery.DefaultEurekaClientConfig;
+import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.eureka.AbstractTester;
 import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfig;
@@ -32,11 +33,12 @@ public class ResponseCacheTest extends AbstractTester {
         EurekaServerConfig serverConfig = spy(new DefaultEurekaServerConfig());
         doReturn(true).when(serverConfig).disableTransparentFallbackToOtherRegion();
 
+        EurekaHttpClient eurekaHttpClient = null; // FIXME 2.0
         testRegistry = new PeerAwareInstanceRegistryImpl(
                 serverConfig,
                 new DefaultEurekaClientConfig(),
                 new DefaultServerCodecs(serverConfig),
-                client
+                client, eurekaHttpClient
         );
         testRegistry.init(serverContext.getPeerEurekaNodes());
         testRegistry.syncUp();

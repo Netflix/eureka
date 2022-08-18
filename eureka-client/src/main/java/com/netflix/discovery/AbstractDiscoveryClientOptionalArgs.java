@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import jakarta.inject.Provider;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
@@ -29,7 +30,9 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
     Collection<T> additionalFilters;
 
     TransportClientFactory transportClientFactory;
-    
+
+    TransportClientFactories transportClientFactories;
+
     private Set<EurekaEventListener> eventListeners;
 
     private Optional<SSLContext> sslContext = Optional.empty();
@@ -77,6 +80,24 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
     @Inject(optional = true) 
     public void setAdditionalFilters(Collection<T> additionalFilters) {
         this.additionalFilters = additionalFilters;
+    }
+
+    public TransportClientFactories getTransportClientFactories() {
+        return transportClientFactories;
+    }
+
+    @Inject(optional = true)
+    public void setTransportClientFactories(TransportClientFactories transportClientFactories) {
+        this.transportClientFactories = transportClientFactories;
+    }
+
+
+    public TransportClientFactory getTransportClientFactory() {
+        return transportClientFactory;
+    }
+
+    public void setTransportClientFactory(TransportClientFactory transportClientFactory) {
+        this.transportClientFactory = transportClientFactory;
     }
 
     Set<EurekaEventListener> getEventListeners() {

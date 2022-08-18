@@ -96,8 +96,9 @@ public class RemoteRegionRegistry implements LookupService<String> {
 
     @Inject
     public RemoteRegionRegistry(EurekaServerConfig serverConfig,
-                                EurekaClientConfig clientConfig,
-                                ServerCodecs serverCodecs,
+//                                EurekaClientConfig clientConfig,
+//                                ServerCodecs serverCodecs,
+                                EurekaHttpClient eurekaHttpClient,
                                 String regionName,
                                 URL remoteRegionURL) {
         this.serverConfig = serverConfig;
@@ -138,26 +139,26 @@ public class RemoteRegionRegistry implements LookupService<String> {
             // discoveryApacheClient.addFilter(new GZIPContentEncodingFilter(false));
         }
 
-        String ip = null;
+        /*String ip = null;
         try {
             ip = InetAddress.getLocalHost().getHostAddress();
         } catch (UnknownHostException e) {
             logger.warn("Cannot find localhost ip", e);
         }
-        EurekaServerIdentity identity = new EurekaServerIdentity(ip);
+        EurekaServerIdentity identity = new EurekaServerIdentity(ip);*/
         // FIXME 2.0
         // discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
 
         // Configure new transport layer (candidate for injecting in the future)
-        EurekaHttpClient newEurekaHttpClient = null;
+        /*EurekaHttpClient newEurekaHttpClient = null;
         try {
             ClusterResolver clusterResolver = StaticClusterResolver.fromURL(regionName, remoteRegionURL);
             newEurekaHttpClient = EurekaServerHttpClients.createRemoteRegionClient(
                     serverConfig, clientConfig.getTransportConfig(), serverCodecs, clusterResolver);
         } catch (Exception e) {
             logger.warn("Transport initialization failure", e);
-        }
-        this.eurekaHttpClient = newEurekaHttpClient;
+        }*/
+        this.eurekaHttpClient = eurekaHttpClient;
 
         try {
             if (fetchRegistry()) {
@@ -400,10 +401,10 @@ public class RemoteRegionRegistry implements LookupService<String> {
      * @param delta - true, if the fetch needs to get deltas, false otherwise
      * @return - response which has information about the data.
      */
-    private Applications fetchRemoteRegistry(boolean delta) {
+    protected Applications fetchRemoteRegistry(boolean delta) {
         logger.info("Getting instance registry info from the eureka server : {} , delta : {}", this.remoteRegionURL, delta);
 
-        if (shouldUseExperimentalTransport()) {
+//        if (shouldUseExperimentalTransport()) {
             try {
                 EurekaHttpResponse<Applications> httpResponse = delta ? eurekaHttpClient.getDelta() : eurekaHttpClient.getApplications();
                 int httpStatus = httpResponse.getStatusCode();
@@ -415,7 +416,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
             } catch (Throwable t) {
                 logger.error("Can't get a response from {}", this.remoteRegionURL, t);
             }
-        } else {
+//        } else {
             /*ClientResponse response = null;
             try {
                 String urlPath = delta ? "apps/delta" : "apps/";
@@ -434,18 +435,18 @@ public class RemoteRegionRegistry implements LookupService<String> {
             } finally {
                 closeResponse(response);
             }*/
-        }
+//        }
         return null;
     }
 
-    /**
-     * Reconciles the delta information fetched to see if the hashcodes match.
-     *
-     * @param delta - the delta information fetched previously for reconciliation.
-     * @param reconcileHashCode - the hashcode for comparison.
-     * @return - response
-     * @throws Throwable
-     */
+        /**
+         * Reconciles the delta information fetched to see if the hashcodes match.
+         *
+         * @param delta - the delta information fetched previously for reconciliation.
+         * @param reconcileHashCode - the hashcode for comparison.
+         * @return - response
+         * @throws Throwable
+         */
     private boolean reconcileAndLogDifference(Applications delta, String reconcileHashCode) throws Throwable {
         logger.warn("The Reconcile hashcodes do not match, client : {}, server : {}. Getting the full registry",
                 reconcileHashCode, delta.getAppsHashCode());
@@ -515,13 +516,13 @@ public class RemoteRegionRegistry implements LookupService<String> {
         return this.applicationsDelta.get();
     }
 
-    private boolean shouldUseExperimentalTransport() {
+    /*private boolean shouldUseExperimentalTransport() {
         if (eurekaHttpClient == null) {
             return false;
         }
         String enabled = serverConfig.getExperimental("transport.enabled");
         return enabled != null && "true".equalsIgnoreCase(enabled);
-    }
+    }*/
 
     @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "secondsSinceLastSuccessfulRemoteFetch", type = DataSourceType.GAUGE)
     public long getTimeOfLastSuccessfulRemoteFetch() {

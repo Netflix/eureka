@@ -18,6 +18,7 @@ dependencies {
     compile "org.apache.httpcomponents:httpclient:${apacheHttpClientVersion}"
     compile "com.google.code.findbugs:jsr305:${jsr305Version}"
     compile "commons-configuration:commons-configuration:${commonsConfigurationVersion}"
+    // https://github.com/google/guice/issues/1383
     //compile "com.google.inject:guice:${guiceVersion}"
     compile 'com.guicedee.services:guice:1.2.2.1'
 

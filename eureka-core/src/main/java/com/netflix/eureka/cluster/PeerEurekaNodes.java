@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
  * @author Tomasz Bak
  */
 @Singleton
-public class PeerEurekaNodes {
+public abstract class PeerEurekaNodes {
 
     private static final Logger logger = LoggerFactory.getLogger(PeerEurekaNodes.class);
 
@@ -193,14 +193,7 @@ public class PeerEurekaNodes {
         this.peerEurekaNodeUrls = new HashSet<>(newPeerUrls);
     }
 
-    protected PeerEurekaNode createPeerEurekaNode(String peerEurekaNodeUrl) {
-        HttpReplicationClient replicationClient = null; // FIXME 2.0 JerseyReplicationClient.createReplicationClient(serverConfig, serverCodecs, peerEurekaNodeUrl);
-        String targetHost = hostFromUrl(peerEurekaNodeUrl);
-        if (targetHost == null) {
-            targetHost = "host";
-        }
-        return new PeerEurekaNode(registry, targetHost, peerEurekaNodeUrl, replicationClient, serverConfig);
-    }
+    protected abstract PeerEurekaNode createPeerEurekaNode(String peerEurekaNodeUrl);
 
     /**
      * @deprecated 2016-06-27 use instance version of {@link #isThisMyUrl(String)}
