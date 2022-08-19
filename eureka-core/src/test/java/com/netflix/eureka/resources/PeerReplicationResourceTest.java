@@ -20,6 +20,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -105,7 +106,7 @@ public class PeerReplicationResourceTest {
 
     @Test
     public void testStatusUpdate() throws Exception {
-        when(instanceResource.statusUpdate(anyString(), anyString(), anyString())).thenReturn(Response.ok().build());
+        when(instanceResource.statusUpdate(any(), any(), any())).thenReturn(Response.ok().build());
 
         ReplicationInstance replicationInstance = newReplicationInstanceOf(Action.StatusUpdate, instanceInfo);
         Response response = peerReplicationResource.batchReplication(new ReplicationList(replicationInstance));
@@ -120,7 +121,7 @@ public class PeerReplicationResourceTest {
 
     @Test
     public void testDeleteStatusOverride() throws Exception {
-        when(instanceResource.deleteStatusUpdate(anyString(), anyString(), anyString())).thenReturn(Response.ok().build());
+        when(instanceResource.deleteStatusUpdate(any(), any(), any())).thenReturn(Response.ok().build());
 
         ReplicationInstance replicationInstance = newReplicationInstanceOf(Action.DeleteStatusOverride, instanceInfo);
         Response response = peerReplicationResource.batchReplication(new ReplicationList(replicationInstance));
