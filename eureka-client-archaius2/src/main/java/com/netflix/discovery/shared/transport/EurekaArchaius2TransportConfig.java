@@ -1,6 +1,6 @@
 package com.netflix.discovery.shared.transport;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
 import com.netflix.discovery.CommonConstants;

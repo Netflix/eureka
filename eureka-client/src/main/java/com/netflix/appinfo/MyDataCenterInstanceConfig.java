@@ -15,7 +15,6 @@
  */
 package com.netflix.appinfo;
 
-import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.providers.MyDataCenterInstanceConfigProvider;
 
 import jakarta.inject.Singleton;
@@ -27,7 +26,6 @@ import jakarta.inject.Singleton;
  *
  */
 @Singleton
-@ProvidedBy(MyDataCenterInstanceConfigProvider.class)
 public class MyDataCenterInstanceConfig extends PropertiesInstanceConfig implements EurekaInstanceConfig {
 
     public MyDataCenterInstanceConfig() {

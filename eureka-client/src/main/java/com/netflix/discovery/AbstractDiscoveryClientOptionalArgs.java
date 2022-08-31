@@ -11,7 +11,7 @@ import jakarta.inject.Provider;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.netflix.appinfo.HealthCheckCallback;
 import com.netflix.appinfo.HealthCheckHandler;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
@@ -39,7 +39,7 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
 
     private Optional<HostnameVerifier> hostnameVerifier = Optional.empty();
 
-    @Inject(optional = true)
+    @Inject
     public void setEventListeners(Set<EurekaEventListener> listeners) {
         if (eventListeners == null) {
             eventListeners = new HashSet<>();
@@ -47,7 +47,7 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
         eventListeners.addAll(listeners);
     }
     
-    @Inject(optional = true)
+    @Inject
     public void setEventBus(final EventBus eventBus) {
         if (eventListeners == null) {
             eventListeners = new HashSet<>();
@@ -61,23 +61,23 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
         });
     }
 
-    @Inject(optional = true) 
+    @Inject
     public void setHealthCheckCallbackProvider(Provider<HealthCheckCallback> healthCheckCallbackProvider) {
         this.healthCheckCallbackProvider = healthCheckCallbackProvider;
     }
 
-    @Inject(optional = true) 
+    @Inject
     public void setHealthCheckHandlerProvider(Provider<HealthCheckHandler> healthCheckHandlerProvider) {
         this.healthCheckHandlerProvider = healthCheckHandlerProvider;
     }
 
-    @Inject(optional = true)
+    @Inject
     public void setPreRegistrationHandler(PreRegistrationHandler preRegistrationHandler) {
         this.preRegistrationHandler = preRegistrationHandler;
     }
 
 
-    @Inject(optional = true) 
+    @Inject
     public void setAdditionalFilters(Collection<T> additionalFilters) {
         this.additionalFilters = additionalFilters;
     }
@@ -86,7 +86,7 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
         return transportClientFactories;
     }
 
-    @Inject(optional = true)
+    @Inject
     public void setTransportClientFactories(TransportClientFactories transportClientFactories) {
         this.transportClientFactories = transportClientFactories;
     }
@@ -108,7 +108,7 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
         return sslContext;
     }
 
-    @Inject(optional = true)
+    @Inject
     public void setSSLContext(SSLContext sslContext) {
         this.sslContext = Optional.of(sslContext);
     }
@@ -117,7 +117,7 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
         return hostnameVerifier;
     }
 
-    @Inject(optional = true)
+    @Inject
     public void setHostnameVerifier(HostnameVerifier hostnameVerifier) {
         this.hostnameVerifier = Optional.of(hostnameVerifier);
     }

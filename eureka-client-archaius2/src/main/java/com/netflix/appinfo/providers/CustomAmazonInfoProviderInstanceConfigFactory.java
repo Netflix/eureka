@@ -7,7 +7,7 @@ import com.netflix.archaius.api.Config;
 import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.DiscoveryManager;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
@@ -19,7 +19,7 @@ public class CustomAmazonInfoProviderInstanceConfigFactory implements EurekaInst
     private final Provider<AmazonInfo> amazonInfoProvider;
     private EurekaInstanceConfig eurekaInstanceConfig;
 
-    @Inject(optional = true)
+    @Inject
     @Named(CommonConstants.INSTANCE_CONFIG_NAMESPACE_KEY)
     String instanceConfigNamespace;
 

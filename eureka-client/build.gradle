@@ -11,6 +11,7 @@ dependencies {
     compile "com.netflix.archaius:archaius-core:${archaiusVersion}"
     compile 'jakarta.ws.rs:jakarta.ws.rs-api:3.0.0'
     compile 'jakarta.inject:jakarta.inject-api:2.0.1'
+    compile 'jakarta.annotation:jakarta.annotation-api:2.1.0'
     compile "com.netflix.servo:servo-core:${servoVersion}"
     // compile "com.sun.jersey:jersey-core:${jerseyVersion}"
     // compile "com.sun.jersey:jersey-client:${jerseyVersion}"
@@ -18,9 +19,6 @@ dependencies {
     compile "org.apache.httpcomponents:httpclient:${apacheHttpClientVersion}"
     compile "com.google.code.findbugs:jsr305:${jsr305Version}"
     compile "commons-configuration:commons-configuration:${commonsConfigurationVersion}"
-    // https://github.com/google/guice/issues/1383
-    //compile "com.google.inject:guice:${guiceVersion}"
-    compile 'com.guicedee.services:guice:1.2.2.1'
 
     compile "com.github.vlsi.compactmap:compactmap:2.0"
 
@@ -41,7 +39,6 @@ dependencies {
     testCompile 'org.eclipse.jetty:jetty-servlet:11.0.11'
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
     testCompile "org.mock-server:mockserver-netty:${mockserverVersion}"
-    testCompile "com.netflix.governator:governator:${governatorVersion}"
     testCompile "com.github.tomakehurst:wiremock-jre8:2.25.1"
     testCompile "org.assertj:assertj-core:3.11.1"
     testCompile "jakarta.servlet:jakarta.servlet-api:5.0.0"

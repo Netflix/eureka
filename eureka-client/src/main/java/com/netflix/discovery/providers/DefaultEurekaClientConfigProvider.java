@@ -1,8 +1,8 @@
 package com.netflix.discovery.providers;
 
 import jakarta.inject.Provider;
+import jakarta.inject.Inject;
 
-import com.google.inject.Inject;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClientConfig;
@@ -14,7 +14,7 @@ import com.netflix.discovery.EurekaNamespace;
  */
 public class DefaultEurekaClientConfigProvider implements Provider<EurekaClientConfig> {
 
-    @Inject(optional = true)
+    @Inject
     @EurekaNamespace
     private String namespace;
 

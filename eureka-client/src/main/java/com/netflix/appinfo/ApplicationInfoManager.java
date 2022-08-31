@@ -66,7 +66,6 @@ public class ApplicationInfoManager {
     public static class OptionalArgs {
         private InstanceStatusMapper instanceStatusMapper;
 
-        @com.google.inject.Inject(optional = true)
         public void setInstanceStatusMapper(InstanceStatusMapper instanceStatusMapper) {
             this.instanceStatusMapper = instanceStatusMapper;
         }

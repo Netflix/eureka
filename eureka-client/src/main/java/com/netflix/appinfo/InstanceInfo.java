@@ -28,7 +28,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRootName;
-import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.providers.Archaius1VipAddressResolver;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.appinfo.providers.VipAddressResolver;
@@ -51,7 +50,6 @@ import org.slf4j.LoggerFactory;
  *
  * @author Karthik Ranganathan, Greg Kim
  */
-@ProvidedBy(EurekaConfigBasedInstanceInfoProvider.class)
 @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("instance")
 @JsonRootName("instance")

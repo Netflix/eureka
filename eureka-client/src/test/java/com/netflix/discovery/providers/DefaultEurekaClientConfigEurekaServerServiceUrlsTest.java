@@ -18,14 +18,9 @@ package com.netflix.discovery.providers;
 
 import java.util.List;
 
-import com.google.inject.Injector;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.DefaultEurekaClientConfig;
-import com.netflix.discovery.EurekaNamespace;
-import com.netflix.governator.guice.BootstrapBinder;
-import com.netflix.governator.guice.BootstrapModule;
-import com.netflix.governator.guice.LifecycleInjector;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -35,29 +30,9 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Tomasz Bak
  */
-public class DefaultEurekaClientConfigProviderTest {
+public class DefaultEurekaClientConfigEurekaServerServiceUrlsTest {
 
     private static final String SERVICE_URI = "http://my.eureka.server:8080/";
-
-    @Test
-    public void testNameSpaceInjection() throws Exception {
-        ConfigurationManager.getConfigInstance().setProperty("testnamespace.serviceUrl.default", SERVICE_URI);
-
-        Injector injector = LifecycleInjector.builder()
-                .withBootstrapModule(new BootstrapModule() {
-                    @Override
-                    public void configure(BootstrapBinder binder) {
-                        binder.bind(String.class).annotatedWith(EurekaNamespace.class).toInstance("testnamespace.");
-                    }
-                })
-                .build()
-                .createInjector();
-
-        DefaultEurekaClientConfig clientConfig = injector.getInstance(DefaultEurekaClientConfig.class);
-
-        List<String> serviceUrls = clientConfig.getEurekaServerServiceUrls("default");
-        assertThat(serviceUrls.get(0), is(equalTo(SERVICE_URI)));
-    }
 
     @Test
     public void testURLSeparator() throws Exception {

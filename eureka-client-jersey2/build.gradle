@@ -38,5 +38,4 @@ dependencies {
 
     testCompile "junit:junit:${junit_version}"
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
-    testCompile "com.netflix.governator:governator:${governatorVersion}"
 }

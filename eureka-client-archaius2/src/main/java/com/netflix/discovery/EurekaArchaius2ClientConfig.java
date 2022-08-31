@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;

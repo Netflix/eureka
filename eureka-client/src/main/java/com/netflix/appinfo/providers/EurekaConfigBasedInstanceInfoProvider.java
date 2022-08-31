@@ -4,7 +4,7 @@ import jakarta.inject.Singleton;
 import jakarta.inject.Provider;
 import java.util.Map;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.InstanceInfo;
@@ -34,7 +34,7 @@ public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceI
 
     private InstanceInfo instanceInfo;
 
-    @Inject(optional = true)
+    @Inject
     private VipAddressResolver vipAddressResolver = null;
 
     @Inject

@@ -2,7 +2,7 @@ package com.netflix.appinfo.providers;
 
 import jakarta.inject.Provider;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.netflix.appinfo.CloudInstanceConfig;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaNamespace;
@@ -12,7 +12,7 @@ import com.netflix.discovery.EurekaNamespace;
  * @author elandau
  */
 public class CloudInstanceConfigProvider implements Provider<CloudInstanceConfig> {
-    @Inject(optional = true)
+    @Inject
     @EurekaNamespace
     private String namespace;
 

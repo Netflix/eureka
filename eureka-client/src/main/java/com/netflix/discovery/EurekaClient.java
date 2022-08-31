@@ -5,7 +5,6 @@ import java.util.Set;
 
 import jakarta.annotation.Nullable;
 
-import com.google.inject.ImplementedBy;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.HealthCheckCallback;
 import com.netflix.appinfo.HealthCheckHandler;
@@ -26,7 +25,6 @@ import com.netflix.discovery.shared.LookupService;
  *
  * @author David Liu
  */
-@ImplementedBy(DiscoveryClient.class)
 public interface EurekaClient extends LookupService {
 
     // ========================

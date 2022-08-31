@@ -4,7 +4,6 @@ import jakarta.annotation.Nullable;
 import java.util.List;
 import java.util.UUID;
 
-import com.google.inject.util.Providers;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.DataCenterInfo;
@@ -14,7 +13,6 @@ import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.resolver.ResolverUtils;
-import jakarta.inject.Provider;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
