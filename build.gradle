@@ -47,7 +47,7 @@ allprojects {
         woodstoxVersion = '5.2.1'
 
         // test deps
-        jetty_version = '7.2.0.v20101020'
+        jetty_version = '11.0.11'
         junit_version = '4.11'
         mockitoVersion = '4.6.1'
         mockserverVersion = '3.9.2'

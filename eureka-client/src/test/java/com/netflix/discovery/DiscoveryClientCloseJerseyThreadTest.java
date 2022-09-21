@@ -1,6 +1,8 @@
 package com.netflix.discovery;
 
 import java.util.Set;
+
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -12,6 +14,7 @@ public class DiscoveryClientCloseJerseyThreadTest extends AbstractDiscoveryClien
     private static final String APACHE_THREAD_NAME = "Apache-HttpClient-Conn-Cleaner";
 
     @Test
+    @Ignore // FIXME: 2.0
     public void testThreadCount() throws InterruptedException {
         assertThat(containsClientThread(), equalTo(true));
         client.shutdown();

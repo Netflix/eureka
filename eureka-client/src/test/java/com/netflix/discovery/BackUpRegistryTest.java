@@ -1,5 +1,6 @@
 package com.netflix.discovery;
 
+import com.netflix.discovery.shared.transport.jersey3.Jersey3TransportClientFactories;
 import jakarta.annotation.Nullable;
 import java.util.List;
 import java.util.UUID;
@@ -68,10 +69,12 @@ public class BackUpRegistryTest {
 
         backupRegistry = new MockBackupRegistry();
         setupBackupMock();
+        Jersey3DiscoveryClientOptionalArgs args = new Jersey3DiscoveryClientOptionalArgs();
+        args.setTransportClientFactories(Jersey3TransportClientFactories.getInstance());
         client = new DiscoveryClient(
                 applicationInfoManager,
                 new DefaultEurekaClientConfig(),
-                null,
+                args,
                 () -> backupRegistry,
                 ResolverUtils::randomize
         );
