@@ -1,11 +1,9 @@
 package com.netflix.eureka;
 
-import com.netflix.discovery.Jersey2DiscoveryClientOptionalArgs;
+import com.netflix.discovery.Jersey3DiscoveryClientOptionalArgs;
 import com.netflix.discovery.shared.resolver.DefaultEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
-import com.netflix.discovery.shared.transport.jersey2.AbstractJersey2EurekaHttpClient;
-import com.netflix.discovery.shared.transport.jersey2.Jersey2ApplicationClientFactory;
-import com.netflix.discovery.shared.transport.jersey2.Jersey2TransportClientFactories;
+import com.netflix.discovery.shared.transport.jersey3.Jersey3TransportClientFactories;
 import jakarta.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -101,12 +99,12 @@ public class AbstractTester {
         InstanceInfo instanceInfo = builder.build();
         ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), instanceInfo);
 
-        Jersey2DiscoveryClientOptionalArgs args = new Jersey2DiscoveryClientOptionalArgs();
-        args.setTransportClientFactories(new Jersey2TransportClientFactories());
+        Jersey3DiscoveryClientOptionalArgs args = new Jersey3DiscoveryClientOptionalArgs();
+        args.setTransportClientFactories(new Jersey3TransportClientFactories());
         client = new DiscoveryClient(applicationInfoManager, clientConfig, args);
 
         ServerCodecs serverCodecs = new DefaultServerCodecs(serverConfig);
-        EurekaHttpClient eurekaHttpClient = Jersey2TransportClientFactories.getInstance().newTransportClientFactory(clientConfig,
+        EurekaHttpClient eurekaHttpClient = Jersey3TransportClientFactories.getInstance().newTransportClientFactory(clientConfig,
                 Collections.emptyList(), instanceInfo).newClient(new DefaultEndpoint(serviceUri));
         registry = makePeerAwareInstanceRegistry(serverConfig, clientConfig, serverCodecs, client, eurekaHttpClient);
         serverContext = new DefaultEurekaServerContext(

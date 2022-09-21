@@ -8,7 +8,7 @@ import com.netflix.eureka.EurekaServerContextHolder;
 import org.glassfish.jersey.internal.inject.AbstractBinder;
 
 /**
- * Jersey2 binder for the EurekaServerContext. Replaces the GuiceFilter in the server WAR web.xml
+ * Jersey3 binder for the EurekaServerContext. Replaces the GuiceFilter in the server WAR web.xml
  * @author Matt Nelson
  */
 public class EurekaServerContextBinder extends AbstractBinder {

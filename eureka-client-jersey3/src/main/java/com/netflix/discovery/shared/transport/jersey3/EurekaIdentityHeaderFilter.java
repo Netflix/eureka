@@ -1,4 +1,4 @@
-package com.netflix.discovery.shared.transport.jersey2;
+package com.netflix.discovery.shared.transport.jersey3;
 
 import java.io.IOException;
 

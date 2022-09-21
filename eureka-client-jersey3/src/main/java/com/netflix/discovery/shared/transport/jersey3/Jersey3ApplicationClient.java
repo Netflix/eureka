@@ -1,4 +1,4 @@
-package com.netflix.discovery.shared.transport.jersey2;
+package com.netflix.discovery.shared.transport.jersey3;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.Invocation.Builder;
@@ -7,15 +7,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A version of Jersey2 {@link com.netflix.discovery.shared.transport.EurekaHttpClient} to be used by applications.
+ * A version of Jersey3 {@link com.netflix.discovery.shared.transport.EurekaHttpClient} to be used by applications.
  *
  * @author David Liu
  */
-public class Jersey2ApplicationClient extends AbstractJersey2EurekaHttpClient {
+public class Jersey3ApplicationClient extends AbstractJersey3EurekaHttpClient {
 
     private final MultivaluedMap<String, Object> additionalHeaders;
 
-    public Jersey2ApplicationClient(Client jerseyClient, String serviceUrl, MultivaluedMap<String, Object> additionalHeaders) {
+    public Jersey3ApplicationClient(Client jerseyClient, String serviceUrl, MultivaluedMap<String, Object> additionalHeaders) {
         super(jerseyClient, serviceUrl);
         this.additionalHeaders = additionalHeaders;
     }

@@ -40,13 +40,13 @@ import static org.mockserver.model.HttpResponse.response;
  *
  * @author Tomasz Bak
  */
-public class Jersey2ReplicationClientTest {
+public class Jersey3ReplicationClientTest {
 
     @Rule
     public MockServerRule serverMockRule = new MockServerRule(this);
     private MockServerClient serverMockClient;
 
-    private Jersey2ReplicationClient replicationClient;
+    private Jersey3ReplicationClient replicationClient;
 
     private final EurekaServerConfig config = new DefaultEurekaServerConfig();
     private final ServerCodecs serverCodecs = new DefaultServerCodecs(config);
@@ -54,7 +54,7 @@ public class Jersey2ReplicationClientTest {
 
     @Before
     public void setUp() throws Exception {
-        replicationClient = Jersey2ReplicationClient.createReplicationClient(
+        replicationClient = Jersey3ReplicationClient.createReplicationClient(
                 config, serverCodecs, "http://localhost:" + serverMockRule.getHttpPort() + "/eureka/v2"
         );
     }

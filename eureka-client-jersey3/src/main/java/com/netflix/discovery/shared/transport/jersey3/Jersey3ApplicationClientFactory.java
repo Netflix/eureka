@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.discovery.shared.transport.jersey2;
+package com.netflix.discovery.shared.transport.jersey3;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
@@ -55,43 +55,43 @@ import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
 /**
  * @author Tomasz Bak
  */
-public class Jersey2ApplicationClientFactory implements TransportClientFactory {
+public class Jersey3ApplicationClientFactory implements TransportClientFactory {
 
     public static final String HTTP_X_DISCOVERY_ALLOW_REDIRECT = "X-Discovery-AllowRedirect";
     private static final String KEY_STORE_TYPE = "JKS";
 
-    private final Client jersey2Client;
+    private final Client jersey3Client;
     private final MultivaluedMap<String, Object> additionalHeaders;
 
-    public Jersey2ApplicationClientFactory(Client jersey2Client, MultivaluedMap<String, Object> additionalHeaders) {
-        this.jersey2Client = jersey2Client;
+    public Jersey3ApplicationClientFactory(Client jersey3Client, MultivaluedMap<String, Object> additionalHeaders) {
+        this.jersey3Client = jersey3Client;
         this.additionalHeaders = additionalHeaders;
     }
 
     @Override
     public EurekaHttpClient newClient(EurekaEndpoint endpoint) {
-        return new Jersey2ApplicationClient(jersey2Client, endpoint.getServiceUrl(), additionalHeaders);
+        return new Jersey3ApplicationClient(jersey3Client, endpoint.getServiceUrl(), additionalHeaders);
     }
 
     @Override
     public void shutdown() {
-        jersey2Client.close();
+        jersey3Client.close();
     }
     
-    public static Jersey2ApplicationClientFactory create(EurekaClientConfig clientConfig,
-            Collection<ClientRequestFilter> additionalFilters,
-            InstanceInfo myInstanceInfo,
-            AbstractEurekaIdentity clientIdentity) {
+    public static Jersey3ApplicationClientFactory create(EurekaClientConfig clientConfig,
+                                                         Collection<ClientRequestFilter> additionalFilters,
+                                                         InstanceInfo myInstanceInfo,
+                                                         AbstractEurekaIdentity clientIdentity) {
         return create(clientConfig, additionalFilters, myInstanceInfo, clientIdentity, Optional.empty(), Optional.empty());
     }
     
-    public static Jersey2ApplicationClientFactory create(EurekaClientConfig clientConfig,
-            Collection<ClientRequestFilter> additionalFilters,
-            InstanceInfo myInstanceInfo,
-            AbstractEurekaIdentity clientIdentity,
-            Optional<SSLContext> sslContext,
-            Optional<HostnameVerifier> hostnameVerifier) {
-        Jersey2ApplicationClientFactoryBuilder clientBuilder = newBuilder();
+    public static Jersey3ApplicationClientFactory create(EurekaClientConfig clientConfig,
+                                                         Collection<ClientRequestFilter> additionalFilters,
+                                                         InstanceInfo myInstanceInfo,
+                                                         AbstractEurekaIdentity clientIdentity,
+                                                         Optional<SSLContext> sslContext,
+                                                         Optional<HostnameVerifier> hostnameVerifier) {
+        Jersey3ApplicationClientFactoryBuilder clientBuilder = newBuilder();
         clientBuilder.withAdditionalFilters(additionalFilters);
         clientBuilder.withMyInstanceInfo(myInstanceInfo);
         clientBuilder.withUserAgent("Java-EurekaClient");
@@ -115,21 +115,21 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
         return clientBuilder.build();
     }
 
-    public static Jersey2ApplicationClientFactoryBuilder newBuilder() {
-        return new Jersey2ApplicationClientFactoryBuilder();
+    public static Jersey3ApplicationClientFactoryBuilder newBuilder() {
+        return new Jersey3ApplicationClientFactoryBuilder();
     }
 
-    public static class Jersey2ApplicationClientFactoryBuilder extends EurekaClientFactoryBuilder<Jersey2ApplicationClientFactory, Jersey2ApplicationClientFactoryBuilder> {
+    public static class Jersey3ApplicationClientFactoryBuilder extends EurekaClientFactoryBuilder<Jersey3ApplicationClientFactory, Jersey3ApplicationClientFactoryBuilder> {
 
         private List<Feature> features = new ArrayList<>();
         private List<ClientRequestFilter> additionalFilters = new ArrayList<>();
 
-        public Jersey2ApplicationClientFactoryBuilder withFeature(Feature feature) {
+        public Jersey3ApplicationClientFactoryBuilder withFeature(Feature feature) {
             features.add(feature);
             return this;
         }
 
-        Jersey2ApplicationClientFactoryBuilder withAdditionalFilters(Collection<ClientRequestFilter> additionalFilters) {
+        Jersey3ApplicationClientFactoryBuilder withAdditionalFilters(Collection<ClientRequestFilter> additionalFilters) {
             if (additionalFilters != null) {
                 this.additionalFilters.addAll(additionalFilters);
             }
@@ -137,7 +137,7 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
         }
 
         @Override
-        public Jersey2ApplicationClientFactory build() {
+        public Jersey3ApplicationClientFactory build() {
             ClientBuilder clientBuilder = ClientBuilder.newBuilder();
             ClientConfig clientConfig = new ClientConfig();
             
@@ -177,9 +177,9 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
             // always enable client identity headers
             String ip = myInstanceInfo == null ? null : myInstanceInfo.getIPAddr();
             final AbstractEurekaIdentity identity = clientIdentity == null ? new EurekaClientIdentity(ip) : clientIdentity;
-            clientBuilder.register(new Jersey2EurekaIdentityHeaderFilter(identity));
+            clientBuilder.register(new Jersey3EurekaIdentityHeaderFilter(identity));
 
-            JerseyClient jersey2Client = (JerseyClient) clientBuilder.build();
+            JerseyClient jerseyClient = (JerseyClient) clientBuilder.build();
 
             MultivaluedMap<String, Object> additionalHeaders = new MultivaluedHashMap<>();
             if (allowRedirect) {
@@ -189,7 +189,7 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
                 additionalHeaders.add(EurekaAccept.HTTP_X_EUREKA_ACCEPT, eurekaAccept.name());
             }
 
-            return new Jersey2ApplicationClientFactory(jersey2Client, additionalHeaders);
+            return new Jersey3ApplicationClientFactory(jerseyClient, additionalHeaders);
         }
 
         private void addSSLConfiguration(ClientBuilder clientBuilder) {
@@ -206,7 +206,7 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
                     clientBuilder.sslContext(sslContext);
                 }
             } catch (Exception ex) {
-                throw new IllegalArgumentException("Cannot setup SSL for Jersey2 client", ex);
+                throw new IllegalArgumentException("Cannot setup SSL for Jersey3 client", ex);
             }
             finally {
                 if (fin != null) {

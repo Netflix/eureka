@@ -14,7 +14,7 @@ dependencies {
         // exclude all transitives to avoid bringing in jersey1 eureka-core
         transitive = false
     }
-    // bring in jersey2 compatible eureka-core-jersey2 directly
+    // bring in jersey3 compatible eureka-core-jersey3 directly
     testCompile project(':eureka-core-jersey3')
 
     testCompile "junit:junit:${junit_version}"

@@ -1,4 +1,4 @@
-package com.netflix.discovery.shared.transport.jersey2;
+package com.netflix.discovery.shared.transport.jersey3;
 
 import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
 
@@ -46,9 +46,9 @@ import com.netflix.servo.monitor.Stopwatch;
 /**
  * @author Tomasz Bak
  */
-public class EurekaJersey2ClientImpl implements EurekaJersey2Client {
+public class EurekaJersey3ClientImpl implements EurekaJersey3Client {
 
-    private static final Logger s_logger = LoggerFactory.getLogger(EurekaJersey2ClientImpl.class);
+    private static final Logger s_logger = LoggerFactory.getLogger(EurekaJersey3ClientImpl.class);
 
     private static final int HTTP_CONNECTION_CLEANER_INTERVAL_MS = 30 * 1000;
 
@@ -70,13 +70,13 @@ public class EurekaJersey2ClientImpl implements EurekaJersey2Client {
 
                 @Override
                 public Thread newThread(Runnable r) {
-                    Thread thread = new Thread(r, "Eureka-Jersey2Client-Conn-Cleaner" + threadNumber.incrementAndGet());
+                    Thread thread = new Thread(r, "Eureka-Jersey3Client-Conn-Cleaner" + threadNumber.incrementAndGet());
                     thread.setDaemon(true);
                     return thread;
                 }
             });
 
-    public EurekaJersey2ClientImpl(
+    public EurekaJersey3ClientImpl(
             int connectionTimeout,
             int readTimeout,
             final int connectionIdleTimeout,
@@ -98,7 +98,7 @@ public class EurekaJersey2ClientImpl implements EurekaJersey2Client {
                     HTTP_CONNECTION_CLEANER_INTERVAL_MS,
                     TimeUnit.MILLISECONDS);
         } catch (Throwable e) {
-            throw new RuntimeException("Cannot create Jersey2 client", e);
+            throw new RuntimeException("Cannot create Jersey3 client", e);
         }
     }
 
@@ -122,7 +122,7 @@ public class EurekaJersey2ClientImpl implements EurekaJersey2Client {
         }
     }
 
-    public static class EurekaJersey2ClientBuilder {
+    public static class EurekaJersey3ClientBuilder {
 
         private boolean systemSSL;
         private String clientName;
@@ -141,42 +141,42 @@ public class EurekaJersey2ClientImpl implements EurekaJersey2Client {
         private EncoderWrapper encoderWrapper;
         private DecoderWrapper decoderWrapper;
 
-        public EurekaJersey2ClientBuilder withClientName(String clientName) {
+        public EurekaJersey3ClientBuilder withClientName(String clientName) {
             this.clientName = clientName;
             return this;
         }
 
-        public EurekaJersey2ClientBuilder withUserAgent(String userAgent) {
+        public EurekaJersey3ClientBuilder withUserAgent(String userAgent) {
             this.userAgent = userAgent;
             return this;
         }
 
-        public EurekaJersey2ClientBuilder withConnectionTimeout(int connectionTimeout) {
+        public EurekaJersey3ClientBuilder withConnectionTimeout(int connectionTimeout) {
             this.connectionTimeout = connectionTimeout;
             return this;
         }
 
-        public EurekaJersey2ClientBuilder withReadTimeout(int readTimeout) {
+        public EurekaJersey3ClientBuilder withReadTimeout(int readTimeout) {
             this.readTimeout = readTimeout;
             return this;
         }
 
-        public EurekaJersey2ClientBuilder withConnectionIdleTimeout(int connectionIdleTimeout) {
+        public EurekaJersey3ClientBuilder withConnectionIdleTimeout(int connectionIdleTimeout) {
             this.connectionIdleTimeout = connectionIdleTimeout;
             return this;
         }
 
-        public EurekaJersey2ClientBuilder withMaxConnectionsPerHost(int maxConnectionsPerHost) {
+        public EurekaJersey3ClientBuilder withMaxConnectionsPerHost(int maxConnectionsPerHost) {
             this.maxConnectionsPerHost = maxConnectionsPerHost;
             return this;
         }
 
-        public EurekaJersey2ClientBuilder withMaxTotalConnections(int maxTotalConnections) {
+        public EurekaJersey3ClientBuilder withMaxTotalConnections(int maxTotalConnections) {
             this.maxTotalConnections = maxTotalConnections;
             return this;
         }
 
-        public EurekaJersey2ClientBuilder withProxy(String proxyHost, String proxyPort, String user, String password) {
+        public EurekaJersey3ClientBuilder withProxy(String proxyHost, String proxyPort, String user, String password) {
             this.proxyHost = proxyHost;
             this.proxyPort = proxyPort;
             this.proxyUserName = user;
@@ -184,39 +184,39 @@ public class EurekaJersey2ClientImpl implements EurekaJersey2Client {
             return this;
         }
 
-        public EurekaJersey2ClientBuilder withSystemSSLConfiguration() {
+        public EurekaJersey3ClientBuilder withSystemSSLConfiguration() {
             this.systemSSL = true;
             return this;
         }
 
-        public EurekaJersey2ClientBuilder withTrustStoreFile(String trustStoreFileName, String trustStorePassword) {
+        public EurekaJersey3ClientBuilder withTrustStoreFile(String trustStoreFileName, String trustStorePassword) {
             this.trustStoreFileName = trustStoreFileName;
             this.trustStorePassword = trustStorePassword;
             return this;
         }
 
-        public EurekaJersey2ClientBuilder withEncoder(String encoderName) {
+        public EurekaJersey3ClientBuilder withEncoder(String encoderName) {
             return this.withEncoderWrapper(CodecWrappers.getEncoder(encoderName));
         }
 
-        public EurekaJersey2ClientBuilder withEncoderWrapper(EncoderWrapper encoderWrapper) {
+        public EurekaJersey3ClientBuilder withEncoderWrapper(EncoderWrapper encoderWrapper) {
             this.encoderWrapper = encoderWrapper;
             return this;
         }
 
-        public EurekaJersey2ClientBuilder withDecoder(String decoderName, String clientDataAccept) {
+        public EurekaJersey3ClientBuilder withDecoder(String decoderName, String clientDataAccept) {
             return this.withDecoderWrapper(CodecWrappers.resolveDecoder(decoderName, clientDataAccept));
         }
 
-        public EurekaJersey2ClientBuilder withDecoderWrapper(DecoderWrapper decoderWrapper) {
+        public EurekaJersey3ClientBuilder withDecoderWrapper(DecoderWrapper decoderWrapper) {
             this.decoderWrapper = decoderWrapper;
             return this;
         }
 
-        public EurekaJersey2Client build() {
+        public EurekaJersey3Client build() {
             MyDefaultApacheHttpClient4Config config = new MyDefaultApacheHttpClient4Config();
             try {
-                return new EurekaJersey2ClientImpl(
+                return new EurekaJersey3ClientImpl(
                         connectionTimeout,
                         readTimeout,
                         connectionIdleTimeout,

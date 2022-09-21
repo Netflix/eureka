@@ -9,11 +9,11 @@ import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 
-public class Jersey2DynamicGZIPContentEncodingFilter implements ClientRequestFilter, ClientResponseFilter {
+public class Jersey3DynamicGZIPContentEncodingFilter implements ClientRequestFilter, ClientResponseFilter {
 
     private final EurekaServerConfig config;
 
-    public Jersey2DynamicGZIPContentEncodingFilter(EurekaServerConfig config) {
+    public Jersey3DynamicGZIPContentEncodingFilter(EurekaServerConfig config) {
         this.config = config;
     }
 

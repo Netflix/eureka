@@ -1,4 +1,4 @@
-package com.netflix.discovery.shared.transport.jersey2;
+package com.netflix.discovery.shared.transport.jersey3;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -16,11 +16,11 @@ import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.decorator.MetricsCollectingEurekaHttpClient;
 import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 
-public class Jersey2TransportClientFactories implements TransportClientFactories<ClientRequestFilter> {
+public class Jersey3TransportClientFactories implements TransportClientFactories<ClientRequestFilter> {
 
-    private static final Jersey2TransportClientFactories INSTANCE = new Jersey2TransportClientFactories();
+    private static final Jersey3TransportClientFactories INSTANCE = new Jersey3TransportClientFactories();
 
-    public static Jersey2TransportClientFactories getInstance() {
+    public static Jersey3TransportClientFactories getInstance() {
         return INSTANCE;
     }
 
@@ -35,11 +35,11 @@ public class Jersey2TransportClientFactories implements TransportClientFactories
     public TransportClientFactory newTransportClientFactory(EurekaClientConfig clientConfig,
             Collection<ClientRequestFilter> additionalFilters, InstanceInfo myInstanceInfo,
             Optional<SSLContext> sslContext, Optional<HostnameVerifier> hostnameVerifier) {
-        final TransportClientFactory jerseyFactory = Jersey2ApplicationClientFactory.create(
+        final TransportClientFactory jerseyFactory = Jersey3ApplicationClientFactory.create(
                 clientConfig,
                 additionalFilters,
                 myInstanceInfo,
-                new EurekaClientIdentity(myInstanceInfo.getIPAddr(), "Jersey2DefaultClient"),
+                new EurekaClientIdentity(myInstanceInfo.getIPAddr(), "Jersey3DefaultClient"),
                 sslContext,
                 hostnameVerifier
         );

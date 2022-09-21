@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.discovery.shared.transport.jersey2;
+package com.netflix.discovery.shared.transport.jersey3;
 
 import java.net.URI;
 
@@ -22,34 +22,34 @@ import com.netflix.discovery.shared.resolver.DefaultEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientCompatibilityTestSuite;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
-import com.netflix.discovery.shared.transport.jersey2.Jersey2ApplicationClientFactory.Jersey2ApplicationClientFactoryBuilder;
+import com.netflix.discovery.shared.transport.jersey3.Jersey3ApplicationClientFactory.Jersey3ApplicationClientFactoryBuilder;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.junit.After;
 
 /**
  * @author Tomasz Bak
  */
-public class AbstractJersey2EurekaHttpClientTest extends EurekaHttpClientCompatibilityTestSuite {
+public class AbstractJersey3EurekaHttpClientTest extends EurekaHttpClientCompatibilityTestSuite {
 
-    private AbstractJersey2EurekaHttpClient jersey2HttpClient;
+    private AbstractJersey3EurekaHttpClient jerseyHttpClient;
 
     @Override
     @After
     public void tearDown() throws Exception {
-        if (jersey2HttpClient != null) {
-            jersey2HttpClient.shutdown();
+        if (jerseyHttpClient != null) {
+            jerseyHttpClient.shutdown();
         }
         super.tearDown();
     }
 
     @Override
     protected EurekaHttpClient getEurekaHttpClient(URI serviceURI) {
-        Jersey2ApplicationClientFactoryBuilder factoryBuilder = Jersey2ApplicationClientFactory.newBuilder();
+        Jersey3ApplicationClientFactoryBuilder factoryBuilder = Jersey3ApplicationClientFactory.newBuilder();
         if (serviceURI.getUserInfo() != null) {
             factoryBuilder.withFeature(HttpAuthenticationFeature.basicBuilder().build());
         }
         TransportClientFactory clientFactory = factoryBuilder.build();
-        jersey2HttpClient = (AbstractJersey2EurekaHttpClient) clientFactory.newClient(new DefaultEndpoint(serviceURI.toString()));
-        return jersey2HttpClient;
+        jerseyHttpClient = (AbstractJersey3EurekaHttpClient) clientFactory.newClient(new DefaultEndpoint(serviceURI.toString()));
+        return jerseyHttpClient;
     }
 }

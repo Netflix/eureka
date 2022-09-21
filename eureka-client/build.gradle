@@ -1,7 +1,7 @@
 apply plugin: 'nebula.test-jar'
 
 configurations.all {
-    // jersey2
+    // jersey3
     exclude group: 'org.glassfish.jersey'
 }
 

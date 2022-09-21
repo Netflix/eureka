@@ -21,10 +21,10 @@ import org.slf4j.LoggerFactory;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
-import com.netflix.discovery.shared.transport.jersey2.AbstractJersey2EurekaHttpClient;
-import com.netflix.discovery.shared.transport.jersey2.EurekaIdentityHeaderFilter;
-import com.netflix.discovery.shared.transport.jersey2.EurekaJersey2Client;
-import com.netflix.discovery.shared.transport.jersey2.EurekaJersey2ClientImpl;
+import com.netflix.discovery.shared.transport.jersey3.AbstractJersey3EurekaHttpClient;
+import com.netflix.discovery.shared.transport.jersey3.EurekaIdentityHeaderFilter;
+import com.netflix.discovery.shared.transport.jersey3.EurekaJersey3Client;
+import com.netflix.discovery.shared.transport.jersey3.EurekaJersey3ClientImpl;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerIdentity;
 import com.netflix.eureka.cluster.HttpReplicationClient;
@@ -37,15 +37,15 @@ import com.netflix.eureka.resources.ServerCodecs;
 /**
  * @author Tomasz Bak
  */
-public class Jersey2ReplicationClient extends AbstractJersey2EurekaHttpClient implements HttpReplicationClient {
+public class Jersey3ReplicationClient extends AbstractJersey3EurekaHttpClient implements HttpReplicationClient {
 
-    private static final Logger logger = LoggerFactory.getLogger(Jersey2ReplicationClient.class);
+    private static final Logger logger = LoggerFactory.getLogger(Jersey3ReplicationClient.class);
 
-    private final EurekaJersey2Client eurekaJersey2Client;
+    private final EurekaJersey3Client eurekaJersey3Client;
 
-    public Jersey2ReplicationClient(EurekaJersey2Client eurekaJersey2Client, String serviceUrl) {
-        super(eurekaJersey2Client.getClient(), serviceUrl);
-        this.eurekaJersey2Client = eurekaJersey2Client;
+    public Jersey3ReplicationClient(EurekaJersey3Client eurekaJersey3Client, String serviceUrl) {
+        super(eurekaJersey3Client.getClient(), serviceUrl);
+        this.eurekaJersey3Client = eurekaJersey3Client;
     }
 
     @Override
@@ -71,7 +71,7 @@ public class Jersey2ReplicationClient extends AbstractJersey2EurekaHttpClient im
             }
             Builder requestBuilder = webResource.request();
             addExtraHeaders(requestBuilder);
-            response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).put(Entity.entity("{}", MediaType.APPLICATION_JSON_TYPE)); // Jersey2 refuses to handle PUT with no body
+            response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).put(Entity.entity("{}", MediaType.APPLICATION_JSON_TYPE)); // Jersey3 refuses to handle PUT with no body
             InstanceInfo infoFromPeer = null;
             if (response.getStatus() == Status.CONFLICT.getStatusCode() && response.hasEntity()) {
                 infoFromPeer = response.readEntity(InstanceInfo.class);
@@ -129,13 +129,13 @@ public class Jersey2ReplicationClient extends AbstractJersey2EurekaHttpClient im
     @Override
     public void shutdown() {
         super.shutdown();
-        eurekaJersey2Client.destroyResources();
+        eurekaJersey3Client.destroyResources();
     }
 
-    public static Jersey2ReplicationClient createReplicationClient(EurekaServerConfig config, ServerCodecs serverCodecs, String serviceUrl) {
-        String name = Jersey2ReplicationClient.class.getSimpleName() + ": " + serviceUrl + "apps/: ";
+    public static Jersey3ReplicationClient createReplicationClient(EurekaServerConfig config, ServerCodecs serverCodecs, String serviceUrl) {
+        String name = Jersey3ReplicationClient.class.getSimpleName() + ": " + serviceUrl + "apps/: ";
 
-        EurekaJersey2Client jerseyClient;
+        EurekaJersey3Client jerseyClient;
         try {
             String hostname;
             try {
@@ -145,7 +145,7 @@ public class Jersey2ReplicationClient extends AbstractJersey2EurekaHttpClient im
             }
 
             String jerseyClientName = "Discovery-PeerNodeClient-" + hostname;
-            EurekaJersey2ClientImpl.EurekaJersey2ClientBuilder clientBuilder = new EurekaJersey2ClientImpl.EurekaJersey2ClientBuilder()
+            EurekaJersey3ClientImpl.EurekaJersey3ClientBuilder clientBuilder = new EurekaJersey3ClientImpl.EurekaJersey3ClientBuilder()
                     .withClientName(jerseyClientName)
                     .withUserAgent("Java-EurekaClient-Replication")
                     .withEncoderWrapper(serverCodecs.getFullJsonCodec())
@@ -173,12 +173,12 @@ public class Jersey2ReplicationClient extends AbstractJersey2EurekaHttpClient im
         }
 
         Client jerseyApacheClient = jerseyClient.getClient();
-        jerseyApacheClient.register(new Jersey2DynamicGZIPContentEncodingFilter(config));
+        jerseyApacheClient.register(new Jersey3DynamicGZIPContentEncodingFilter(config));
 
         EurekaServerIdentity identity = new EurekaServerIdentity(ip);
         jerseyApacheClient.register(new EurekaIdentityHeaderFilter(identity));
 
-        return new Jersey2ReplicationClient(jerseyClient, serviceUrl);
+        return new Jersey3ReplicationClient(jerseyClient, serviceUrl);
     }
 
     private static boolean isSuccess(int statusCode) {

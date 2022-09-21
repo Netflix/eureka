@@ -1,7 +1,7 @@
 package com.netflix.discovery.junit.resource;
 
-import com.netflix.discovery.Jersey2DiscoveryClientOptionalArgs;
-import com.netflix.discovery.shared.transport.jersey2.Jersey2TransportClientFactories;
+import com.netflix.discovery.Jersey3DiscoveryClientOptionalArgs;
+import com.netflix.discovery.shared.transport.jersey3.Jersey3TransportClientFactories;
 import jakarta.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.ArrayList;
@@ -21,7 +21,6 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.LeaseInfo;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.config.ConfigurationManager;
-import com.netflix.discovery.AbstractDiscoveryClientOptionalArgs;
 import com.netflix.discovery.CacheRefreshedEvent;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryClient;
@@ -98,8 +97,8 @@ public class DiscoveryClientResource extends ExternalResource {
                 applicationInfoManager = createApplicationManager();
                 EurekaClientConfig clientConfig = createEurekaClientConfig();
 
-                Jersey2DiscoveryClientOptionalArgs args = new Jersey2DiscoveryClientOptionalArgs();
-                args.setTransportClientFactories(new Jersey2TransportClientFactories());                eventBus = new EventBusImpl();
+                Jersey3DiscoveryClientOptionalArgs args = new Jersey3DiscoveryClientOptionalArgs();
+                args.setTransportClientFactories(new Jersey3TransportClientFactories());                eventBus = new EventBusImpl();
                 args.setEventBus(eventBus);
 
                 client = new DiscoveryClient(applicationInfoManager, clientConfig, args);
@@ -254,8 +253,8 @@ public class DiscoveryClientResource extends ExternalResource {
         ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), clientInstanceInfo);
 
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
-        Jersey2DiscoveryClientOptionalArgs args = new Jersey2DiscoveryClientOptionalArgs();
-        args.setTransportClientFactories(new Jersey2TransportClientFactories());
+        Jersey3DiscoveryClientOptionalArgs args = new Jersey3DiscoveryClientOptionalArgs();
+        args.setTransportClientFactories(new Jersey3TransportClientFactories());
         EurekaClient client = new DiscoveryClient(applicationInfoManager, config, args);
         return client;
     }
@@ -266,8 +265,8 @@ public class DiscoveryClientResource extends ExternalResource {
         DefaultEurekaClientConfig config = new DefaultEurekaClientConfig();
         // setup config in advance, used in initialize converter
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
-        Jersey2DiscoveryClientOptionalArgs args = new Jersey2DiscoveryClientOptionalArgs();
-        args.setTransportClientFactories(new Jersey2TransportClientFactories());
+        Jersey3DiscoveryClientOptionalArgs args = new Jersey3DiscoveryClientOptionalArgs();
+        args.setTransportClientFactories(new Jersey3TransportClientFactories());
         EurekaClient client = new DiscoveryClient(clientInstanceInfo, config, args);
         ApplicationInfoManager.getInstance().initComponent(new MyDataCenterInstanceConfig());
         return client;

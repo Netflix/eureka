@@ -4,7 +4,7 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.resources.DefaultServerCodecs;
-import com.netflix.eureka.transport.Jersey2ReplicationClient;
+import com.netflix.eureka.transport.Jersey3ReplicationClient;
 
 import static com.netflix.discovery.util.EurekaEntityFunctions.countInstances;
 
@@ -21,7 +21,7 @@ public class DiagnosticClient {
         long startTime = System.currentTimeMillis();
         EurekaServerConfig serverConfig = new DefaultEurekaServerConfig("eureka.");
 
-        Jersey2ReplicationClient client = Jersey2ReplicationClient.createReplicationClient(
+        Jersey3ReplicationClient client = Jersey3ReplicationClient.createReplicationClient(
                 serverConfig,
                 new DefaultServerCodecs(serverConfig),
                 discoveryURL

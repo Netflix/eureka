@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.discovery.shared.transport.jersey2;
+package com.netflix.discovery.shared.transport.jersey3;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.Entity;
@@ -50,20 +50,20 @@ import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEureka
 /**
  * @author Tomasz Bak
  */
-public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClient {
+public abstract class AbstractJersey3EurekaHttpClient implements EurekaHttpClient {
 
-    private static final Logger logger = LoggerFactory.getLogger(AbstractJersey2EurekaHttpClient.class);
+    private static final Logger logger = LoggerFactory.getLogger(AbstractJersey3EurekaHttpClient.class);
 
     protected final Client jerseyClient;
     protected final String serviceUrl;
     private final String userName;
     private final String password;
 
-    public AbstractJersey2EurekaHttpClient(Client jerseyClient, String serviceUrl) {
+    public AbstractJersey3EurekaHttpClient(Client jerseyClient, String serviceUrl) {
         this.jerseyClient = jerseyClient;
         this.serviceUrl = serviceUrl;
 
-        // Jersey2 does not read credentials from the URI. We extract it here and enable authentication feature.
+        // Jersey3 does not read credentials from the URI. We extract it here and enable authentication feature.
         String localUserName = null;
         String localPassword = null;
         try {
@@ -96,7 +96,7 @@ public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClien
             return anEurekaHttpResponse(response.getStatus()).headers(headersOf(response)).build();
         } finally {
             if (logger.isDebugEnabled()) {
-                logger.debug("Jersey2 HTTP POST {}/{} with instance {}; statusCode={}", serviceUrl, urlPath, info.getId(),
+                logger.debug("Jersey3 HTTP POST {}/{} with instance {}; statusCode={}", serviceUrl, urlPath, info.getId(),
                         response == null ? "N/A" : response.getStatus());
             }
             if (response != null) {
@@ -117,7 +117,7 @@ public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClien
             return anEurekaHttpResponse(response.getStatus()).headers(headersOf(response)).build();
         } finally {
             if (logger.isDebugEnabled()) {
-                logger.debug("Jersey2 HTTP DELETE {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
+                logger.debug("Jersey3 HTTP DELETE {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
             }
             if (response != null) {
                 response.close();
@@ -141,7 +141,7 @@ public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClien
             addExtraProperties(requestBuilder);
             addExtraHeaders(requestBuilder);
             requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE);
-            response = requestBuilder.put(Entity.entity("{}", MediaType.APPLICATION_JSON_TYPE)); // Jersey2 refuses to handle PUT with no body
+            response = requestBuilder.put(Entity.entity("{}", MediaType.APPLICATION_JSON_TYPE)); // Jersey3 refuses to handle PUT with no body
             EurekaHttpResponseBuilder<InstanceInfo> eurekaResponseBuilder = anEurekaHttpResponse(response.getStatus(), InstanceInfo.class).headers(headersOf(response));
             if (response.hasEntity()) {
                 eurekaResponseBuilder.entity(response.readEntity(InstanceInfo.class));
@@ -149,7 +149,7 @@ public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClien
             return eurekaResponseBuilder.build();
         } finally {
             if (logger.isDebugEnabled()) {
-                logger.debug("Jersey2 HTTP PUT {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
+                logger.debug("Jersey3 HTTP PUT {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
             }
             if (response != null) {
                 response.close();
@@ -169,11 +169,11 @@ public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClien
                     .request();
             addExtraProperties(requestBuilder);
             addExtraHeaders(requestBuilder);
-            response = requestBuilder.put(Entity.entity("{}", MediaType.APPLICATION_JSON_TYPE)); // Jersey2 refuses to handle PUT with no body
+            response = requestBuilder.put(Entity.entity("{}", MediaType.APPLICATION_JSON_TYPE)); // Jersey3 refuses to handle PUT with no body
             return anEurekaHttpResponse(response.getStatus()).headers(headersOf(response)).build();
         } finally {
             if (logger.isDebugEnabled()) {
-                logger.debug("Jersey2 HTTP PUT {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
+                logger.debug("Jersey3 HTTP PUT {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
             }
             if (response != null) {
                 response.close();
@@ -196,7 +196,7 @@ public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClien
             return anEurekaHttpResponse(response.getStatus()).headers(headersOf(response)).build();
         } finally {
             if (logger.isDebugEnabled()) {
-                logger.debug("Jersey2 HTTP DELETE {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
+                logger.debug("Jersey3 HTTP DELETE {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
             }
             if (response != null) {
                 response.close();
@@ -241,7 +241,7 @@ public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClien
             return anEurekaHttpResponse(response.getStatus(), application).headers(headersOf(response)).build();
         } finally {
             if (logger.isDebugEnabled()) {
-                logger.debug("Jersey2 HTTP GET {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
+                logger.debug("Jersey3 HTTP GET {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
             }
             if (response != null) {
                 response.close();
@@ -268,7 +268,7 @@ public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClien
             return anEurekaHttpResponse(response.getStatus(), applications).headers(headersOf(response)).build();
         } finally {
             if (logger.isDebugEnabled()) {
-                logger.debug("Jersey2 HTTP GET {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
+                logger.debug("Jersey3 HTTP GET {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
             }
             if (response != null) {
                 response.close();
@@ -301,7 +301,7 @@ public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClien
             return anEurekaHttpResponse(response.getStatus(), infoFromPeer).headers(headersOf(response)).build();
         } finally {
             if (logger.isDebugEnabled()) {
-                logger.debug("Jersey2 HTTP GET {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
+                logger.debug("Jersey3 HTTP GET {}/{}; statusCode={}", serviceUrl, urlPath, response == null ? "N/A" : response.getStatus());
             }
             if (response != null) {
                 response.close();

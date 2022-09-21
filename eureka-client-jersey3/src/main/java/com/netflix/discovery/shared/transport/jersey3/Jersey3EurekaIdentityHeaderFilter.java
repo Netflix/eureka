@@ -1,4 +1,4 @@
-package com.netflix.discovery.shared.transport.jersey2;
+package com.netflix.discovery.shared.transport.jersey3;
 
 import com.netflix.appinfo.AbstractEurekaIdentity;
 
@@ -6,11 +6,11 @@ import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
 import java.io.IOException;
 
-public class Jersey2EurekaIdentityHeaderFilter implements ClientRequestFilter {
+public class Jersey3EurekaIdentityHeaderFilter implements ClientRequestFilter {
 
     private final AbstractEurekaIdentity authInfo;
 
-    public Jersey2EurekaIdentityHeaderFilter(AbstractEurekaIdentity authInfo) {
+    public Jersey3EurekaIdentityHeaderFilter(AbstractEurekaIdentity authInfo) {
         this.authInfo = authInfo;
     }
 

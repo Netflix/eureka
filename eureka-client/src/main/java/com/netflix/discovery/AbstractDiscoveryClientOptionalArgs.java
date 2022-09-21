@@ -18,7 +18,7 @@ import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.eventbus.spi.EventBus;
 
 /**
- * <T> The type for client supplied filters (supports jersey1 and jersey2)
+ * <T> The type for client supplied filters (supports jersey3)
  */
 public abstract class AbstractDiscoveryClientOptionalArgs<T> {
     Provider<HealthCheckCallback> healthCheckCallbackProvider;
