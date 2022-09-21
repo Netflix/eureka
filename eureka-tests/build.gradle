@@ -15,7 +15,7 @@
  */
 
 dependencies {
-    testCompile project(':eureka-core-jersey2')
+    testCompile project(':eureka-core-jersey3')
 
     testCompile (project(':eureka-test-utils')) {
         // exclude all transitives to avoid bringing in jersey1 eureka-core
