@@ -39,7 +39,7 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
 
     private Optional<HostnameVerifier> hostnameVerifier = Optional.empty();
 
-    @Inject
+    // @Inject
     public void setEventListeners(Set<EurekaEventListener> listeners) {
         if (eventListeners == null) {
             eventListeners = new HashSet<>();
@@ -47,7 +47,7 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
         eventListeners.addAll(listeners);
     }
     
-    @Inject
+    // @Inject
     public void setEventBus(final EventBus eventBus) {
         if (eventListeners == null) {
             eventListeners = new HashSet<>();
@@ -61,23 +61,23 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
         });
     }
 
-    @Inject
+    // @Inject
     public void setHealthCheckCallbackProvider(Provider<HealthCheckCallback> healthCheckCallbackProvider) {
         this.healthCheckCallbackProvider = healthCheckCallbackProvider;
     }
 
-    @Inject
+    // @Inject
     public void setHealthCheckHandlerProvider(Provider<HealthCheckHandler> healthCheckHandlerProvider) {
         this.healthCheckHandlerProvider = healthCheckHandlerProvider;
     }
 
-    @Inject
+    // @Inject
     public void setPreRegistrationHandler(PreRegistrationHandler preRegistrationHandler) {
         this.preRegistrationHandler = preRegistrationHandler;
     }
 
 
-    @Inject
+    // @Inject
     public void setAdditionalFilters(Collection<T> additionalFilters) {
         this.additionalFilters = additionalFilters;
     }
@@ -86,7 +86,7 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
         return transportClientFactories;
     }
 
-    @Inject
+    // @Inject
     public void setTransportClientFactories(TransportClientFactories transportClientFactories) {
         this.transportClientFactories = transportClientFactories;
     }
@@ -108,7 +108,7 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
         return sslContext;
     }
 
-    @Inject
+    // @Inject
     public void setSSLContext(SSLContext sslContext) {
         this.sslContext = Optional.of(sslContext);
     }
@@ -117,7 +117,7 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
         return hostnameVerifier;
     }
 
-    @Inject
+    // @Inject
     public void setHostnameVerifier(HostnameVerifier hostnameVerifier) {
         this.hostnameVerifier = Optional.of(hostnameVerifier);
     }
