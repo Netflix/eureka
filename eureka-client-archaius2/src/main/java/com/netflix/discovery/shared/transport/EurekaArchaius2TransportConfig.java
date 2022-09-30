@@ -1,12 +1,12 @@
 package com.netflix.discovery.shared.transport;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
 import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.internal.util.InternalPrefixedConfig;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import static com.netflix.discovery.shared.transport.PropertyBasedTransportConfigConstants.*;
 

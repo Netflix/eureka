@@ -16,8 +16,8 @@
 
 package com.netflix.appinfo;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -66,7 +66,6 @@ public class ApplicationInfoManager {
     public static class OptionalArgs {
         private InstanceStatusMapper instanceStatusMapper;
 
-        @com.google.inject.Inject(optional = true)
         public void setInstanceStatusMapper(InstanceStatusMapper instanceStatusMapper) {
             this.instanceStatusMapper = instanceStatusMapper;
         }

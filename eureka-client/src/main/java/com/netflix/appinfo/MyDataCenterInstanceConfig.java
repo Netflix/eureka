@@ -15,10 +15,9 @@
  */
 package com.netflix.appinfo;
 
-import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.providers.MyDataCenterInstanceConfigProvider;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 /**
  * An {@link InstanceInfo} configuration for the non-AWS datacenter.
@@ -27,7 +26,6 @@ import javax.inject.Singleton;
  *
  */
 @Singleton
-@ProvidedBy(MyDataCenterInstanceConfigProvider.class)
 public class MyDataCenterInstanceConfig extends PropertiesInstanceConfig implements EurekaInstanceConfig {
 
     public MyDataCenterInstanceConfig() {

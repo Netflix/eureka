@@ -16,7 +16,7 @@
 
 package com.netflix.discovery.shared.transport.decorator;
 
-import javax.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;

@@ -8,7 +8,7 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Iterator;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.junit.Test;
 

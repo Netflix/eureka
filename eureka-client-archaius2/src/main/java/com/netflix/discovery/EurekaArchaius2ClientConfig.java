@@ -4,14 +4,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
 import com.netflix.discovery.internal.util.InternalPrefixedConfig;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import static com.netflix.discovery.PropertyBasedClientConfigConstants.*;
 

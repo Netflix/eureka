@@ -1,6 +1,6 @@
 package com.netflix.discovery.endpoint;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;

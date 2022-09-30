@@ -16,7 +16,7 @@
 
 package com.netflix.eureka.resources;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.eureka.EurekaServerContext;

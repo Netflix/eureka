@@ -48,8 +48,9 @@ public final class EurekaServerHttpClients {
                                                             EurekaTransportConfig transportConfig,
                                                             ServerCodecs serverCodecs,
                                                             ClusterResolver<EurekaEndpoint> clusterResolver) {
-        JerseyRemoteRegionClientFactory jerseyFactory = new JerseyRemoteRegionClientFactory(serverConfig, serverCodecs, clusterResolver.getRegion());
-        TransportClientFactory metricsFactory = MetricsCollectingEurekaHttpClient.createFactory(jerseyFactory);
+        // FIXME: 2.0
+        // JerseyRemoteRegionClientFactory jerseyFactory = new JerseyRemoteRegionClientFactory(serverConfig, serverCodecs, clusterResolver.getRegion());
+        TransportClientFactory metricsFactory = null; // MetricsCollectingEurekaHttpClient.createFactory(jerseyFactory);
 
         SessionedEurekaHttpClient client = new SessionedEurekaHttpClient(
                 Names.REMOTE,

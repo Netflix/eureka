@@ -16,14 +16,13 @@
 
 package com.netflix.appinfo;
 
-import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.providers.CloudInstanceConfigProvider;
 import com.netflix.discovery.CommonConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 /**
  * An {@link InstanceInfo} configuration for AWS cloud deployments.
@@ -40,7 +39,6 @@ import javax.inject.Singleton;
  *
  */
 @Singleton
-@ProvidedBy(CloudInstanceConfigProvider.class)
 public class CloudInstanceConfig extends PropertiesInstanceConfig implements RefreshableInstanceConfig {
     private static final Logger logger = LoggerFactory.getLogger(CloudInstanceConfig.class);
 

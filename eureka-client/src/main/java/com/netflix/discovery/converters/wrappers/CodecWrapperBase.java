@@ -1,6 +1,6 @@
 package com.netflix.discovery.converters.wrappers;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 /**
  * @author David Liu

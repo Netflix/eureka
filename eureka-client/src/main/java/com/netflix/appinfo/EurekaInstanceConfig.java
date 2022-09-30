@@ -17,8 +17,6 @@ package com.netflix.appinfo;
 
 import java.util.Map;
 
-import com.google.inject.ImplementedBy;
-
 /**
  * Configuration information required by the instance to register with Eureka
  * server. Once registered, users can look up information from
@@ -39,7 +37,6 @@ import com.google.inject.ImplementedBy;
  * @author Karthik Ranganathan
  *
  */
-@ImplementedBy(CloudInstanceConfig.class)
 public interface EurekaInstanceConfig {
 
     /**

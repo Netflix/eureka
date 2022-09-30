@@ -16,18 +16,16 @@
 
 package com.netflix.discovery;
 
-import javax.annotation.Nullable;
-import javax.inject.Singleton;
+import jakarta.annotation.Nullable;
+import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.config.DynamicStringProperty;
 import com.netflix.discovery.internal.util.Archaius1Utils;
-import com.netflix.discovery.providers.DefaultEurekaClientConfigProvider;
 import com.netflix.discovery.shared.transport.DefaultEurekaTransportConfig;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 
@@ -57,7 +55,6 @@ import static com.netflix.discovery.PropertyBasedClientConfigConstants.*;
  *
  */
 @Singleton
-@ProvidedBy(DefaultEurekaClientConfigProvider.class)
 public class DefaultEurekaClientConfig implements EurekaClientConfig {
 
     /**

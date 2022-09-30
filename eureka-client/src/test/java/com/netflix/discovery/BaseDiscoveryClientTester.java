@@ -7,7 +7,7 @@ import com.netflix.discovery.junit.resource.DiscoveryClientResource;
 import com.netflix.discovery.shared.Application;
 import org.junit.Rule;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.util.Arrays;
 import java.util.List;
 

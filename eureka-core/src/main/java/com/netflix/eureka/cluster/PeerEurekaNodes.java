@@ -1,7 +1,7 @@
 package com.netflix.eureka.cluster;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -21,7 +21,6 @@ import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.resources.ServerCodecs;
-import com.netflix.eureka.transport.JerseyReplicationClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +30,7 @@ import org.slf4j.LoggerFactory;
  * @author Tomasz Bak
  */
 @Singleton
-public class PeerEurekaNodes {
+public abstract class PeerEurekaNodes {
 
     private static final Logger logger = LoggerFactory.getLogger(PeerEurekaNodes.class);
 
@@ -194,14 +193,7 @@ public class PeerEurekaNodes {
         this.peerEurekaNodeUrls = new HashSet<>(newPeerUrls);
     }
 
-    protected PeerEurekaNode createPeerEurekaNode(String peerEurekaNodeUrl) {
-        HttpReplicationClient replicationClient = JerseyReplicationClient.createReplicationClient(serverConfig, serverCodecs, peerEurekaNodeUrl);
-        String targetHost = hostFromUrl(peerEurekaNodeUrl);
-        if (targetHost == null) {
-            targetHost = "host";
-        }
-        return new PeerEurekaNode(registry, targetHost, peerEurekaNodeUrl, replicationClient, serverConfig);
-    }
+    protected abstract PeerEurekaNode createPeerEurekaNode(String peerEurekaNodeUrl);
 
     /**
      * @deprecated 2016-06-27 use instance version of {@link #isThisMyUrl(String)}

@@ -1,15 +1,15 @@
 package com.netflix.appinfo.providers;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaNamespace;
 
 public class MyDataCenterInstanceConfigProvider implements Provider<EurekaInstanceConfig> {
-    @Inject(optional = true)
+    @Inject
     @EurekaNamespace
     private String namespace;
 

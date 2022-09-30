@@ -1,11 +1,13 @@
 rootProject.name='eureka' 
 include 'eureka-client',
-        'eureka-client-jersey2',
+        'eureka-client-jersey3',
         'eureka-client-archaius2',
         'eureka-server',
-        'eureka-server-governator',
+        // FIXME 2.0
+        // 'eureka-server-governator',
         'eureka-core',
-        'eureka-core-jersey2',
+        'eureka-core-jersey3',
         'eureka-resources',
         'eureka-examples',
-        'eureka-test-utils'
+        'eureka-test-utils',
+        'eureka-tests'

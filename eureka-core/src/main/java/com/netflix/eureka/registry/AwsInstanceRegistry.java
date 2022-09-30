@@ -18,6 +18,7 @@ package com.netflix.eureka.registry;
 
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.aws.AwsAsgUtil;
 import com.netflix.eureka.cluster.PeerEurekaNodes;
@@ -29,8 +30,8 @@ import com.netflix.eureka.registry.rule.LeaseExistsRule;
 import com.netflix.eureka.registry.rule.OverrideExistsRule;
 import com.netflix.eureka.resources.ServerCodecs;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 /**
  * Override some methods with aws specific use cases.
@@ -48,8 +49,8 @@ public class AwsInstanceRegistry extends PeerAwareInstanceRegistryImpl {
     public AwsInstanceRegistry(EurekaServerConfig serverConfig,
                                EurekaClientConfig clientConfig,
                                ServerCodecs serverCodecs,
-                               EurekaClient eurekaClient) {
-        super(serverConfig, clientConfig, serverCodecs, eurekaClient);
+                               EurekaClient eurekaClient, EurekaHttpClient eurekaHttpClient) {
+        super(serverConfig, clientConfig, serverCodecs, eurekaClient, eurekaHttpClient);
     }
 
     @Override

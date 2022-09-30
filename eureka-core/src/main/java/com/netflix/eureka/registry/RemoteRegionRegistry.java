@@ -15,8 +15,8 @@
  */
 package com.netflix.eureka.registry;
 
-import javax.inject.Inject;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.core.MediaType;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -37,7 +37,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.discovery.EurekaClientConfig;
-import com.netflix.discovery.EurekaIdentityHeaderFilter;
 import com.netflix.discovery.TimedSupervisorTask;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
@@ -46,8 +45,6 @@ import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.StaticClusterResolver;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
-import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
-import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClientImpl.EurekaJerseyClientBuilder;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.EurekaServerIdentity;
 import com.netflix.eureka.resources.ServerCodecs;
@@ -55,9 +52,9 @@ import com.netflix.eureka.transport.EurekaServerHttpClients;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
-import com.sun.jersey.client.apache4.ApacheHttpClient4;
+//import com.sun.jersey.api.client.ClientResponse;
+//import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
+//import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,8 +75,8 @@ import static com.netflix.eureka.Names.METRIC_REGISTRY_PREFIX;
 public class RemoteRegionRegistry implements LookupService<String> {
     private static final Logger logger = LoggerFactory.getLogger(RemoteRegionRegistry.class);
 
-    private final ApacheHttpClient4 discoveryApacheClient;
-    private final EurekaJerseyClient discoveryJerseyClient;
+//    private final ApacheHttpClient4 discoveryApacheClient;
+//    private final EurekaJerseyClient discoveryJerseyClient;
     private final com.netflix.servo.monitor.Timer fetchRegistryTimer;
     private final URL remoteRegionURL;
 
@@ -99,14 +96,16 @@ public class RemoteRegionRegistry implements LookupService<String> {
 
     @Inject
     public RemoteRegionRegistry(EurekaServerConfig serverConfig,
-                                EurekaClientConfig clientConfig,
-                                ServerCodecs serverCodecs,
+//                                EurekaClientConfig clientConfig,
+//                                ServerCodecs serverCodecs,
+                                EurekaHttpClient eurekaHttpClient,
                                 String regionName,
                                 URL remoteRegionURL) {
         this.serverConfig = serverConfig;
         this.remoteRegionURL = remoteRegionURL;
         this.fetchRegistryTimer = Monitors.newTimer(this.remoteRegionURL.toString() + "_FetchRegistry");
 
+        /* FIXME: 2.0
         EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
                 .withUserAgent("Java-EurekaClient-RemoteRegion")
                 .withEncoderWrapper(serverCodecs.getFullJsonCodec())
@@ -130,33 +129,36 @@ public class RemoteRegionRegistry implements LookupService<String> {
                     );
         }
         discoveryJerseyClient = clientBuilder.build();
-        discoveryApacheClient = discoveryJerseyClient.getClient();
+        discoveryApacheClient = null; // discoveryJerseyClient.getClient();
+         */
 
         // should we enable GZip decoding of responses based on Response Headers?
         if (serverConfig.shouldGZipContentFromRemoteRegion()) {
             // compressed only if there exists a 'Content-Encoding' header whose value is "gzip"
-            discoveryApacheClient.addFilter(new GZIPContentEncodingFilter(false));
+            // FIXME 2.0
+            // discoveryApacheClient.addFilter(new GZIPContentEncodingFilter(false));
         }
 
-        String ip = null;
+        /*String ip = null;
         try {
             ip = InetAddress.getLocalHost().getHostAddress();
         } catch (UnknownHostException e) {
             logger.warn("Cannot find localhost ip", e);
         }
-        EurekaServerIdentity identity = new EurekaServerIdentity(ip);
-        discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
+        EurekaServerIdentity identity = new EurekaServerIdentity(ip);*/
+        // FIXME 2.0
+        // discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
 
         // Configure new transport layer (candidate for injecting in the future)
-        EurekaHttpClient newEurekaHttpClient = null;
+        /*EurekaHttpClient newEurekaHttpClient = null;
         try {
             ClusterResolver clusterResolver = StaticClusterResolver.fromURL(regionName, remoteRegionURL);
             newEurekaHttpClient = EurekaServerHttpClients.createRemoteRegionClient(
                     serverConfig, clientConfig.getTransportConfig(), serverCodecs, clusterResolver);
         } catch (Exception e) {
             logger.warn("Transport initialization failure", e);
-        }
-        this.eurekaHttpClient = newEurekaHttpClient;
+        }*/
+        this.eurekaHttpClient = eurekaHttpClient;
 
         try {
             if (fetchRegistry()) {
@@ -362,10 +364,10 @@ public class RemoteRegionRegistry implements LookupService<String> {
      * @param response
      *            the HttpResponse object.
      */
-    private void closeResponse(ClientResponse response) {
+    private void closeResponse(/*ClientResponse*/ Object response) {
         if (response != null) {
             try {
-                response.close();
+                // response.close();
             } catch (Throwable th) {
                 logger.error("Cannot release response resource :", th);
             }
@@ -399,10 +401,10 @@ public class RemoteRegionRegistry implements LookupService<String> {
      * @param delta - true, if the fetch needs to get deltas, false otherwise
      * @return - response which has information about the data.
      */
-    private Applications fetchRemoteRegistry(boolean delta) {
+    protected Applications fetchRemoteRegistry(boolean delta) {
         logger.info("Getting instance registry info from the eureka server : {} , delta : {}", this.remoteRegionURL, delta);
 
-        if (shouldUseExperimentalTransport()) {
+//        if (shouldUseExperimentalTransport()) {
             try {
                 EurekaHttpResponse<Applications> httpResponse = delta ? eurekaHttpClient.getDelta() : eurekaHttpClient.getApplications();
                 int httpStatus = httpResponse.getStatusCode();
@@ -414,8 +416,8 @@ public class RemoteRegionRegistry implements LookupService<String> {
             } catch (Throwable t) {
                 logger.error("Can't get a response from {}", this.remoteRegionURL, t);
             }
-        } else {
-            ClientResponse response = null;
+//        } else {
+            /*ClientResponse response = null;
             try {
                 String urlPath = delta ? "apps/delta" : "apps/";
 
@@ -432,19 +434,19 @@ public class RemoteRegionRegistry implements LookupService<String> {
                 logger.error("Can't get a response from {}", this.remoteRegionURL, t);
             } finally {
                 closeResponse(response);
-            }
-        }
+            }*/
+//        }
         return null;
     }
 
-    /**
-     * Reconciles the delta information fetched to see if the hashcodes match.
-     *
-     * @param delta - the delta information fetched previously for reconciliation.
-     * @param reconcileHashCode - the hashcode for comparison.
-     * @return - response
-     * @throws Throwable
-     */
+        /**
+         * Reconciles the delta information fetched to see if the hashcodes match.
+         *
+         * @param delta - the delta information fetched previously for reconciliation.
+         * @param reconcileHashCode - the hashcode for comparison.
+         * @return - response
+         * @throws Throwable
+         */
     private boolean reconcileAndLogDifference(Applications delta, String reconcileHashCode) throws Throwable {
         logger.warn("The Reconcile hashcodes do not match, client : {}, server : {}. Getting the full registry",
                 reconcileHashCode, delta.getAppsHashCode());
@@ -514,13 +516,13 @@ public class RemoteRegionRegistry implements LookupService<String> {
         return this.applicationsDelta.get();
     }
 
-    private boolean shouldUseExperimentalTransport() {
+    /*private boolean shouldUseExperimentalTransport() {
         if (eurekaHttpClient == null) {
             return false;
         }
         String enabled = serverConfig.getExperimental("transport.enabled");
         return enabled != null && "true".equalsIgnoreCase(enabled);
-    }
+    }*/
 
     @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "secondsSinceLastSuccessfulRemoteFetch", type = DataSourceType.GAUGE)
     public long getTimeOfLastSuccessfulRemoteFetch() {

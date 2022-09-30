@@ -24,8 +24,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-import javax.inject.Singleton;
+import jakarta.annotation.Nullable;
+import jakarta.inject.Singleton;
 
 import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicBooleanProperty;

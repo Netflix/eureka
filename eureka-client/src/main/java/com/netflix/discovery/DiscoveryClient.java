@@ -42,13 +42,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import javax.annotation.Nullable;
-import javax.annotation.PreDestroy;
-import javax.inject.Provider;
-import javax.inject.Singleton;
+import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
+import jakarta.annotation.Nullable;
+import jakarta.annotation.PreDestroy;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
-import javax.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.Response.Status;
 
 import com.netflix.discovery.shared.resolver.EndpointRandomizer;
 import com.netflix.discovery.shared.resolver.ResolverUtils;
@@ -59,7 +60,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.HealthCheckCallback;
 import com.netflix.appinfo.HealthCheckCallbackToHandlerBridge;
@@ -78,10 +79,6 @@ import com.netflix.discovery.shared.transport.EurekaHttpClients;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
-import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
-import com.netflix.discovery.shared.transport.jersey.Jersey1DiscoveryClientOptionalArgs;
-import com.netflix.discovery.shared.transport.jersey.Jersey1TransportClientFactories;
-import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import com.netflix.discovery.util.ThresholdLevelsMetric;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Counter;
@@ -231,10 +228,6 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
-    public static class DiscoveryClientOptionalArgs extends Jersey1DiscoveryClientOptionalArgs {
-
-    }
-
     /**
      * Assumes applicationInfoManager is already initialized
      *
@@ -243,16 +236,6 @@ public class DiscoveryClient implements EurekaClient {
     @Deprecated
     public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
         this(myInfo, config, null);
-    }
-
-    /**
-     * Assumes applicationInfoManager is already initialized
-     *
-     * @deprecated use constructor that takes ApplicationInfoManager instead of InstanceInfo directly
-     */
-    @Deprecated
-    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
-        this(ApplicationInfoManager.getInstance(), config, args);
     }
 
     /**
@@ -265,14 +248,6 @@ public class DiscoveryClient implements EurekaClient {
 
     public DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config) {
         this(applicationInfoManager, config, null);
-    }
-
-    /**
-     * @deprecated use the version that take {@link com.netflix.discovery.AbstractDiscoveryClientOptionalArgs} instead
-     */
-    @Deprecated
-    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, DiscoveryClientOptionalArgs args) {
-        this(applicationInfoManager, config, (AbstractDiscoveryClientOptionalArgs) args);
     }
 
     public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args) {
@@ -501,21 +476,17 @@ public class DiscoveryClient implements EurekaClient {
                 ? Collections.emptyList()
                 : args.additionalFilters;
 
-        EurekaJerseyClient providedJerseyClient = args == null
-                ? null
-                : args.eurekaJerseyClient;
-        
-        TransportClientFactories argsTransportClientFactories = null;
-        if (args != null && args.getTransportClientFactories() != null) {
-            argsTransportClientFactories = args.getTransportClientFactories();
-        }
-        
-        // Ignore the raw types warnings since the client filter interface changed between jersey 1/2
         @SuppressWarnings("rawtypes")
-        TransportClientFactories transportClientFactories = argsTransportClientFactories == null
-                ? new Jersey1TransportClientFactories()
-                : argsTransportClientFactories;
-                
+        // Ignore the raw types warnings since the client filter interface changed between jersey 1/2
+        TransportClientFactories transportClientFactories = null;
+        if (args != null && args.getTransportClientFactories() != null) {
+            transportClientFactories = args.getTransportClientFactories();
+        }
+
+        if (transportClientFactories == null) {
+            throw new IllegalArgumentException("transportClientFactories may not be null");
+        }
+
         Optional<SSLContext> sslContext = args == null
                 ? Optional.empty()
                 : args.getSSLContext();
@@ -524,9 +495,8 @@ public class DiscoveryClient implements EurekaClient {
                 : args.getHostnameVerifier();
 
         // If the transport factory was not supplied with args, assume they are using jersey 1 for passivity
-        eurekaTransport.transportClientFactory = providedJerseyClient == null
-                ? transportClientFactories.newTransportClientFactory(clientConfig, additionalFilters, applicationInfoManager.getInfo(), sslContext, hostnameVerifier)
-                : transportClientFactories.newTransportClientFactory(additionalFilters, providedJerseyClient);
+        eurekaTransport.transportClientFactory = transportClientFactories.newTransportClientFactory(clientConfig,
+                additionalFilters, applicationInfoManager.getInfo(), sslContext, hostnameVerifier);
 
         ApplicationsResolver.ApplicationsSource applicationsSource = new ApplicationsResolver.ApplicationsSource() {
             @Override

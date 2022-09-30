@@ -16,7 +16,7 @@
 
 package com.netflix.eureka.registry;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;

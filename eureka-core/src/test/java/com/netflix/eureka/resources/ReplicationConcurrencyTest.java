@@ -5,6 +5,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.EurekaClient;
+import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.EurekaServerContext;
@@ -137,7 +138,8 @@ public class ReplicationConcurrencyTest {
 
             Mockito.doReturn("true").when(serverConfig).getExperimental("registry.registration.ignoreIfDirtyTimestampIsOlder");
 
-            this.registry = new PeerAwareInstanceRegistryImpl(serverConfig, clientConfig, serverCodecs, eurekaClient);
+            EurekaHttpClient eurekaHttpClient = null; // FIXME 2.0
+            this.registry = new PeerAwareInstanceRegistryImpl(serverConfig, clientConfig, serverCodecs, eurekaClient, eurekaHttpClient);
             this.registry.init(peerEurekaNodes);
 
             this.applicationResource = new ApplicationResource(appName, serverConfig, registry);

@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # test against JDK 8
-        java: [ 8 ]
+        # test against JDK 11
+        java: [ 11 ]
     name: CI with Java ${{ matrix.java }}
     steps:
       - uses: actions/checkout@v1

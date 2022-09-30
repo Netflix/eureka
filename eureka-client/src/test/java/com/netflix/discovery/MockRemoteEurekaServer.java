@@ -1,8 +1,8 @@
 package com.netflix.discovery;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.*;
@@ -21,11 +21,12 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.XmlXStream;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
+import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
-import org.mortbay.jetty.Request;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.handler.AbstractHandler;
 
 /**
  * @author Nitesh Kant
@@ -73,7 +74,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
         server = new Server(port);
         server.setHandler(new AppsResourceHandler());
         server.start();
-        port = server.getConnectors()[0].getLocalPort();
+        port = ((NetworkConnector) server.getConnectors()[0]).getLocalPort();
     }
 
     public int getPort() {
@@ -135,7 +136,7 @@ public class MockRemoteEurekaServer extends ExternalResource {
     private class AppsResourceHandler extends AbstractHandler {
 
         @Override
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response, int dispatch)
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 throws IOException, ServletException {
             String authName = request.getHeader(AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY);
             String authVersion = request.getHeader(AbstractEurekaIdentity.AUTH_VERSION_HEADER_KEY);

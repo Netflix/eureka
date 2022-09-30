@@ -16,7 +16,8 @@
 
 package com.netflix.eureka.registry;
 
-import javax.annotation.Nullable;
+import com.netflix.discovery.shared.transport.EurekaHttpClient;
+import jakarta.annotation.Nullable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.AbstractQueue;
@@ -108,15 +109,17 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     protected final EurekaServerConfig serverConfig;
     protected final EurekaClientConfig clientConfig;
     protected final ServerCodecs serverCodecs;
+    private EurekaHttpClient eurekaHttpClient;
     protected volatile ResponseCache responseCache;
 
     /**
      * Create a new, empty instance registry.
      */
-    protected AbstractInstanceRegistry(EurekaServerConfig serverConfig, EurekaClientConfig clientConfig, ServerCodecs serverCodecs) {
+    protected AbstractInstanceRegistry(EurekaServerConfig serverConfig, EurekaClientConfig clientConfig, ServerCodecs serverCodecs, EurekaHttpClient eurekaHttpClient) {
         this.serverConfig = serverConfig;
         this.clientConfig = clientConfig;
         this.serverCodecs = serverCodecs;
+        this.eurekaHttpClient = eurekaHttpClient;
         this.recentCanceledQueue = new CircularQueue<Pair<Long, String>>(1000);
         this.recentRegisteredQueue = new CircularQueue<Pair<Long, String>>(1000);
 
@@ -142,8 +145,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             for (Map.Entry<String, String> remoteRegionUrlWithName : remoteRegionUrlsWithName.entrySet()) {
                 RemoteRegionRegistry remoteRegionRegistry = new RemoteRegionRegistry(
                         serverConfig,
-                        clientConfig,
-                        serverCodecs,
+                        eurekaHttpClient,
                         remoteRegionUrlWithName.getKey(),
                         new URL(remoteRegionUrlWithName.getValue()));
                 regionNameVSRemoteRegistry.put(remoteRegionUrlWithName.getKey(), remoteRegionRegistry);

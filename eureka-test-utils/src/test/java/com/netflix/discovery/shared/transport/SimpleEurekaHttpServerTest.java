@@ -22,7 +22,7 @@ import com.google.common.base.Preconditions;
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.discovery.converters.wrappers.CodecWrappers.JacksonJson;
 import com.netflix.discovery.shared.resolver.DefaultEndpoint;
-import com.netflix.discovery.shared.transport.jersey.JerseyEurekaHttpClientFactory;
+import com.netflix.discovery.shared.transport.jersey3.Jersey3ApplicationClientFactory;
 import org.junit.After;
 
 /**
@@ -44,7 +44,7 @@ public class SimpleEurekaHttpServerTest extends EurekaHttpClientCompatibilityTes
     protected EurekaHttpClient getEurekaHttpClient(URI serviceURI) {
         Preconditions.checkState(eurekaHttpClient == null, "EurekaHttpClient has been already created");
 
-        httpClientFactory = JerseyEurekaHttpClientFactory.newBuilder()
+        httpClientFactory = Jersey3ApplicationClientFactory.newBuilder()
                 .withClientName("test")
                 .withMaxConnectionsPerHost(10)
                 .withMaxTotalConnections(10)

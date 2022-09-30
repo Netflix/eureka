@@ -1,6 +1,8 @@
 package com.netflix.discovery.junit.resource;
 
-import javax.ws.rs.core.UriBuilder;
+import com.netflix.discovery.Jersey3DiscoveryClientOptionalArgs;
+import com.netflix.discovery.shared.transport.jersey3.Jersey3TransportClientFactories;
+import jakarta.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,7 +28,6 @@ import com.netflix.discovery.DiscoveryManager;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.transport.SimpleEurekaHttpServer;
-import com.netflix.discovery.shared.transport.jersey.Jersey1DiscoveryClientOptionalArgs;
 import com.netflix.eventbus.impl.EventBusImpl;
 import com.netflix.eventbus.spi.EventBus;
 import com.netflix.eventbus.spi.InvalidSubscriberException;
@@ -96,11 +97,11 @@ public class DiscoveryClientResource extends ExternalResource {
                 applicationInfoManager = createApplicationManager();
                 EurekaClientConfig clientConfig = createEurekaClientConfig();
 
-                Jersey1DiscoveryClientOptionalArgs optionalArgs = new Jersey1DiscoveryClientOptionalArgs();
-                eventBus = new EventBusImpl();
-                optionalArgs.setEventBus(eventBus);
+                Jersey3DiscoveryClientOptionalArgs args = new Jersey3DiscoveryClientOptionalArgs();
+                args.setTransportClientFactories(new Jersey3TransportClientFactories());                eventBus = new EventBusImpl();
+                args.setEventBus(eventBus);
 
-                client = new DiscoveryClient(applicationInfoManager, clientConfig, optionalArgs);
+                client = new DiscoveryClient(applicationInfoManager, clientConfig, args);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -252,7 +253,9 @@ public class DiscoveryClientResource extends ExternalResource {
         ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), clientInstanceInfo);
 
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
-        EurekaClient client = new DiscoveryClient(applicationInfoManager, config);
+        Jersey3DiscoveryClientOptionalArgs args = new Jersey3DiscoveryClientOptionalArgs();
+        args.setTransportClientFactories(new Jersey3TransportClientFactories());
+        EurekaClient client = new DiscoveryClient(applicationInfoManager, config, args);
         return client;
     }
 
@@ -262,7 +265,9 @@ public class DiscoveryClientResource extends ExternalResource {
         DefaultEurekaClientConfig config = new DefaultEurekaClientConfig();
         // setup config in advance, used in initialize converter
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
-        EurekaClient client = new DiscoveryClient(clientInstanceInfo, config);
+        Jersey3DiscoveryClientOptionalArgs args = new Jersey3DiscoveryClientOptionalArgs();
+        args.setTransportClientFactories(new Jersey3TransportClientFactories());
+        EurekaClient client = new DiscoveryClient(clientInstanceInfo, config, args);
         ApplicationInfoManager.getInstance().initComponent(new MyDataCenterInstanceConfig());
         return client;
     }
