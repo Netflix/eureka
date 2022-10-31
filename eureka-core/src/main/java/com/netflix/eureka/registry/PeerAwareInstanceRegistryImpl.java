@@ -50,6 +50,7 @@ import com.netflix.eureka.cluster.PeerEurekaNodes;
 import com.netflix.eureka.lease.Lease;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
 import com.netflix.eureka.resources.ServerCodecs;
+import com.netflix.eureka.transport.EurekaServerHttpClientFactory;
 import com.netflix.eureka.util.MeasuredRate;
 import com.netflix.servo.DefaultMonitorRegistry;
 import com.netflix.servo.annotations.DataSourceType;
@@ -132,9 +133,9 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             EurekaServerConfig serverConfig,
             EurekaClientConfig clientConfig,
             ServerCodecs serverCodecs,
-            EurekaClient eurekaClient, EurekaHttpClient eurekaHttpClient
+            EurekaClient eurekaClient, EurekaServerHttpClientFactory eurekaServerHttpClientFactory
     ) {
-        super(serverConfig, clientConfig, serverCodecs, eurekaHttpClient);
+        super(serverConfig, clientConfig, serverCodecs, eurekaServerHttpClientFactory);
         this.eurekaClient = eurekaClient;
         this.numberOfReplicationsLastMin = new MeasuredRate(1000 * 60 * 1);
         // We first check if the instance is STARTING or DOWN, then we check explicit overrides,

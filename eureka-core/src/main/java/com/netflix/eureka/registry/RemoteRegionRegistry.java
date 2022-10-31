@@ -15,11 +15,10 @@
  */
 package com.netflix.eureka.registry;
 
+import com.netflix.eureka.transport.EurekaServerHttpClientFactory;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.core.MediaType;
-import java.net.InetAddress;
+
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -46,9 +45,7 @@ import com.netflix.discovery.shared.resolver.StaticClusterResolver;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.EurekaServerIdentity;
 import com.netflix.eureka.resources.ServerCodecs;
-import com.netflix.eureka.transport.EurekaServerHttpClients;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
@@ -96,9 +93,9 @@ public class RemoteRegionRegistry implements LookupService<String> {
 
     @Inject
     public RemoteRegionRegistry(EurekaServerConfig serverConfig,
-//                                EurekaClientConfig clientConfig,
-//                                ServerCodecs serverCodecs,
-                                EurekaHttpClient eurekaHttpClient,
+                                EurekaClientConfig clientConfig,
+                                ServerCodecs serverCodecs,
+                                EurekaServerHttpClientFactory eurekaServerHttpClientFactory,
                                 String regionName,
                                 URL remoteRegionURL) {
         this.serverConfig = serverConfig;
@@ -130,13 +127,11 @@ public class RemoteRegionRegistry implements LookupService<String> {
         }
         discoveryJerseyClient = clientBuilder.build();
         discoveryApacheClient = null; // discoveryJerseyClient.getClient();
-         */
 
         // should we enable GZip decoding of responses based on Response Headers?
         if (serverConfig.shouldGZipContentFromRemoteRegion()) {
             // compressed only if there exists a 'Content-Encoding' header whose value is "gzip"
-            // FIXME 2.0
-            // discoveryApacheClient.addFilter(new GZIPContentEncodingFilter(false));
+            discoveryApacheClient.addFilter(new GZIPContentEncodingFilter(false));
         }
 
         /*String ip = null;
@@ -145,20 +140,22 @@ public class RemoteRegionRegistry implements LookupService<String> {
         } catch (UnknownHostException e) {
             logger.warn("Cannot find localhost ip", e);
         }
-        EurekaServerIdentity identity = new EurekaServerIdentity(ip);*/
-        // FIXME 2.0
-        // discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
+        EurekaServerIdentity identity = new EurekaServerIdentity(ip);
+        discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
+        */
 
         // Configure new transport layer (candidate for injecting in the future)
-        /*EurekaHttpClient newEurekaHttpClient = null;
+        EurekaHttpClient newEurekaHttpClient = null;
         try {
             ClusterResolver clusterResolver = StaticClusterResolver.fromURL(regionName, remoteRegionURL);
-            newEurekaHttpClient = EurekaServerHttpClients.createRemoteRegionClient(
+            newEurekaHttpClient = eurekaServerHttpClientFactory.createRemoteRegionClient(
                     serverConfig, clientConfig.getTransportConfig(), serverCodecs, clusterResolver);
         } catch (Exception e) {
-            logger.warn("Transport initialization failure", e);
-        }*/
-        this.eurekaHttpClient = eurekaHttpClient;
+            // logger.warn("Transport initialization failure", e);
+            // FIXME: 2.0 go back to warn above when apache client reinstated
+            throw new RuntimeException("Transport initialization failure", e);
+        }
+        this.eurekaHttpClient = newEurekaHttpClient;
 
         try {
             if (fetchRegistry()) {

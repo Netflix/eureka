@@ -30,6 +30,7 @@ import com.netflix.eureka.registry.rule.LeaseExistsRule;
 import com.netflix.eureka.registry.rule.OverrideExistsRule;
 import com.netflix.eureka.resources.ServerCodecs;
 
+import com.netflix.eureka.transport.EurekaServerHttpClientFactory;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -49,8 +50,8 @@ public class AwsInstanceRegistry extends PeerAwareInstanceRegistryImpl {
     public AwsInstanceRegistry(EurekaServerConfig serverConfig,
                                EurekaClientConfig clientConfig,
                                ServerCodecs serverCodecs,
-                               EurekaClient eurekaClient, EurekaHttpClient eurekaHttpClient) {
-        super(serverConfig, clientConfig, serverCodecs, eurekaClient, eurekaHttpClient);
+                               EurekaClient eurekaClient, EurekaServerHttpClientFactory eurekaServerHttpClientFactory) {
+        super(serverConfig, clientConfig, serverCodecs, eurekaClient, eurekaServerHttpClientFactory);
     }
 
     @Override

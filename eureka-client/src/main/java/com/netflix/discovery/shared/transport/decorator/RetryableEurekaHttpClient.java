@@ -127,7 +127,8 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
                 }
                 logger.warn("Request execution failure with status code {}; retrying on another server if available", response.getStatusCode());
             } catch (Exception e) {
-                logger.warn("Request execution failed with message: {}", e.getMessage());  // just log message as the underlying client should log the stacktrace
+                // logger.warn("Request execution failed with message: {}", e.getMessage());  // just log message as the underlying client should log the stacktrace
+                logger.warn("Request execution failed with message: {}", e);
             }
 
             // Connection error or 5xx from the server that must be retried on another server

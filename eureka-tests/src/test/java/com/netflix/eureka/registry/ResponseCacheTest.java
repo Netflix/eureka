@@ -8,6 +8,8 @@ import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.Version;
 import com.netflix.eureka.resources.DefaultServerCodecs;
+import com.netflix.eureka.transport.EurekaServerHttpClientFactory;
+import com.netflix.eureka.transport.Jersey3EurekaServerHttpClientFactory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,12 +35,12 @@ public class ResponseCacheTest extends AbstractTester {
         EurekaServerConfig serverConfig = spy(new DefaultEurekaServerConfig());
         doReturn(true).when(serverConfig).disableTransparentFallbackToOtherRegion();
 
-        EurekaHttpClient eurekaHttpClient = null; // FIXME 2.0
+        EurekaServerHttpClientFactory eurekaServerHttpClientFactory = new Jersey3EurekaServerHttpClientFactory();
         testRegistry = new PeerAwareInstanceRegistryImpl(
                 serverConfig,
                 new DefaultEurekaClientConfig(),
                 new DefaultServerCodecs(serverConfig),
-                client, eurekaHttpClient
+                client, eurekaServerHttpClientFactory
         );
         testRegistry.init(serverContext.getPeerEurekaNodes());
         testRegistry.syncUp();

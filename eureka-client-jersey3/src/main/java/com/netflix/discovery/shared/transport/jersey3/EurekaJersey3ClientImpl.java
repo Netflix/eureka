@@ -232,7 +232,7 @@ public class EurekaJersey3ClientImpl implements EurekaJersey3Client {
 
                 if (systemSSL) {
                     cm = createSystemSslCM();
-                } else if (trustStoreFileName != null) {
+                } else if (trustStoreFileName != null && !trustStoreFileName.trim().isEmpty()) {
                     cm = createCustomSslCM();
                 } else {
                     cm = new PoolingHttpClientConnectionManager();

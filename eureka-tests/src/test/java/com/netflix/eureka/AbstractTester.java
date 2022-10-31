@@ -2,8 +2,12 @@ package com.netflix.eureka;
 
 import com.netflix.discovery.Jersey3DiscoveryClientOptionalArgs;
 import com.netflix.discovery.shared.resolver.DefaultEndpoint;
+import com.netflix.discovery.shared.resolver.EurekaEndpoint;
+import com.netflix.discovery.shared.resolver.StaticClusterResolver;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.jersey3.Jersey3TransportClientFactories;
+import com.netflix.eureka.transport.EurekaServerHttpClientFactory;
+import com.netflix.eureka.transport.Jersey3EurekaServerHttpClientFactory;
 import jakarta.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -104,9 +108,8 @@ public class AbstractTester {
         client = new DiscoveryClient(applicationInfoManager, clientConfig, args);
 
         ServerCodecs serverCodecs = new DefaultServerCodecs(serverConfig);
-        EurekaHttpClient eurekaHttpClient = Jersey3TransportClientFactories.getInstance().newTransportClientFactory(clientConfig,
-                Collections.emptyList(), instanceInfo).newClient(new DefaultEndpoint(serviceUri));
-        registry = makePeerAwareInstanceRegistry(serverConfig, clientConfig, serverCodecs, client, eurekaHttpClient);
+        EurekaServerHttpClientFactory eurekaServerHttpClientFactory = new Jersey3EurekaServerHttpClientFactory();
+        registry = makePeerAwareInstanceRegistry(serverConfig, clientConfig, serverCodecs, client, eurekaServerHttpClientFactory);
         serverContext = new DefaultEurekaServerContext(
                 serverConfig,
                 serverCodecs,
@@ -132,8 +135,8 @@ public class AbstractTester {
     protected PeerAwareInstanceRegistryImpl makePeerAwareInstanceRegistry(EurekaServerConfig serverConfig,
                                                                           EurekaClientConfig clientConfig,
                                                                           ServerCodecs serverCodecs,
-                                                                          EurekaClient eurekaClient, EurekaHttpClient eurekaHttpClient) {
-        return new TestPeerAwareInstanceRegistry(serverConfig, clientConfig, serverCodecs, eurekaHttpClient, eurekaClient);
+                                                                          EurekaClient eurekaClient, EurekaServerHttpClientFactory eurekaServerHttpClientFactory) {
+        return new TestPeerAwareInstanceRegistry(serverConfig, clientConfig, serverCodecs, eurekaClient, eurekaServerHttpClientFactory);
     }
 
     protected MockRemoteEurekaServer newMockRemoteServer() {
@@ -239,9 +242,8 @@ public class AbstractTester {
         public TestPeerAwareInstanceRegistry(EurekaServerConfig serverConfig,
                                              EurekaClientConfig clientConfig,
                                              ServerCodecs serverCodecs,
-                                             EurekaHttpClient eurekaHttpClient,
-                                             EurekaClient eurekaClient) {
-            super(serverConfig, clientConfig, serverCodecs, eurekaClient, eurekaHttpClient);
+                                             EurekaClient eurekaClient, EurekaServerHttpClientFactory eurekaServerHttpClientFactory) {
+            super(serverConfig, clientConfig, serverCodecs, eurekaClient, eurekaServerHttpClientFactory);
         }
 
         @Override
