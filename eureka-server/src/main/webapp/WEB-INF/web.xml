@@ -5,7 +5,7 @@
          xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
 	http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
   <listener>
-    <listener-class>com.netflix.eureka.EurekaBootStrap</listener-class>
+    <listener-class>com.netflix.eureka.Jersey3EurekaBootStrap</listener-class>
   </listener>
 
   <filter>
@@ -28,7 +28,7 @@
 
   <filter>
     <filter-name>jersey</filter-name>
-    <filter-class>com.sun.jersey.spi.container.servlet.ServletContainer</filter-class>
+    <filter-class>org.glassfish.jersey.servlet.ServletContainer</filter-class>
     <init-param>
       <param-name>com.sun.jersey.config.property.WebPageContentRegex</param-name>
       <param-value>/(flex|images|js|css|jsp)/.*</param-value>
