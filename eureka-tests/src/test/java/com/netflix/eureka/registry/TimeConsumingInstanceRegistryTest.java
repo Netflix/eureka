@@ -10,7 +10,6 @@ import com.netflix.eureka.test.async.executor.AsyncSequentialExecutor;
 import com.netflix.eureka.test.async.executor.SequentialEvents;
 import com.netflix.eureka.test.async.executor.SingleEvent;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -68,7 +67,6 @@ public class TimeConsumingInstanceRegistryTest extends AbstractTester {
      * Note that there is a thread retrieving and printing out registry status for debugging purpose.
      */
     @Test
-    @Ignore // FIXME: 2.0
     public void testLeaseExpirationAndUpdateRenewalThreshold() throws InterruptedException {
         final int registeredInstanceCount = 50;
         final int leaseDurationInSecs = 30;
