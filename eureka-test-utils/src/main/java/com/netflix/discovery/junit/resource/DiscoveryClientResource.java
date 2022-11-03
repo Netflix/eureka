@@ -98,10 +98,10 @@ public class DiscoveryClientResource extends ExternalResource {
                 EurekaClientConfig clientConfig = createEurekaClientConfig();
 
                 Jersey3DiscoveryClientOptionalArgs args = new Jersey3DiscoveryClientOptionalArgs();
-                args.setTransportClientFactories(new Jersey3TransportClientFactories());                eventBus = new EventBusImpl();
+                eventBus = new EventBusImpl();
                 args.setEventBus(eventBus);
 
-                client = new DiscoveryClient(applicationInfoManager, clientConfig, args);
+                client = new DiscoveryClient(applicationInfoManager, clientConfig, Jersey3TransportClientFactories.getInstance(), args);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -253,9 +253,7 @@ public class DiscoveryClientResource extends ExternalResource {
         ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), clientInstanceInfo);
 
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
-        Jersey3DiscoveryClientOptionalArgs args = new Jersey3DiscoveryClientOptionalArgs();
-        args.setTransportClientFactories(new Jersey3TransportClientFactories());
-        EurekaClient client = new DiscoveryClient(applicationInfoManager, config, args);
+        EurekaClient client = new DiscoveryClient(applicationInfoManager, config, Jersey3TransportClientFactories.getInstance());
         return client;
     }
 
@@ -265,10 +263,8 @@ public class DiscoveryClientResource extends ExternalResource {
         DefaultEurekaClientConfig config = new DefaultEurekaClientConfig();
         // setup config in advance, used in initialize converter
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
-        Jersey3DiscoveryClientOptionalArgs args = new Jersey3DiscoveryClientOptionalArgs();
-        args.setTransportClientFactories(new Jersey3TransportClientFactories());
-        EurekaClient client = new DiscoveryClient(clientInstanceInfo, config, args);
-        ApplicationInfoManager.getInstance().initComponent(new MyDataCenterInstanceConfig());
+        ApplicationInfoManager applicationInfoManager1 = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), clientInstanceInfo);
+        EurekaClient client = new DiscoveryClient(applicationInfoManager1, config, Jersey3TransportClientFactories.getInstance());
         return client;
     }
 

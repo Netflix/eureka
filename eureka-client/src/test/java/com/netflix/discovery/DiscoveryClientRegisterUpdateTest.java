@@ -145,7 +145,6 @@ public class DiscoveryClientRegisterUpdateTest {
 
     private Jersey3DiscoveryClientOptionalArgs getOptionalArgs() {
         Jersey3DiscoveryClientOptionalArgs optionalArgs = new Jersey3DiscoveryClientOptionalArgs();
-        optionalArgs.setTransportClientFactories(Jersey3TransportClientFactories.getInstance());
         return optionalArgs;
     }
 
@@ -171,7 +170,7 @@ public class DiscoveryClientRegisterUpdateTest {
     private static class TestClient extends DiscoveryClient {
 
         public TestClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs optionalArgs) {
-            super(applicationInfoManager, config, optionalArgs);
+            super(applicationInfoManager, config, Jersey3TransportClientFactories.getInstance(), optionalArgs);
         }
 
         @Override

@@ -5,6 +5,7 @@ import com.netflix.discovery.AbstractDiscoveryClientOptionalArgs;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.Jersey3DiscoveryClientOptionalArgs;
+import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import com.netflix.discovery.shared.transport.jersey3.Jersey3TransportClientFactories;
 import com.netflix.eureka.cluster.Jersey3PeerEurekaNodes;
 import com.netflix.eureka.cluster.PeerEurekaNodes;
@@ -44,8 +45,12 @@ public class Jersey3EurekaBootStrap extends EurekaBootStrap {
     @Override
     protected AbstractDiscoveryClientOptionalArgs<?> getDiscoveryClientOptionalArgs() {
         Jersey3DiscoveryClientOptionalArgs jersey3DiscoveryClientOptionalArgs = new Jersey3DiscoveryClientOptionalArgs();
-        jersey3DiscoveryClientOptionalArgs.setTransportClientFactories(Jersey3TransportClientFactories.getInstance());
         return jersey3DiscoveryClientOptionalArgs;
+    }
+
+    @Override
+    protected TransportClientFactories getTransportClientFactories() {
+        return Jersey3TransportClientFactories.getInstance();
     }
 
     @Override

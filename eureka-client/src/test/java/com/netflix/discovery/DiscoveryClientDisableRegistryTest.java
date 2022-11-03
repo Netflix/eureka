@@ -7,6 +7,7 @@ import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.config.ConfigurationManager;
+import com.netflix.discovery.shared.transport.jersey3.Jersey3TransportClientFactories;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,7 +43,7 @@ public class DiscoveryClientDisableRegistryTest {
         });
 
         ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), builder.build());
-        client = new DiscoveryClient(applicationInfoManager, new DefaultEurekaClientConfig());
+        client = new DiscoveryClient(applicationInfoManager, new DefaultEurekaClientConfig(), Jersey3TransportClientFactories.getInstance());
     }
 
     @Test

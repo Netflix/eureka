@@ -33,6 +33,7 @@ import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.shared.transport.jersey3.Jersey3TransportClientFactories;
 
 /**
  * Sample Eureka client that discovers the example service using Eureka and sends requests.
@@ -57,7 +58,7 @@ public class ExampleEurekaClient {
 
     private static synchronized EurekaClient initializeEurekaClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig clientConfig) {
         if (eurekaClient == null) {
-            eurekaClient = new DiscoveryClient(applicationInfoManager, clientConfig);
+            eurekaClient = new DiscoveryClient(applicationInfoManager, clientConfig, Jersey3TransportClientFactories.getInstance());
         }
 
         return eurekaClient;

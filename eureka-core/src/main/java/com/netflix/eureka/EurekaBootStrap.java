@@ -17,6 +17,7 @@
 package com.netflix.eureka;
 
 import com.netflix.discovery.AbstractDiscoveryClientOptionalArgs;
+import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import com.netflix.eureka.transport.EurekaServerHttpClientFactory;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
@@ -168,7 +169,8 @@ public abstract class EurekaBootStrap implements ServletContextListener {
                     instanceConfig, new EurekaConfigBasedInstanceInfoProvider(instanceConfig).get());
             
             EurekaClientConfig eurekaClientConfig = new DefaultEurekaClientConfig();
-            eurekaClient = new DiscoveryClient(applicationInfoManager, eurekaClientConfig, getDiscoveryClientOptionalArgs());
+            eurekaClient = new DiscoveryClient(applicationInfoManager, eurekaClientConfig, getTransportClientFactories(),
+                    getDiscoveryClientOptionalArgs());
         } else {
             applicationInfoManager = eurekaClient.getApplicationInfoManager();
         }
@@ -226,6 +228,8 @@ public abstract class EurekaBootStrap implements ServletContextListener {
     protected AbstractDiscoveryClientOptionalArgs<?> getDiscoveryClientOptionalArgs() {
         return null;
     }
+
+    protected abstract TransportClientFactories getTransportClientFactories();
 
     protected abstract EurekaServerHttpClientFactory getEurekaServerHttpClientFactory();
 

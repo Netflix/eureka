@@ -103,9 +103,7 @@ public class AbstractTester {
         InstanceInfo instanceInfo = builder.build();
         ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), instanceInfo);
 
-        Jersey3DiscoveryClientOptionalArgs args = new Jersey3DiscoveryClientOptionalArgs();
-        args.setTransportClientFactories(new Jersey3TransportClientFactories());
-        client = new DiscoveryClient(applicationInfoManager, clientConfig, args);
+        client = new DiscoveryClient(applicationInfoManager, clientConfig, Jersey3TransportClientFactories.getInstance());
 
         ServerCodecs serverCodecs = new DefaultServerCodecs(serverConfig);
         EurekaServerHttpClientFactory eurekaServerHttpClientFactory = new Jersey3EurekaServerHttpClientFactory();
