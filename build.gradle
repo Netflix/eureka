@@ -7,13 +7,13 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:2.2.+'
+        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:8.+'
     }
 }
 
 plugins {
-    id 'nebula.netflixoss' version '9.1.0'
-    id 'org.gretty' version '2.1.0'
+    id 'com.netflix.nebula.netflixoss' version '11.1.1'
+    id 'org.gretty' version '4.0.3'
 }
 
 idea {
@@ -55,7 +55,7 @@ allprojects {
 }
 
 subprojects {
-    apply plugin: 'nebula.netflixoss'
+    apply plugin: 'com.netflix.nebula.netflixoss'
     apply plugin: 'java'
 
     group = "com.netflix.${githubProjectName}"

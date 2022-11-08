@@ -15,18 +15,18 @@
  */
 
 dependencies {
-    testCompile project(':eureka-core-jersey3')
+    testImplementation project(':eureka-core-jersey3')
 
-    testCompile (project(':eureka-test-utils')) {
+    testImplementation (project(':eureka-test-utils')) {
         // exclude all transitives to avoid bringing in jersey1 eureka-core
         transitive = false
     }
 
-    testCompile project(':eureka-test-utils')
-    testCompile "junit:junit:${junit_version}"
-    testCompile "org.mockito:mockito-core:${mockitoVersion}"
-    testCompile 'org.eclipse.jetty:jetty-server:11.0.11'
-    testCompile 'org.eclipse.jetty:jetty-servlet:11.0.11'
-    testRuntime 'org.slf4j:slf4j-simple:2.0.0-beta1'
+    testImplementation project(':eureka-test-utils')
+    testImplementation "junit:junit:${junit_version}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation 'org.eclipse.jetty:jetty-server:11.0.11'
+    testImplementation 'org.eclipse.jetty:jetty-servlet:11.0.11'
+    testImplementation 'org.slf4j:slf4j-simple:2.0.0-beta1'
 
 }

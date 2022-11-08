@@ -1,5 +1,6 @@
+apply plugin: 'java-library'
 dependencies {
-    compile project(':eureka-core-jersey3')
-    compile "junit:junit:${junit_version}"
-    compile "org.mockito:mockito-core:${mockitoVersion}"
+    api project(':eureka-core-jersey3')
+    api "junit:junit:${junit_version}"
+    api "org.mockito:mockito-core:${mockitoVersion}"
 }
