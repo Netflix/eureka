@@ -17,6 +17,7 @@ dependencies {
     testImplementation "org.mockito:mockito-core:${mockitoVersion}"
     testImplementation "org.eclipse.jetty:jetty-server:$jetty_version"
     testImplementation "org.eclipse.jetty:jetty-webapp:$jetty_version"
+    testRuntimeOnly 'org.slf4j:slf4j-simple:2.0.0-beta1'
 }
 
 task copyLibs(type: Copy) {

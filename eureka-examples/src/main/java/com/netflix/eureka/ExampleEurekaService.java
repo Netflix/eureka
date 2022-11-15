@@ -27,6 +27,7 @@ import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.EurekaClientConfig;
+import com.netflix.discovery.shared.transport.jersey3.Jersey3TransportClientFactories;
 
 /**
  * Sample Eureka service that registers with Eureka to receive and process requests.
@@ -49,7 +50,7 @@ public class ExampleEurekaService {
 
     private static synchronized EurekaClient initializeEurekaClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig clientConfig) {
         if (eurekaClient == null) {
-            eurekaClient = new DiscoveryClient(applicationInfoManager, clientConfig);
+            eurekaClient = new DiscoveryClient(applicationInfoManager, clientConfig, Jersey3TransportClientFactories.getInstance());
         }
 
         return eurekaClient;

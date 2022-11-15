@@ -1,7 +1,7 @@
 apply plugin: 'application'
 
 dependencies {
-    implementation project(':eureka-client')
+    implementation project(':eureka-client-jersey3')
     implementation files('conf')
     implementation 'jakarta.inject:jakarta.inject-api:2.0.1'
 

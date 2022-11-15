@@ -18,8 +18,8 @@ package com.netflix.discovery;
 
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.EurekaInstanceConfig;
-import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.LookupService;
+import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,20 +80,14 @@ public class DiscoveryManager {
      * @param eurekaConfig the eureka client configuration of the instance.
      */
     public void initComponent(EurekaInstanceConfig config,
-                              EurekaClientConfig eurekaConfig, AbstractDiscoveryClientOptionalArgs args) {
+                              EurekaClientConfig eurekaConfig, TransportClientFactories transportClientFactories, AbstractDiscoveryClientOptionalArgs args) {
         this.eurekaInstanceConfig = config;
         this.eurekaClientConfig = eurekaConfig;
         if (ApplicationInfoManager.getInstance().getInfo() == null) {
             // Initialize application info
             ApplicationInfoManager.getInstance().initComponent(config);
         }
-        InstanceInfo info = ApplicationInfoManager.getInstance().getInfo();
-        discoveryClient = new DiscoveryClient(info, eurekaConfig, args);
-    }
-
-    public void initComponent(EurekaInstanceConfig config,
-                              EurekaClientConfig eurekaConfig) {
-        initComponent(config, eurekaConfig, null);
+        discoveryClient = new DiscoveryClient(ApplicationInfoManager.getInstance(), eurekaConfig, transportClientFactories, args);
     }
 
     /**

@@ -69,12 +69,11 @@ public class BackUpRegistryTest {
 
         backupRegistry = new MockBackupRegistry();
         setupBackupMock();
-        Jersey3DiscoveryClientOptionalArgs args = new Jersey3DiscoveryClientOptionalArgs();
-        args.setTransportClientFactories(Jersey3TransportClientFactories.getInstance());
         client = new DiscoveryClient(
                 applicationInfoManager,
                 new DefaultEurekaClientConfig(),
-                args,
+                Jersey3TransportClientFactories.getInstance(),
+                null,
                 () -> backupRegistry,
                 ResolverUtils::randomize
         );

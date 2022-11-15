@@ -31,8 +31,6 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
 
     TransportClientFactory transportClientFactory;
 
-    TransportClientFactories transportClientFactories;
-
     private Set<EurekaEventListener> eventListeners;
 
     private Optional<SSLContext> sslContext = Optional.empty();
@@ -81,16 +79,6 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
     public void setAdditionalFilters(Collection<T> additionalFilters) {
         this.additionalFilters = additionalFilters;
     }
-
-    public TransportClientFactories getTransportClientFactories() {
-        return transportClientFactories;
-    }
-
-    // @Inject
-    public void setTransportClientFactories(TransportClientFactories transportClientFactories) {
-        this.transportClientFactories = transportClientFactories;
-    }
-
 
     public TransportClientFactory getTransportClientFactory() {
         return transportClientFactory;

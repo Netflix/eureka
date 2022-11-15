@@ -10,6 +10,7 @@ import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.resources.ServerCodecs;
+import com.netflix.eureka.transport.EurekaServerHttpClientFactory;
 import org.junit.Test;
 
 
@@ -73,8 +74,8 @@ public class AwsInstanceRegistryTest extends InstanceRegistryTest {
     protected PeerAwareInstanceRegistryImpl makePeerAwareInstanceRegistry(EurekaServerConfig serverConfig,
                                                                           EurekaClientConfig clientConfig,
                                                                           ServerCodecs serverCodecs,
-                                                                          EurekaClient eurekaClient, EurekaHttpClient eurekaHttpClient) {
-        return new TestAwsInstanceRegistry(serverConfig, clientConfig, serverCodecs, eurekaHttpClient, eurekaClient);
+                                                                          EurekaClient eurekaClient, EurekaServerHttpClientFactory eurekaServerHttpClientFactory) {
+        return new TestAwsInstanceRegistry(serverConfig, clientConfig, serverCodecs, eurekaClient, eurekaServerHttpClientFactory);
     }
 
 
@@ -83,9 +84,8 @@ public class AwsInstanceRegistryTest extends InstanceRegistryTest {
         public TestAwsInstanceRegistry(EurekaServerConfig serverConfig,
                                              EurekaClientConfig clientConfig,
                                              ServerCodecs serverCodecs,
-                                             EurekaHttpClient eurekaHttpClient,
-                                             EurekaClient eurekaClient) {
-            super(serverConfig, clientConfig, serverCodecs, eurekaClient, eurekaHttpClient);
+                                             EurekaClient eurekaClient, EurekaServerHttpClientFactory eurekaServerHttpClientFactory) {
+            super(serverConfig, clientConfig, serverCodecs, eurekaClient, eurekaServerHttpClientFactory);
         }
 
         @Override

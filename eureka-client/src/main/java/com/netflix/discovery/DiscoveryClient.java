@@ -186,12 +186,16 @@ public class DiscoveryClient implements EurekaClient {
     protected final EurekaClientConfig clientConfig;
     protected final EurekaTransportConfig transportConfig;
 
+    @SuppressWarnings("rawtypes")
+    protected final TransportClientFactories transportClientFactories;
+
     private final long initTimestampMs;
     private final int initRegistrySize;
 
     private final Stats stats = new Stats();
 
     private static final class EurekaTransport {
+        @SuppressWarnings("rawtypes")
         private ClosableResolver bootstrapResolver;
         private TransportClientFactory transportClientFactory;
 
@@ -228,34 +232,19 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
-    /**
-     * Assumes applicationInfoManager is already initialized
-     *
-     * @deprecated use constructor that takes ApplicationInfoManager instead of InstanceInfo directly
-     */
-    @Deprecated
-    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config) {
-        this(myInfo, config, null);
+    @SuppressWarnings("rawtypes")
+    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, TransportClientFactories transportClientFactories) {
+        this(applicationInfoManager, config, transportClientFactories, null);
     }
 
-    /**
-     * @deprecated use constructor that takes ApplicationInfoManager instead of InstanceInfo directly
-     */
-    @Deprecated
-    public DiscoveryClient(InstanceInfo myInfo, EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args) {
-        this(ApplicationInfoManager.getInstance(), config, args);
+    @SuppressWarnings("rawtypes")
+    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, TransportClientFactories transportClientFactories, AbstractDiscoveryClientOptionalArgs args) {
+        this(applicationInfoManager, config, transportClientFactories, args, ResolverUtils::randomize);
     }
 
-    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config) {
-        this(applicationInfoManager, config, null);
-    }
-
-    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args) {
-        this(applicationInfoManager, config, args, ResolverUtils::randomize);
-    }
-
-    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args, EndpointRandomizer randomizer) {
-        this(applicationInfoManager, config, args, new Provider<BackupRegistry>() {
+    @SuppressWarnings("rawtypes")
+    public DiscoveryClient(ApplicationInfoManager applicationInfoManager, final EurekaClientConfig config, TransportClientFactories transportClientFactories, AbstractDiscoveryClientOptionalArgs args, EndpointRandomizer randomizer) {
+        this(applicationInfoManager, config, transportClientFactories, args, new Provider<BackupRegistry>() {
             private volatile BackupRegistry backupRegistryInstance;
 
             @Override
@@ -286,17 +275,8 @@ public class DiscoveryClient implements EurekaClient {
         }, randomizer);
     }
 
-    /**
-     * @deprecated Use {@link #DiscoveryClient(ApplicationInfoManager, EurekaClientConfig, AbstractDiscoveryClientOptionalArgs, Provider<BackupRegistry>, EndpointRandomizer)}
-     */
-    @Deprecated
-    DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args,
-                    Provider<BackupRegistry> backupRegistryProvider) {
-        this(applicationInfoManager, config, args, backupRegistryProvider, ResolverUtils::randomize);
-    }
-    
     @Inject
-    DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args,
+    DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, TransportClientFactories transportClientFactories, AbstractDiscoveryClientOptionalArgs args,
                     Provider<BackupRegistry> backupRegistryProvider, EndpointRandomizer endpointRandomizer) {
         if (args != null) {
             this.healthCheckHandlerProvider = args.healthCheckHandlerProvider;
@@ -308,7 +288,7 @@ public class DiscoveryClient implements EurekaClient {
             this.healthCheckHandlerProvider = null;
             this.preRegistrationHandler = null;
         }
-        
+        this.transportClientFactories = transportClientFactories;
         this.applicationInfoManager = applicationInfoManager;
         InstanceInfo myInfo = applicationInfoManager.getInfo();
 
@@ -468,6 +448,7 @@ public class DiscoveryClient implements EurekaClient {
                 initTimestampMs, initRegistrySize);
     }
 
+    @SuppressWarnings("unchecked")
     private void scheduleServerEndpointTask(EurekaTransport eurekaTransport,
                                             AbstractDiscoveryClientOptionalArgs args) {
 
@@ -475,13 +456,6 @@ public class DiscoveryClient implements EurekaClient {
         Collection<?> additionalFilters = args == null
                 ? Collections.emptyList()
                 : args.additionalFilters;
-
-        @SuppressWarnings("rawtypes")
-        // Ignore the raw types warnings since the client filter interface changed between jersey 1/2
-        TransportClientFactories transportClientFactories = null;
-        if (args != null && args.getTransportClientFactories() != null) {
-            transportClientFactories = args.getTransportClientFactories();
-        }
 
         if (transportClientFactories == null) {
             throw new IllegalArgumentException("transportClientFactories may not be null");

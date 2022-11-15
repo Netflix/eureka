@@ -23,6 +23,7 @@ import com.netflix.appinfo.EurekaAccept;
 import com.netflix.discovery.converters.wrappers.CodecWrappers.JacksonJson;
 import com.netflix.discovery.shared.resolver.DefaultEndpoint;
 import com.netflix.discovery.shared.transport.jersey3.Jersey3ApplicationClientFactory;
+import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.junit.After;
 
 /**
@@ -44,7 +45,11 @@ public class SimpleEurekaHttpServerTest extends EurekaHttpClientCompatibilityTes
     protected EurekaHttpClient getEurekaHttpClient(URI serviceURI) {
         Preconditions.checkState(eurekaHttpClient == null, "EurekaHttpClient has been already created");
 
-        httpClientFactory = Jersey3ApplicationClientFactory.newBuilder()
+        Jersey3ApplicationClientFactory.Jersey3ApplicationClientFactoryBuilder factoryBuilder = Jersey3ApplicationClientFactory.newBuilder();
+        if (serviceURI.getUserInfo() != null) {
+            factoryBuilder.withFeature(HttpAuthenticationFeature.basicBuilder().build());
+        }
+        httpClientFactory = factoryBuilder
                 .withClientName("test")
                 .withMaxConnectionsPerHost(10)
                 .withMaxTotalConnections(10)

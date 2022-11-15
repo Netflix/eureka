@@ -17,6 +17,7 @@
 package com.netflix.eureka.registry;
 
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
+import com.netflix.eureka.transport.EurekaServerHttpClientFactory;
 import jakarta.annotation.Nullable;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -109,17 +110,17 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     protected final EurekaServerConfig serverConfig;
     protected final EurekaClientConfig clientConfig;
     protected final ServerCodecs serverCodecs;
-    private EurekaHttpClient eurekaHttpClient;
+    private EurekaServerHttpClientFactory eurekaServerHttpClientFactory;
     protected volatile ResponseCache responseCache;
 
     /**
      * Create a new, empty instance registry.
      */
-    protected AbstractInstanceRegistry(EurekaServerConfig serverConfig, EurekaClientConfig clientConfig, ServerCodecs serverCodecs, EurekaHttpClient eurekaHttpClient) {
+    protected AbstractInstanceRegistry(EurekaServerConfig serverConfig, EurekaClientConfig clientConfig, ServerCodecs serverCodecs, EurekaServerHttpClientFactory eurekaServerHttpClientFactory) {
         this.serverConfig = serverConfig;
         this.clientConfig = clientConfig;
         this.serverCodecs = serverCodecs;
-        this.eurekaHttpClient = eurekaHttpClient;
+        this.eurekaServerHttpClientFactory = eurekaServerHttpClientFactory;
         this.recentCanceledQueue = new CircularQueue<Pair<Long, String>>(1000);
         this.recentRegisteredQueue = new CircularQueue<Pair<Long, String>>(1000);
 
@@ -145,7 +146,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             for (Map.Entry<String, String> remoteRegionUrlWithName : remoteRegionUrlsWithName.entrySet()) {
                 RemoteRegionRegistry remoteRegionRegistry = new RemoteRegionRegistry(
                         serverConfig,
-                        eurekaHttpClient,
+                        clientConfig,
+                        serverCodecs,
+                        eurekaServerHttpClientFactory,
                         remoteRegionUrlWithName.getKey(),
                         new URL(remoteRegionUrlWithName.getValue()));
                 regionNameVSRemoteRegistry.put(remoteRegionUrlWithName.getKey(), remoteRegionRegistry);

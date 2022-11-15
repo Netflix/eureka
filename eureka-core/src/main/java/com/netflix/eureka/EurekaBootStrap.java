@@ -16,7 +16,9 @@
 
 package com.netflix.eureka;
 
-import com.netflix.discovery.shared.transport.EurekaHttpClient;
+import com.netflix.discovery.AbstractDiscoveryClientOptionalArgs;
+import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
+import com.netflix.eureka.transport.EurekaServerHttpClientFactory;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
@@ -167,12 +169,13 @@ public abstract class EurekaBootStrap implements ServletContextListener {
                     instanceConfig, new EurekaConfigBasedInstanceInfoProvider(instanceConfig).get());
             
             EurekaClientConfig eurekaClientConfig = new DefaultEurekaClientConfig();
-            eurekaClient = new DiscoveryClient(applicationInfoManager, eurekaClientConfig);
+            eurekaClient = new DiscoveryClient(applicationInfoManager, eurekaClientConfig, getTransportClientFactories(),
+                    getDiscoveryClientOptionalArgs());
         } else {
             applicationInfoManager = eurekaClient.getApplicationInfoManager();
         }
 
-        EurekaHttpClient eurekaHttpClient = getEurekaHttpClient();
+        EurekaServerHttpClientFactory eurekaServerHttpClientFactory = getEurekaServerHttpClientFactory();
 
         PeerAwareInstanceRegistry registry;
         if (isAws(applicationInfoManager.getInfo())) {
@@ -180,7 +183,7 @@ public abstract class EurekaBootStrap implements ServletContextListener {
                     eurekaServerConfig,
                     eurekaClient.getEurekaClientConfig(),
                     serverCodecs,
-                    eurekaClient, eurekaHttpClient
+                    eurekaClient, eurekaServerHttpClientFactory
             );
             awsBinder = new AwsBinderDelegate(eurekaServerConfig, eurekaClient.getEurekaClientConfig(), registry, applicationInfoManager);
             awsBinder.start();
@@ -189,7 +192,7 @@ public abstract class EurekaBootStrap implements ServletContextListener {
                     eurekaServerConfig,
                     eurekaClient.getEurekaClientConfig(),
                     serverCodecs,
-                    eurekaClient, eurekaHttpClient
+                    eurekaClient, eurekaServerHttpClientFactory
             );
         }
 
@@ -222,7 +225,13 @@ public abstract class EurekaBootStrap implements ServletContextListener {
         EurekaMonitors.registerAllStats();
     }
 
-    protected abstract EurekaHttpClient getEurekaHttpClient();
+    protected AbstractDiscoveryClientOptionalArgs<?> getDiscoveryClientOptionalArgs() {
+        return null;
+    }
+
+    protected abstract TransportClientFactories getTransportClientFactories();
+
+    protected abstract EurekaServerHttpClientFactory getEurekaServerHttpClientFactory();
 
     protected abstract PeerEurekaNodes getPeerEurekaNodes(PeerAwareInstanceRegistry registry, EurekaServerConfig eurekaServerConfig, EurekaClientConfig eurekaClientConfig, ServerCodecs serverCodecs, ApplicationInfoManager applicationInfoManager);
 

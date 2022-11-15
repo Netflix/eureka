@@ -75,7 +75,7 @@ public class EurekaClientServerRestIntegrationTest {
         startServer();
         createEurekaServerConfig();
 
-        // FIXME 2.0
+        // FIXME: 2.0
         httpClientFactory = Jersey3ApplicationClientFactory.newBuilder()
                 .withClientName("testEurekaClient")
                 .withConnectionTimeout(1000)
@@ -88,7 +88,7 @@ public class EurekaClientServerRestIntegrationTest {
         jerseyEurekaClient = httpClientFactory.newClient(new DefaultEndpoint(eurekaServiceUrl));
 
         ServerCodecs serverCodecs = new DefaultServerCodecs(eurekaServerConfig);
-        // FIXME 2.0
+        // FIXME: 2.0
         jerseyReplicationClient = Jersey3ReplicationClient.createReplicationClient(
                 eurekaServerConfig,
                 serverCodecs,

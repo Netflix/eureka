@@ -13,6 +13,8 @@ import com.netflix.eureka.cluster.PeerEurekaNode;
 import com.netflix.eureka.cluster.PeerEurekaNodes;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl;
+import com.netflix.eureka.transport.EurekaServerHttpClientFactory;
+import com.netflix.eureka.transport.Jersey3EurekaServerHttpClientFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -138,8 +140,8 @@ public class ReplicationConcurrencyTest {
 
             Mockito.doReturn("true").when(serverConfig).getExperimental("registry.registration.ignoreIfDirtyTimestampIsOlder");
 
-            EurekaHttpClient eurekaHttpClient = null; // FIXME 2.0
-            this.registry = new PeerAwareInstanceRegistryImpl(serverConfig, clientConfig, serverCodecs, eurekaClient, eurekaHttpClient);
+            EurekaServerHttpClientFactory eurekaServerHttpClientFactory = new Jersey3EurekaServerHttpClientFactory();
+            this.registry = new PeerAwareInstanceRegistryImpl(serverConfig, clientConfig, serverCodecs, eurekaClient, eurekaServerHttpClientFactory);
             this.registry.init(peerEurekaNodes);
 
             this.applicationResource = new ApplicationResource(appName, serverConfig, registry);
