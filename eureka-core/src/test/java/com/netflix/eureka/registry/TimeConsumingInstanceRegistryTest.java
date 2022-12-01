@@ -139,10 +139,10 @@ public class TimeConsumingInstanceRegistryTest extends AbstractTester {
                         "There should be 45 instances in application - MYLOCAPP");
                 }
             }),
-            buildEvent(40, new SingleEvent.Action() {
+            buildEvent(60, new SingleEvent.Action() {
                 @Override
                 public void execute() {
-                    System.out.println("checking on 120s");
+                    System.out.println("checking on 140s");
                     System.out.println("getNumOfRenewsPerMinThreshold=" + registry.getNumOfRenewsPerMinThreshold());
                     Preconditions.checkState(registry.getNumOfRenewsPerMinThreshold() == 256, "NumOfRenewsPerMinThreshold should be updated to 256");
                     Preconditions.checkState(registry.getApplication(LOCAL_REGION_APP_NAME).getInstances().size() == 45,
