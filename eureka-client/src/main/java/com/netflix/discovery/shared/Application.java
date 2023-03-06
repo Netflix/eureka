@@ -187,7 +187,9 @@ public class Application {
      * @return the number of instances in this application
      */
     public int size() {
-        return instances.size();
+        synchronized (instances) {
+            return instances.size();
+        }
     }
 
     /**
@@ -251,6 +253,7 @@ public class Application {
         Collections.shuffle(instanceInfoList, shuffleRandom);
         this.shuffledInstances.set(instanceInfoList);
     }
+
 
     private void removeInstance(InstanceInfo i, boolean markAsDirty) {
         instancesMap.remove(i.getId());
