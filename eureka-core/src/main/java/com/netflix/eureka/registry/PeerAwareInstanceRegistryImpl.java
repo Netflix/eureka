@@ -337,7 +337,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     @Override
     public boolean shouldAllowAccess(boolean remoteRegionRequired) {
         if (this.peerInstancesTransferEmptyOnStartup) {
-            if (!(System.currentTimeMillis() > this.startupTime + serverConfig.getWaitTimeInMsWhenSyncEmpty())) {
+            if (this.startupTime == 0 || !(System.currentTimeMillis() > this.startupTime + serverConfig.getWaitTimeInMsWhenSyncEmpty())) {
                 return false;
             }
         }
