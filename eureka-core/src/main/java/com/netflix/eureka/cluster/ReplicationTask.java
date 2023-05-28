@@ -13,6 +13,7 @@ abstract class ReplicationTask {
     private static final Logger logger = LoggerFactory.getLogger(ReplicationTask.class);
 
     protected final String peerNodeName;
+
     protected final Action action;
 
     ReplicationTask(String peerNodeName, Action action) {

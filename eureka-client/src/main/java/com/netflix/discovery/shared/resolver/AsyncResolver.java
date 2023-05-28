@@ -7,7 +7,6 @@ import com.netflix.servo.annotations.Monitor;
 import com.netflix.servo.monitor.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -18,7 +17,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import static com.netflix.discovery.EurekaClientNames.METRIC_RESOLVER_PREFIX;
 
 /**
@@ -28,21 +26,30 @@ import static com.netflix.discovery.EurekaClientNames.METRIC_RESOLVER_PREFIX;
  * @author David Liu
  */
 public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver<T> {
+
     private static final Logger logger = LoggerFactory.getLogger(AsyncResolver.class);
 
     // Note that warm up is best effort. If the resolver is accessed by multiple threads pre warmup,
     // only the first thread will block for the warmup (up to the configurable timeout).
     private final AtomicBoolean warmedUp = new AtomicBoolean(false);
+
     private final AtomicBoolean scheduled = new AtomicBoolean(false);
 
-    private final String name;    // a name for metric purposes
+    // a name for metric purposes
+    private final String name;
+
     private final ClusterResolver<T> delegate;
+
     private final ScheduledExecutorService executorService;
+
     private final ThreadPoolExecutor threadPoolExecutor;
+
     private final TimedSupervisorTask backgroundTask;
+
     private final AtomicReference<List<T>> resultsRef;
 
     private final int refreshIntervalMs;
+
     private final int warmUpTimeoutMs;
 
     // Metric timestamp, tracking last time when data were effectively changed.
@@ -52,19 +59,8 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
      * Create an async resolver with an empty initial value. When this resolver is called for the first time,
      * an initial warm up will be executed before scheduling the periodic update task.
      */
-    public AsyncResolver(String name,
-                         ClusterResolver<T> delegate,
-                         int executorThreadPoolSize,
-                         int refreshIntervalMs,
-                         int warmUpTimeoutMs) {
-        this(
-                name,
-                delegate,
-                Collections.<T>emptyList(),
-                executorThreadPoolSize,
-                refreshIntervalMs,
-                warmUpTimeoutMs
-        );
+    public AsyncResolver(String name, ClusterResolver<T> delegate, int executorThreadPoolSize, int refreshIntervalMs, int warmUpTimeoutMs) {
+        this(name, delegate, Collections.<T>emptyList(), executorThreadPoolSize, refreshIntervalMs, warmUpTimeoutMs);
     }
 
     /**
@@ -72,20 +68,8 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
      * there will be no warm up and the initial value will be returned. The periodic update task will not be
      * scheduled until after the first time getClusterEndpoints call.
      */
-    public AsyncResolver(String name,
-                         ClusterResolver<T> delegate,
-                         List<T> initialValues,
-                         int executorThreadPoolSize,
-                         int refreshIntervalMs) {
-        this(
-                name,
-                delegate,
-                initialValues,
-                executorThreadPoolSize,
-                refreshIntervalMs,
-                0
-        );
-
+    public AsyncResolver(String name, ClusterResolver<T> delegate, List<T> initialValues, int executorThreadPoolSize, int refreshIntervalMs) {
+        this(name, delegate, initialValues, executorThreadPoolSize, refreshIntervalMs, 0);
         warmedUp.set(true);
     }
 
@@ -96,56 +80,28 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
      * @param refreshIntervalMs the async refresh interval
      * @param warmUpTimeoutMs the time to wait for the initial warm up
      */
-    AsyncResolver(String name,
-                  ClusterResolver<T> delegate,
-                  List<T> initialValue,
-                  int executorThreadPoolSize,
-                  int refreshIntervalMs,
-                  int warmUpTimeoutMs) {
+    AsyncResolver(String name, ClusterResolver<T> delegate, List<T> initialValue, int executorThreadPoolSize, int refreshIntervalMs, int warmUpTimeoutMs) {
         this.name = name;
         this.delegate = delegate;
         this.refreshIntervalMs = refreshIntervalMs;
         this.warmUpTimeoutMs = warmUpTimeoutMs;
-
-        this.executorService = Executors.newScheduledThreadPool(1,
-                new ThreadFactoryBuilder()
-                        .setNameFormat("AsyncResolver-" + name + "-%d")
-                        .setDaemon(true)
-                        .build());
-
-        this.threadPoolExecutor = new ThreadPoolExecutor(
-                1, executorThreadPoolSize, 0, TimeUnit.SECONDS,
-                new SynchronousQueue<Runnable>(),  // use direct handoff
-                new ThreadFactoryBuilder()
-                        .setNameFormat("AsyncResolver-" + name + "-executor-%d")
-                        .setDaemon(true)
-                        .build()
-        );
-
-        this.backgroundTask = new TimedSupervisorTask(
-                this.getClass().getSimpleName(),
-                executorService,
-                threadPoolExecutor,
-                refreshIntervalMs,
-                TimeUnit.MILLISECONDS,
-                5,
-                updateTask
-        );
-
+        this.executorService = Executors.newScheduledThreadPool(1, new ThreadFactoryBuilder().setNameFormat("AsyncResolver-" + name + "-%d").setDaemon(true).build());
+        this.threadPoolExecutor = new ThreadPoolExecutor(1, executorThreadPoolSize, 0, TimeUnit.SECONDS, // use direct handoff
+        new SynchronousQueue<Runnable>(), new ThreadFactoryBuilder().setNameFormat("AsyncResolver-" + name + "-executor-%d").setDaemon(true).build());
+        this.backgroundTask = new TimedSupervisorTask(this.getClass().getSimpleName(), executorService, threadPoolExecutor, refreshIntervalMs, TimeUnit.MILLISECONDS, 5, updateTask);
         this.resultsRef = new AtomicReference<>(initialValue);
         Monitors.registerObject(name, this);
     }
 
     @Override
     public void shutdown() {
-        if(Monitors.isObjectRegistered(name, this)) {
+        if (Monitors.isObjectRegistered(name, this)) {
             Monitors.unregisterObject(name, this);
         }
         executorService.shutdownNow();
         threadPoolExecutor.shutdownNow();
         backgroundTask.cancel();
     }
-
 
     @Override
     public String getRegion() {
@@ -166,12 +122,13 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
         return resultsRef.get();
     }
 
-
-    /* visible for testing */ boolean doWarmUp() {
+    /* visible for testing */
+    boolean doWarmUp() {
         Future future = null;
         try {
             future = threadPoolExecutor.submit(updateTask);
-            future.get(warmUpTimeoutMs, TimeUnit.MILLISECONDS);  // block until done or timeout
+            // block until done or timeout
+            future.get(warmUpTimeoutMs, TimeUnit.MILLISECONDS);
             return true;
         } catch (Exception e) {
             logger.warn("Best effort warm up failed", e);
@@ -183,24 +140,24 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
         return false;
     }
 
-    /* visible for testing */ void scheduleTask(long delay) {
-        executorService.schedule(
-                backgroundTask, delay, TimeUnit.MILLISECONDS);
+    /* visible for testing */
+    void scheduleTask(long delay) {
+        executorService.schedule(backgroundTask, delay, TimeUnit.MILLISECONDS);
     }
 
-    @Monitor(name = METRIC_RESOLVER_PREFIX + "lastLoadTimestamp",
-            description = "How much time has passed from last successful async load", type = DataSourceType.GAUGE)
+    @Monitor(name = METRIC_RESOLVER_PREFIX + "lastLoadTimestamp", description = "How much time has passed from last successful async load", type = DataSourceType.GAUGE)
     public long getLastLoadTimestamp() {
         return lastLoadTimestamp < 0 ? 0 : System.currentTimeMillis() - lastLoadTimestamp;
     }
 
-    @Monitor(name = METRIC_RESOLVER_PREFIX + "endpointsSize",
-            description = "How many records are the in the endpoints ref", type = DataSourceType.GAUGE)
+    @Monitor(name = METRIC_RESOLVER_PREFIX + "endpointsSize", description = "How many records are the in the endpoints ref", type = DataSourceType.GAUGE)
     public long getEndpointsSize() {
-        return resultsRef.get().size();  // return directly from the ref and not the method so as to not trigger warming
+        // return directly from the ref and not the method so as to not trigger warming
+        return resultsRef.get().size();
     }
 
     private final Runnable updateTask = new Runnable() {
+
         @Override
         public void run() {
             try {

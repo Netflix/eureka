@@ -39,28 +39,41 @@ import org.junit.rules.ExternalResource;
 public class DiscoveryClientResource extends ExternalResource {
 
     public static final String REMOTE_REGION = "myregion";
+
     public static final String REMOTE_ZONE = "myzone";
+
     public static final int CLIENT_REFRESH_RATE = 10;
+
     public static final String EUREKA_TEST_NAMESPACE = "eurekaTestNamespace.";
 
     private static final Set<String> SYSTEM_PROPERTY_TRACKER = new HashSet<>();
 
     private final boolean registrationEnabled;
+
     private final boolean registryFetchEnabled;
+
     private final InstanceInfo instance;
 
     private final SimpleEurekaHttpServer eurekaHttpServer;
+
     private final Callable<Integer> portResolverCallable;
+
     private final List<String> remoteRegions;
+
     private final String vipFetch;
+
     private final String userName;
+
     private final String password;
 
     private EventBus eventBus;
+
     private ApplicationInfoManager applicationManager;
+
     private EurekaClient client;
 
     private final List<DiscoveryClientResource> forkedDiscoveryClientResources = new ArrayList<>();
+
     private ApplicationInfoManager applicationInfoManager;
 
     DiscoveryClientResource(DiscoveryClientRuleBuilder builder) {
@@ -81,7 +94,8 @@ public class DiscoveryClientResource extends ExternalResource {
 
     public EventBus getEventBus() {
         if (client == null) {
-            getClient(); // Lazy initialization
+            // Lazy initialization
+            getClient();
         }
         return eventBus;
     }
@@ -95,11 +109,9 @@ public class DiscoveryClientResource extends ExternalResource {
             try {
                 applicationInfoManager = createApplicationManager();
                 EurekaClientConfig clientConfig = createEurekaClientConfig();
-
                 Jersey1DiscoveryClientOptionalArgs optionalArgs = new Jersey1DiscoveryClientOptionalArgs();
                 eventBus = new EventBusImpl();
                 optionalArgs.setEventBus(eventBus);
-
                 client = new DiscoveryClient(applicationInfoManager, clientConfig, optionalArgs);
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -111,6 +123,7 @@ public class DiscoveryClientResource extends ExternalResource {
     public boolean awaitCacheUpdate(long timeout, TimeUnit unit) throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
         Object eventListener = new Object() {
+
             @Subscribe
             public void consume(CacheRefreshedEvent event) {
                 latch.countDown();
@@ -131,6 +144,7 @@ public class DiscoveryClientResource extends ExternalResource {
     private ApplicationInfoManager createApplicationManager() {
         if (applicationManager == null) {
             EurekaInstanceConfig instanceConfig = new MyDataCenterInstanceConfig(EUREKA_TEST_NAMESPACE) {
+
                 @Override
                 public String getAppname() {
                     return "discoveryClientTest";
@@ -156,11 +170,9 @@ public class DiscoveryClientResource extends ExternalResource {
         } else {
             throw new IllegalStateException("Either port or EurekaHttpServer must be configured");
         }
-
         if (userName != null) {
             serviceURI = UriBuilder.fromUri(serviceURI).userInfo(userName + ':' + password).build();
         }
-
         bindProperty(EUREKA_TEST_NAMESPACE + "serviceUrl.default", serviceURI.toString());
         if (remoteRegions != null && !remoteRegions.isEmpty()) {
             StringBuilder regions = new StringBuilder();
@@ -169,20 +181,16 @@ public class DiscoveryClientResource extends ExternalResource {
             }
             bindProperty(EUREKA_TEST_NAMESPACE + "fetchRemoteRegionsRegistry", regions.substring(1));
         }
-
         // Registration
         bindProperty(EUREKA_TEST_NAMESPACE + "registration.enabled", Boolean.toString(registrationEnabled));
         bindProperty(EUREKA_TEST_NAMESPACE + "appinfo.initial.replicate.time", Integer.toString(0));
         bindProperty(EUREKA_TEST_NAMESPACE + "appinfo.replicate.interval", Integer.toString(1));
-
         // Registry fetch
         bindProperty(EUREKA_TEST_NAMESPACE + "shouldFetchRegistry", Boolean.toString(registryFetchEnabled));
-
         bindProperty(EUREKA_TEST_NAMESPACE + "client.refresh.interval", Integer.toString(1));
         if (vipFetch != null) {
             bindProperty(EUREKA_TEST_NAMESPACE + "registryRefreshSingleVipAddress", vipFetch);
         }
-
         return new DefaultEurekaClientConfig(EUREKA_TEST_NAMESPACE);
     }
 
@@ -202,6 +210,7 @@ public class DiscoveryClientResource extends ExternalResource {
 
     public DiscoveryClientRuleBuilder fork() {
         DiscoveryClientRuleBuilder builder = new DiscoveryClientRuleBuilder() {
+
             @Override
             public DiscoveryClientResource build() {
                 DiscoveryClientResource clientResource = super.build();
@@ -214,12 +223,7 @@ public class DiscoveryClientResource extends ExternalResource {
                 return clientResource;
             }
         };
-        return builder.withInstanceInfo(instance)
-                .connectWith(eurekaHttpServer)
-                .withPortResolver(portResolverCallable)
-                .withRegistration(registrationEnabled)
-                .withRegistryFetch(registryFetchEnabled)
-                .withRemoteRegions(remoteRegions.toArray(new String[remoteRegions.size()]));
+        return builder.withInstanceInfo(instance).connectWith(eurekaHttpServer).withPortResolver(portResolverCallable).withRegistration(registrationEnabled).withRegistryFetch(registryFetchEnabled).withRemoteRegions(remoteRegions.toArray(new String[remoteRegions.size()]));
     }
 
     public static DiscoveryClientRuleBuilder newBuilder() {
@@ -233,8 +237,7 @@ public class DiscoveryClientResource extends ExternalResource {
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
         ConfigurationManager.getConfigInstance().setProperty("eureka.fetchRemoteRegionsRegistry", REMOTE_REGION);
         ConfigurationManager.getConfigInstance().setProperty("eureka.myregion.availabilityZones", REMOTE_ZONE);
-        ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
-                "http://localhost:" + serverPort + path);
+        ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default", "http://localhost:" + serverPort + path);
     }
 
     public static void clearDiscoveryClientConfig() {
@@ -250,15 +253,12 @@ public class DiscoveryClientResource extends ExternalResource {
         DefaultEurekaClientConfig config = new DefaultEurekaClientConfig();
         // setup config in advance, used in initialize converter
         ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), clientInstanceInfo);
-
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
         EurekaClient client = new DiscoveryClient(applicationInfoManager, config);
         return client;
     }
 
     public static EurekaClient setupInjector(InstanceInfo clientInstanceInfo) {
-
-
         DefaultEurekaClientConfig config = new DefaultEurekaClientConfig();
         // setup config in advance, used in initialize converter
         DiscoveryManager.getInstance().setEurekaClientConfig(config);
@@ -273,6 +273,7 @@ public class DiscoveryClientResource extends ExternalResource {
         builder.setHostName("Hosttt");
         builder.setAppName("EurekaTestApp-" + UUID.randomUUID());
         builder.setDataCenterInfo(new DataCenterInfo() {
+
             @Override
             public Name getName() {
                 return Name.MyOwn;
@@ -288,14 +289,23 @@ public class DiscoveryClientResource extends ExternalResource {
     }
 
     public static class DiscoveryClientRuleBuilder {
+
         private boolean registrationEnabled;
+
         private boolean registryFetchEnabled;
+
         private Callable<Integer> portResolverCallable;
+
         private InstanceInfo instance;
+
         private SimpleEurekaHttpServer eurekaHttpServer;
+
         private List<String> remoteRegions;
+
         private String vipFetch;
+
         private String userName;
+
         private String password;
 
         public DiscoveryClientRuleBuilder withInstanceInfo(InstanceInfo instance) {

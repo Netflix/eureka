@@ -21,15 +21,13 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.netflix.appinfo.AmazonInfo;
 import org.junit.Assert;
 import org.junit.Test;
-
 import java.io.IOException;
 import java.util.HashMap;
 
 public class StringInterningAmazonInfoBuilderTest {
 
     private ObjectMapper newMapper() {
-        SimpleModule module = new SimpleModule()
-                .addDeserializer(AmazonInfo.class, new StringInterningAmazonInfoBuilder());
+        SimpleModule module = new SimpleModule().addDeserializer(AmazonInfo.class, new StringInterningAmazonInfoBuilder());
         return new ObjectMapper().registerModule(module);
     }
 
@@ -48,95 +46,48 @@ public class StringInterningAmazonInfoBuilderTest {
 
     @Test
     public void payloadWithJustClass() throws IOException {
-        String json = "{"
-                + "\"@class\": \"com.netflix.appinfo.AmazonInfo\""
-                + "}";
+        String json = "{" + "\"@class\": \"com.netflix.appinfo.AmazonInfo\"" + "}";
         AmazonInfo info = newMapper().readValue(json, AmazonInfo.class);
         Assert.assertEquals(new AmazonInfo(), info);
     }
 
     @Test
     public void payloadWithClassAndMetadata() throws IOException {
-        String json = "{"
-                + "    \"@class\": \"com.netflix.appinfo.AmazonInfo\","
-                + "    \"metadata\": {"
-                + "        \"instance-id\": \"i-12345\""
-                + "    }"
-                + "}";
+        String json = "{" + "    \"@class\": \"com.netflix.appinfo.AmazonInfo\"," + "    \"metadata\": {" + "        \"instance-id\": \"i-12345\"" + "    }" + "}";
         AmazonInfo info = newMapper().readValue(json, AmazonInfo.class);
-
-        AmazonInfo expected = AmazonInfo.Builder.newBuilder()
-                .addMetadata(AmazonInfo.MetaDataKey.instanceId, "i-12345")
-                .build();
+        AmazonInfo expected = AmazonInfo.Builder.newBuilder().addMetadata(AmazonInfo.MetaDataKey.instanceId, "i-12345").build();
         Assert.assertEquals(expected, nonCompact(info));
     }
 
     @Test
     public void payloadWithClassAfterMetadata() throws IOException {
-        String json = "{"
-                + "    \"metadata\": {"
-                + "        \"instance-id\": \"i-12345\""
-                + "    },"
-                + "    \"@class\": \"com.netflix.appinfo.AmazonInfo\""
-                + "}";
+        String json = "{" + "    \"metadata\": {" + "        \"instance-id\": \"i-12345\"" + "    }," + "    \"@class\": \"com.netflix.appinfo.AmazonInfo\"" + "}";
         AmazonInfo info = newMapper().readValue(json, AmazonInfo.class);
-
-        AmazonInfo expected = AmazonInfo.Builder.newBuilder()
-                .addMetadata(AmazonInfo.MetaDataKey.instanceId, "i-12345")
-                .build();
+        AmazonInfo expected = AmazonInfo.Builder.newBuilder().addMetadata(AmazonInfo.MetaDataKey.instanceId, "i-12345").build();
         Assert.assertEquals(expected, nonCompact(info));
     }
 
     @Test
     public void payloadWithNameBeforeMetadata() throws IOException {
-        String json = "{"
-                + "    \"@class\": \"com.netflix.appinfo.AmazonInfo\","
-                + "    \"name\": \"Amazon\","
-                + "    \"metadata\": {"
-                + "        \"instance-id\": \"i-12345\""
-                + "    }"
-                + "}";
+        String json = "{" + "    \"@class\": \"com.netflix.appinfo.AmazonInfo\"," + "    \"name\": \"Amazon\"," + "    \"metadata\": {" + "        \"instance-id\": \"i-12345\"" + "    }" + "}";
         AmazonInfo info = newMapper().readValue(json, AmazonInfo.class);
-
-        AmazonInfo expected = AmazonInfo.Builder.newBuilder()
-                .addMetadata(AmazonInfo.MetaDataKey.instanceId, "i-12345")
-                .build();
+        AmazonInfo expected = AmazonInfo.Builder.newBuilder().addMetadata(AmazonInfo.MetaDataKey.instanceId, "i-12345").build();
         Assert.assertEquals(expected, nonCompact(info));
     }
 
     @Test
     public void payloadWithNameAfterMetadata() throws IOException {
-        String json = "{"
-                + "    \"@class\": \"com.netflix.appinfo.AmazonInfo\","
-                + "    \"metadata\": {"
-                + "        \"instance-id\": \"i-12345\""
-                + "    },"
-                + "    \"name\": \"Amazon\""
-                + "}";
+        String json = "{" + "    \"@class\": \"com.netflix.appinfo.AmazonInfo\"," + "    \"metadata\": {" + "        \"instance-id\": \"i-12345\"" + "    }," + "    \"name\": \"Amazon\"" + "}";
         AmazonInfo info = newMapper().readValue(json, AmazonInfo.class);
-
-        AmazonInfo expected = AmazonInfo.Builder.newBuilder()
-                .addMetadata(AmazonInfo.MetaDataKey.instanceId, "i-12345")
-                .build();
+        AmazonInfo expected = AmazonInfo.Builder.newBuilder().addMetadata(AmazonInfo.MetaDataKey.instanceId, "i-12345").build();
         Assert.assertEquals(expected, nonCompact(info));
     }
 
     @Test
     public void payloadWithOtherStuffBeforeAndAfterMetadata() throws IOException {
-        String json = "{"
-                + "    \"@class\": \"com.netflix.appinfo.AmazonInfo\","
-                + "    \"foo\": \"bar\","
-                + "    \"metadata\": {"
-                + "        \"instance-id\": \"i-12345\""
-                + "    },"
-                + "    \"bar\": \"baz\","
-                + "    \"name\": \"Amazon\""
-                + "}";
+        String json = "{" + "    \"@class\": \"com.netflix.appinfo.AmazonInfo\"," + "    \"foo\": \"bar\"," + "    \"metadata\": {" + "        \"instance-id\": \"i-12345\"" + "    }," + "    \"bar\": \"baz\"," + "    \"name\": \"Amazon\"" + "}";
         AmazonInfo info = newMapper().readValue(json, AmazonInfo.class);
-
-        AmazonInfo expected = AmazonInfo.Builder.newBuilder()
-                .addMetadata(AmazonInfo.MetaDataKey.instanceId, "i-12345")
-                .build();
+        AmazonInfo expected = AmazonInfo.Builder.newBuilder().addMetadata(AmazonInfo.MetaDataKey.instanceId, "i-12345").build();
         Assert.assertEquals(expected, nonCompact(info));
     }
 }

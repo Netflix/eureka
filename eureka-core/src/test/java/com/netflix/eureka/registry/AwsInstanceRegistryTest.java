@@ -11,7 +11,6 @@ import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.resources.ServerCodecs;
 import org.junit.Test;
 
-
 /**
  * Created by Nikos Michalakis on 7/14/16.
  */
@@ -23,17 +22,13 @@ public class AwsInstanceRegistryTest extends InstanceRegistryTest {
         InstanceInfo myInstance = createLocalUpInstanceWithAsg(LOCAL_REGION_INSTANCE_1_HOSTNAME);
         registerInstanceLocally(myInstance);
         verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.UP);
-
         // Now we disable the ASG and we should expect OUT_OF_SERVICE status.
         ((AwsInstanceRegistry) registry).getAwsAsgUtil().setStatus(myInstance.getASGName(), false);
-
         myInstance = createLocalUpInstanceWithAsg(LOCAL_REGION_INSTANCE_1_HOSTNAME);
         registerInstanceLocally(myInstance);
         verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.OUT_OF_SERVICE);
-
         // Now we re-enable the ASG and we should expect UP status.
         ((AwsInstanceRegistry) registry).getAwsAsgUtil().setStatus(myInstance.getASGName(), true);
-
         myInstance = createLocalUpInstanceWithAsg(LOCAL_REGION_INSTANCE_1_HOSTNAME);
         registerInstanceLocally(myInstance);
         verifyLocalInstanceStatus(myInstance.getId(), InstanceStatus.UP);
@@ -69,20 +64,13 @@ public class AwsInstanceRegistryTest extends InstanceRegistryTest {
     }
 
     @Override
-    protected PeerAwareInstanceRegistryImpl makePeerAwareInstanceRegistry(EurekaServerConfig serverConfig,
-                                                                      EurekaClientConfig clientConfig,
-                                                                      ServerCodecs serverCodecs,
-                                                                      EurekaClient eurekaClient) {
+    protected PeerAwareInstanceRegistryImpl makePeerAwareInstanceRegistry(EurekaServerConfig serverConfig, EurekaClientConfig clientConfig, ServerCodecs serverCodecs, EurekaClient eurekaClient) {
         return new TestAwsInstanceRegistry(serverConfig, clientConfig, serverCodecs, eurekaClient);
     }
 
-
     private static class TestAwsInstanceRegistry extends AwsInstanceRegistry {
 
-        public TestAwsInstanceRegistry(EurekaServerConfig serverConfig,
-                                             EurekaClientConfig clientConfig,
-                                             ServerCodecs serverCodecs,
-                                             EurekaClient eurekaClient) {
+        public TestAwsInstanceRegistry(EurekaServerConfig serverConfig, EurekaClientConfig clientConfig, ServerCodecs serverCodecs, EurekaClient eurekaClient) {
             super(serverConfig, clientConfig, serverCodecs, eurekaClient);
         }
 
@@ -96,5 +84,4 @@ public class AwsInstanceRegistryTest extends InstanceRegistryTest {
             return null;
         }
     }
-
 }

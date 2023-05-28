@@ -6,7 +6,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.discovery.provider.Serializer;
@@ -21,7 +20,9 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
 @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("status")
 public class StatusInfo {
+
     private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss Z";
+
     private static final boolean ARCHAIUS_EXISTS = classExists("com.netflix.config.ConfigurationManager");
 
     public static final class Builder {
@@ -66,33 +67,27 @@ public class StatusInfo {
             if (result.instanceInfo == null) {
                 throw new IllegalStateException("instanceInfo can not be null");
             }
-
             result.generalStats.put("server-uptime", getUpTime());
             if (ARCHAIUS_EXISTS) {
-                result.generalStats.put("environment", ConfigurationManager
-                        .getDeploymentContext().getDeploymentEnvironment());
+                result.generalStats.put("environment", ConfigurationManager.getDeploymentContext().getDeploymentEnvironment());
             }
-
             Runtime runtime = Runtime.getRuntime();
             int totalMem = (int) (runtime.totalMemory() / 1048576);
             int freeMem = (int) (runtime.freeMemory() / 1048576);
             int usedPercent = (int) (((float) totalMem - freeMem) / (totalMem) * 100.0);
-
-            result.generalStats.put("num-of-cpus",
-                    String.valueOf(runtime.availableProcessors()));
-            result.generalStats.put("total-avail-memory",
-                    String.valueOf(totalMem) + "mb");
-            result.generalStats.put("current-memory-usage",
-                    String.valueOf(totalMem - freeMem) + "mb" + " ("
-                            + usedPercent + "%)");
-
+            result.generalStats.put("num-of-cpus", String.valueOf(runtime.availableProcessors()));
+            result.generalStats.put("total-avail-memory", String.valueOf(totalMem) + "mb");
+            result.generalStats.put("current-memory-usage", String.valueOf(totalMem - freeMem) + "mb" + " (" + usedPercent + "%)");
             return result;
         }
     }
 
     private Map<String, String> generalStats = new HashMap<String, String>();
+
     private Map<String, String> applicationStats;
+
     private InstanceInfo instanceInfo;
+
     private Boolean isHeathly;
 
     private StatusInfo() {
@@ -136,8 +131,7 @@ public class StatusInfo {
         }
         DecimalFormat format = new DecimalFormat();
         format.setMinimumIntegerDigits(2);
-        buf.append(format.format(hours)).append(":")
-                .append(format.format(minutes));
+        buf.append(format.format(hours)).append(":").append(format.format(minutes));
         return buf.toString();
     }
 
@@ -147,12 +141,11 @@ public class StatusInfo {
     }
 
     private static boolean classExists(String className) {
-        try  {
+        try {
             Class.forName(className);
             return true;
-        }  catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException e) {
             return false;
         }
     }
-
 }

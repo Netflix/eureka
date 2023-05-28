@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.converters.jackson.serializer;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -39,6 +37,7 @@ public class InstanceInfoJsonBeanSerializer extends BeanSerializer {
      * As root mapper is wrapping values, we need a dedicated instance for map serialization.
      */
     private final ObjectMapper stringMapObjectMapper = new ObjectMapper();
+
     private final boolean compactMode;
 
     public InstanceInfoJsonBeanSerializer(BeanSerializerBase src, boolean compactMode) {
@@ -50,19 +49,16 @@ public class InstanceInfoJsonBeanSerializer extends BeanSerializer {
     protected void serializeFields(Object bean, JsonGenerator jgen0, SerializerProvider provider) throws IOException {
         super.serializeFields(bean, jgen0, provider);
         InstanceInfo instanceInfo = (InstanceInfo) bean;
-
         jgen0.writeFieldName("port");
         jgen0.writeStartObject();
         jgen0.writeNumberField("$", instanceInfo.getPort());
         jgen0.writeStringField("@enabled", Boolean.toString(instanceInfo.isPortEnabled(PortType.UNSECURE)));
         jgen0.writeEndObject();
-
         jgen0.writeFieldName("securePort");
         jgen0.writeStartObject();
         jgen0.writeNumberField("$", instanceInfo.getSecurePort());
         jgen0.writeStringField("@enabled", Boolean.toString(instanceInfo.isPortEnabled(PortType.SECURE)));
         jgen0.writeEndObject();
-
         // Save @class field for backward compatibility. Remove once all clients are migrated to the new codec
         if (!compactMode) {
             jgen0.writeFieldName("metadata");

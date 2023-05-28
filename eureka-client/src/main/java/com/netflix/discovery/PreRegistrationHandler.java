@@ -8,5 +8,6 @@ import com.netflix.appinfo.ApplicationInfoManager;
  * to execute before registration.
  */
 public interface PreRegistrationHandler {
+
     void beforeRegistration();
 }

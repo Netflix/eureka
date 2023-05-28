@@ -2,7 +2,6 @@ package com.netflix.eureka.resources;
 
 import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
-
 import com.netflix.eureka.EurekaServerContext;
 import com.netflix.eureka.EurekaServerContextHolder;
 
@@ -11,13 +10,14 @@ import com.netflix.eureka.EurekaServerContextHolder;
  * @author Matt Nelson
  */
 public class EurekaServerContextBinder extends AbstractBinder {
-    
+
     public class EurekaServerContextFactory implements Factory<EurekaServerContext> {
+
         @Override
         public EurekaServerContext provide() {
-           return EurekaServerContextHolder.getInstance().getServerContext();
+            return EurekaServerContextHolder.getInstance().getServerContext();
         }
-     
+
         @Override
         public void dispose(EurekaServerContext t) {
         }

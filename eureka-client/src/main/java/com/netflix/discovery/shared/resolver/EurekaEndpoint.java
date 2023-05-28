@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.resolver;
 
 public interface EurekaEndpoint extends Comparable<Object> {
@@ -33,5 +32,4 @@ public interface EurekaEndpoint extends Comparable<Object> {
     boolean isSecure();
 
     String getRelativeUri();
-
 }

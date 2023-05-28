@@ -8,7 +8,9 @@ import com.netflix.appinfo.InstanceInfo;
  * a status change is identified from the remote Eureka server response.
  */
 public class StatusChangeEvent extends DiscoveryEvent {
+
     private final InstanceInfo.InstanceStatus current;
+
     private final InstanceInfo.InstanceStatus previous;
 
     public StatusChangeEvent(InstanceInfo.InstanceStatus previous, InstanceInfo.InstanceStatus current) {
@@ -41,8 +43,6 @@ public class StatusChangeEvent extends DiscoveryEvent {
 
     @Override
     public String toString() {
-        return "StatusChangeEvent [timestamp=" + getTimestamp() + ", current=" + current + ", previous="
-                + previous + "]";
+        return "StatusChangeEvent [timestamp=" + getTimestamp() + ", current=" + current + ", previous=" + previous + "]";
     }
-
 }

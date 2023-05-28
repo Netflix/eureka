@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.util;
 
 import com.netflix.servo.DefaultMonitorRegistry;
@@ -37,6 +36,7 @@ public class ThresholdLevelsMetric {
     private static final Logger logger = LoggerFactory.getLogger(ThresholdLevelsMetric.class);
 
     private final long[] levels;
+
     private final LongGauge[] gauges;
 
     public ThresholdLevelsMetric(Object owner, String prefix, long[] levels) {
@@ -44,11 +44,8 @@ public class ThresholdLevelsMetric {
         this.gauges = new LongGauge[levels.length];
         for (int i = 0; i < levels.length; i++) {
             String name = prefix + String.format("%05d", levels[i]);
-            MonitorConfig config = new MonitorConfig.Builder(name)
-                    .withTag("class", owner.getClass().getName())
-                    .build();
+            MonitorConfig config = new MonitorConfig.Builder(name).withTag("class", owner.getClass().getName()).build();
             gauges[i] = new LongGauge(config);
-
             try {
                 DefaultMonitorRegistry.getInstance().register(gauges[i]);
             } catch (Throwable e) {
@@ -92,7 +89,7 @@ public class ThresholdLevelsMetric {
     public static class NoOpThresholdLevelMetric extends ThresholdLevelsMetric {
 
         public NoOpThresholdLevelMetric() {
-            super(null, null, new long[]{});
+            super(null, null, new long[] {});
         }
 
         public void update(long delayMs) {

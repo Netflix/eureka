@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.converters.jackson.serializer;
 
 import java.io.IOException;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.BeanSerializer;
@@ -29,7 +27,9 @@ import com.netflix.discovery.shared.Applications;
  * Support custom formatting of {@link Applications#appsHashCode} and {@link Applications#versionDelta}.
  */
 public class ApplicationsJsonBeanSerializer extends BeanSerializer {
+
     private final String versionKey;
+
     private final String appsHashCodeKey;
 
     public ApplicationsJsonBeanSerializer(BeanSerializerBase src, KeyFormatter keyFormatter) {
@@ -42,7 +42,6 @@ public class ApplicationsJsonBeanSerializer extends BeanSerializer {
     protected void serializeFields(Object bean, JsonGenerator jgen0, SerializerProvider provider) throws IOException {
         super.serializeFields(bean, jgen0, provider);
         Applications applications = (Applications) bean;
-
         if (applications.getVersion() != null) {
             jgen0.writeStringField(versionKey, Long.toString(applications.getVersion()));
         }

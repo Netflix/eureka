@@ -2,7 +2,6 @@ package com.netflix.eureka.test.async.executor;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import com.amazonaws.util.CollectionUtils;
 import com.google.common.base.Optional;
 
@@ -20,6 +19,7 @@ public class AsyncSequentialExecutor {
      * Result status, if events are executed successfully in sequential manner, then return this by default
      */
     public enum ResultStatus {
+
         DONE
     }
 
@@ -33,6 +33,7 @@ public class AsyncSequentialExecutor {
      */
     public AsyncResult<ResultStatus> run(SequentialEvents events) {
         return run(new Callable<ResultStatus>() {
+
             @Override
             public ResultStatus call() throws Exception {
                 if (events == null || CollectionUtils.isNullOrEmpty(events.getEventList())) {
@@ -55,6 +56,7 @@ public class AsyncSequentialExecutor {
     protected <T> AsyncResult<T> run(Callable<T> task) {
         final AsyncResult<T> result = new ConcreteAsyncResult<>();
         new Thread(new Runnable() {
+
             @Override
             public void run() {
                 T value = null;
@@ -70,5 +72,4 @@ public class AsyncSequentialExecutor {
         }, "AsyncSequentialExecutor-" + INDEX.incrementAndGet()).start();
         return result;
     }
-
 }

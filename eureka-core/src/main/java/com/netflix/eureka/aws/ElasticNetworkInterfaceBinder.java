@@ -21,7 +21,6 @@ import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.servo.monitor.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
@@ -36,7 +35,7 @@ import java.util.TimerTask;
  * Amazon ENI binder for instances.
  *
  * Candidate ENI's discovery is done using the same mechanism as Elastic ip binder, via dns records or service urls.
- * 
+ *
  * The dns records and the service urls should use the ENI private dns or private ip
  *
  * Dns record examples
@@ -51,25 +50,27 @@ import java.util.TimerTask;
  * ENI Binding strategy should be configured via property like:
  *
  * eureka.awsBindingStrategy=ENI
- * 
+ *
  * If there are no available ENI's for the availability zone, it will not attach any already attached ENI
  */
 public class ElasticNetworkInterfaceBinder implements AwsBinder {
+
     private static final Logger logger = LoggerFactory.getLogger(ElasticNetworkInterfaceBinder.class);
+
     private static final int IP_BIND_SLEEP_TIME_MS = 1000;
+
     private static final Timer timer = new Timer("Eureka-ElasticNetworkInterfaceBinder", true);
 
     private final EurekaServerConfig serverConfig;
+
     private final EurekaClientConfig clientConfig;
+
     private final PeerAwareInstanceRegistry registry;
+
     private final ApplicationInfoManager applicationInfoManager;
 
     @Inject
-    public ElasticNetworkInterfaceBinder(
-            EurekaServerConfig serverConfig,
-          EurekaClientConfig clientConfig,
-          PeerAwareInstanceRegistry registry,
-          ApplicationInfoManager applicationInfoManager) {
+    public ElasticNetworkInterfaceBinder(EurekaServerConfig serverConfig, EurekaClientConfig clientConfig, PeerAwareInstanceRegistry registry, ApplicationInfoManager applicationInfoManager) {
         this.serverConfig = serverConfig;
         this.clientConfig = clientConfig;
         this.registry = registry;
@@ -82,7 +83,7 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
     }
 
     @PostConstruct
-    public void start()  {
+    public void start() {
         int retries = serverConfig.getEIPBindRebindRetries();
         for (int i = 0; i < retries; i++) {
             try {
@@ -122,7 +123,6 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
         }
     }
 
-
     public boolean alreadyBound() throws MalformedURLException {
         InstanceInfo myInfo = applicationInfoManager.getInfo();
         String myInstanceId = ((AmazonInfo) myInfo.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.instanceId);
@@ -130,7 +130,7 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
         List<InstanceNetworkInterface> instanceNetworkInterfaces = instanceData(myInstanceId, ec2Service).getNetworkInterfaces();
         List<String> candidateIPs = getCandidateIps();
         for (String ip : candidateIPs) {
-            for(InstanceNetworkInterface ini: instanceNetworkInterfaces) {
+            for (InstanceNetworkInterface ini : instanceNetworkInterfaces) {
                 if (ip.equals(ini.getPrivateIpAddress())) {
                     logger.info("My instance {} seems to be already associated with the ip {}", myInstanceId, ip);
                     return true;
@@ -157,34 +157,21 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
         String myInstanceId = ((AmazonInfo) myInfo.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.instanceId);
         String myZone = ((AmazonInfo) myInfo.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.availabilityZone);
-
         final List<String> ips = getCandidateIps();
         Ordering<NetworkInterface> ipsOrder = Ordering.natural().onResultOf(new Function<NetworkInterface, Integer>() {
+
             public Integer apply(NetworkInterface networkInterface) {
                 return ips.indexOf(networkInterface.getPrivateIpAddress());
             }
         });
-
         AmazonEC2 ec2Service = getEC2Service();
         String subnetId = instanceData(myInstanceId, ec2Service).getSubnetId();
-
-        DescribeNetworkInterfacesResult result = ec2Service
-                .describeNetworkInterfaces(new DescribeNetworkInterfacesRequest()
-                                .withFilters(new Filter("private-ip-address", ips))
-                                .withFilters(new Filter("status", Lists.newArrayList("available")))
-                                .withFilters(new Filter("subnet-id", Lists.newArrayList(subnetId)))
-                );
-
+        DescribeNetworkInterfacesResult result = ec2Service.describeNetworkInterfaces(new DescribeNetworkInterfacesRequest().withFilters(new Filter("private-ip-address", ips)).withFilters(new Filter("status", Lists.newArrayList("available"))).withFilters(new Filter("subnet-id", Lists.newArrayList(subnetId))));
         if (result.getNetworkInterfaces().isEmpty()) {
             logger.info("No ip is free to be associated with this instance. Candidate ips are: {} for zone: {}", ips, myZone);
         } else {
             NetworkInterface selected = ipsOrder.min(result.getNetworkInterfaces());
-            ec2Service.attachNetworkInterface(
-                    new AttachNetworkInterfaceRequest()
-                            .withNetworkInterfaceId(selected.getNetworkInterfaceId())
-                            .withDeviceIndex(1)
-                            .withInstanceId(myInstanceId)
-            );
+            ec2Service.attachNetworkInterface(new AttachNetworkInterfaceRequest().withNetworkInterfaceId(selected.getNetworkInterfaceId()).withDeviceIndex(1).withInstanceId(myInstanceId));
         }
     }
 
@@ -194,14 +181,10 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
     public void unbind() throws Exception {
         InstanceInfo myInfo = applicationInfoManager.getInfo();
         String myInstanceId = ((AmazonInfo) myInfo.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.instanceId);
-
         AmazonEC2 ec2 = getEC2Service();
-
         List<InstanceNetworkInterface> result = instanceData(myInstanceId, ec2).getNetworkInterfaces();
-
         List<String> ips = getCandidateIps();
-
-        for(InstanceNetworkInterface networkInterface: result){
+        for (InstanceNetworkInterface networkInterface : result) {
             if (ips.contains(networkInterface.getPrivateIpAddress())) {
                 String attachmentId = networkInterface.getAttachment().getAttachmentId();
                 ec2.detachNetworkInterface(new DetachNetworkInterfaceRequest().withAttachmentId(attachmentId));
@@ -217,23 +200,16 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
     /**
      * Based on shouldUseDnsForFetchingServiceUrls configuration, either retrieves candidates from dns records or from
      * configuration properties.
-     *
-     *
      */
     public List<String> getCandidateIps() throws MalformedURLException {
         InstanceInfo myInfo = applicationInfoManager.getInfo();
         String myZone = ((AmazonInfo) myInfo.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.availabilityZone);
-
-        Collection<String> candidates = clientConfig.shouldUseDnsForFetchingServiceUrls()
-                ? getIPsForZoneFromDNS(myZone)
-                : getIPsForZoneFromConfig(myZone);
-
+        Collection<String> candidates = clientConfig.shouldUseDnsForFetchingServiceUrls() ? getIPsForZoneFromDNS(myZone) : getIPsForZoneFromConfig(myZone);
         if (candidates == null || candidates.size() == 0) {
             throw new RuntimeException("Could not get any ips from the pool for zone :" + myZone);
         }
         List<String> ips = Lists.newArrayList();
-
-        for(String candidate : candidates) {
+        for (String candidate : candidates) {
             String host = new URL(candidate).getHost();
             if (InetAddresses.isInetAddress(host)) {
                 ips.add(host);
@@ -254,33 +230,23 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
         return ips;
     }
 
-
     private Collection<String> getIPsForZoneFromConfig(String myZone) {
         return clientConfig.getEurekaServerServiceUrls(myZone);
     }
 
-
     private Collection<String> getIPsForZoneFromDNS(String myZone) {
-        return EndpointUtils.getServiceUrlsFromDNS(
-                clientConfig,
-                myZone,
-                true,
-                new EndpointUtils.InstanceInfoBasedUrlRandomizer(applicationInfoManager.getInfo())
-        );
+        return EndpointUtils.getServiceUrlsFromDNS(clientConfig, myZone, true, new EndpointUtils.InstanceInfoBasedUrlRandomizer(applicationInfoManager.getInfo()));
     }
 
     private AmazonEC2 getEC2Service() {
         String aWSAccessId = serverConfig.getAWSAccessId();
         String aWSSecretKey = serverConfig.getAWSSecretKey();
-
         AmazonEC2 ec2Service;
-        if (null != aWSAccessId && !"".equals(aWSAccessId)
-                && null != aWSSecretKey && !"".equals(aWSSecretKey)) {
+        if (null != aWSAccessId && !"".equals(aWSAccessId) && null != aWSSecretKey && !"".equals(aWSSecretKey)) {
             ec2Service = new AmazonEC2Client(new BasicAWSCredentials(aWSAccessId, aWSSecretKey));
         } else {
             ec2Service = new AmazonEC2Client(new InstanceProfileCredentialsProvider());
         }
-
         String region = clientConfig.getRegion();
         region = region.trim().toLowerCase();
         ec2Service.setEndpoint("ec2." + region + ".amazonaws.com");
@@ -288,6 +254,7 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
     }
 
     private class IPBindingTask extends TimerTask {
+
         @Override
         public void run() {
             boolean alreadyBound = false;

@@ -11,12 +11,9 @@ public abstract class AbstractDiscoveryClientTester extends BaseDiscoveryClientT
 
     @Before
     public void setUp() throws Exception {
-
         setupProperties();
-
         populateLocalRegistryAtStartup();
         populateRemoteRegistryAtStartup();
-
         setupDiscoveryClient();
     }
 

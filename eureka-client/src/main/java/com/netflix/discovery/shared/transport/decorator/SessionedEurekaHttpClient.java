@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.transport.decorator;
 
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
-
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
@@ -28,7 +26,6 @@ import com.netflix.servo.annotations.Monitor;
 import com.netflix.servo.monitor.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import static com.netflix.discovery.EurekaClientNames.METRIC_TRANSPORT_PREFIX;
 
 /**
@@ -39,16 +36,21 @@ import static com.netflix.discovery.EurekaClientNames.METRIC_TRANSPORT_PREFIX;
  * @author Tomasz Bak
  */
 public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
+
     private static final Logger logger = LoggerFactory.getLogger(SessionedEurekaHttpClient.class);
 
     private final Random random = new Random();
 
     private final String name;
+
     private final EurekaHttpClientFactory clientFactory;
+
     private final long sessionDurationMs;
+
     private volatile long currentSessionDurationMs;
 
     private volatile long lastReconnectTimeStamp = -1;
+
     private final AtomicReference<EurekaHttpClient> eurekaHttpClientRef = new AtomicReference<>();
 
     public SessionedEurekaHttpClient(String name, EurekaHttpClientFactory clientFactory, long sessionDurationMs) {
@@ -69,7 +71,6 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
             currentSessionDurationMs = randomizeSessionDuration(sessionDurationMs);
             TransportUtils.shutdown(eurekaHttpClientRef.getAndSet(null));
         }
-
         EurekaHttpClient eurekaHttpClient = eurekaHttpClientRef.get();
         if (eurekaHttpClient == null) {
             eurekaHttpClient = TransportUtils.getOrSetAnotherClient(eurekaHttpClientRef, clientFactory.newClient());
@@ -79,7 +80,7 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
 
     @Override
     public void shutdown() {
-        if(Monitors.isObjectRegistered(name, this)) {
+        if (Monitors.isObjectRegistered(name, this)) {
             Monitors.unregisterObject(name, this);
         }
         TransportUtils.shutdown(eurekaHttpClientRef.getAndSet(null));
@@ -93,8 +94,7 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
         return sessionDurationMs + delta;
     }
 
-    @Monitor(name = METRIC_TRANSPORT_PREFIX + "currentSessionDuration",
-            description = "Duration of the current session", type = DataSourceType.GAUGE)
+    @Monitor(name = METRIC_TRANSPORT_PREFIX + "currentSessionDuration", description = "Duration of the current session", type = DataSourceType.GAUGE)
     public long getCurrentSessionDuration() {
         return lastReconnectTimeStamp < 0 ? 0 : System.currentTimeMillis() - lastReconnectTimeStamp;
     }

@@ -3,33 +3,28 @@ package com.netflix.appinfo;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-
 import com.netflix.discovery.CommonConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.archaius.api.Config;
 
 /**
  * When running in EC2 add the following override binding.
- * 
- * 	bind(EurekaInstanceConfig.class).to(KaryonEc2EurekaInstanceConfig.class);
- * 
- * 
- * @author elandau
  *
+ * 	bind(EurekaInstanceConfig.class).to(KaryonEc2EurekaInstanceConfig.class);
+ *
+ * @author elandau
  */
 @Singleton
 public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceConfig implements RefreshableInstanceConfig {
+
     private static final Logger LOG = LoggerFactory.getLogger(Ec2EurekaArchaius2InstanceConfig.class);
 
-    private static final String[] DEFAULT_AWS_ADDRESS_RESOLUTION_ORDER = new String[] {
-            MetaDataKey.publicHostname.name(),
-            MetaDataKey.localIpv4.name()
-    };
+    private static final String[] DEFAULT_AWS_ADDRESS_RESOLUTION_ORDER = new String[] { MetaDataKey.publicHostname.name(), MetaDataKey.localIpv4.name() };
 
     private final AmazonInfoConfig amazonInfoConfig;
+
     private final Provider<AmazonInfo> amazonInfoHolder;
 
     @Inject
@@ -37,7 +32,8 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
         this(configInstance, amazonInfoConfig, CommonConstants.DEFAULT_CONFIG_NAMESPACE);
     }
 
-    /* visible for testing */ Ec2EurekaArchaius2InstanceConfig(Config configInstance, AmazonInfo info) {
+    /* visible for testing */
+    Ec2EurekaArchaius2InstanceConfig(Config configInstance, AmazonInfo info) {
         this(configInstance, new Archaius2AmazonInfoConfig(configInstance), CommonConstants.DEFAULT_CONFIG_NAMESPACE, info, false);
     }
 
@@ -57,37 +53,33 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
         this(configInstance, amazonInfoConfig, namespace, null, true);
     }
 
-    /* visible for testing */ Ec2EurekaArchaius2InstanceConfig(Config configInstance,
-                                                               AmazonInfoConfig amazonInfoConfig,
-                                                               String namespace,
-                                                               AmazonInfo initialInfo,
-                                                               boolean eagerInit) {
+    /* visible for testing */
+    Ec2EurekaArchaius2InstanceConfig(Config configInstance, AmazonInfoConfig amazonInfoConfig, String namespace, AmazonInfo initialInfo, boolean eagerInit) {
         super(configInstance, namespace);
         this.amazonInfoConfig = amazonInfoConfig;
-
         if (eagerInit) {
-            RefreshableAmazonInfoProvider.FallbackAddressProvider fallbackAddressProvider =
-                    new RefreshableAmazonInfoProvider.FallbackAddressProvider() {
-                        @Override
-                        public String getFallbackIp() {
-                            return Ec2EurekaArchaius2InstanceConfig.super.getIpAddress();
-                        }
+            RefreshableAmazonInfoProvider.FallbackAddressProvider fallbackAddressProvider = new RefreshableAmazonInfoProvider.FallbackAddressProvider() {
 
-                        @Override
-                        public String getFallbackHostname() {
-                            return Ec2EurekaArchaius2InstanceConfig.super.getHostName(false);
-                        }
-                    };
+                @Override
+                public String getFallbackIp() {
+                    return Ec2EurekaArchaius2InstanceConfig.super.getIpAddress();
+                }
+
+                @Override
+                public String getFallbackHostname() {
+                    return Ec2EurekaArchaius2InstanceConfig.super.getHostName(false);
+                }
+            };
             this.amazonInfoHolder = new RefreshableAmazonInfoProvider(amazonInfoConfig, fallbackAddressProvider);
         } else {
             this.amazonInfoHolder = new RefreshableAmazonInfoProvider(initialInfo, amazonInfoConfig);
         }
     }
-    
+
     @Override
     public String getHostName(boolean refresh) {
         if (refresh && this.amazonInfoHolder instanceof RefreshableAmazonInfoProvider) {
-            ((RefreshableAmazonInfoProvider)amazonInfoHolder).refresh();
+            ((RefreshableAmazonInfoProvider) amazonInfoHolder).refresh();
         }
         return amazonInfoHolder.get().get(MetaDataKey.publicHostname);
     }
@@ -112,7 +104,7 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
     @Deprecated
     public synchronized void refreshAmazonInfo() {
         if (this.amazonInfoHolder instanceof RefreshableAmazonInfoProvider) {
-            ((RefreshableAmazonInfoProvider)amazonInfoHolder).refresh();
+            ((RefreshableAmazonInfoProvider) amazonInfoHolder).refresh();
         }
     }
 
@@ -120,7 +112,6 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
     public String resolveDefaultAddress(boolean refresh) {
         // In this method invocation data center info will be refreshed.
         String result = getHostName(refresh);
-
         for (String name : getDefaultAddressResolutionOrder()) {
             try {
                 AmazonInfo.MetaDataKey key = AmazonInfo.MetaDataKey.valueOf(name);
@@ -133,7 +124,6 @@ public class Ec2EurekaArchaius2InstanceConfig extends EurekaArchaius2InstanceCon
                 LOG.error("failed to resolve default address for key {}, skipping", name, e);
             }
         }
-
         return result;
     }
 }

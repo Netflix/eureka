@@ -1,7 +1,6 @@
 package com.netflix.discovery;
 
 import com.netflix.discovery.endpoint.EndpointUtils;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -19,12 +18,10 @@ public class DNSBasedAzToRegionMapper extends AbstractAzToRegionMapper {
 
     @Override
     protected Set<String> getZonesForARegion(String region) {
-        Map<String, List<String>> zoneBasedDiscoveryUrlsFromRegion = EndpointUtils
-                .getZoneBasedDiscoveryUrlsFromRegion(clientConfig, region);
+        Map<String, List<String>> zoneBasedDiscoveryUrlsFromRegion = EndpointUtils.getZoneBasedDiscoveryUrlsFromRegion(clientConfig, region);
         if (null != zoneBasedDiscoveryUrlsFromRegion) {
             return zoneBasedDiscoveryUrlsFromRegion.keySet();
         }
-
         return Collections.emptySet();
     }
 }

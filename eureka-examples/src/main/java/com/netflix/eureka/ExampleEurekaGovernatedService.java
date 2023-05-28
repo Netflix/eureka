@@ -14,6 +14,7 @@ import com.netflix.governator.LifecycleInjector;
 public class ExampleEurekaGovernatedService {
 
     static class ExampleServiceModule extends AbstractModule {
+
         @Override
         protected void configure() {
             bind(ExampleServiceBase.class).asEagerSingleton();
@@ -22,24 +23,19 @@ public class ExampleEurekaGovernatedService {
 
     private static LifecycleInjector init() throws Exception {
         System.out.println("Creating injector for Example Service");
+        LifecycleInjector injector = InjectorBuilder.fromModules(new EurekaModule(), new ExampleServiceModule()).overrideWith(new AbstractModule() {
 
-        LifecycleInjector injector = InjectorBuilder
-                .fromModules(new EurekaModule(), new ExampleServiceModule())
-                .overrideWith(new AbstractModule() {
-                    @Override
-                    protected void configure() {
-                        DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory.getInstance();
-                        bind(DynamicPropertyFactory.class).toInstance(configInstance);
-                        // the default impl of EurekaInstanceConfig is CloudInstanceConfig, which we only want in an AWS
-                        // environment. Here we override that by binding MyDataCenterInstanceConfig to EurekaInstanceConfig.
-                        bind(EurekaInstanceConfig.class).to(MyDataCenterInstanceConfig.class);
-
-                        // (DiscoveryClient optional bindings) bind the optional event bus
-                        // bind(EventBus.class).to(EventBusImpl.class).in(Scopes.SINGLETON);
-                    }
-                })
-                .createInjector();
-
+            @Override
+            protected void configure() {
+                DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory.getInstance();
+                bind(DynamicPropertyFactory.class).toInstance(configInstance);
+                // the default impl of EurekaInstanceConfig is CloudInstanceConfig, which we only want in an AWS
+                // environment. Here we override that by binding MyDataCenterInstanceConfig to EurekaInstanceConfig.
+                bind(EurekaInstanceConfig.class).to(MyDataCenterInstanceConfig.class);
+                // (DiscoveryClient optional bindings) bind the optional event bus
+                // bind(EventBus.class).to(EventBusImpl.class).in(Scopes.SINGLETON);
+            }
+        }).createInjector();
         System.out.println("Done creating the injector");
         return injector;
     }
@@ -58,5 +54,4 @@ public class ExampleEurekaGovernatedService {
             }
         }
     }
-
 }

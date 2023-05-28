@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.eureka.transport;
 
 import javax.inject.Inject;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collections;
-
 import com.netflix.discovery.EurekaIdentityHeaderFilter;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
@@ -44,16 +42,17 @@ public class JerseyRemoteRegionClientFactory implements TransportClientFactory {
     private static final Logger logger = LoggerFactory.getLogger(JerseyRemoteRegionClientFactory.class);
 
     private final EurekaServerConfig serverConfig;
+
     private final ServerCodecs serverCodecs;
+
     private final String region;
 
     private volatile EurekaJerseyClient jerseyClient;
+
     private final Object lock = new Object();
 
     @Inject
-    public JerseyRemoteRegionClientFactory(EurekaServerConfig serverConfig,
-                                           ServerCodecs serverCodecs,
-                                           String region) {
+    public JerseyRemoteRegionClientFactory(EurekaServerConfig serverConfig, ServerCodecs serverCodecs, String region) {
         this.serverConfig = serverConfig;
         this.serverCodecs = serverCodecs;
         this.region = region;
@@ -75,40 +74,23 @@ public class JerseyRemoteRegionClientFactory implements TransportClientFactory {
         if (jerseyClient != null) {
             return jerseyClient;
         }
-
         synchronized (lock) {
             if (jerseyClient == null) {
-                EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
-                        .withUserAgent("Java-EurekaClient-RemoteRegion")
-                        .withEncoderWrapper(serverCodecs.getFullJsonCodec())
-                        .withDecoderWrapper(serverCodecs.getFullJsonCodec())
-                        .withConnectionTimeout(serverConfig.getRemoteRegionConnectTimeoutMs())
-                        .withReadTimeout(serverConfig.getRemoteRegionReadTimeoutMs())
-                        .withMaxConnectionsPerHost(serverConfig.getRemoteRegionTotalConnectionsPerHost())
-                        .withMaxTotalConnections(serverConfig.getRemoteRegionTotalConnections())
-                        .withConnectionIdleTimeout(serverConfig.getRemoteRegionConnectionIdleTimeoutSeconds());
-
+                EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder().withUserAgent("Java-EurekaClient-RemoteRegion").withEncoderWrapper(serverCodecs.getFullJsonCodec()).withDecoderWrapper(serverCodecs.getFullJsonCodec()).withConnectionTimeout(serverConfig.getRemoteRegionConnectTimeoutMs()).withReadTimeout(serverConfig.getRemoteRegionReadTimeoutMs()).withMaxConnectionsPerHost(serverConfig.getRemoteRegionTotalConnectionsPerHost()).withMaxTotalConnections(serverConfig.getRemoteRegionTotalConnections()).withConnectionIdleTimeout(serverConfig.getRemoteRegionConnectionIdleTimeoutSeconds());
                 if (endpoint.isSecure()) {
                     clientBuilder.withClientName("Discovery-RemoteRegionClient-" + region);
                 } else if ("true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
-                    clientBuilder.withClientName("Discovery-RemoteRegionSystemSecureClient-" + region)
-                            .withSystemSSLConfiguration();
+                    clientBuilder.withClientName("Discovery-RemoteRegionSystemSecureClient-" + region).withSystemSSLConfiguration();
                 } else {
-                    clientBuilder.withClientName("Discovery-RemoteRegionSecureClient-" + region)
-                            .withTrustStoreFile(
-                                    serverConfig.getRemoteRegionTrustStore(),
-                                    serverConfig.getRemoteRegionTrustStorePassword()
-                            );
+                    clientBuilder.withClientName("Discovery-RemoteRegionSecureClient-" + region).withTrustStoreFile(serverConfig.getRemoteRegionTrustStore(), serverConfig.getRemoteRegionTrustStorePassword());
                 }
                 jerseyClient = clientBuilder.build();
                 ApacheHttpClient4 discoveryApacheClient = jerseyClient.getClient();
-
                 // Add gzip content encoding support
                 boolean enableGZIPContentEncodingFilter = serverConfig.shouldGZipContentFromRemoteRegion();
                 if (enableGZIPContentEncodingFilter) {
                     discoveryApacheClient.addFilter(new GZIPContentEncodingFilter(false));
                 }
-
                 // always enable client identity headers
                 String ip = null;
                 try {
@@ -120,7 +102,6 @@ public class JerseyRemoteRegionClientFactory implements TransportClientFactory {
                 discoveryApacheClient.addFilter(new EurekaIdentityHeaderFilter(identity));
             }
         }
-
         return jerseyClient;
     }
 }

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.util;
 
 import java.util.ArrayList;
@@ -25,7 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.discovery.shared.Application;
@@ -232,7 +230,6 @@ public final class EurekaEntityFunctions {
         Set<String> secondNames = selectApplicationNames(second);
         Set<String> allNames = new HashSet<>(firstNames);
         allNames.addAll(secondNames);
-
         Applications merged = new Applications();
         for (String appName : allNames) {
             if (firstNames.contains(appName)) {
@@ -254,7 +251,7 @@ public final class EurekaEntityFunctions {
         }
         Application merged = copyApplication(first);
         for (InstanceInfo instance : second.getInstances()) {
-            switch (instance.getActionType()) {
+            switch(instance.getActionType()) {
                 case ADDED:
                 case MODIFIED:
                     merged.addInstance(instance);
@@ -285,6 +282,7 @@ public final class EurekaEntityFunctions {
     }
 
     private static class InstanceAppIdComparator implements Comparator<InstanceInfo> {
+
         @Override
         public int compare(InstanceInfo o1, InstanceInfo o2) {
             int ac = compareStrings(o1.getAppName(), o2.getAppName());

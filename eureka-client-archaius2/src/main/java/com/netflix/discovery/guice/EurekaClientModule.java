@@ -58,6 +58,5 @@ public class EurekaClientModule extends AbstractModule {
     }
 
     protected void configureEureka() {
-
     }
 }

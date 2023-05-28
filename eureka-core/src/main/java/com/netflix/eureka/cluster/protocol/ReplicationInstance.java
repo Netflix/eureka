@@ -9,22 +9,23 @@ import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
  * The jersey resource class that generates a particular replication event
  */
 public class ReplicationInstance {
+
     private String appName;
+
     private String id;
+
     private Long lastDirtyTimestamp;
+
     private String overriddenStatus;
+
     private String status;
+
     private InstanceInfo instanceInfo;
+
     private Action action;
 
     @JsonCreator
-    public ReplicationInstance(@JsonProperty("appName") String appName,
-                               @JsonProperty("id") String id,
-                               @JsonProperty("lastDirtyTimestamp") Long lastDirtyTimestamp,
-                               @JsonProperty("overriddenStatus") String overriddenStatus,
-                               @JsonProperty("status") String status,
-                               @JsonProperty("instanceInfo") InstanceInfo instanceInfo,
-                               @JsonProperty("action") Action action) {
+    public ReplicationInstance(@JsonProperty("appName") String appName, @JsonProperty("id") String id, @JsonProperty("lastDirtyTimestamp") Long lastDirtyTimestamp, @JsonProperty("overriddenStatus") String overriddenStatus, @JsonProperty("status") String status, @JsonProperty("instanceInfo") InstanceInfo instanceInfo, @JsonProperty("action") Action action) {
         this.appName = appName;
         this.id = id;
         this.lastDirtyTimestamp = lastDirtyTimestamp;
@@ -68,9 +69,7 @@ public class ReplicationInstance {
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-
         ReplicationInstance that = (ReplicationInstance) o;
-
         if (appName != null ? !appName.equals(that.appName) : that.appName != null)
             return false;
         if (id != null ? !id.equals(that.id) : that.id != null)
@@ -84,7 +83,6 @@ public class ReplicationInstance {
         if (instanceInfo != null ? !instanceInfo.equals(that.instanceInfo) : that.instanceInfo != null)
             return false;
         return action == that.action;
-
     }
 
     @Override
@@ -104,12 +102,19 @@ public class ReplicationInstance {
     }
 
     public static class ReplicationInstanceBuilder {
+
         private String appName;
+
         private String id;
+
         private Long lastDirtyTimestamp;
+
         private String overriddenStatus;
+
         private String status;
+
         private InstanceInfo instanceInfo;
+
         private Action action;
 
         private ReplicationInstanceBuilder() {
@@ -159,15 +164,7 @@ public class ReplicationInstance {
         }
 
         public ReplicationInstance build() {
-            return new ReplicationInstance(
-                    appName,
-                    id,
-                    lastDirtyTimestamp,
-                    overriddenStatus,
-                    status,
-                    instanceInfo,
-                    action
-            );
+            return new ReplicationInstance(appName, id, lastDirtyTimestamp, overriddenStatus, status, instanceInfo, action);
         }
     }
 }

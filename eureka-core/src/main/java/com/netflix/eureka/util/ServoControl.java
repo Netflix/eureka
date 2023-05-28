@@ -17,5 +17,4 @@ public class ServoControl extends StatsTimer {
     public static void shutdown() {
         DEFAULT_EXECUTOR.shutdown();
     }
-
 }

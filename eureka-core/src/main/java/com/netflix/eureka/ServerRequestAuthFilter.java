@@ -10,7 +10,6 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-
 import com.google.common.base.Strings;
 import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.servo.monitor.DynamicCounter;
@@ -21,6 +20,7 @@ import com.netflix.servo.monitor.MonitorConfig;
  */
 @Singleton
 public class ServerRequestAuthFilter implements Filter {
+
     public static final String UNKNOWN = "unknown";
 
     private static final String NAME_PREFIX = "DiscoveryServerRequestAuth_Name_";
@@ -39,15 +39,13 @@ public class ServerRequestAuthFilter implements Filter {
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         if (serverConfig == null) {
-            EurekaServerContext serverContext = (EurekaServerContext) filterConfig.getServletContext()
-                    .getAttribute(EurekaServerContext.class.getName());
+            EurekaServerContext serverContext = (EurekaServerContext) filterConfig.getServletContext().getAttribute(EurekaServerContext.class.getName());
             serverConfig = serverContext.getServerConfig();
         }
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         logAuth(request);
         chain.doFilter(request, response);
     }
@@ -61,10 +59,8 @@ public class ServerRequestAuthFilter implements Filter {
         if (serverConfig.shouldLogIdentityHeaders()) {
             if (request instanceof HttpServletRequest) {
                 HttpServletRequest httpRequest = (HttpServletRequest) request;
-
                 String clientName = getHeader(httpRequest, AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY);
                 String clientVersion = getHeader(httpRequest, AbstractEurekaIdentity.AUTH_VERSION_HEADER_KEY);
-
                 DynamicCounter.increment(MonitorConfig.builder(NAME_PREFIX + clientName + "-" + clientVersion).build());
             }
         }

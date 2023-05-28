@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.transport.decorator;
 
 import com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.RequestType;
@@ -28,5 +27,6 @@ import com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorato
  * @author Tomasz Bak
  */
 public interface ServerStatusEvaluator {
+
     boolean accept(int statusCode, RequestType requestType);
 }

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.transport;
 
 import javax.servlet.http.HttpServletResponse;
@@ -27,7 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.converters.wrappers.CodecWrappers;
@@ -54,10 +52,13 @@ public class SimpleEurekaHttpServer {
     private static final Logger logger = LoggerFactory.getLogger(SimpleEurekaHttpServer.class);
 
     private final EurekaHttpClient requestHandler;
+
     private final EurekaTransportEventListener eventListener;
+
     private final HttpServer httpServer;
 
     private final EncoderWrapper encoder = CodecWrappers.getEncoder(JacksonJson.class);
+
     private final DecoderWrapper decoder = CodecWrappers.getDecoder(JacksonJson.class);
 
     public SimpleEurekaHttpServer(EurekaHttpClient requestHandler) throws IOException {
@@ -67,7 +68,6 @@ public class SimpleEurekaHttpServer {
     public SimpleEurekaHttpServer(EurekaHttpClient requestHandler, EurekaTransportEventListener eventListener) throws IOException {
         this.requestHandler = requestHandler;
         this.eventListener = eventListener;
-
         this.httpServer = HttpServer.create(new InetSocketAddress(0), 1);
         httpServer.createContext("/v2", createEurekaV2Handle());
         httpServer.setExecutor(null);
@@ -92,9 +92,10 @@ public class SimpleEurekaHttpServer {
 
     private HttpHandler createEurekaV2Handle() {
         return new HttpHandler() {
+
             @Override
             public void handle(HttpExchange httpExchange) throws IOException {
-                if(eventListener != null) {
+                if (eventListener != null) {
                     eventListener.onHttpRequest(mapToEurekaHttpRequest(httpExchange));
                 }
                 try {
@@ -131,7 +132,6 @@ public class SimpleEurekaHttpServer {
     private void handleAppsGET(HttpExchange httpExchange) throws IOException {
         EurekaHttpResponse<?> httpResponse;
         String path = httpExchange.getRequestURI().getPath();
-
         Matcher matcher;
         if (path.matches("/v2/apps[/]?")) {
             String regions = getQueryParam(httpExchange, "regions");
@@ -154,7 +154,6 @@ public class SimpleEurekaHttpServer {
     private void handleAppsPost(HttpExchange httpExchange) throws IOException {
         EurekaHttpResponse<?> httpResponse;
         String path = httpExchange.getRequestURI().getPath();
-
         if (path.matches("/v2/apps/([^/]+)(/)?")) {
             InstanceInfo instance = decoder.decode(httpExchange.getRequestBody(), InstanceInfo.class);
             httpResponse = requestHandler.register(instance);
@@ -168,21 +167,13 @@ public class SimpleEurekaHttpServer {
     private void handleAppsPut(HttpExchange httpExchange) throws IOException {
         EurekaHttpResponse<?> httpResponse;
         String path = httpExchange.getRequestURI().getPath();
-
         Matcher matcher;
         if ((matcher = Pattern.compile("/v2/apps/([^/]+)/([^/]+)").matcher(path)).matches()) {
             String overriddenstatus = getQueryParam(httpExchange, "overriddenstatus");
-            httpResponse = requestHandler.sendHeartBeat(
-                    matcher.group(1), matcher.group(2), null,
-                    overriddenstatus == null ? null : InstanceStatus.valueOf(overriddenstatus)
-            );
+            httpResponse = requestHandler.sendHeartBeat(matcher.group(1), matcher.group(2), null, overriddenstatus == null ? null : InstanceStatus.valueOf(overriddenstatus));
         } else if ((matcher = Pattern.compile("/v2/apps/([^/]+)/([^/]+)/status").matcher(path)).matches()) {
             String newStatus = getQueryParam(httpExchange, "value");
-            httpResponse = requestHandler.statusUpdate(
-                    matcher.group(1), matcher.group(2),
-                    newStatus == null ? null : InstanceStatus.valueOf(newStatus),
-                    null
-            );
+            httpResponse = requestHandler.statusUpdate(matcher.group(1), matcher.group(2), newStatus == null ? null : InstanceStatus.valueOf(newStatus), null);
         } else {
             httpExchange.sendResponseHeaders(HttpServletResponse.SC_NOT_FOUND, 0);
             return;
@@ -193,7 +184,6 @@ public class SimpleEurekaHttpServer {
     private void handleAppsDelete(HttpExchange httpExchange) throws IOException {
         EurekaHttpResponse<?> httpResponse;
         String path = httpExchange.getRequestURI().getPath();
-
         Matcher matcher;
         if ((matcher = Pattern.compile("/v2/apps/([^/]+)/([^/]+)").matcher(path)).matches()) {
             httpResponse = requestHandler.cancel(matcher.group(1), matcher.group(2));
@@ -210,9 +200,7 @@ public class SimpleEurekaHttpServer {
         Matcher matcher = Pattern.compile("/v2/vips/([^/]+)").matcher(httpExchange.getRequestURI().getPath());
         if (matcher.matches()) {
             String regions = getQueryParam(httpExchange, "regions");
-            EurekaHttpResponse<Applications> httpResponse = regions == null
-                    ? requestHandler.getVip(matcher.group(1))
-                    : requestHandler.getVip(matcher.group(1), regions);
+            EurekaHttpResponse<Applications> httpResponse = regions == null ? requestHandler.getVip(matcher.group(1)) : requestHandler.getVip(matcher.group(1), regions);
             mapResponse(httpExchange, httpResponse);
         } else {
             httpExchange.sendResponseHeaders(HttpServletResponse.SC_NOT_FOUND, 0);
@@ -223,9 +211,7 @@ public class SimpleEurekaHttpServer {
         Matcher matcher = Pattern.compile("/v2/svips/([^/]+)").matcher(httpExchange.getRequestURI().getPath());
         if (matcher.matches()) {
             String regions = getQueryParam(httpExchange, "regions");
-            EurekaHttpResponse<Applications> httpResponse = regions == null
-                    ? requestHandler.getSecureVip(matcher.group(1))
-                    : requestHandler.getSecureVip(matcher.group(1), regions);
+            EurekaHttpResponse<Applications> httpResponse = regions == null ? requestHandler.getSecureVip(matcher.group(1)) : requestHandler.getSecureVip(matcher.group(1), regions);
             mapResponse(httpExchange, httpResponse);
         } else {
             httpExchange.sendResponseHeaders(HttpServletResponse.SC_NOT_FOUND, 0);
@@ -244,8 +230,7 @@ public class SimpleEurekaHttpServer {
     private EurekaHttpRequest mapToEurekaHttpRequest(HttpExchange httpExchange) {
         Headers exchangeHeaders = httpExchange.getRequestHeaders();
         Map<String, String> headers = new HashMap<>();
-
-        for(String key: exchangeHeaders.keySet()) {
+        for (String key : exchangeHeaders.keySet()) {
             headers.put(key, exchangeHeaders.getFirst(key));
         }
         return new EurekaHttpRequest(httpExchange.getRequestMethod(), httpExchange.getRequestURI(), headers);
@@ -256,12 +241,10 @@ public class SimpleEurekaHttpServer {
         for (Map.Entry<String, String> headerEntry : response.getHeaders().entrySet()) {
             httpExchange.getResponseHeaders().add(headerEntry.getKey(), headerEntry.getValue());
         }
-
         if (response.getStatusCode() / 100 != 2) {
             httpExchange.sendResponseHeaders(response.getStatusCode(), 0);
             return;
         }
-
         // Prepare body, if any
         T entity = response.getEntity();
         byte[] body = null;
@@ -270,10 +253,8 @@ public class SimpleEurekaHttpServer {
             encoder.encode(entity, bos);
             body = bos.toByteArray();
         }
-
         // Set status and body length
         httpExchange.sendResponseHeaders(response.getStatusCode(), body == null ? 0 : body.length);
-
         // Send body
         if (body != null) {
             OutputStream responseStream = httpExchange.getResponseBody();

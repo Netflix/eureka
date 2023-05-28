@@ -11,9 +11,7 @@ import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import java.util.List;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -28,25 +26,27 @@ import static org.mockito.Mockito.when;
 public class EurekaHttpResolverTest {
 
     private final EurekaClientConfig clientConfig = mock(EurekaClientConfig.class);
+
     private final EurekaTransportConfig transportConfig = mock(EurekaTransportConfig.class);
+
     private final EurekaHttpClientFactory clientFactory = mock(EurekaHttpClientFactory.class);
+
     private final EurekaHttpClient httpClient = mock(EurekaHttpClient.class);
 
     private Applications applications;
+
     private String vipAddress;
+
     private EurekaHttpResolver resolver;
 
     @Before
     public void setUp() {
         when(clientConfig.getEurekaServerURLContext()).thenReturn("context");
         when(clientConfig.getRegion()).thenReturn("region");
-
         applications = InstanceInfoGenerator.newBuilder(5, "eurekaRead", "someOther").build().toApplications();
         vipAddress = applications.getRegisteredApplications("eurekaRead").getInstances().get(0).getVIPAddress();
-
         when(clientFactory.newClient()).thenReturn(httpClient);
         when(httpClient.getVip(vipAddress)).thenReturn(EurekaHttpResponse.anEurekaHttpResponse(200, applications).build());
-
         resolver = new EurekaHttpResolver(clientConfig, transportConfig, clientFactory, vipAddress);
     }
 
@@ -58,7 +58,6 @@ public class EurekaHttpResolverTest {
     public void testHappyCase() {
         List<AwsEndpoint> endpoints = resolver.getClusterEndpoints();
         assertThat(endpoints.size(), equalTo(applications.getInstancesByVirtualHostName(vipAddress).size()));
-
         verify(httpClient, times(1)).shutdown();
     }
 
@@ -71,20 +70,16 @@ public class EurekaHttpResolverTest {
             }
         }
         when(httpClient.getVip(vipAddress)).thenReturn(EurekaHttpResponse.anEurekaHttpResponse(200, newApplications).build());
-
         List<AwsEndpoint> endpoints = resolver.getClusterEndpoints();
         assertThat(endpoints.isEmpty(), is(true));
-
         verify(httpClient, times(1)).shutdown();
     }
 
     @Test
     public void testErrorResponseFromRemoteServer() {
-        when(httpClient.getVip(vipAddress)).thenReturn(EurekaHttpResponse.anEurekaHttpResponse(500, (Applications)null).build());
-
+        when(httpClient.getVip(vipAddress)).thenReturn(EurekaHttpResponse.anEurekaHttpResponse(500, (Applications) null).build());
         List<AwsEndpoint> endpoints = resolver.getClusterEndpoints();
         assertThat(endpoints.isEmpty(), is(true));
-
         verify(httpClient, times(1)).shutdown();
     }
 }

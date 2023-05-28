@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.transport.decorator;
 
 import com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.RequestType;
@@ -24,6 +23,7 @@ import com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorato
 public final class ServerStatusEvaluators {
 
     private static final ServerStatusEvaluator LEGACY_EVALUATOR = new ServerStatusEvaluator() {
+
         @Override
         public boolean accept(int statusCode, RequestType requestType) {
             if (statusCode >= 200 && statusCode < 300 || statusCode == 302) {
@@ -32,7 +32,8 @@ public final class ServerStatusEvaluators {
                 return true;
             } else if (requestType == RequestType.SendHeartBeat && statusCode == 404) {
                 return true;
-            } else if (requestType == RequestType.Cancel) {  // cancel is best effort
+            } else if (requestType == RequestType.Cancel) {
+                // cancel is best effort
                 return true;
             } else if (requestType == RequestType.GetDelta && (statusCode == 403 || statusCode == 404)) {
                 return true;
@@ -42,12 +43,12 @@ public final class ServerStatusEvaluators {
     };
 
     private static final ServerStatusEvaluator HTTP_SUCCESS_EVALUATOR = new ServerStatusEvaluator() {
+
         @Override
         public boolean accept(int statusCode, RequestType requestType) {
             return statusCode >= 200 && statusCode < 300;
         }
     };
-
 
     private ServerStatusEvaluators() {
     }

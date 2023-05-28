@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.transport.decorator;
 
 import java.util.concurrent.atomic.AtomicReference;
-
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -35,28 +32,28 @@ import static org.mockito.Mockito.when;
 public class SessionedEurekaHttpClientTest {
 
     private final EurekaHttpClient firstClient = mock(EurekaHttpClient.class);
+
     private final EurekaHttpClient secondClient = mock(EurekaHttpClient.class);
+
     private final EurekaHttpClientFactory factory = mock(EurekaHttpClientFactory.class);
 
     @Test
     public void testReconnectIsEnforcedAtConfiguredInterval() throws Exception {
         final AtomicReference<EurekaHttpClient> clientRef = new AtomicReference<>(firstClient);
         when(factory.newClient()).thenAnswer(new Answer<EurekaHttpClient>() {
+
             @Override
             public EurekaHttpClient answer(InvocationOnMock invocation) throws Throwable {
                 return clientRef.get();
             }
         });
-
         SessionedEurekaHttpClient httpClient = null;
         try {
             httpClient = new SessionedEurekaHttpClient("test", factory, 1);
             httpClient.getApplications();
             verify(firstClient, times(1)).getApplications();
-
             clientRef.set(secondClient);
             Thread.sleep(2);
-
             httpClient.getApplications();
             verify(secondClient, times(1)).getApplications();
         } finally {

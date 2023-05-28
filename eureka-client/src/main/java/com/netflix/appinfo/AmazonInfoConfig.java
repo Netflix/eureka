@@ -50,5 +50,4 @@ public interface AmazonInfoConfig {
      * @return whether to progress with AmazonInfo construction if the instanceId cannot be validated.
      */
     boolean shouldValidateInstanceId();
-
 }

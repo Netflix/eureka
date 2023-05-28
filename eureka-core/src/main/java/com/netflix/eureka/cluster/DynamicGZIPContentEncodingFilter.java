@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-
 import com.netflix.eureka.EurekaServerConfig;
 import com.sun.jersey.api.client.AbstractClientRequestAdapter;
 import com.sun.jersey.api.client.ClientHandlerException;
@@ -34,7 +33,6 @@ public class DynamicGZIPContentEncodingFilter extends ClientFilter {
         if (!request.getHeaders().containsKey(HttpHeaders.ACCEPT_ENCODING)) {
             request.getHeaders().add(HttpHeaders.ACCEPT_ENCODING, GZIP_ENCODING);
         }
-
         if (request.getEntity() != null) {
             Object requestEncoding = request.getHeaders().getFirst(HttpHeaders.CONTENT_ENCODING);
             if (GZIP_ENCODING.equals(requestEncoding)) {
@@ -44,9 +42,7 @@ public class DynamicGZIPContentEncodingFilter extends ClientFilter {
                 request.setAdapter(new GzipAdapter(request.getAdapter()));
             }
         }
-
         ClientResponse response = getNext().handle(request);
-
         String responseEncoding = response.getHeaders().getFirst(HttpHeaders.CONTENT_ENCODING);
         if (response.hasEntity() && GZIP_ENCODING.equals(responseEncoding)) {
             response.getHeaders().remove(HttpHeaders.CONTENT_ENCODING);
@@ -75,6 +71,7 @@ public class DynamicGZIPContentEncodingFilter extends ClientFilter {
     }
 
     private static final class GzipAdapter extends AbstractClientRequestAdapter {
+
         GzipAdapter(ClientRequestAdapter cra) {
             super(cra);
         }

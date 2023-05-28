@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -64,7 +63,9 @@ public class InstanceInfo {
      * makes its mapping complicated. This class represents the wire format for port information.
      */
     public static class PortWrapper {
+
         private final boolean enabled;
+
         private final int port;
 
         @JsonCreator
@@ -85,74 +86,109 @@ public class InstanceInfo {
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfo.class);
 
     public static final int DEFAULT_PORT = 7001;
+
     public static final int DEFAULT_SECURE_PORT = 7002;
-    public static final int DEFAULT_COUNTRY_ID = 1; // US
+
+    // US
+    public static final int DEFAULT_COUNTRY_ID = 1;
 
     // The (fixed) instanceId for this instanceInfo. This should be unique within the scope of the appName.
     private volatile String instanceId;
 
     private volatile String appName;
+
     @Auto
     private volatile String appGroupName;
 
     private volatile String ipAddr;
 
     private static final String SID_DEFAULT = "na";
+
     @Deprecated
     private volatile String sid = SID_DEFAULT;
 
     private volatile int port = DEFAULT_PORT;
+
     private volatile int securePort = DEFAULT_SECURE_PORT;
 
     @Auto
     private volatile String homePageUrl;
+
     @Auto
     private volatile String statusPageUrl;
+
     @Auto
     private volatile String healthCheckUrl;
+
     @Auto
     private volatile String secureHealthCheckUrl;
+
     @Auto
     private volatile String vipAddress;
+
     @Auto
     private volatile String secureVipAddress;
+
     @XStreamOmitField
     private String statusPageRelativeUrl;
+
     @XStreamOmitField
     private String statusPageExplicitUrl;
+
     @XStreamOmitField
     private String healthCheckRelativeUrl;
+
     @XStreamOmitField
     private String healthCheckSecureExplicitUrl;
+
     @XStreamOmitField
     private String vipAddressUnresolved;
+
     @XStreamOmitField
     private String secureVipAddressUnresolved;
+
     @XStreamOmitField
     private String healthCheckExplicitUrl;
+
     @Deprecated
-    private volatile int countryId = DEFAULT_COUNTRY_ID; // Defaults to US
+    private volatile int // Defaults to US
+    countryId = DEFAULT_COUNTRY_ID;
+
     private volatile boolean isSecurePortEnabled = false;
+
     private volatile boolean isUnsecurePortEnabled = true;
+
     private volatile DataCenterInfo dataCenterInfo;
+
     private volatile String hostName;
+
     private volatile InstanceStatus status = InstanceStatus.UP;
+
     private volatile InstanceStatus overriddenStatus = InstanceStatus.UNKNOWN;
+
     @XStreamOmitField
     private volatile boolean isInstanceInfoDirty = false;
+
     private volatile LeaseInfo leaseInfo;
+
     @Auto
     private volatile Boolean isCoordinatingDiscoveryServer = Boolean.FALSE;
+
     @XStreamAlias("metadata")
     private volatile Map<String, String> metadata;
+
     @Auto
     private volatile Long lastUpdatedTimestamp;
+
     @Auto
     private volatile Long lastDirtyTimestamp;
+
     @Auto
     private volatile ActionType actionType;
+
     @Auto
     private volatile String asgName;
+
     private String version = VERSION_UNKNOWN;
 
     private InstanceInfo() {
@@ -162,33 +198,7 @@ public class InstanceInfo {
     }
 
     @JsonCreator
-    public InstanceInfo(
-            @JsonProperty("instanceId") String instanceId,
-            @JsonProperty("app") String appName,
-            @JsonProperty("appGroupName") String appGroupName,
-            @JsonProperty("ipAddr") String ipAddr,
-            @JsonProperty("sid") String sid,
-            @JsonProperty("port") PortWrapper port,
-            @JsonProperty("securePort") PortWrapper securePort,
-            @JsonProperty("homePageUrl") String homePageUrl,
-            @JsonProperty("statusPageUrl") String statusPageUrl,
-            @JsonProperty("healthCheckUrl") String healthCheckUrl,
-            @JsonProperty("secureHealthCheckUrl") String secureHealthCheckUrl,
-            @JsonProperty("vipAddress") String vipAddress,
-            @JsonProperty("secureVipAddress") String secureVipAddress,
-            @JsonProperty("countryId") int countryId,
-            @JsonProperty("dataCenterInfo") DataCenterInfo dataCenterInfo,
-            @JsonProperty("hostName") String hostName,
-            @JsonProperty("status") InstanceStatus status,
-            @JsonProperty("overriddenstatus") InstanceStatus overriddenStatus,
-            @JsonProperty("overriddenStatus") InstanceStatus overriddenStatusAlt,
-            @JsonProperty("leaseInfo") LeaseInfo leaseInfo,
-            @JsonProperty("isCoordinatingDiscoveryServer") Boolean isCoordinatingDiscoveryServer,
-            @JsonProperty("metadata") HashMap<String, String> metadata,
-            @JsonProperty("lastUpdatedTimestamp") Long lastUpdatedTimestamp,
-            @JsonProperty("lastDirtyTimestamp") Long lastDirtyTimestamp,
-            @JsonProperty("actionType") ActionType actionType,
-            @JsonProperty("asgName") String asgName) {
+    public InstanceInfo(@JsonProperty("instanceId") String instanceId, @JsonProperty("app") String appName, @JsonProperty("appGroupName") String appGroupName, @JsonProperty("ipAddr") String ipAddr, @JsonProperty("sid") String sid, @JsonProperty("port") PortWrapper port, @JsonProperty("securePort") PortWrapper securePort, @JsonProperty("homePageUrl") String homePageUrl, @JsonProperty("statusPageUrl") String statusPageUrl, @JsonProperty("healthCheckUrl") String healthCheckUrl, @JsonProperty("secureHealthCheckUrl") String secureHealthCheckUrl, @JsonProperty("vipAddress") String vipAddress, @JsonProperty("secureVipAddress") String secureVipAddress, @JsonProperty("countryId") int countryId, @JsonProperty("dataCenterInfo") DataCenterInfo dataCenterInfo, @JsonProperty("hostName") String hostName, @JsonProperty("status") InstanceStatus status, @JsonProperty("overriddenstatus") InstanceStatus overriddenStatus, @JsonProperty("overriddenStatus") InstanceStatus overriddenStatusAlt, @JsonProperty("leaseInfo") LeaseInfo leaseInfo, @JsonProperty("isCoordinatingDiscoveryServer") Boolean isCoordinatingDiscoveryServer, @JsonProperty("metadata") HashMap<String, String> metadata, @JsonProperty("lastUpdatedTimestamp") Long lastUpdatedTimestamp, @JsonProperty("lastDirtyTimestamp") Long lastDirtyTimestamp, @JsonProperty("actionType") ActionType actionType, @JsonProperty("asgName") String asgName) {
         this.instanceId = instanceId;
         this.sid = sid;
         this.appName = StringCache.intern(appName);
@@ -215,10 +225,8 @@ public class InstanceInfo {
         this.lastDirtyTimestamp = lastDirtyTimestamp;
         this.actionType = actionType;
         this.asgName = StringCache.intern(asgName);
-
         // ---------------------------------------------------------------
         // for compatibility
-
         if (metadata == null) {
             this.metadata = Collections.emptyMap();
         } else if (metadata.size() == 1) {
@@ -226,18 +234,14 @@ public class InstanceInfo {
         } else {
             this.metadata = metadata;
         }
-
         if (sid == null) {
             this.sid = SID_DEFAULT;
         }
     }
 
     @Override
-    public String toString(){
-        return "InstanceInfo [instanceId = " + this.instanceId + ", appName = " + this.appName +
-                ", hostName = " + this.hostName + ", status = " + this.status +
-                ", ipAddr = " + this.ipAddr + ", port = " + this.port + ", securePort = " + this.securePort +
-                ", dataCenterInfo = " + this.dataCenterInfo;
+    public String toString() {
+        return "InstanceInfo [instanceId = " + this.instanceId + ", appName = " + this.appName + ", hostName = " + this.hostName + ", status = " + this.status + ", ipAddr = " + this.ipAddr + ", port = " + this.port + ", securePort = " + this.securePort + ", dataCenterInfo = " + this.dataCenterInfo;
     }
 
     private Map<String, String> removeMetadataMapLegacyValues(Map<String, String> metadata) {
@@ -262,64 +266,50 @@ public class InstanceInfo {
         this.appGroupName = ii.appGroupName;
         this.ipAddr = ii.ipAddr;
         this.sid = ii.sid;
-
         this.port = ii.port;
         this.securePort = ii.securePort;
-
         this.homePageUrl = ii.homePageUrl;
         this.statusPageUrl = ii.statusPageUrl;
         this.healthCheckUrl = ii.healthCheckUrl;
         this.secureHealthCheckUrl = ii.secureHealthCheckUrl;
-
         this.vipAddress = ii.vipAddress;
         this.secureVipAddress = ii.secureVipAddress;
         this.statusPageRelativeUrl = ii.statusPageRelativeUrl;
         this.statusPageExplicitUrl = ii.statusPageExplicitUrl;
-
         this.healthCheckRelativeUrl = ii.healthCheckRelativeUrl;
         this.healthCheckSecureExplicitUrl = ii.healthCheckSecureExplicitUrl;
-
         this.vipAddressUnresolved = ii.vipAddressUnresolved;
         this.secureVipAddressUnresolved = ii.secureVipAddressUnresolved;
-
         this.healthCheckExplicitUrl = ii.healthCheckExplicitUrl;
-
         this.countryId = ii.countryId;
         this.isSecurePortEnabled = ii.isSecurePortEnabled;
         this.isUnsecurePortEnabled = ii.isUnsecurePortEnabled;
-
         this.dataCenterInfo = ii.dataCenterInfo;
-
         this.hostName = ii.hostName;
-
         this.status = ii.status;
         this.overriddenStatus = ii.overriddenStatus;
-
         this.isInstanceInfoDirty = ii.isInstanceInfoDirty;
-
         this.leaseInfo = ii.leaseInfo;
-
         this.isCoordinatingDiscoveryServer = ii.isCoordinatingDiscoveryServer;
-
         this.metadata = ii.metadata;
-
         this.lastUpdatedTimestamp = ii.lastUpdatedTimestamp;
         this.lastDirtyTimestamp = ii.lastDirtyTimestamp;
-
         this.actionType = ii.actionType;
-
         this.asgName = ii.asgName;
-
         this.version = ii.version;
     }
 
-
     public enum InstanceStatus {
-        UP, // Ready to receive traffic
-        DOWN, // Do not send traffic- healthcheck callback failed
-        STARTING, // Just about starting- initializations to be done - do not
+
+        // Ready to receive traffic
+        UP,
+        // Do not send traffic- healthcheck callback failed
+        DOWN,
+        // Just about starting- initializations to be done - do not
+        STARTING,
         // send traffic
-        OUT_OF_SERVICE, // Intentionally shutdown for traffic
+        // Intentionally shutdown for traffic
+        OUT_OF_SERVICE,
         UNKNOWN;
 
         public static InstanceStatus toEnum(String s) {
@@ -365,16 +355,22 @@ public class InstanceInfo {
     }
 
     public enum PortType {
+
         SECURE, UNSECURE
     }
 
     public static final class Builder {
+
         private static final String COLON = ":";
+
         private static final String HTTPS_PROTOCOL = "https://";
+
         private static final String HTTP_PROTOCOL = "http://";
-        private final Function<String,String> intern;
+
+        private final Function<String, String> intern;
 
         private static final class LazyHolder {
+
             private static final VipAddressResolver DEFAULT_VIP_ADDRESS_RESOLVER = new Archaius1VipAddressResolver();
         }
 
@@ -386,7 +382,7 @@ public class InstanceInfo {
 
         private String namespace;
 
-        private Builder(InstanceInfo result, VipAddressResolver vipAddressResolver, Function<String,String> intern) {
+        private Builder(InstanceInfo result, VipAddressResolver vipAddressResolver, Function<String, String> intern) {
             this.vipAddressResolver = vipAddressResolver;
             this.result = result;
             this.intern = intern != null ? intern : StringCache::intern;
@@ -400,7 +396,7 @@ public class InstanceInfo {
             return new Builder(new InstanceInfo(), LazyHolder.DEFAULT_VIP_ADDRESS_RESOLVER, null);
         }
 
-        public static Builder newBuilder(Function<String,String> intern) {
+        public static Builder newBuilder(Function<String, String> intern) {
             return new Builder(new InstanceInfo(), LazyHolder.DEFAULT_VIP_ADDRESS_RESOLVER, intern);
         }
 
@@ -424,12 +420,11 @@ public class InstanceInfo {
             result.appName = intern.apply(appName.toUpperCase(Locale.ROOT));
             return this;
         }
-        
+
         public Builder setAppNameForDeser(String appName) {
             result.appName = appName;
             return this;
         }
-        
 
         public Builder setAppGroupName(String appGroupName) {
             if (appGroupName != null) {
@@ -439,6 +434,7 @@ public class InstanceInfo {
             }
             return this;
         }
+
         public Builder setAppGroupNameForDeser(String appGroupName) {
             result.appGroupName = appGroupName;
             return this;
@@ -457,13 +453,10 @@ public class InstanceInfo {
                 logger.warn("Passed in hostname is blank, not setting it");
                 return this;
             }
-
             String existingHostName = result.hostName;
             result.hostName = hostName;
-            if ((existingHostName != null)
-                    && !(hostName.equals(existingHostName))) {
-                refreshStatusPageUrl().refreshHealthCheckUrl()
-                        .refreshVIPAddress().refreshSecureVIPAddress();
+            if ((existingHostName != null) && !(hostName.equals(existingHostName))) {
+                refreshStatusPageUrl().refreshHealthCheckUrl().refreshVIPAddress().refreshSecureVIPAddress();
             }
             return this;
         }
@@ -581,11 +574,9 @@ public class InstanceInfo {
         public Builder setHomePageUrl(String relativeUrl, String explicitUrl) {
             String hostNameInterpolationExpression = "${" + namespace + "hostname}";
             if (explicitUrl != null) {
-                result.homePageUrl = explicitUrl.replace(
-                        hostNameInterpolationExpression, result.hostName);
+                result.homePageUrl = explicitUrl.replace(hostNameInterpolationExpression, result.hostName);
             } else if (relativeUrl != null) {
-                result.homePageUrl = HTTP_PROTOCOL + result.hostName + COLON
-                        + result.port + relativeUrl;
+                result.homePageUrl = HTTP_PROTOCOL + result.hostName + COLON + result.port + relativeUrl;
             }
             return this;
         }
@@ -622,11 +613,9 @@ public class InstanceInfo {
             result.statusPageRelativeUrl = relativeUrl;
             result.statusPageExplicitUrl = explicitUrl;
             if (explicitUrl != null) {
-                result.statusPageUrl = explicitUrl.replace(
-                        hostNameInterpolationExpression, result.hostName);
+                result.statusPageUrl = explicitUrl.replace(hostNameInterpolationExpression, result.hostName);
             } else if (relativeUrl != null) {
-                result.statusPageUrl = HTTP_PROTOCOL + result.hostName + COLON
-                        + result.port + relativeUrl;
+                result.statusPageUrl = HTTP_PROTOCOL + result.hostName + COLON + result.port + relativeUrl;
             }
             return this;
         }
@@ -660,26 +649,20 @@ public class InstanceInfo {
          * @param secureExplicitUrl the full secure explicit url of the healthcheck page.
          * @return the instance builder
          */
-        public Builder setHealthCheckUrls(String relativeUrl,
-                                          String explicitUrl, String secureExplicitUrl) {
+        public Builder setHealthCheckUrls(String relativeUrl, String explicitUrl, String secureExplicitUrl) {
             String hostNameInterpolationExpression = "${" + namespace + "hostname}";
             result.healthCheckRelativeUrl = relativeUrl;
             result.healthCheckExplicitUrl = explicitUrl;
             result.healthCheckSecureExplicitUrl = secureExplicitUrl;
             if (explicitUrl != null) {
-                result.healthCheckUrl = explicitUrl.replace(
-                        hostNameInterpolationExpression, result.hostName);
+                result.healthCheckUrl = explicitUrl.replace(hostNameInterpolationExpression, result.hostName);
             } else if (result.isUnsecurePortEnabled && relativeUrl != null) {
-                result.healthCheckUrl = HTTP_PROTOCOL + result.hostName + COLON
-                        + result.port + relativeUrl;
+                result.healthCheckUrl = HTTP_PROTOCOL + result.hostName + COLON + result.port + relativeUrl;
             }
-
             if (secureExplicitUrl != null) {
-                result.secureHealthCheckUrl = secureExplicitUrl.replace(
-                        hostNameInterpolationExpression, result.hostName);
+                result.secureHealthCheckUrl = secureExplicitUrl.replace(hostNameInterpolationExpression, result.hostName);
             } else if (result.isSecurePortEnabled && relativeUrl != null) {
-                result.secureHealthCheckUrl = HTTPS_PROTOCOL + result.hostName
-                        + COLON + result.securePort + relativeUrl;
+                result.secureHealthCheckUrl = HTTPS_PROTOCOL + result.hostName + COLON + result.securePort + relativeUrl;
             }
             return this;
         }
@@ -709,8 +692,7 @@ public class InstanceInfo {
          */
         public Builder setVIPAddress(final String vipAddress) {
             result.vipAddressUnresolved = intern.apply(vipAddress);
-            result.vipAddress = intern.apply(
-                    vipAddressResolver.resolveDeploymentContextBasedVipAddresses(vipAddress));
+            result.vipAddress = intern.apply(vipAddressResolver.resolveDeploymentContextBasedVipAddresses(vipAddress));
             return this;
         }
 
@@ -733,8 +715,7 @@ public class InstanceInfo {
          */
         public Builder setSecureVIPAddress(final String secureVIPAddress) {
             result.secureVipAddressUnresolved = intern.apply(secureVIPAddress);
-            result.secureVipAddress = intern.apply(
-                    vipAddressResolver.resolveDeploymentContextBasedVipAddresses(secureVIPAddress));
+            result.secureVipAddress = intern.apply(vipAddressResolver.resolveDeploymentContextBasedVipAddresses(secureVIPAddress));
             return this;
         }
 
@@ -829,15 +810,12 @@ public class InstanceInfo {
         }
 
         private Builder refreshStatusPageUrl() {
-            setStatusPageUrl(result.statusPageRelativeUrl,
-                    result.statusPageExplicitUrl);
+            setStatusPageUrl(result.statusPageRelativeUrl, result.statusPageExplicitUrl);
             return this;
         }
 
         private Builder refreshHealthCheckUrl() {
-            setHealthCheckUrls(result.healthCheckRelativeUrl,
-                    result.healthCheckExplicitUrl,
-                    result.healthCheckSecureExplicitUrl);
+            setHealthCheckUrls(result.healthCheckRelativeUrl, result.healthCheckExplicitUrl, result.healthCheckSecureExplicitUrl);
             return this;
         }
 
@@ -872,9 +850,7 @@ public class InstanceInfo {
         }
 
         public Builder setNamespace(String namespace) {
-            this.namespace = namespace.endsWith(".")
-                    ? namespace
-                    : namespace + ".";
+            this.namespace = namespace.endsWith(".") ? namespace : namespace + ".";
             return this;
         }
     }
@@ -899,7 +875,6 @@ public class InstanceInfo {
     public String getAppGroupName() {
         return appGroupName;
     }
-
 
     /**
      * Return the default network address to connect to this instance. Typically this would be the fully
@@ -1256,7 +1231,6 @@ public class InstanceInfo {
         return lastDirtyTimestamp;
     }
 
-
     /**
      * Unset the dirty flag iff the unsetDirtyTimestamp matches the lastDirtyTimestamp. No-op if
      * lastDirtyTimestamp > unsetDirtyTimestamp
@@ -1278,9 +1252,7 @@ public class InstanceInfo {
      */
     public void setIsCoordinatingDiscoveryServer() {
         String instanceId = getId();
-        if ((instanceId != null)
-                && (instanceId.equals(ApplicationInfoManager.getInstance()
-                .getInfo().getId()))) {
+        if ((instanceId != null) && (instanceId.equals(ApplicationInfoManager.getInstance().getInfo().getId()))) {
             isCoordinatingDiscoveryServer = Boolean.TRUE;
         } else {
             isCoordinatingDiscoveryServer = Boolean.FALSE;
@@ -1340,10 +1312,12 @@ public class InstanceInfo {
     }
 
     public enum ActionType {
-        ADDED, // Added in the discovery server
-        MODIFIED, // Changed in the discovery server
+
+        // Added in the discovery server
+        ADDED,
+        // Changed in the discovery server
+        MODIFIED,
         DELETED
-        // Deleted from the discovery server
     }
 
     /**
@@ -1353,8 +1327,7 @@ public class InstanceInfo {
      * @param runtimeMetadata
      *            Map containing key/value pairs.
      */
-    synchronized void registerRuntimeMetadata(
-            Map<String, String> runtimeMetadata) {
+    synchronized void registerRuntimeMetadata(Map<String, String> runtimeMetadata) {
         metadata.putAll(runtimeMetadata);
         setIsDirty();
     }
@@ -1370,17 +1343,12 @@ public class InstanceInfo {
      * @return - The zone in which the particular instance belongs to.
      */
     public static String getZone(String[] availZones, InstanceInfo myInfo) {
-        String instanceZone = ((availZones == null || availZones.length == 0) ? "default"
-                : availZones[0]);
-        if (myInfo != null
-                && myInfo.getDataCenterInfo().getName() == DataCenterInfo.Name.Amazon) {
-
-            String awsInstanceZone = ((AmazonInfo) myInfo.getDataCenterInfo())
-                    .get(AmazonInfo.MetaDataKey.availabilityZone);
+        String instanceZone = ((availZones == null || availZones.length == 0) ? "default" : availZones[0]);
+        if (myInfo != null && myInfo.getDataCenterInfo().getName() == DataCenterInfo.Name.Amazon) {
+            String awsInstanceZone = ((AmazonInfo) myInfo.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.availabilityZone);
             if (awsInstanceZone != null) {
                 instanceZone = awsInstanceZone;
             }
-
         }
         return instanceZone;
     }

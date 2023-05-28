@@ -23,8 +23,5 @@ public interface InstanceStatusOverrideRule {
      * @param isReplication When overriding consider if we are under a replication mode from other servers.
      * @return A result with whether we matched and what we propose the status to be overriden to.
      */
-    StatusOverrideResult apply(final InstanceInfo instanceInfo,
-                               final Lease<InstanceInfo> existingLease,
-                               boolean isReplication);
-
+    StatusOverrideResult apply(final InstanceInfo instanceInfo, final Lease<InstanceInfo> existingLease, boolean isReplication);
 }

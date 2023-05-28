@@ -4,10 +4,8 @@ import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
 import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.internal.util.InternalPrefixedConfig;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import static com.netflix.appinfo.PropertyBasedAmazonInfoConfigConstants.*;
 
 /**
@@ -18,7 +16,9 @@ import static com.netflix.appinfo.PropertyBasedAmazonInfoConfigConstants.*;
 public class Archaius2AmazonInfoConfig implements AmazonInfoConfig {
 
     private final Config configInstance;
+
     private final InternalPrefixedConfig prefixedConfig;
+
     private final String namespace;
 
     @Inject
@@ -26,13 +26,11 @@ public class Archaius2AmazonInfoConfig implements AmazonInfoConfig {
         this(configInstance, CommonConstants.DEFAULT_CONFIG_NAMESPACE);
     }
 
-
     public Archaius2AmazonInfoConfig(Config configInstance, String namespace) {
         this.namespace = namespace;
         this.configInstance = configInstance;
         this.prefixedConfig = new InternalPrefixedConfig(configInstance, namespace);
     }
-
 
     @Override
     public String getNamespace() {

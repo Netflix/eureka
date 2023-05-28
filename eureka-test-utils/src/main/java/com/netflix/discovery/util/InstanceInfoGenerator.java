@@ -6,7 +6,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.InstanceInfo;
@@ -17,7 +16,6 @@ import com.netflix.appinfo.InstanceInfo.PortType;
 import com.netflix.appinfo.LeaseInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-
 import static com.netflix.discovery.util.EurekaEntityFunctions.mergeApplications;
 import static com.netflix.discovery.util.EurekaEntityFunctions.toApplicationMap;
 
@@ -27,17 +25,25 @@ import static com.netflix.discovery.util.EurekaEntityFunctions.toApplicationMap;
  * @author Tomasz Bak
  */
 public class InstanceInfoGenerator {
+
     public static final int RENEW_INTERVAL = 5;
 
     private final int instanceCount;
+
     private final String[] appNames;
+
     private final String zone;
+
     private final boolean taggedId;
 
     private Iterator<InstanceInfo> currentIt;
+
     private Applications allApplications = new Applications();
+
     private final boolean withMetaData;
+
     private final boolean includeAsg;
+
     private final boolean useInstanceId;
 
     InstanceInfoGenerator(InstanceInfoGeneratorBuilder builder) {
@@ -64,7 +70,6 @@ public class InstanceInfoGenerator {
         Applications nextBatch = EurekaEntityFunctions.toApplications(toApplicationMap(instanceBatch));
         allApplications = mergeApplications(allApplications, nextBatch);
         nextBatch.setAppsHashCode(allApplications.getAppsHashCode());
-
         return nextBatch;
     }
 
@@ -72,7 +77,9 @@ public class InstanceInfoGenerator {
         return new Iterator<InstanceInfo>() {
 
             private int returned;
+
             private final int[] appInstanceIds = new int[appNames.length];
+
             private int currentApp;
 
             @Override
@@ -111,18 +118,15 @@ public class InstanceInfoGenerator {
             }
             instanceApp.addInstance(instanceInfo);
         }
-
         // Do not pass application list to the constructor, as it does not initialize properly Applications
         // data structure.
         Applications applications = new Applications();
         for (Application app : appsByName.values()) {
             applications.addApplication(app);
         }
-
         applications.shuffleInstances(false);
         applications.setAppsHashCode(applications.getReconcileHashCode());
         applications.setVersion(1L);
-
         return applications;
     }
 
@@ -158,7 +162,7 @@ public class InstanceInfoGenerator {
 
     public Applications takeDeltaForDelete(boolean useInstanceId, int instanceCount) {
         List<InstanceInfo> instanceInfoList = new ArrayList<>();
-        for (int i = 0; i < instanceCount; i ++) {
+        for (int i = 0; i < instanceCount; i++) {
             instanceInfoList.add(this.generateInstanceInfo(i, i, useInstanceId, ActionType.DELETED));
         }
         Applications delete = EurekaEntityFunctions.toApplications(toApplicationMap(instanceInfoList));
@@ -175,63 +179,17 @@ public class InstanceInfoGenerator {
         String publicIp = "20.0." + appIndex + '.' + appInstanceId;
         String privateIp = "192.168." + appIndex + '.' + appInstanceId;
         String ipv6 = "::FFFF:" + publicIp;
-
         String instanceId = String.format("i-%04d%04d", appIndex, appInstanceId);
         if (taggedId) {
             instanceId = instanceId + '_' + appName;
         }
-
-        AmazonInfo dataCenterInfo = AmazonInfo.Builder.newBuilder()
-                .addMetadata(MetaDataKey.accountId, "testAccountId")
-                .addMetadata(MetaDataKey.amiId, String.format("ami-%04d%04d", appIndex, appInstanceId))
-                .addMetadata(MetaDataKey.availabilityZone, zone)
-                .addMetadata(MetaDataKey.instanceId, instanceId)
-                .addMetadata(MetaDataKey.instanceType, "m2.xlarge")
-                .addMetadata(MetaDataKey.localHostname, privateHostname)
-                .addMetadata(MetaDataKey.localIpv4, privateIp)
-                .addMetadata(MetaDataKey.publicHostname, hostName)
-                .addMetadata(MetaDataKey.publicIpv4, publicIp)
-                .addMetadata(MetaDataKey.ipv6, ipv6)
-                .build();
-
+        AmazonInfo dataCenterInfo = AmazonInfo.Builder.newBuilder().addMetadata(MetaDataKey.accountId, "testAccountId").addMetadata(MetaDataKey.amiId, String.format("ami-%04d%04d", appIndex, appInstanceId)).addMetadata(MetaDataKey.availabilityZone, zone).addMetadata(MetaDataKey.instanceId, instanceId).addMetadata(MetaDataKey.instanceType, "m2.xlarge").addMetadata(MetaDataKey.localHostname, privateHostname).addMetadata(MetaDataKey.localIpv4, privateIp).addMetadata(MetaDataKey.publicHostname, hostName).addMetadata(MetaDataKey.publicIpv4, publicIp).addMetadata(MetaDataKey.ipv6, ipv6).build();
         String unsecureURL = "http://" + hostName + ":8080";
         String secureURL = "https://" + hostName + ":8081";
-
         long now = System.currentTimeMillis();
-        LeaseInfo leaseInfo = LeaseInfo.Builder.newBuilder()
-                .setDurationInSecs(3 * RENEW_INTERVAL)
-                .setRenewalIntervalInSecs(RENEW_INTERVAL)
-                .setServiceUpTimestamp(now - RENEW_INTERVAL)
-                .setRegistrationTimestamp(now)
-                .setEvictionTimestamp(now + 3 * RENEW_INTERVAL)
-                .setRenewalTimestamp(now + RENEW_INTERVAL)
-                .build();
-
-        Builder builder = useInstanceId
-                ? InstanceInfo.Builder.newBuilder().setInstanceId(instanceId)
-                : InstanceInfo.Builder.newBuilder();
-
-        builder
-                .setActionType(actionType)
-                .setAppGroupName(appName + "Group")
-                .setAppName(appName)
-                .setHostName(hostName)
-                .setIPAddr(publicIp)
-                .setPort(8080)
-                .setSecurePort(8081)
-                .enablePort(PortType.SECURE, true)
-                .setHealthCheckUrls("/healthcheck", unsecureURL + "/healthcheck", secureURL + "/healthcheck")
-                .setHomePageUrl("/homepage", unsecureURL + "/homepage")
-                .setStatusPageUrl("/status", unsecureURL + "/status")
-                .setLeaseInfo(leaseInfo)
-                .setStatus(InstanceStatus.UP)
-                .setVIPAddress(appName + ":8080")
-                .setSecureVIPAddress(appName + ":8081")
-                .setDataCenterInfo(dataCenterInfo)
-                .setLastUpdatedTimestamp(System.currentTimeMillis() - 100)
-                .setLastDirtyTimestamp(System.currentTimeMillis() - 100)
-                .setIsCoordinatingDiscoveryServer(true)
-                .enablePort(PortType.UNSECURE, true);
+        LeaseInfo leaseInfo = LeaseInfo.Builder.newBuilder().setDurationInSecs(3 * RENEW_INTERVAL).setRenewalIntervalInSecs(RENEW_INTERVAL).setServiceUpTimestamp(now - RENEW_INTERVAL).setRegistrationTimestamp(now).setEvictionTimestamp(now + 3 * RENEW_INTERVAL).setRenewalTimestamp(now + RENEW_INTERVAL).build();
+        Builder builder = useInstanceId ? InstanceInfo.Builder.newBuilder().setInstanceId(instanceId) : InstanceInfo.Builder.newBuilder();
+        builder.setActionType(actionType).setAppGroupName(appName + "Group").setAppName(appName).setHostName(hostName).setIPAddr(publicIp).setPort(8080).setSecurePort(8081).enablePort(PortType.SECURE, true).setHealthCheckUrls("/healthcheck", unsecureURL + "/healthcheck", secureURL + "/healthcheck").setHomePageUrl("/homepage", unsecureURL + "/homepage").setStatusPageUrl("/status", unsecureURL + "/status").setLeaseInfo(leaseInfo).setStatus(InstanceStatus.UP).setVIPAddress(appName + ":8080").setSecureVIPAddress(appName + ":8081").setDataCenterInfo(dataCenterInfo).setLastUpdatedTimestamp(System.currentTimeMillis() - 100).setLastDirtyTimestamp(System.currentTimeMillis() - 100).setIsCoordinatingDiscoveryServer(true).enablePort(PortType.UNSECURE, true);
         if (includeAsg) {
             builder.setASGName(appName + "ASG");
         }
@@ -248,9 +206,13 @@ public class InstanceInfoGenerator {
         private String[] appNames;
 
         private boolean includeMetaData;
+
         private boolean includeAsg = true;
+
         private String zone;
+
         private boolean taggedId;
+
         private boolean useInstanceId = true;
 
         public InstanceInfoGeneratorBuilder(int instanceCount, int applicationCount) {

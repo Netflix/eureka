@@ -4,9 +4,7 @@ import com.netflix.archaius.config.MapConfig;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.junit.Before;
 import org.junit.Test;
-
 import java.util.Collections;
-
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.ipv6;
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.localIpv4;
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.publicHostname;
@@ -17,8 +15,11 @@ import static org.junit.Assert.assertThat;
  * @author David Liu
  */
 public class Ec2EurekaArchaius2InstanceConfigTest {
+
     private Ec2EurekaArchaius2InstanceConfig config;
+
     private String dummyDefault = "dummyDefault";
+
     private InstanceInfo instanceInfo;
 
     @Before
@@ -31,30 +32,23 @@ public class Ec2EurekaArchaius2InstanceConfigTest {
         AmazonInfo info = (AmazonInfo) instanceInfo.getDataCenterInfo();
         config = createConfig(info);
         assertThat(config.resolveDefaultAddress(false), is(info.get(publicHostname)));
-
         info.getMetadata().remove(publicHostname.getName());
         config = createConfig(info);
         assertThat(config.resolveDefaultAddress(false), is(info.get(localIpv4)));
-
         info.getMetadata().remove(localIpv4.getName());
         config = createConfig(info);
         assertThat(config.resolveDefaultAddress(false), is(info.get(ipv6)));
-
         info.getMetadata().remove(ipv6.getName());
         config = createConfig(info);
         assertThat(config.resolveDefaultAddress(false), is(dummyDefault));
     }
 
     private Ec2EurekaArchaius2InstanceConfig createConfig(AmazonInfo info) {
-
         return new Ec2EurekaArchaius2InstanceConfig(MapConfig.from(Collections.<String, String>emptyMap()), info) {
+
             @Override
             public String[] getDefaultAddressResolutionOrder() {
-                return new String[] {
-                        publicHostname.name(),
-                        localIpv4.name(),
-                        ipv6.name()
-                };
+                return new String[] { publicHostname.name(), localIpv4.name(), ipv6.name() };
             }
 
             @Override
@@ -64,4 +58,3 @@ public class Ec2EurekaArchaius2InstanceConfigTest {
         };
     }
 }
-

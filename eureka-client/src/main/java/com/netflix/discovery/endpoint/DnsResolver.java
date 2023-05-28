@@ -13,7 +13,6 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,12 +24,17 @@ public final class DnsResolver {
     private static final Logger logger = LoggerFactory.getLogger(DnsResolver.class);
 
     private static final String DNS_PROVIDER_URL = "dns:";
+
     private static final String DNS_NAMING_FACTORY = "com.sun.jndi.dns.DnsContextFactory";
+
     private static final String JAVA_NAMING_FACTORY_INITIAL = "java.naming.factory.initial";
+
     private static final String JAVA_NAMING_PROVIDER_URL = "java.naming.provider.url";
 
     private static final String A_RECORD_TYPE = "A";
+
     private static final String CNAME_RECORD_TYPE = "CNAME";
+
     private static final String TXT_RECORD_TYPE = "TXT";
 
     private DnsResolver() {
@@ -43,7 +47,6 @@ public final class DnsResolver {
         Hashtable<String, String> env = new Hashtable<String, String>();
         env.put(JAVA_NAMING_FACTORY_INITIAL, DNS_NAMING_FACTORY);
         env.put(JAVA_NAMING_PROVIDER_URL, DNS_PROVIDER_URL);
-
         try {
             return new InitialDirContext(env);
         } catch (Throwable e) {
@@ -64,7 +67,7 @@ public final class DnsResolver {
         try {
             String targetHost = null;
             do {
-                Attributes attrs = getDirContext().getAttributes(currentHost, new String[]{A_RECORD_TYPE, CNAME_RECORD_TYPE});
+                Attributes attrs = getDirContext().getAttributes(currentHost, new String[] { A_RECORD_TYPE, CNAME_RECORD_TYPE });
                 Attribute attr = attrs.get(A_RECORD_TYPE);
                 if (attr != null) {
                     targetHost = attr.get().toString();
@@ -75,7 +78,6 @@ public final class DnsResolver {
                 } else {
                     targetHost = currentHost;
                 }
-
             } while (targetHost == null);
             return targetHost;
         } catch (NamingException e) {
@@ -95,7 +97,7 @@ public final class DnsResolver {
             return null;
         }
         try {
-            Attributes attrs = getDirContext().getAttributes(rootDomainName, new String[]{A_RECORD_TYPE, CNAME_RECORD_TYPE});
+            Attributes attrs = getDirContext().getAttributes(rootDomainName, new String[] { A_RECORD_TYPE, CNAME_RECORD_TYPE });
             Attribute aRecord = attrs.get(A_RECORD_TYPE);
             Attribute cRecord = attrs.get(CNAME_RECORD_TYPE);
             if (aRecord != null && cRecord == null) {
@@ -127,12 +129,11 @@ public final class DnsResolver {
      * Looks up the DNS name provided in the JNDI context.
      */
     public static Set<String> getCNamesFromTxtRecord(String discoveryDnsName) throws NamingException {
-        Attributes attrs = getDirContext().getAttributes(discoveryDnsName, new String[]{TXT_RECORD_TYPE});
+        Attributes attrs = getDirContext().getAttributes(discoveryDnsName, new String[] { TXT_RECORD_TYPE });
         Attribute attr = attrs.get(TXT_RECORD_TYPE);
         String txtRecord = null;
         if (attr != null) {
             txtRecord = attr.get().toString();
-
             /**
              * compatible splited txt record of "host1 host2 host3" but not "host1" "host2" "host3".
              * some dns service provider support txt value only format "host1 host2 host3"
@@ -141,7 +142,6 @@ public final class DnsResolver {
                 txtRecord = txtRecord.substring(1, txtRecord.length() - 1);
             }
         }
-
         Set<String> cnamesSet = new TreeSet<>();
         if (txtRecord == null || txtRecord.trim().isEmpty()) {
             return cnamesSet;

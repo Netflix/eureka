@@ -13,16 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.eureka.util.batcher;
 
 import java.util.List;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-
 import com.netflix.eureka.util.batcher.TaskProcessor.ProcessingResult;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
@@ -33,12 +30,14 @@ import static org.junit.Assert.assertThat;
 class RecordingProcessor implements TaskProcessor<ProcessingResult> {
 
     final BlockingDeque<ProcessingResult> completedTasks = new LinkedBlockingDeque<>();
+
     final BlockingDeque<ProcessingResult> transientErrorTasks = new LinkedBlockingDeque<>();
+
     final BlockingDeque<ProcessingResult> permanentErrorTasks = new LinkedBlockingDeque<>();
 
     @Override
     public ProcessingResult process(ProcessingResult task) {
-        switch (task) {
+        switch(task) {
             case Success:
                 completedTasks.add(task);
                 break;

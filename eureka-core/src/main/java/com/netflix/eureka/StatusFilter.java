@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.eureka;
 
 import javax.inject.Singleton;
@@ -25,7 +24,6 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
@@ -46,7 +44,6 @@ public class StatusFilter implements Filter {
      */
     public void destroy() {
         // TODO Auto-generated method stub
-
     }
 
     /*
@@ -55,15 +52,12 @@ public class StatusFilter implements Filter {
      * @see javax.servlet.Filter#doFilter(javax.servlet.ServletRequest,
      * javax.servlet.ServletResponse, javax.servlet.FilterChain)
      */
-    public void doFilter(ServletRequest request, ServletResponse response,
-                         FilterChain chain) throws IOException, ServletException {
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
         InstanceStatus status = myInfo.getStatus();
         if (status != InstanceStatus.UP && response instanceof HttpServletResponse) {
             HttpServletResponse httpResponse = (HttpServletResponse) response;
-            httpResponse.sendError(SC_TEMPORARY_REDIRECT,
-                    "Current node is currently not ready to serve requests -- current status: "
-                            + status + " - try another DS node: ");
+            httpResponse.sendError(SC_TEMPORARY_REDIRECT, "Current node is currently not ready to serve requests -- current status: " + status + " - try another DS node: ");
         }
         chain.doFilter(request, response);
     }
@@ -75,5 +69,4 @@ public class StatusFilter implements Filter {
      */
     public void init(FilterConfig arg0) throws ServletException {
     }
-
 }

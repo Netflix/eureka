@@ -12,5 +12,4 @@ public interface TransportClientFactory {
     EurekaHttpClient newClient(EurekaEndpoint serviceUrl);
 
     void shutdown();
-
 }

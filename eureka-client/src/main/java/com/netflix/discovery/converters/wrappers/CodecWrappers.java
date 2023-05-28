@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.discovery.converters.EurekaJacksonCodec;
 import com.netflix.discovery.converters.JsonXStream;
@@ -51,14 +50,12 @@ public final class CodecWrappers {
         if (name == null) {
             return null;
         }
-
         if (!CODECS.containsKey(name)) {
             CodecWrapper wrapper = create(name);
             if (wrapper != null) {
                 CODECS.put(wrapper.codecName(), wrapper);
             }
         }
-
         return CODECS.get(name);
     }
 
@@ -70,14 +67,12 @@ public final class CodecWrappers {
         if (name == null) {
             return null;
         }
-
         if (!CODECS.containsKey(name)) {
             CodecWrapper wrapper = create(name);
             if (wrapper != null) {
                 CODECS.put(wrapper.codecName(), wrapper);
             }
         }
-
         return CODECS.get(name);
     }
 
@@ -92,7 +87,7 @@ public final class CodecWrappers {
      */
     public static synchronized DecoderWrapper resolveDecoder(String name, String eurekaAccept) {
         EurekaAccept accept = EurekaAccept.fromString(eurekaAccept);
-        switch (accept) {
+        switch(accept) {
             case compact:
                 return getDecoder(JacksonJsonMini.class);
             case full:
@@ -105,14 +100,12 @@ public final class CodecWrappers {
         if (name == null) {
             return null;
         }
-
         if (!CODECS.containsKey(name)) {
             CodecWrapper wrapper = create(name);
             if (wrapper != null) {
                 CODECS.put(wrapper.codecName(), wrapper);
             }
         }
-
         return CODECS.get(name);
     }
 
@@ -139,7 +132,6 @@ public final class CodecWrappers {
     // ========================
     // wrapper definitions
     // ========================
-
     public static class JacksonJson implements CodecWrapper {
 
         protected final EurekaJsonJacksonCodec codec = new EurekaJsonJacksonCodec();

@@ -16,7 +16,6 @@
 package com.netflix.discovery.shared;
 
 import java.util.List;
-
 import com.netflix.appinfo.InstanceInfo;
 
 /**
@@ -24,7 +23,6 @@ import com.netflix.appinfo.InstanceInfo;
  *
  * @author Karthik Ranganathan, Greg Kim.
  * @param <T> for backward compatibility
-
  */
 public interface LookupService<T> {
 

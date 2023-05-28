@@ -4,7 +4,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Singleton;
 import java.util.concurrent.atomic.AtomicLong;
-
 import com.google.inject.Inject;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.eventbus.spi.EventBus;
@@ -18,15 +17,18 @@ import org.slf4j.LoggerFactory;
  * and emits status changes to @UpStatus Observable<Boolean>.
  *
  * @author elandau
- *
  */
 @Singleton
 public class EurekaUpStatusResolver {
+
     private static Logger LOG = LoggerFactory.getLogger(EurekaUpStatusResolver.class);
 
     private volatile InstanceInfo.InstanceStatus currentStatus = InstanceInfo.InstanceStatus.UNKNOWN;
+
     private final EventBus eventBus;
+
     private final EurekaClient client;
+
     private final AtomicLong counter = new AtomicLong();
 
     /**
@@ -51,7 +53,6 @@ public class EurekaUpStatusResolver {
         try {
             // Must set the initial status
             currentStatus = client.getInstanceRemoteStatus();
-
             LOG.info("Initial status set to {}", currentStatus);
             eventBus.registerSubscriber(this);
         } catch (InvalidSubscriberException e) {

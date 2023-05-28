@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.resolver;
 
 import java.util.ArrayList;
@@ -24,7 +23,6 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
@@ -53,14 +51,13 @@ public final class ResolverUtils {
      */
     public static List<AwsEndpoint>[] splitByZone(List<AwsEndpoint> eurekaEndpoints, String myZone) {
         if (eurekaEndpoints.isEmpty()) {
-            return new List[]{Collections.emptyList(), Collections.emptyList()};
+            return new List[] { Collections.emptyList(), Collections.emptyList() };
         }
         if (myZone == null) {
-            return new List[]{Collections.emptyList(), new ArrayList<>(eurekaEndpoints)};
+            return new List[] { Collections.emptyList(), new ArrayList<>(eurekaEndpoints) };
         }
         List<AwsEndpoint> myZoneList = new ArrayList<>(eurekaEndpoints.size());
         List<AwsEndpoint> remainingZonesList = new ArrayList<>(eurekaEndpoints.size());
-
         for (AwsEndpoint endpoint : eurekaEndpoints) {
             if (myZone.equalsIgnoreCase(endpoint.getZone())) {
                 myZoneList.add(endpoint);
@@ -68,7 +65,7 @@ public final class ResolverUtils {
                 remainingZonesList.add(endpoint);
             }
         }
-        return new List[]{myZoneList, remainingZonesList};
+        return new List[] { myZoneList, remainingZonesList };
     }
 
     public static String extractZoneFromHostName(String hostName) {
@@ -89,7 +86,7 @@ public final class ResolverUtils {
         if (randomList.size() < 2) {
             return randomList;
         }
-        Collections.shuffle(randomList,ThreadLocalRandom.current());
+        Collections.shuffle(randomList, ThreadLocalRandom.current());
         return randomList;
     }
 
@@ -105,9 +102,7 @@ public final class ResolverUtils {
         return compareSet.isEmpty();
     }
 
-    public static AwsEndpoint instanceInfoToEndpoint(EurekaClientConfig clientConfig,
-                                                     EurekaTransportConfig transportConfig,
-                                                     InstanceInfo instanceInfo) {
+    public static AwsEndpoint instanceInfoToEndpoint(EurekaClientConfig clientConfig, EurekaTransportConfig transportConfig, InstanceInfo instanceInfo) {
         String zone = null;
         DataCenterInfo dataCenterInfo = instanceInfo.getDataCenterInfo();
         if (dataCenterInfo instanceof AmazonInfo) {
@@ -115,7 +110,6 @@ public final class ResolverUtils {
         } else {
             zone = instanceInfo.getMetadata().get("zone");
         }
-
         String networkAddress;
         if (transportConfig.applicationsResolverUseIp()) {
             if (instanceInfo.getDataCenterInfo() instanceof AmazonInfo) {
@@ -126,19 +120,11 @@ public final class ResolverUtils {
         } else {
             networkAddress = instanceInfo.getHostName();
         }
-
-        if (networkAddress == null) {  // final check
+        if (networkAddress == null) {
+            // final check
             logger.error("Cannot resolve InstanceInfo {} to a proper resolver endpoint, skipping", instanceInfo);
             return null;
         }
-
-        return new AwsEndpoint(
-                networkAddress,
-                instanceInfo.getPort(),
-                false,
-                clientConfig.getEurekaServerURLContext(),
-                clientConfig.getRegion(),
-                zone
-        );
+        return new AwsEndpoint(networkAddress, instanceInfo.getPort(), false, clientConfig.getEurekaServerURLContext(), clientConfig.getRegion(), zone);
     }
 }

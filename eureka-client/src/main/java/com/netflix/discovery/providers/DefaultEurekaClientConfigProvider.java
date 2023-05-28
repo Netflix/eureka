@@ -1,7 +1,6 @@
 package com.netflix.discovery.providers;
 
 import javax.inject.Provider;
-
 import com.google.inject.Inject;
 import com.netflix.discovery.DefaultEurekaClientConfig;
 import com.netflix.discovery.DiscoveryManager;
@@ -19,18 +18,14 @@ public class DefaultEurekaClientConfigProvider implements Provider<EurekaClientC
     private String namespace;
 
     private DefaultEurekaClientConfig config;
-    
+
     @Override
     public synchronized EurekaClientConfig get() {
         if (config == null) {
-            config = (namespace == null)
-                    ? new DefaultEurekaClientConfig()
-                    : new DefaultEurekaClientConfig(namespace);
-                    
+            config = (namespace == null) ? new DefaultEurekaClientConfig() : new DefaultEurekaClientConfig(namespace);
             // TODO: Remove this when DiscoveryManager is finally no longer used
             DiscoveryManager.getInstance().setEurekaClientConfig(config);
         }
-
         return config;
     }
 }

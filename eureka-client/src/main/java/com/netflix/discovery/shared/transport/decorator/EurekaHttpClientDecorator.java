@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.transport.decorator;
 
 import com.netflix.appinfo.InstanceInfo;
@@ -29,6 +28,7 @@ import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
 
     public enum RequestType {
+
         Register,
         Cancel,
         SendHeartBeat,
@@ -44,6 +44,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     }
 
     public interface RequestExecutor<R> {
+
         EurekaHttpResponse<R> execute(EurekaHttpClient delegate);
 
         RequestType getRequestType();
@@ -54,6 +55,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     @Override
     public EurekaHttpResponse<Void> register(final InstanceInfo info) {
         return execute(new RequestExecutor<Void>() {
+
             @Override
             public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
                 return delegate.register(info);
@@ -69,6 +71,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     @Override
     public EurekaHttpResponse<Void> cancel(final String appName, final String id) {
         return execute(new RequestExecutor<Void>() {
+
             @Override
             public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
                 return delegate.cancel(appName, id);
@@ -82,11 +85,9 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     }
 
     @Override
-    public EurekaHttpResponse<InstanceInfo> sendHeartBeat(final String appName,
-                                                          final String id,
-                                                          final InstanceInfo info,
-                                                          final InstanceStatus overriddenStatus) {
+    public EurekaHttpResponse<InstanceInfo> sendHeartBeat(final String appName, final String id, final InstanceInfo info, final InstanceStatus overriddenStatus) {
         return execute(new RequestExecutor<InstanceInfo>() {
+
             @Override
             public EurekaHttpResponse<InstanceInfo> execute(EurekaHttpClient delegate) {
                 return delegate.sendHeartBeat(appName, id, info, overriddenStatus);
@@ -102,6 +103,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     @Override
     public EurekaHttpResponse<Void> statusUpdate(final String appName, final String id, final InstanceStatus newStatus, final InstanceInfo info) {
         return execute(new RequestExecutor<Void>() {
+
             @Override
             public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
                 return delegate.statusUpdate(appName, id, newStatus, info);
@@ -117,6 +119,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     @Override
     public EurekaHttpResponse<Void> deleteStatusOverride(final String appName, final String id, final InstanceInfo info) {
         return execute(new RequestExecutor<Void>() {
+
             @Override
             public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
                 return delegate.deleteStatusOverride(appName, id, info);
@@ -132,6 +135,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     @Override
     public EurekaHttpResponse<Applications> getApplications(final String... regions) {
         return execute(new RequestExecutor<Applications>() {
+
             @Override
             public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
                 return delegate.getApplications(regions);
@@ -147,6 +151,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     @Override
     public EurekaHttpResponse<Applications> getDelta(final String... regions) {
         return execute(new RequestExecutor<Applications>() {
+
             @Override
             public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
                 return delegate.getDelta(regions);
@@ -162,6 +167,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     @Override
     public EurekaHttpResponse<Applications> getVip(final String vipAddress, final String... regions) {
         return execute(new RequestExecutor<Applications>() {
+
             @Override
             public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
                 return delegate.getVip(vipAddress, regions);
@@ -177,6 +183,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     @Override
     public EurekaHttpResponse<Applications> getSecureVip(final String secureVipAddress, final String... regions) {
         return execute(new RequestExecutor<Applications>() {
+
             @Override
             public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
                 return delegate.getVip(secureVipAddress, regions);
@@ -192,6 +199,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     @Override
     public EurekaHttpResponse<Application> getApplication(final String appName) {
         return execute(new RequestExecutor<Application>() {
+
             @Override
             public EurekaHttpResponse<Application> execute(EurekaHttpClient delegate) {
                 return delegate.getApplication(appName);
@@ -207,6 +215,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     @Override
     public EurekaHttpResponse<InstanceInfo> getInstance(final String id) {
         return execute(new RequestExecutor<InstanceInfo>() {
+
             @Override
             public EurekaHttpResponse<InstanceInfo> execute(EurekaHttpClient delegate) {
                 return delegate.getInstance(id);
@@ -222,6 +231,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     @Override
     public EurekaHttpResponse<InstanceInfo> getInstance(final String appName, final String id) {
         return execute(new RequestExecutor<InstanceInfo>() {
+
             @Override
             public EurekaHttpResponse<InstanceInfo> execute(EurekaHttpClient delegate) {
                 return delegate.getInstance(appName, id);

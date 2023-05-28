@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.appinfo;
 
 import java.io.BufferedReader;
@@ -26,7 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -46,16 +44,18 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  * @author Karthik Ranganathan, Greg Kim
- *
  */
 @JsonDeserialize(using = StringInterningAmazonInfoBuilder.class)
 public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
     private static final String AWS_API_VERSION = "latest";
+
     private static final String AWS_METADATA_URL = "http://169.254.169.254/" + AWS_API_VERSION + "/meta-data/";
 
     public enum MetaDataKey {
-        instanceId("instance-id"),  // always have this first as we use it as a fail fast mechanism
+
+        // always have this first as we use it as a fail fast mechanism
+        instanceId("instance-id"),
         amiId("ami-id"),
         instanceType("instance-type"),
         localIpv4("local-ipv4"),
@@ -66,14 +66,18 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
         ipv6("ipv6"),
         spotTerminationTime("termination-time", "spot/"),
         spotInstanceAction("instance-action", "spot/"),
-        mac("mac"),  // mac is declared above vpcId so will be found before vpcId (where it is needed)
+        // mac is declared above vpcId so will be found before vpcId (where it is needed)
+        mac("mac"),
         vpcId("vpc-id", "network/interfaces/macs/") {
+
             @Override
             public URL getURL(String prepend, String mac) throws MalformedURLException {
                 return new URL(AWS_METADATA_URL + this.path + mac + "/" + this.name);
             }
-        },
+        }
+        ,
         accountId("accountId") {
+
             private Pattern pattern = Pattern.compile("\"accountId\"\\s?:\\s?\\\"([A-Za-z0-9]*)\\\"");
 
             @Override
@@ -95,15 +99,16 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
                             // don't break here as we want to read the full buffer for a clean connection close
                         }
                     }
-
                     return toReturn;
                 } finally {
                     br.close();
                 }
             }
-        };
+        }
+        ;
 
         protected String name;
+
         protected String path;
 
         MetaDataKey(String name) {
@@ -130,11 +135,10 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
             try {
                 String line = br.readLine();
                 toReturn = line;
-
-                while (line != null) {  // need to read all the buffer for a clean connection close
+                while (line != null) {
+                    // need to read all the buffer for a clean connection close
                     line = br.readLine();
                 }
-
                 return toReturn;
             } finally {
                 br.close();
@@ -146,9 +150,10 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
         }
     }
 
-
     public static final class Builder {
+
         private static final Logger logger = LoggerFactory.getLogger(Builder.class);
+
         private static final int SLEEP_TIME_MS = 100;
 
         @XStreamOmitField
@@ -195,21 +200,20 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
             if (config == null) {
                 config = new Archaius1AmazonInfoConfig(namespace);
             }
-
             for (MetaDataKey key : MetaDataKey.values()) {
                 int numOfRetries = config.getNumRetries();
                 while (numOfRetries-- > 0) {
                     try {
                         String mac = null;
                         if (key == MetaDataKey.vpcId) {
-                            mac = result.metadata.get(MetaDataKey.mac.getName());  // mac should be read before vpcId due to declaration order
+                            // mac should be read before vpcId due to declaration order
+                            mac = result.metadata.get(MetaDataKey.mac.getName());
                         }
                         URL url = key.getURL(null, mac);
                         String value = AmazonInfoUtils.readEc2MetadataUrl(key, url, config.getConnectTimeout(), config.getReadTimeout());
                         if (value != null) {
                             result.metadata.put(key.getName(), value);
                         }
-
                         break;
                     } catch (Throwable e) {
                         if (config.shouldLogAmazonMetadataErrors()) {
@@ -219,21 +223,15 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
                             try {
                                 Thread.sleep(SLEEP_TIME_MS);
                             } catch (InterruptedException e1) {
-
                             }
                             continue;
                         }
                     }
                 }
-
-                if (key == MetaDataKey.instanceId
-                        && config.shouldFailFastOnFirstLoad()
-                        && !result.metadata.containsKey(MetaDataKey.instanceId.getName())) {
-
-                    logger.warn("Skipping the rest of AmazonInfo init as we were not able to load instanceId after " +
-                                    "the configured number of retries: {}, per fail fast configuration: {}",
-                            config.getNumRetries(), config.shouldFailFastOnFirstLoad());
-                    break;  // break out of loop and return whatever we have thus far
+                if (key == MetaDataKey.instanceId && config.shouldFailFastOnFirstLoad() && !result.metadata.containsKey(MetaDataKey.instanceId.getName())) {
+                    logger.warn("Skipping the rest of AmazonInfo init as we were not able to load instanceId after " + "the configured number of retries: {}, per fail fast configuration: {}", config.getNumRetries(), config.shouldFailFastOnFirstLoad());
+                    // break out of loop and return whatever we have thus far
+                    break;
                 }
             }
             return result;
@@ -253,17 +251,13 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
      * @param name this value is ignored, as it is always set to "Amazon"
      */
     @JsonCreator
-    public AmazonInfo(
-            @JsonProperty("name") String name,
-            @JsonProperty("metadata") HashMap<String, String> metadata) {
+    public AmazonInfo(@JsonProperty("name") String name, @JsonProperty("metadata") HashMap<String, String> metadata) {
         this.metadata = metadata;
     }
-    
-    public AmazonInfo(
-            @JsonProperty("name") String name,
-            @JsonProperty("metadata") Map<String, String> metadata) {
+
+    public AmazonInfo(@JsonProperty("name") String name, @JsonProperty("metadata") Map<String, String> metadata) {
         this.metadata = metadata;
-    }    
+    }
 
     @Override
     public Name getName() {
@@ -307,16 +301,15 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
         return get(MetaDataKey.instanceId);
     }
 
-
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AmazonInfo)) return false;
-
+        if (this == o)
+            return true;
+        if (!(o instanceof AmazonInfo))
+            return false;
         AmazonInfo that = (AmazonInfo) o;
-
-        if (metadata != null ? !metadata.equals(that.metadata) : that.metadata != null) return false;
-
+        if (metadata != null ? !metadata.equals(that.metadata) : that.metadata != null)
+            return false;
         return true;
     }
 
@@ -327,8 +320,6 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
 
     @Override
     public String toString() {
-        return "AmazonInfo{" +
-                "metadata=" + metadata +
-                '}';
+        return "AmazonInfo{" + "metadata=" + metadata + '}';
     }
 }

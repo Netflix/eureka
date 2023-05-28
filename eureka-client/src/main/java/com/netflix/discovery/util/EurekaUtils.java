@@ -24,12 +24,10 @@ public final class EurekaUtils {
         if (instanceInfo.getDataCenterInfo() instanceof AmazonInfo) {
             defaultPrivateIp = ((AmazonInfo) instanceInfo.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.localIpv4);
         }
-
         if (isNullOrEmpty(defaultPrivateIp)) {
             // no other information, best effort
             defaultPrivateIp = instanceInfo.getIPAddr();
         }
-
         return defaultPrivateIp;
     }
 
@@ -63,12 +61,10 @@ public final class EurekaUtils {
             String vpcId = info.get(AmazonInfo.MetaDataKey.vpcId);
             return !isNullOrEmpty(vpcId);
         }
-
         return false;
     }
 
     private static boolean isNullOrEmpty(String str) {
         return str == null || str.isEmpty();
     }
-
 }

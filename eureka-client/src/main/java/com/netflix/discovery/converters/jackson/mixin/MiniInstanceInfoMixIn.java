@@ -1,7 +1,6 @@
 package com.netflix.discovery.converters.jackson.mixin;
 
 import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.LeaseInfo;

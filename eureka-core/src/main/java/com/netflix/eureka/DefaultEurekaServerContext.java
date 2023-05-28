@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.eureka;
 
 import com.netflix.appinfo.ApplicationInfoManager;
@@ -25,7 +24,6 @@ import com.netflix.eureka.util.EurekaMonitors;
 import com.netflix.eureka.util.ServoControl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
@@ -39,20 +37,21 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class DefaultEurekaServerContext implements EurekaServerContext {
+
     private static final Logger logger = LoggerFactory.getLogger(DefaultEurekaServerContext.class);
 
     private final EurekaServerConfig serverConfig;
+
     private final ServerCodecs serverCodecs;
+
     private final PeerAwareInstanceRegistry registry;
+
     private final PeerEurekaNodes peerEurekaNodes;
+
     private final ApplicationInfoManager applicationInfoManager;
 
     @Inject
-    public DefaultEurekaServerContext(EurekaServerConfig serverConfig,
-                               ServerCodecs serverCodecs,
-                               PeerAwareInstanceRegistry registry,
-                               PeerEurekaNodes peerEurekaNodes,
-                               ApplicationInfoManager applicationInfoManager) {
+    public DefaultEurekaServerContext(EurekaServerConfig serverConfig, ServerCodecs serverCodecs, PeerAwareInstanceRegistry registry, PeerEurekaNodes peerEurekaNodes, ApplicationInfoManager applicationInfoManager) {
         this.serverConfig = serverConfig;
         this.serverCodecs = serverCodecs;
         this.registry = registry;
@@ -108,5 +107,4 @@ public class DefaultEurekaServerContext implements EurekaServerContext {
     public ApplicationInfoManager getApplicationInfoManager() {
         return applicationInfoManager;
     }
-
 }

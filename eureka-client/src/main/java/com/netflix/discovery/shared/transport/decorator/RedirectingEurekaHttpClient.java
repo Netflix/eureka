@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.transport.decorator;
 
 import javax.ws.rs.core.UriBuilder;
@@ -21,7 +20,6 @@ import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import com.netflix.discovery.shared.dns.DnsService;
 import com.netflix.discovery.shared.dns.DnsServiceImpl;
 import com.netflix.discovery.shared.resolver.DefaultEndpoint;
@@ -49,10 +47,13 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
     private static final Logger logger = LoggerFactory.getLogger(RedirectingEurekaHttpClient.class);
 
     public static final int MAX_FOLLOWED_REDIRECTS = 10;
+
     private static final Pattern REDIRECT_PATH_REGEX = Pattern.compile("(.*/v2/)apps(/.*)?$");
 
     private final EurekaEndpoint serviceEndpoint;
+
     private final TransportClientFactory factory;
+
     private final DnsService dnsService;
 
     private final AtomicReference<EurekaHttpClient> delegateRef = new AtomicReference<>();
@@ -81,8 +82,7 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
                 TransportUtils.shutdown(delegateRef.getAndSet(currentEurekaClientRef.get()));
                 return response;
             } catch (Exception e) {
-                logger.info("Request execution error. endpoint={}, exception={} stacktrace={}", serviceEndpoint,
-                        e.getMessage(), ExceptionUtils.getStackTrace(e));
+                logger.info("Request execution error. endpoint={}, exception={} stacktrace={}", serviceEndpoint, e.getMessage(), ExceptionUtils.getStackTrace(e));
                 TransportUtils.shutdown(currentEurekaClientRef.get());
                 throw e;
             }
@@ -90,8 +90,7 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
             try {
                 return requestExecutor.execute(currentEurekaClient);
             } catch (Exception e) {
-                logger.info("Request execution error. endpoint={} exception={} stacktrace={}", serviceEndpoint,
-                        e.getMessage(), ExceptionUtils.getStackTrace(e));
+                logger.info("Request execution error. endpoint={} exception={} stacktrace={}", serviceEndpoint, e.getMessage(), ExceptionUtils.getStackTrace(e));
                 delegateRef.compareAndSet(currentEurekaClient, null);
                 currentEurekaClient.shutdown();
                 throw e;
@@ -102,6 +101,7 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
     public static TransportClientFactory createFactory(final TransportClientFactory delegateFactory) {
         final DnsServiceImpl dnsService = new DnsServiceImpl();
         return new TransportClientFactory() {
+
             @Override
             public EurekaHttpClient newClient(EurekaEndpoint endpoint) {
                 return new RedirectingEurekaHttpClient(endpoint.getServiceUrl(), delegateFactory, dnsService);
@@ -114,8 +114,7 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
         };
     }
 
-    private <R> EurekaHttpResponse<R> executeOnNewServer(RequestExecutor<R> requestExecutor,
-                                                         AtomicReference<EurekaHttpClient> currentHttpClientRef) {
+    private <R> EurekaHttpResponse<R> executeOnNewServer(RequestExecutor<R> requestExecutor, AtomicReference<EurekaHttpClient> currentHttpClientRef) {
         URI targetUrl = null;
         for (int followRedirectCount = 0; followRedirectCount < MAX_FOLLOWED_REDIRECTS; followRedirectCount++) {
             EurekaHttpResponse<R> httpResponse = requestExecutor.execute(currentHttpClientRef.get());
@@ -127,12 +126,10 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
                 }
                 return httpResponse;
             }
-
             targetUrl = getRedirectBaseUri(httpResponse.getLocation());
             if (targetUrl == null) {
                 throw new TransportException("Invalid redirect URL " + httpResponse.getLocation());
             }
-
             currentHttpClientRef.getAndSet(null).shutdown();
             currentHttpClientRef.set(factory.newClient(new DefaultEndpoint(targetUrl.toString())));
         }
@@ -147,11 +144,7 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
         }
         Matcher pathMatcher = REDIRECT_PATH_REGEX.matcher(locationURI.getPath());
         if (pathMatcher.matches()) {
-            return UriBuilder.fromUri(locationURI)
-                    .host(dnsService.resolveIp(locationURI.getHost()))
-                    .replacePath(pathMatcher.group(1))
-                    .replaceQuery(null)
-                    .build();
+            return UriBuilder.fromUri(locationURI).host(dnsService.resolveIp(locationURI.getHost())).replacePath(pathMatcher.group(1)).replaceQuery(null).build();
         }
         logger.warn("Invalid redirect URL {}", locationURI);
         return null;

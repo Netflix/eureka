@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.eureka;
 
 import javax.inject.Inject;
@@ -33,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.appinfo.EurekaClientIdentity;
 import com.netflix.eureka.util.EurekaMonitors;
@@ -89,13 +87,14 @@ public class RateLimitingFilter implements Filter {
 
     private static final Logger logger = LoggerFactory.getLogger(RateLimitingFilter.class);
 
-    private static final Set<String> DEFAULT_PRIVILEGED_CLIENTS = new HashSet<>(
-            Arrays.asList(EurekaClientIdentity.DEFAULT_CLIENT_NAME, EurekaServerIdentity.DEFAULT_SERVER_NAME)
-    );
+    private static final Set<String> DEFAULT_PRIVILEGED_CLIENTS = new HashSet<>(Arrays.asList(EurekaClientIdentity.DEFAULT_CLIENT_NAME, EurekaServerIdentity.DEFAULT_SERVER_NAME));
 
     private static final Pattern TARGET_RE = Pattern.compile("^.*/apps(/[^/]*)?$");
 
-    enum Target {FullFetch, DeltaFetch, Application, Other}
+    enum Target {
+
+        FullFetch, DeltaFetch, Application, Other
+    }
 
     /**
      * Includes both full and delta fetches.
@@ -121,8 +120,7 @@ public class RateLimitingFilter implements Filter {
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         if (serverConfig == null) {
-            EurekaServerContext serverContext = (EurekaServerContext) filterConfig.getServletContext()
-                    .getAttribute(EurekaServerContext.class.getName());
+            EurekaServerContext serverContext = (EurekaServerContext) filterConfig.getServletContext().getAttribute(EurekaServerContext.class.getName());
             serverConfig = serverContext.getServerConfig();
         }
     }
@@ -134,9 +132,7 @@ public class RateLimitingFilter implements Filter {
             chain.doFilter(request, response);
             return;
         }
-
         HttpServletRequest httpRequest = (HttpServletRequest) request;
-
         if (isRateLimited(httpRequest, target)) {
             incrementStats(target);
             if (serverConfig.isRateLimiterEnabled()) {
@@ -152,7 +148,6 @@ public class RateLimitingFilter implements Filter {
         if (request instanceof HttpServletRequest) {
             HttpServletRequest httpRequest = (HttpServletRequest) request;
             String pathInfo = httpRequest.getRequestURI();
-
             if ("GET".equals(httpRequest.getMethod()) && pathInfo != null) {
                 Matcher matcher = TARGET_RE.matcher(pathInfo);
                 if (matcher.matches()) {
@@ -198,7 +193,6 @@ public class RateLimitingFilter implements Filter {
         int maxInWindow = serverConfig.getRateLimiterBurstSize();
         int fetchWindowSize = serverConfig.getRateLimiterRegistryFetchAverageRate();
         boolean overloaded = !registryFetchRateLimiter.acquire(maxInWindow, fetchWindowSize);
-
         if (target == Target.FullFetch) {
             int fullFetchWindowSize = serverConfig.getRateLimiterFullFetchAverageRate();
             overloaded |= !registryFullFetchRateLimiter.acquire(maxInWindow, fullFetchWindowSize);

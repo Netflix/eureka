@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.resolver.aws;
 
 import java.util.ArrayList;
@@ -24,24 +23,28 @@ import java.util.List;
  */
 public enum SampleCluster {
 
-    UsEast1a() {
+    UsEast1a {
+
         @Override
         public SampleClusterBuilder builder() {
             return new SampleClusterBuilder("us-east-1", "us-east-1a", "10.10.10.");
         }
-    },
-    UsEast1b() {
+    }
+    , UsEast1b {
+
         @Override
         public SampleClusterBuilder builder() {
             return new SampleClusterBuilder("us-east-1", "us-east-1b", "10.10.20.");
         }
-    },
-    UsEast1c() {
+    }
+    , UsEast1c {
+
         @Override
         public SampleClusterBuilder builder() {
             return new SampleClusterBuilder("us-east-1", "us-east-1c", "10.10.30.");
         }
-    };
+    }
+    ;
 
     public abstract SampleClusterBuilder builder();
 
@@ -58,9 +61,13 @@ public enum SampleCluster {
     }
 
     public static class SampleClusterBuilder {
+
         private final String region;
+
         private final String zone;
+
         private final String networkPrefix;
+
         private int serverPoolSize = 2;
 
         public SampleClusterBuilder(String region, String zone, String networkPrefix) {
@@ -78,14 +85,7 @@ public enum SampleCluster {
             List<AwsEndpoint> endpoints = new ArrayList<>();
             for (int i = 0; i < serverPoolSize; i++) {
                 String hostName = networkPrefix + i;
-                endpoints.add(new AwsEndpoint(
-                        hostName,
-                        80,
-                        false,
-                        "/eureka/v2",
-                        region,
-                        zone
-                ));
+                endpoints.add(new AwsEndpoint(hostName, 80, false, "/eureka/v2", region, zone));
             }
             return endpoints;
         }

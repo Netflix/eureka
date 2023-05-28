@@ -2,7 +2,6 @@ package com.netflix.discovery.util;
 
 import java.util.List;
 import java.util.Map;
-
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
@@ -69,10 +68,8 @@ public final class EurekaEntityComparators {
         if (first == null || first == null && second != null) {
             return false;
         }
-
         return first.getMetadata().entrySet().containsAll(second.getMetadata().entrySet());
     }
-
 
     public static boolean equal(LeaseInfo first, LeaseInfo second) {
         if (first == second) {
@@ -81,7 +78,6 @@ public final class EurekaEntityComparators {
         if (first == null || first == null && second != null) {
             return false;
         }
-
         if (first.getDurationInSecs() != second.getDurationInSecs()) {
             return false;
         }
@@ -114,7 +110,6 @@ public final class EurekaEntityComparators {
         if (first == null || first == null && second != null) {
             return false;
         }
-
         if (first.getCountryId() != second.getCountryId()) {
             return false;
         }
@@ -184,7 +179,7 @@ public final class EurekaEntityComparators {
         if (first.getLastDirtyTimestamp() != null ? !first.getLastDirtyTimestamp().equals(second.getLastDirtyTimestamp()) : second.getLastDirtyTimestamp() != null) {
             return false;
         }
-        if (first.getLastUpdatedTimestamp()!= second.getLastUpdatedTimestamp()) {
+        if (first.getLastUpdatedTimestamp() != second.getLastUpdatedTimestamp()) {
             return false;
         }
         if (first.isCoordinatingDiscoveryServer() != null ? !first.isCoordinatingDiscoveryServer().equals(second.isCoordinatingDiscoveryServer()) : second.isCoordinatingDiscoveryServer() != null) {
@@ -192,7 +187,6 @@ public final class EurekaEntityComparators {
         }
         return true;
     }
-
 
     private static boolean idEqual(InstanceInfo first, InstanceInfo second) {
         return first.getId().equals(second.getId());
@@ -205,7 +199,6 @@ public final class EurekaEntityComparators {
         if (first == null || first == null && second != null) {
             return false;
         }
-
         if (first.getPort() != second.getPort()) {
             return false;
         }
@@ -242,7 +235,7 @@ public final class EurekaEntityComparators {
         if (first.getStatus() != null ? !first.getStatus().equals(second.getStatus()) : second.getStatus() != null) {
             return false;
         }
-        if (first.getLastUpdatedTimestamp()!= second.getLastUpdatedTimestamp()) {
+        if (first.getLastUpdatedTimestamp() != second.getLastUpdatedTimestamp()) {
             return false;
         }
         return true;
@@ -255,7 +248,6 @@ public final class EurekaEntityComparators {
         if (first == null || first == null && second != null) {
             return false;
         }
-
         if (first.getName() != null ? !first.getName().equals(second.getName()) : second.getName() != null) {
             return false;
         }
@@ -273,7 +265,6 @@ public final class EurekaEntityComparators {
                 return false;
             }
         }
-
         return true;
     }
 
@@ -298,7 +289,6 @@ public final class EurekaEntityComparators {
                 return false;
             }
         }
-
         return true;
     }
 
@@ -323,41 +313,33 @@ public final class EurekaEntityComparators {
     }
 
     public interface EqualFunc<T> {
+
         boolean equals(T first, T second);
     }
 
     public static class RawIdEqualFunc implements EqualFunc<InstanceInfo> {
+
         @Override
         public boolean equals(InstanceInfo first, InstanceInfo second) {
-            return first.getInstanceId() != null
-                    ? first.getInstanceId().equals(second.getInstanceId())
-                    : second.getInstanceId() == null;
+            return first.getInstanceId() != null ? first.getInstanceId().equals(second.getInstanceId()) : second.getInstanceId() == null;
         }
     }
 
     public static class RawIdHandleEmptyEqualFunc implements EqualFunc<InstanceInfo> {
+
         @Override
         public boolean equals(InstanceInfo first, InstanceInfo second) {
-            String firstId = (first.getInstanceId() == null || first.getInstanceId().isEmpty())
-                    ? null
-                    : first.getInstanceId();
-
-            String secondId = (second.getInstanceId() == null || second.getInstanceId().isEmpty())
-                    ? null
-                    : second.getInstanceId();
-
-            return firstId != null
-                    ? firstId.equals(secondId)
-                    : secondId == null;
+            String firstId = (first.getInstanceId() == null || first.getInstanceId().isEmpty()) ? null : first.getInstanceId();
+            String secondId = (second.getInstanceId() == null || second.getInstanceId().isEmpty()) ? null : second.getInstanceId();
+            return firstId != null ? firstId.equals(secondId) : secondId == null;
         }
     }
 
     public static class ResolvedIdEqualFunc implements EqualFunc<InstanceInfo> {
+
         @Override
         public boolean equals(InstanceInfo first, InstanceInfo second) {
-            return first.getId() != null
-                    ? first.getId().equals(second.getId())
-                    : second.getId() == null;
+            return first.getId() != null ? first.getId().equals(second.getId()) : second.getId() == null;
         }
     }
 }

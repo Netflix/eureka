@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.eureka.transport;
 
 import com.netflix.discovery.shared.dns.DnsServiceImpl;
@@ -44,30 +43,17 @@ public final class EurekaServerHttpClients {
     /**
      * {@link EurekaHttpClient} for remote region replication.
      */
-    public static EurekaHttpClient createRemoteRegionClient(EurekaServerConfig serverConfig,
-                                                            EurekaTransportConfig transportConfig,
-                                                            ServerCodecs serverCodecs,
-                                                            ClusterResolver<EurekaEndpoint> clusterResolver) {
+    public static EurekaHttpClient createRemoteRegionClient(EurekaServerConfig serverConfig, EurekaTransportConfig transportConfig, ServerCodecs serverCodecs, ClusterResolver<EurekaEndpoint> clusterResolver) {
         JerseyRemoteRegionClientFactory jerseyFactory = new JerseyRemoteRegionClientFactory(serverConfig, serverCodecs, clusterResolver.getRegion());
         TransportClientFactory metricsFactory = MetricsCollectingEurekaHttpClient.createFactory(jerseyFactory);
-
-        SessionedEurekaHttpClient client = new SessionedEurekaHttpClient(
-                Names.REMOTE,
-                RetryableEurekaHttpClient.createFactory(
-                        Names.REMOTE,
-                        transportConfig,
-                        clusterResolver,
-                        createFactory(metricsFactory),
-                        ServerStatusEvaluators.legacyEvaluator()),
-                RECONNECT_INTERVAL_MINUTES * 60 * 1000
-        );
-
+        SessionedEurekaHttpClient client = new SessionedEurekaHttpClient(Names.REMOTE, RetryableEurekaHttpClient.createFactory(Names.REMOTE, transportConfig, clusterResolver, createFactory(metricsFactory), ServerStatusEvaluators.legacyEvaluator()), RECONNECT_INTERVAL_MINUTES * 60 * 1000);
         return client;
     }
 
     public static TransportClientFactory createFactory(final TransportClientFactory delegateFactory) {
         final DnsServiceImpl dnsService = new DnsServiceImpl();
         return new TransportClientFactory() {
+
             @Override
             public EurekaHttpClient newClient(EurekaEndpoint endpoint) {
                 return new RedirectingEurekaHttpClient(endpoint.getServiceUrl(), delegateFactory, dnsService);
@@ -79,5 +65,4 @@ public final class EurekaServerHttpClients {
             }
         };
     }
-
 }

@@ -16,7 +16,6 @@ public class ConcreteAsyncResult<T> implements AsyncResult<T> {
     private Throwable error = null;
 
     public ConcreteAsyncResult() {
-
     }
 
     /**

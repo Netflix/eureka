@@ -13,7 +13,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import com.netflix.eureka.util.batcher.TaskProcessor.ProcessingResult;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.annotations.Monitor;
@@ -24,7 +23,6 @@ import com.netflix.servo.monitor.Timer;
 import com.netflix.servo.stats.StatsConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import static com.netflix.eureka.Names.METRIC_REPLICATION_PREFIX;
 
 /**
@@ -48,23 +46,31 @@ class AcceptorExecutor<ID, T> {
     private static final Logger logger = LoggerFactory.getLogger(AcceptorExecutor.class);
 
     private final String id;
+
     private final int maxBufferSize;
+
     private final int maxBatchingSize;
+
     private final long maxBatchingDelay;
 
     private final AtomicBoolean isShutdown = new AtomicBoolean(false);
 
     private final BlockingQueue<TaskHolder<ID, T>> acceptorQueue = new LinkedBlockingQueue<>();
+
     private final BlockingDeque<TaskHolder<ID, T>> reprocessQueue = new LinkedBlockingDeque<>();
+
     private final Thread acceptorThread;
 
     private final Map<ID, TaskHolder<ID, T>> pendingTasks = new HashMap<>();
+
     private final Deque<ID> processingOrder = new LinkedList<>();
 
     private final Semaphore singleItemWorkRequests = new Semaphore(0);
+
     private final BlockingQueue<TaskHolder<ID, T>> singleItemWorkQueue = new LinkedBlockingQueue<>();
 
     private final Semaphore batchWorkRequests = new Semaphore(0);
+
     private final BlockingQueue<List<TaskHolder<ID, T>>> batchWorkQueue = new LinkedBlockingQueue<>();
 
     private final TrafficShaper trafficShaper;
@@ -89,29 +95,18 @@ class AcceptorExecutor<ID, T> {
 
     private final Timer batchSizeMetric;
 
-    AcceptorExecutor(String id,
-                     int maxBufferSize,
-                     int maxBatchingSize,
-                     long maxBatchingDelay,
-                     long congestionRetryDelayMs,
-                     long networkFailureRetryMs) {
+    AcceptorExecutor(String id, int maxBufferSize, int maxBatchingSize, long maxBatchingDelay, long congestionRetryDelayMs, long networkFailureRetryMs) {
         this.id = id;
         this.maxBufferSize = maxBufferSize;
         this.maxBatchingSize = maxBatchingSize;
         this.maxBatchingDelay = maxBatchingDelay;
         this.trafficShaper = new TrafficShaper(congestionRetryDelayMs, networkFailureRetryMs);
-
         ThreadGroup threadGroup = new ThreadGroup("eurekaTaskExecutors");
         this.acceptorThread = new Thread(threadGroup, new AcceptorRunner(), "TaskAcceptor-" + id);
         this.acceptorThread.setDaemon(true);
         this.acceptorThread.start();
-
-        final double[] percentiles = {50.0, 95.0, 99.0, 99.5};
-        final StatsConfig statsConfig = new StatsConfig.Builder()
-                .withSampleSize(1000)
-                .withPercentiles(percentiles)
-                .withPublishStdDev(true)
-                .build();
+        final double[] percentiles = { 50.0, 95.0, 99.0, 99.5 };
+        final StatsConfig statsConfig = new StatsConfig.Builder().withSampleSize(1000).withPercentiles(percentiles).withPublishStdDev(true).build();
         final MonitorConfig config = MonitorConfig.builder(METRIC_REPLICATION_PREFIX + "batchSize").build();
         this.batchSizeMetric = new StatsTimer(config, statsConfig);
         try {
@@ -181,15 +176,14 @@ class AcceptorExecutor<ID, T> {
     }
 
     class AcceptorRunner implements Runnable {
+
         @Override
         public void run() {
             long scheduleTime = 0;
             while (!isShutdown.get()) {
                 try {
                     drainInputQueues();
-
                     int totalItems = processingOrder.size();
-
                     long now = System.currentTimeMillis();
                     if (scheduleTime < now) {
                         scheduleTime = now + trafficShaper.transmissionDelay();
@@ -198,7 +192,6 @@ class AcceptorExecutor<ID, T> {
                         assignBatchWork();
                         assignSingleItemWork();
                     }
-
                     // If no worker is requesting data or there is a delay injected by the traffic shaper,
                     // sleep for some time to avoid tight loop.
                     if (totalItems == processingOrder.size()) {
@@ -221,7 +214,6 @@ class AcceptorExecutor<ID, T> {
             do {
                 drainReprocessQueue();
                 drainAcceptorQueue();
-
                 if (isShutdown.get()) {
                     break;
                 }
@@ -324,7 +316,6 @@ class AcceptorExecutor<ID, T> {
             if (pendingTasks.size() >= maxBufferSize) {
                 return true;
             }
-
             TaskHolder<ID, T> nextHolder = pendingTasks.get(processingOrder.peek());
             long delay = System.currentTimeMillis() - nextHolder.getSubmitTimestamp();
             return delay >= maxBatchingDelay;

@@ -18,20 +18,18 @@ import com.netflix.eureka.resources.ServerCodecs;
  * @author David Liu
  */
 public class LocalDevEurekaServerModule extends AbstractModule {
+
     @Override
     protected void configure() {
         // server bindings
         bind(EurekaServerConfig.class).to(DefaultEurekaServerConfig.class).in(Scopes.SINGLETON);
         bind(PeerEurekaNodes.class).in(Scopes.SINGLETON);
-
         // registry and interfaces
         bind(PeerAwareInstanceRegistryImpl.class).asEagerSingleton();
         bind(InstanceRegistry.class).to(PeerAwareInstanceRegistryImpl.class);
         bind(AbstractInstanceRegistry.class).to(PeerAwareInstanceRegistryImpl.class);
         bind(PeerAwareInstanceRegistry.class).to(PeerAwareInstanceRegistryImpl.class);
-
         bind(ServerCodecs.class).to(DefaultServerCodecs.class).in(Scopes.SINGLETON);
-
         bind(EurekaServerContext.class).to(DefaultEurekaServerContext.class).in(Scopes.SINGLETON);
     }
 

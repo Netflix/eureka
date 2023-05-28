@@ -2,7 +2,6 @@ package com.netflix.discovery.shared.transport;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
-
 import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.appinfo.InstanceInfo;
@@ -17,32 +16,55 @@ import com.netflix.discovery.converters.wrappers.EncoderWrapper;
 public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactoryBuilder<F, B>> {
 
     private static final int DEFAULT_MAX_CONNECTIONS_PER_HOST = 50;
+
     private static final int DEFAULT_MAX_TOTAL_CONNECTIONS = 200;
+
     private static final long DEFAULT_CONNECTION_IDLE_TIMEOUT = 30;
 
     protected InstanceInfo myInstanceInfo;
+
     protected boolean allowRedirect;
+
     protected boolean systemSSL;
+
     protected String clientName;
+
     protected EurekaAccept eurekaAccept;
+
     protected int maxConnectionsPerHost = DEFAULT_MAX_CONNECTIONS_PER_HOST;
+
     protected int maxTotalConnections = DEFAULT_MAX_TOTAL_CONNECTIONS;
+
     protected SSLContext sslContext;
+
     protected String trustStoreFileName;
+
     protected String trustStorePassword;
+
     protected String userAgent;
+
     protected String proxyUserName;
+
     protected String proxyPassword;
+
     protected String proxyHost;
+
     protected int proxyPort;
+
     protected int connectionTimeout;
+
     protected int readTimeout;
+
     protected long connectionIdleTimeout = DEFAULT_CONNECTION_IDLE_TIMEOUT;
+
     protected EncoderWrapper encoderWrapper;
+
     protected DecoderWrapper decoderWrapper;
+
     protected AbstractEurekaIdentity clientIdentity;
+
     protected HostnameVerifier hostnameVerifier;
-    
+
     public B withClientConfig(EurekaClientConfig clientConfig) {
         withClientAccept(EurekaAccept.fromString(clientConfig.getClientDataAccept()));
         withAllowRedirect(clientConfig.allowRedirects());
@@ -54,7 +76,6 @@ public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactor
         withEncoder(clientConfig.getEncoderName());
         return withDecoder(clientConfig.getDecoderName(), clientConfig.getClientDataAccept());
     }
-
 
     public B withMyInstanceInfo(InstanceInfo myInstanceInfo) {
         this.myInstanceInfo = myInstanceInfo;
@@ -118,7 +139,7 @@ public abstract class EurekaClientFactoryBuilder<F, B extends EurekaClientFactor
         this.sslContext = sslContext;
         return self();
     }
-    
+
     public B withHostnameVerifier(HostnameVerifier hostnameVerifier) {
         this.hostnameVerifier = hostnameVerifier;
         return self();

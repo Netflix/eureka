@@ -16,7 +16,6 @@ import com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClien
 import com.netflix.discovery.shared.transport.decorator.ServerStatusEvaluators;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -25,36 +24,23 @@ import java.util.List;
  * @author David Liu
  */
 public class EurekaHttpResolver implements ClusterResolver<AwsEndpoint> {
+
     private static final Logger logger = LoggerFactory.getLogger(EurekaHttpResolver.class);
 
     private final EurekaClientConfig clientConfig;
+
     private final EurekaTransportConfig transportConfig;
+
     private final String vipAddress;
+
     private final EurekaHttpClientFactory clientFactory;
 
-    public EurekaHttpResolver(EurekaClientConfig clientConfig,
-                              EurekaTransportConfig transportConfig,
-                              ClusterResolver<EurekaEndpoint> bootstrapResolver,
-                              TransportClientFactory transportClientFactory,
-                              String vipAddress) {
-        this(
-                clientConfig,
-                transportConfig,
-                RetryableEurekaHttpClient.createFactory(
-                        EurekaClientNames.RESOLVER,
-                        transportConfig,
-                        bootstrapResolver,
-                        transportClientFactory,
-                        ServerStatusEvaluators.httpSuccessEvaluator()
-                ),
-                vipAddress
-        );
+    public EurekaHttpResolver(EurekaClientConfig clientConfig, EurekaTransportConfig transportConfig, ClusterResolver<EurekaEndpoint> bootstrapResolver, TransportClientFactory transportClientFactory, String vipAddress) {
+        this(clientConfig, transportConfig, RetryableEurekaHttpClient.createFactory(EurekaClientNames.RESOLVER, transportConfig, bootstrapResolver, transportClientFactory, ServerStatusEvaluators.httpSuccessEvaluator()), vipAddress);
     }
 
-    /* visible for testing */ EurekaHttpResolver(EurekaClientConfig clientConfig,
-                                                 EurekaTransportConfig transportConfig,
-                                                 EurekaHttpClientFactory clientFactory,
-                                                 String vipAddress) {
+    /* visible for testing */
+    EurekaHttpResolver(EurekaClientConfig clientConfig, EurekaTransportConfig transportConfig, EurekaHttpClientFactory clientFactory, String vipAddress) {
         this.clientConfig = clientConfig;
         this.transportConfig = transportConfig;
         this.clientFactory = clientFactory;
@@ -69,7 +55,6 @@ public class EurekaHttpResolver implements ClusterResolver<AwsEndpoint> {
     @Override
     public List<AwsEndpoint> getClusterEndpoints() {
         List<AwsEndpoint> result = new ArrayList<>();
-
         EurekaHttpClient client = null;
         try {
             client = clientFactory.newClient();
@@ -77,7 +62,8 @@ public class EurekaHttpResolver implements ClusterResolver<AwsEndpoint> {
             if (validResponse(response)) {
                 Applications applications = response.getEntity();
                 if (applications != null) {
-                    applications.shuffleInstances(true);  // filter out non-UP instances
+                    // filter out non-UP instances
+                    applications.shuffleInstances(true);
                     List<InstanceInfo> validInstanceInfos = applications.getInstancesByVirtualHostName(vipAddress);
                     for (InstanceInfo instanceInfo : validInstanceInfos) {
                         AwsEndpoint endpoint = ResolverUtils.instanceInfoToEndpoint(clientConfig, transportConfig, instanceInfo);
@@ -96,7 +82,6 @@ public class EurekaHttpResolver implements ClusterResolver<AwsEndpoint> {
                 client.shutdown();
             }
         }
-
         logger.info("Returning empty endpoint list");
         return Collections.emptyList();
     }
@@ -105,7 +90,6 @@ public class EurekaHttpResolver implements ClusterResolver<AwsEndpoint> {
         if (response == null) {
             return false;
         }
-
         int responseCode = response.getStatusCode();
         return responseCode >= 200 && responseCode < 300;
     }

@@ -2,7 +2,6 @@ package com.netflix.discovery.converters;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import com.netflix.discovery.EurekaClientConfig;
 
 /**

@@ -4,7 +4,6 @@ import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
@@ -16,12 +15,9 @@ public class AwsBinderDelegate implements AwsBinder {
     private final AwsBinder delegate;
 
     @Inject
-    public AwsBinderDelegate(EurekaServerConfig serverConfig,
-                             EurekaClientConfig clientConfig,
-                             PeerAwareInstanceRegistry registry,
-                             ApplicationInfoManager applicationInfoManager) {
+    public AwsBinderDelegate(EurekaServerConfig serverConfig, EurekaClientConfig clientConfig, PeerAwareInstanceRegistry registry, ApplicationInfoManager applicationInfoManager) {
         AwsBindingStrategy bindingStrategy = serverConfig.getBindingStrategy();
-        switch (bindingStrategy) {
+        switch(bindingStrategy) {
             case ROUTE53:
                 delegate = new Route53Binder(serverConfig, clientConfig, applicationInfoManager);
                 break;
@@ -48,7 +44,7 @@ public class AwsBinderDelegate implements AwsBinder {
 
     @Override
     @PreDestroy
-    public void shutdown()  {
+    public void shutdown() {
         try {
             delegate.shutdown();
         } catch (Exception e) {

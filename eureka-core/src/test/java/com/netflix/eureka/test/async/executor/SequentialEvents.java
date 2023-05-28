@@ -3,7 +3,6 @@ package com.netflix.eureka.test.async.executor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import com.google.common.base.Preconditions;
 
 /**
@@ -88,8 +87,6 @@ public class SequentialEvents {
 
     @Override
     public String toString() {
-        return "SequentialEvents{" +
-            "eventList=" + eventList +
-            '}';
+        return "SequentialEvents{" + "eventList=" + eventList + '}';
     }
 }

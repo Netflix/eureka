@@ -4,7 +4,6 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.eureka.aws.AsgClient;
 import com.netflix.eureka.lease.Lease;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +14,7 @@ import org.slf4j.LoggerFactory;
  * Created by Nikos Michalakis on 7/14/16.
  */
 public class AsgEnabledRule implements InstanceStatusOverrideRule {
+
     private static final Logger logger = LoggerFactory.getLogger(AsgEnabledRule.class);
 
     private final AsgClient asgClient;

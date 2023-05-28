@@ -13,14 +13,12 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.eureka.registry;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.eureka.cluster.PeerEurekaNodes;
 import com.netflix.eureka.resources.ASGResource;
-
 import java.util.List;
 
 /**
@@ -47,9 +45,9 @@ public interface PeerAwareInstanceRegistry extends InstanceRegistry {
      * @return false - if the instances count from a replica transfer returned
      *         zero and if the wait time has not elapsed, otherwise returns true
      */
-     boolean shouldAllowAccess(boolean remoteRegionRequired);
+    boolean shouldAllowAccess(boolean remoteRegionRequired);
 
-     void register(InstanceInfo info, boolean isReplication);
+    void register(InstanceInfo info, boolean isReplication);
 
-     void statusUpdate(final String asgName, final ASGResource.ASGStatus newStatus, final boolean isReplication);
+    void statusUpdate(final String asgName, final ASGResource.ASGStatus newStatus, final boolean isReplication);
 }

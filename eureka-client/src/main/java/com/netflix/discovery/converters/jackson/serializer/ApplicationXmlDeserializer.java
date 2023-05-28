@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.converters.jackson.serializer;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
@@ -45,7 +43,8 @@ public class ApplicationXmlDeserializer extends StdDeserializer<Application> {
         List<InstanceInfo> instances = new ArrayList<>();
         while (jp.nextToken() == JsonToken.FIELD_NAME) {
             String fieldName = jp.getCurrentName();
-            jp.nextToken(); // to point to value
+            // to point to value
+            jp.nextToken();
             if ("name".equals(fieldName)) {
                 name = jp.getValueAsString();
             } else if ("instance".equals(fieldName)) {

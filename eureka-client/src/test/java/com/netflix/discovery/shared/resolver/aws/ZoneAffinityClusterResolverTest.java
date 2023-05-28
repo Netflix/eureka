@@ -13,15 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.resolver.aws;
 
 import java.util.List;
-
 import com.netflix.discovery.shared.resolver.ResolverUtils;
 import com.netflix.discovery.shared.resolver.StaticClusterResolver;
 import org.junit.Test;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -34,12 +31,7 @@ public class ZoneAffinityClusterResolverTest {
     @Test
     public void testApplicationZoneIsFirstOnTheList() throws Exception {
         List<AwsEndpoint> endpoints = SampleCluster.merge(SampleCluster.UsEast1a, SampleCluster.UsEast1b, SampleCluster.UsEast1c);
-
-        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(
-                new StaticClusterResolver<>("regionA", endpoints),
-                "us-east-1b",
-                true,
-                ResolverUtils::randomize);
+        ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver<>("regionA", endpoints), "us-east-1b", true, ResolverUtils::randomize);
         List<AwsEndpoint> result = resolver.getClusterEndpoints();
         assertThat(result.size(), is(equalTo(endpoints.size())));
         assertThat(result.get(0).getZone(), is(equalTo("us-east-1b")));
@@ -48,9 +40,7 @@ public class ZoneAffinityClusterResolverTest {
     @Test
     public void testAntiAffinity() throws Exception {
         List<AwsEndpoint> endpoints = SampleCluster.merge(SampleCluster.UsEast1a, SampleCluster.UsEast1b);
-
         ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver<>("regionA", endpoints), "us-east-1b", false, ResolverUtils::randomize);
-
         List<AwsEndpoint> result = resolver.getClusterEndpoints();
         assertThat(result.size(), is(equalTo(endpoints.size())));
         assertThat(result.get(0).getZone(), is(equalTo("us-east-1a")));
@@ -59,9 +49,7 @@ public class ZoneAffinityClusterResolverTest {
     @Test
     public void testUnrecognizedZoneIsIgnored() throws Exception {
         List<AwsEndpoint> endpoints = SampleCluster.merge(SampleCluster.UsEast1a, SampleCluster.UsEast1b);
-
         ZoneAffinityClusterResolver resolver = new ZoneAffinityClusterResolver(new StaticClusterResolver<>("regionA", endpoints), "us-east-1c", true, ResolverUtils::randomize);
-
         List<AwsEndpoint> result = resolver.getClusterEndpoints();
         assertThat(result.size(), is(equalTo(endpoints.size())));
     }

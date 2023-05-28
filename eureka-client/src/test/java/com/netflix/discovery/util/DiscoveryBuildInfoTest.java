@@ -2,7 +2,6 @@ package com.netflix.discovery.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 

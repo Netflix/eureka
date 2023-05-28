@@ -70,93 +70,68 @@ public class TimeConsumingInstanceRegistryTest extends AbstractTester {
     public void testLeaseExpirationAndUpdateRenewalThreshold() throws InterruptedException {
         final int registeredInstanceCount = 50;
         final int leaseDurationInSecs = 30;
-
         AsyncSequentialExecutor executor = new AsyncSequentialExecutor();
+        SequentialEvents registerMyLocalAppAndInstancesEvents = SequentialEvents.of(buildEvent(0, new SingleEvent.Action() {
 
-        SequentialEvents registerMyLocalAppAndInstancesEvents = SequentialEvents.of(
-            buildEvent(0, new SingleEvent.Action() {
-                @Override
-                public void execute() {
-                    for (int j = 0; j < registeredInstanceCount; j++) {
-                        registerInstanceLocallyWithLeaseDurationInSecs(createLocalInstanceWithIdAndStatus(LOCAL_REGION_APP_NAME,
-                            LOCAL_REGION_INSTANCE_1_HOSTNAME + j, InstanceStatus.UP), leaseDurationInSecs);
-                    }
+            @Override
+            public void execute() {
+                for (int j = 0; j < registeredInstanceCount; j++) {
+                    registerInstanceLocallyWithLeaseDurationInSecs(createLocalInstanceWithIdAndStatus(LOCAL_REGION_APP_NAME, LOCAL_REGION_INSTANCE_1_HOSTNAME + j, InstanceStatus.UP), leaseDurationInSecs);
                 }
-            })
-        );
+            }
+        }));
+        SequentialEvents showRegistryStatusEvents = SequentialEvents.of(buildEvents(5, 24, new SingleEvent.Action() {
 
-        SequentialEvents showRegistryStatusEvents = SequentialEvents.of(
-            buildEvents(5, 24, new SingleEvent.Action() {
-                @Override
-                public void execute() {
-                    System.out.println(String.format("isLeaseExpirationEnabled=%s, getNumOfRenewsInLastMin=%d, "
-                            + "getNumOfRenewsPerMinThreshold=%s, instanceNumberOfMYLOCALAPP=%d", registry.isLeaseExpirationEnabled(),
-                        registry.getNumOfRenewsInLastMin(), registry.getNumOfRenewsPerMinThreshold(),
-                        registry.getApplication(LOCAL_REGION_APP_NAME).getInstances().size()));
-                }
-            })
-        );
+            @Override
+            public void execute() {
+                System.out.println(String.format("isLeaseExpirationEnabled=%s, getNumOfRenewsInLastMin=%d, " + "getNumOfRenewsPerMinThreshold=%s, instanceNumberOfMYLOCALAPP=%d", registry.isLeaseExpirationEnabled(), registry.getNumOfRenewsInLastMin(), registry.getNumOfRenewsPerMinThreshold(), registry.getApplication(LOCAL_REGION_APP_NAME).getInstances().size()));
+            }
+        }));
+        SequentialEvents renewEvents = SequentialEvents.of(buildEvent(15, renewPartOfTheWholeInstancesAction()), buildEvent(30, renewPartOfTheWholeInstancesAction()), buildEvent(30, renewPartOfTheWholeInstancesAction()), buildEvent(30, renewPartOfTheWholeInstancesAction()));
+        SequentialEvents remoteRegionAddMoreInstancesEvents = SequentialEvents.of(buildEvent(90, new SingleEvent.Action() {
 
-        SequentialEvents renewEvents = SequentialEvents.of(
-            buildEvent(15, renewPartOfTheWholeInstancesAction()),
-            buildEvent(30, renewPartOfTheWholeInstancesAction()),
-            buildEvent(30, renewPartOfTheWholeInstancesAction()),
-            buildEvent(30, renewPartOfTheWholeInstancesAction())
-        );
+            @Override
+            public void execute() {
+                for (int i = 0; i < 150; i++) {
+                    InstanceInfo newlyCreatedInstance = createLocalInstanceWithIdAndStatus(REMOTE_REGION_APP_NAME, LOCAL_REGION_INSTANCE_1_HOSTNAME + i, InstanceStatus.UP);
+                    remoteRegionApps.get(REMOTE_REGION_APP_NAME).addInstance(newlyCreatedInstance);
+                    remoteRegionAppsDelta.get(REMOTE_REGION_APP_NAME).addInstance(newlyCreatedInstance);
+                }
+            }
+        }));
+        SequentialEvents checkEvents = SequentialEvents.of(buildEvent(40, new SingleEvent.Action() {
 
-        SequentialEvents remoteRegionAddMoreInstancesEvents = SequentialEvents.of(
-            buildEvent(90, new SingleEvent.Action() {
-                @Override
-                public void execute() {
-                    for (int i = 0; i < 150; i++) {
-                        InstanceInfo newlyCreatedInstance = createLocalInstanceWithIdAndStatus(REMOTE_REGION_APP_NAME,
-                            LOCAL_REGION_INSTANCE_1_HOSTNAME + i, InstanceStatus.UP);
-                        remoteRegionApps.get(REMOTE_REGION_APP_NAME).addInstance(newlyCreatedInstance);
-                        remoteRegionAppsDelta.get(REMOTE_REGION_APP_NAME).addInstance(newlyCreatedInstance);
-                    }
-                }
-            })
-        );
+            @Override
+            public void execute() {
+                System.out.println("checking on 40s");
+                Preconditions.checkState(Boolean.FALSE.equals(registry.isLeaseExpirationEnabled()), "Lease expiration should be disabled");
+                Preconditions.checkState(registry.getNumOfRenewsInLastMin() == 0, "Renewals in last min should be 0");
+                Preconditions.checkState(registry.getApplication(LOCAL_REGION_APP_NAME).getInstances().size() == 50, "There should be 50 instances in application - MYLOCAPP");
+            }
+        }), buildEvent(40, new SingleEvent.Action() {
 
-        SequentialEvents checkEvents = SequentialEvents.of(
-            buildEvent(40, new SingleEvent.Action() {
-                @Override
-                public void execute() {
-                    System.out.println("checking on 40s");
-                    Preconditions.checkState(Boolean.FALSE.equals(registry.isLeaseExpirationEnabled()), "Lease expiration should be disabled");
-                    Preconditions.checkState(registry.getNumOfRenewsInLastMin() == 0, "Renewals in last min should be 0");
-                    Preconditions.checkState(registry.getApplication(LOCAL_REGION_APP_NAME).getInstances().size() == 50,
-                        "There should be 50 instances in application - MYLOCAPP");
-                }
-            }),
-            buildEvent(40, new SingleEvent.Action() {
-                @Override
-                public void execute() {
-                    System.out.println("checking on 80s");
-                    Preconditions.checkState(Boolean.TRUE.equals(registry.isLeaseExpirationEnabled()), "Lease expiration should be enabled");
-                    Preconditions.checkState(registry.getNumOfRenewsInLastMin() == 90, "Renewals in last min should be 90");
-                    Preconditions.checkState(registry.getApplication(LOCAL_REGION_APP_NAME).getInstances().size() == 45,
-                        "There should be 45 instances in application - MYLOCAPP");
-                }
-            }),
-            buildEvent(40, new SingleEvent.Action() {
-                @Override
-                public void execute() {
-                    System.out.println("checking on 120s");
-                    System.out.println("getNumOfRenewsPerMinThreshold=" + registry.getNumOfRenewsPerMinThreshold());
-                    Preconditions.checkState(registry.getNumOfRenewsPerMinThreshold() == 256, "NumOfRenewsPerMinThreshold should be updated to 256");
-                    Preconditions.checkState(registry.getApplication(LOCAL_REGION_APP_NAME).getInstances().size() == 45,
-                        "There should be 45 instances in application - MYLOCAPP");
-                }
-            })
-        );
+            @Override
+            public void execute() {
+                System.out.println("checking on 80s");
+                Preconditions.checkState(Boolean.TRUE.equals(registry.isLeaseExpirationEnabled()), "Lease expiration should be enabled");
+                Preconditions.checkState(registry.getNumOfRenewsInLastMin() == 90, "Renewals in last min should be 90");
+                Preconditions.checkState(registry.getApplication(LOCAL_REGION_APP_NAME).getInstances().size() == 45, "There should be 45 instances in application - MYLOCAPP");
+            }
+        }), buildEvent(40, new SingleEvent.Action() {
 
+            @Override
+            public void execute() {
+                System.out.println("checking on 120s");
+                System.out.println("getNumOfRenewsPerMinThreshold=" + registry.getNumOfRenewsPerMinThreshold());
+                Preconditions.checkState(registry.getNumOfRenewsPerMinThreshold() == 256, "NumOfRenewsPerMinThreshold should be updated to 256");
+                Preconditions.checkState(registry.getApplication(LOCAL_REGION_APP_NAME).getInstances().size() == 45, "There should be 45 instances in application - MYLOCAPP");
+            }
+        }));
         AsyncResult<AsyncSequentialExecutor.ResultStatus> registerMyLocalAppAndInstancesResult = executor.run(registerMyLocalAppAndInstancesEvents);
         AsyncResult<AsyncSequentialExecutor.ResultStatus> showRegistryStatusEventResult = executor.run(showRegistryStatusEvents);
         AsyncResult<AsyncSequentialExecutor.ResultStatus> renewResult = executor.run(renewEvents);
         AsyncResult<AsyncSequentialExecutor.ResultStatus> remoteRegionAddMoreInstancesResult = executor.run(remoteRegionAddMoreInstancesEvents);
         AsyncResult<AsyncSequentialExecutor.ResultStatus> checkResult = executor.run(checkEvents);
-
         Assert.assertEquals("Register application and instances failed", AsyncSequentialExecutor.ResultStatus.DONE, registerMyLocalAppAndInstancesResult.getResult());
         Assert.assertEquals("Show registry status failed", AsyncSequentialExecutor.ResultStatus.DONE, showRegistryStatusEventResult.getResult());
         Assert.assertEquals("Renew lease did not succeed", AsyncSequentialExecutor.ResultStatus.DONE, renewResult.getResult());

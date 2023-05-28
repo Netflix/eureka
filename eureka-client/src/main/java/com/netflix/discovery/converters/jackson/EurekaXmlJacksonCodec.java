@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.converters.jackson;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -44,10 +43,9 @@ public class EurekaXmlJacksonCodec extends AbstractEurekaJacksonCodec {
 
     public EurekaXmlJacksonCodec(final KeyFormatter keyFormatter, boolean compact) {
         xmlMapper = new XmlMapper() {
+
             public ObjectMapper registerModule(Module module) {
-                setSerializerFactory(
-                        getSerializerFactory().withSerializerModifier(EurekaJacksonXmlModifiers.createXmlSerializerModifier(keyFormatter))
-                );
+                setSerializerFactory(getSerializerFactory().withSerializerModifier(EurekaJacksonXmlModifiers.createXmlSerializerModifier(keyFormatter)));
                 return super.registerModule(module);
             }
         };
@@ -58,7 +56,6 @@ public class EurekaXmlJacksonCodec extends AbstractEurekaJacksonCodec {
         xmlMapper.addMixIn(Applications.class, ApplicationsXmlMixIn.class);
         SimpleModule xmlModule = new SimpleModule();
         xmlMapper.registerModule(xmlModule);
-
         if (compact) {
             addMiniConfig(xmlMapper);
         }

@@ -5,7 +5,6 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.util.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -26,43 +25,44 @@ import java.util.concurrent.atomic.AtomicReference;
  *   @author dliu
  */
 class InstanceInfoReplicator implements Runnable {
+
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfoReplicator.class);
 
     private final DiscoveryClient discoveryClient;
+
     private final InstanceInfo instanceInfo;
 
     private final int replicationIntervalSeconds;
+
     private final ScheduledExecutorService scheduler;
+
     private final AtomicReference<Future> scheduledPeriodicRef;
 
     private final AtomicBoolean started;
+
     private final RateLimiter rateLimiter;
+
     private final int burstSize;
+
     private final int allowedRatePerMinute;
 
     InstanceInfoReplicator(DiscoveryClient discoveryClient, InstanceInfo instanceInfo, int replicationIntervalSeconds, int burstSize) {
         this.discoveryClient = discoveryClient;
         this.instanceInfo = instanceInfo;
-        this.scheduler = Executors.newScheduledThreadPool(1,
-                new ThreadFactoryBuilder()
-                        .setNameFormat("DiscoveryClient-InstanceInfoReplicator-%d")
-                        .setDaemon(true)
-                        .build());
-
+        this.scheduler = Executors.newScheduledThreadPool(1, new ThreadFactoryBuilder().setNameFormat("DiscoveryClient-InstanceInfoReplicator-%d").setDaemon(true).build());
         this.scheduledPeriodicRef = new AtomicReference<Future>();
-
         this.started = new AtomicBoolean(false);
         this.rateLimiter = new RateLimiter(TimeUnit.MINUTES);
         this.replicationIntervalSeconds = replicationIntervalSeconds;
         this.burstSize = burstSize;
-
         this.allowedRatePerMinute = 60 * this.burstSize / this.replicationIntervalSeconds;
         logger.info("InstanceInfoReplicator onDemand update allowed rate per min is {}", allowedRatePerMinute);
     }
 
     public void start(int initialDelayMs) {
         if (started.compareAndSet(false, true)) {
-            instanceInfo.setIsDirty();  // for initial register
+            // for initial register
+            instanceInfo.setIsDirty();
             Future next = scheduler.schedule(this, initialDelayMs, TimeUnit.SECONDS);
             scheduledPeriodicRef.set(next);
         }
@@ -88,16 +88,15 @@ class InstanceInfoReplicator implements Runnable {
         if (rateLimiter.acquire(burstSize, allowedRatePerMinute)) {
             if (!scheduler.isShutdown()) {
                 scheduler.submit(new Runnable() {
+
                     @Override
                     public void run() {
                         logger.debug("Executing on-demand update of local InstanceInfo");
-    
                         Future latestPeriodic = scheduledPeriodicRef.get();
                         if (latestPeriodic != null && !latestPeriodic.isDone()) {
                             logger.debug("Canceling the latest scheduled update, it will be rescheduled at the end of on demand update");
                             latestPeriodic.cancel(false);
                         }
-    
                         InstanceInfoReplicator.this.run();
                     }
                 });
@@ -115,7 +114,6 @@ class InstanceInfoReplicator implements Runnable {
     public void run() {
         try {
             discoveryClient.refreshInstanceInfo();
-
             Long dirtyTimestamp = instanceInfo.isDirtyWithTime();
             if (dirtyTimestamp != null) {
                 discoveryClient.register();
@@ -128,5 +126,4 @@ class InstanceInfoReplicator implements Runnable {
             scheduledPeriodicRef.set(next);
         }
     }
-
 }

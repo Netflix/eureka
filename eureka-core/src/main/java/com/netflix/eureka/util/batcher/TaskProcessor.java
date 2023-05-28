@@ -18,6 +18,7 @@ public interface TaskProcessor<T> {
      * </ul>
      */
     enum ProcessingResult {
+
         Success, Congestion, TransientError, PermanentError
     }
 

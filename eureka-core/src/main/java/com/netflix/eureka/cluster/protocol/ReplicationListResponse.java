@@ -2,7 +2,6 @@ package com.netflix.eureka.cluster.protocol;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.discovery.provider.Serializer;
@@ -10,8 +9,10 @@ import com.netflix.discovery.provider.Serializer;
 /**
  * The jersey resource class that generates the replication batch response.
  */
-@Serializer("jackson") // For backwards compatibility with DiscoveryJerseyProvider
+// For backwards compatibility with DiscoveryJerseyProvider
+@Serializer("jackson")
 public class ReplicationListResponse {
+
     private List<ReplicationInstanceResponse> responseList;
 
     public ReplicationListResponse() {
@@ -37,11 +38,8 @@ public class ReplicationListResponse {
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-
         ReplicationListResponse that = (ReplicationListResponse) o;
-
         return !(responseList != null ? !responseList.equals(that.responseList) : that.responseList != null);
-
     }
 
     @Override

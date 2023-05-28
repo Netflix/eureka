@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.appinfo;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -32,22 +31,26 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
  * </p>
  *
  * @author Karthik Ranganathan, Greg Kim
- *
  */
 @JsonRootName("leaseInfo")
 public class LeaseInfo {
 
     public static final int DEFAULT_LEASE_RENEWAL_INTERVAL = 30;
+
     public static final int DEFAULT_LEASE_DURATION = 90;
 
     // Client settings
     private int renewalIntervalInSecs = DEFAULT_LEASE_RENEWAL_INTERVAL;
+
     private int durationInSecs = DEFAULT_LEASE_DURATION;
 
     // Server populated
     private long registrationTimestamp;
+
     private long lastRenewalTimestamp;
+
     private long evictionTimestamp;
+
     private long serviceUpTimestamp;
 
     public static final class Builder {
@@ -168,19 +171,13 @@ public class LeaseInfo {
      * lastRenewalTimestamp).
      */
     @JsonCreator
-    public LeaseInfo(@JsonProperty("renewalIntervalInSecs") int renewalIntervalInSecs,
-                     @JsonProperty("durationInSecs") int durationInSecs,
-                     @JsonProperty("registrationTimestamp") long registrationTimestamp,
-                     @JsonProperty("lastRenewalTimestamp") Long lastRenewalTimestamp,
-                     @JsonProperty("renewalTimestamp") long lastRenewalTimestampLegacy,  // for legacy
-                     @JsonProperty("evictionTimestamp") long evictionTimestamp,
-                     @JsonProperty("serviceUpTimestamp") long serviceUpTimestamp) {
+    public LeaseInfo(@JsonProperty("renewalIntervalInSecs") int renewalIntervalInSecs, @JsonProperty("durationInSecs") int durationInSecs, @JsonProperty("registrationTimestamp") long registrationTimestamp, @JsonProperty("lastRenewalTimestamp") Long lastRenewalTimestamp, // for legacy
+    @JsonProperty("renewalTimestamp") long lastRenewalTimestampLegacy, @JsonProperty("evictionTimestamp") long evictionTimestamp, @JsonProperty("serviceUpTimestamp") long serviceUpTimestamp) {
         this.renewalIntervalInSecs = renewalIntervalInSecs;
         this.durationInSecs = durationInSecs;
         this.registrationTimestamp = registrationTimestamp;
         this.evictionTimestamp = evictionTimestamp;
         this.serviceUpTimestamp = serviceUpTimestamp;
-
         if (lastRenewalTimestamp == null) {
             this.lastRenewalTimestamp = lastRenewalTimestampLegacy;
         } else {
@@ -243,5 +240,4 @@ public class LeaseInfo {
     public int getDurationInSecs() {
         return durationInSecs;
     }
-
 }

@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.converters.jackson.builder;
 
 import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.discovery.converters.KeyFormatter;
@@ -36,7 +34,9 @@ public class ApplicationsJacksonBuilder {
     private static final Logger logger = LoggerFactory.getLogger(ApplicationsJacksonBuilder.class);
 
     private List<Application> applications;
+
     private long version;
+
     private String appsHashCode;
 
     @JsonProperty("application")

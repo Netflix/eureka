@@ -13,9 +13,7 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.eureka;
-
 
 /**
  * Supported versions for Eureka.
@@ -23,9 +21,9 @@ package com.netflix.eureka;
  * <p>The latest versions are always recommended.</p>
  *
  * @author Karthik Ranganathan, Greg Kim
- *
  */
 public enum Version {
+
     V1, V2;
 
     public static Version toEnum(String v) {

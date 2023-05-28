@@ -18,7 +18,9 @@ public class StringCache {
     private static final StringCache INSTANCE = new StringCache();
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
+
     private final Map<String, WeakReference<String>> cache = new WeakHashMap<String, WeakReference<String>>();
+
     private final int lengthLimit;
 
     public StringCache() {
@@ -41,7 +43,6 @@ public class StringCache {
             } finally {
                 lock.readLock().unlock();
             }
-
             // Update cache with new content
             lock.writeLock().lock();
             try {

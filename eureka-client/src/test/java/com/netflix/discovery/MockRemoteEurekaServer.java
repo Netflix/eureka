@@ -13,7 +13,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.EurekaClientIdentity;
@@ -35,24 +34,37 @@ public class MockRemoteEurekaServer extends ExternalResource {
     public static final String EUREKA_API_BASE_PATH = "/eureka/v2/";
 
     private static Pattern HOSTNAME_PATTERN = Pattern.compile("\"hostName\"\\s?:\\s?\\\"([A-Za-z0-9\\.-]*)\\\"");
+
     private static Pattern STATUS_PATTERN = Pattern.compile("\"status\"\\s?:\\s?\\\"([A-Z_]*)\\\"");
 
     private int port;
+
     private final Map<String, Application> applicationMap = new HashMap<String, Application>();
+
     private final Map<String, Application> remoteRegionApps = new HashMap<String, Application>();
+
     private final Map<String, Application> remoteRegionAppsDelta = new HashMap<String, Application>();
+
     private final Map<String, Application> applicationDeltaMap = new HashMap<String, Application>();
+
     private Server server;
+
     private final AtomicBoolean sentDelta = new AtomicBoolean();
+
     private final AtomicBoolean sentRegistry = new AtomicBoolean();
 
     public final BlockingQueue<String> registrationStatusesQueue = new LinkedBlockingQueue<>();
+
     public final List<String> registrationStatuses = new ArrayList<>();
 
     public final AtomicLong registerCount = new AtomicLong(0);
+
     public final AtomicLong heartbeatCount = new AtomicLong(0);
+
     public final AtomicLong getFullRegistryCount = new AtomicLong(0);
+
     public final AtomicLong getSingleVipCount = new AtomicLong(0);
+
     public final AtomicLong getDeltaCount = new AtomicLong(0);
 
     @Override
@@ -84,10 +96,8 @@ public class MockRemoteEurekaServer extends ExternalResource {
         server.stop();
         server = null;
         port = 0;
-
         registrationStatusesQueue.clear();
         registrationStatuses.clear();
-
         applicationMap.clear();
         remoteRegionApps.clear();
         remoteRegionAppsDelta.clear();
@@ -125,7 +135,6 @@ public class MockRemoteEurekaServer extends ExternalResource {
             Thread.sleep(3 * refreshRate * 1000);
             System.out.println("Done sleeping for 10 seconds to let the remote registry fetch delta. Delta fetched: " + isSentDelta());
         }
-
         System.out.println("Sleeping for extra " + refreshRate + " seconds for the client to update delta in memory.");
     }
 
@@ -135,28 +144,21 @@ public class MockRemoteEurekaServer extends ExternalResource {
     private class AppsResourceHandler extends AbstractHandler {
 
         @Override
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response, int dispatch)
-                throws IOException, ServletException {
+        public void handle(String target, HttpServletRequest request, HttpServletResponse response, int dispatch) throws IOException, ServletException {
             String authName = request.getHeader(AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY);
             String authVersion = request.getHeader(AbstractEurekaIdentity.AUTH_VERSION_HEADER_KEY);
             String authId = request.getHeader(AbstractEurekaIdentity.AUTH_ID_HEADER_KEY);
-
             Assert.assertEquals(EurekaClientIdentity.DEFAULT_CLIENT_NAME, authName);
             Assert.assertNotNull(authVersion);
             Assert.assertNotNull(authId);
-
             String pathInfo = request.getPathInfo();
-            System.out.println("Eureka port: " + port + ". " + System.currentTimeMillis() +
-                    ". Eureka resource mock, received request on path: " + pathInfo + ". HTTP method: |"
-                    + request.getMethod() + '|' + ", query string: " + request.getQueryString());
+            System.out.println("Eureka port: " + port + ". " + System.currentTimeMillis() + ". Eureka resource mock, received request on path: " + pathInfo + ". HTTP method: |" + request.getMethod() + '|' + ", query string: " + request.getQueryString());
             boolean handled = false;
             if (null != pathInfo && pathInfo.startsWith("")) {
                 pathInfo = pathInfo.substring(EUREKA_API_BASE_PATH.length());
                 boolean includeRemote = isRemoteRequest(request);
-
                 if (pathInfo.startsWith("apps/delta")) {
                     getDeltaCount.getAndIncrement();
-
                     Applications apps = new Applications();
                     apps.setVersion(100L);
                     if (sentDelta.compareAndSet(false, true)) {
@@ -169,7 +171,6 @@ public class MockRemoteEurekaServer extends ExternalResource {
                     handled = true;
                 } else if (pathInfo.equals("apps/")) {
                     getFullRegistryCount.getAndIncrement();
-
                     Applications apps = new Applications();
                     apps.setVersion(100L);
                     for (Application application : applicationMap.values()) {
@@ -180,7 +181,6 @@ public class MockRemoteEurekaServer extends ExternalResource {
                             apps.addApplication(application);
                         }
                     }
-
                     if (sentDelta.get()) {
                         addDeltaApps(includeRemote, apps);
                     } else {
@@ -192,7 +192,6 @@ public class MockRemoteEurekaServer extends ExternalResource {
                     handled = true;
                 } else if (pathInfo.startsWith("vips/")) {
                     getSingleVipCount.getAndIncrement();
-
                     String vipAddress = pathInfo.substring("vips/".length());
                     Applications apps = new Applications();
                     apps.setVersion(-1l);
@@ -203,19 +202,20 @@ public class MockRemoteEurekaServer extends ExternalResource {
                                 retApp.addInstance(instance);
                             }
                         }
-
                         if (retApp.getInstances().size() > 0) {
                             apps.addApplication(retApp);
                         }
                     }
-
                     apps.setAppsHashCode(apps.getReconcileHashCode());
                     sendOkResponseWithContent((Request) request, response, apps);
                     handled = true;
-                } else if (pathInfo.startsWith("apps")) {  // assume this is the renewal heartbeat
-                    if (request.getMethod().equals("PUT")) {  // this is the renewal heartbeat
+                } else if (pathInfo.startsWith("apps")) {
+                    // assume this is the renewal heartbeat
+                    if (request.getMethod().equals("PUT")) {
+                        // this is the renewal heartbeat
                         heartbeatCount.getAndIncrement();
-                    } else if (request.getMethod().equals("POST")) {  // this is a register request
+                    } else if (request.getMethod().equals("POST")) {
+                        // this is a register request
                         registerCount.getAndIncrement();
                         String statusStr = null;
                         String hostname = null;
@@ -227,7 +227,6 @@ public class MockRemoteEurekaServer extends ExternalResource {
                                 hostname = hostNameMatcher.group(1);
                                 // don't break here as we want to read the full buffer for a clean connection close
                             }
-
                             Matcher statusMatcher = STATUS_PATTERN.matcher(line);
                             if (statusStr == null && statusMatcher.find()) {
                                 statusStr = statusMatcher.group(1);
@@ -237,22 +236,16 @@ public class MockRemoteEurekaServer extends ExternalResource {
                         System.out.println("Matched status to: " + statusStr);
                         registrationStatusesQueue.add(statusStr);
                         registrationStatuses.add(statusStr);
-
                         String appName = pathInfo.substring(5);
                         if (!applicationMap.containsKey(appName)) {
                             Application app = new Application(appName);
-                            InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder()
-                                    .setAppName(appName)
-                                    .setIPAddr("1.1.1.1")
-                                    .setHostName(hostname)
-                                    .setStatus(InstanceInfo.InstanceStatus.toEnum(statusStr))
-                                    .setDataCenterInfo(new DataCenterInfo() {
-                                        @Override
-                                        public Name getName() {
-                                            return Name.MyOwn;
-                                        }
-                                    })
-                                    .build();
+                            InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder().setAppName(appName).setIPAddr("1.1.1.1").setHostName(hostname).setStatus(InstanceInfo.InstanceStatus.toEnum(statusStr)).setDataCenterInfo(new DataCenterInfo() {
+
+                                @Override
+                                public Name getName() {
+                                    return Name.MyOwn;
+                                }
+                            }).build();
                             app.addInstance(instanceInfo);
                             applicationMap.put(appName, app);
                         }
@@ -265,10 +258,8 @@ public class MockRemoteEurekaServer extends ExternalResource {
                     System.out.println("Not handling request: " + pathInfo);
                 }
             }
-
             if (!handled) {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND,
-                        "Request path: " + pathInfo + " not supported by eureka resource mock.");
+                response.sendError(HttpServletResponse.SC_NOT_FOUND, "Request path: " + pathInfo + " not supported by eureka resource mock.");
             }
         }
 
@@ -288,7 +279,6 @@ public class MockRemoteEurekaServer extends ExternalResource {
             for (Application application : applicationMap.values()) {
                 allApps.addApplication(application);
             }
-
             if (includeRemote) {
                 for (Application application : remoteRegionApps.values()) {
                     allApps.addApplication(application);
@@ -306,17 +296,14 @@ public class MockRemoteEurekaServer extends ExternalResource {
             return queryString.contains("regions=");
         }
 
-        protected void sendOkResponseWithContent(Request request, HttpServletResponse response, Applications apps)
-                throws IOException {
+        protected void sendOkResponseWithContent(Request request, HttpServletResponse response, Applications apps) throws IOException {
             String content = XmlXStream.getInstance().toXML(apps);
             response.setContentType("application/xml");
             response.setStatus(HttpServletResponse.SC_OK);
             response.getWriter().println(content);
             response.getWriter().flush();
             request.setHandled(true);
-            System.out.println("Eureka port: " + port + ". " + System.currentTimeMillis() +
-                    ". Eureka resource mock, sent response for request path: " + request.getPathInfo() +
-                    ", apps count: " + apps.getRegisteredApplications().size());
+            System.out.println("Eureka port: " + port + ". " + System.currentTimeMillis() + ". Eureka resource mock, sent response for request path: " + request.getPathInfo() + ", apps count: " + apps.getRegisteredApplications().size());
         }
 
         protected void sleep(int seconds) {

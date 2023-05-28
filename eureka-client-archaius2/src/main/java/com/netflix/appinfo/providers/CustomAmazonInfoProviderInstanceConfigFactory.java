@@ -6,7 +6,6 @@ import com.netflix.appinfo.EurekaInstanceConfig;
 import com.netflix.archaius.api.Config;
 import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.DiscoveryManager;
-
 import com.google.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
@@ -16,7 +15,9 @@ import javax.inject.Singleton;
 public class CustomAmazonInfoProviderInstanceConfigFactory implements EurekaInstanceConfigFactory {
 
     private final Config configInstance;
+
     private final Provider<AmazonInfo> amazonInfoProvider;
+
     private EurekaInstanceConfig eurekaInstanceConfig;
 
     @Inject(optional = true)
@@ -37,11 +38,9 @@ public class CustomAmazonInfoProviderInstanceConfigFactory implements EurekaInst
     public EurekaInstanceConfig get() {
         if (eurekaInstanceConfig == null) {
             eurekaInstanceConfig = new Ec2EurekaArchaius2InstanceConfig(configInstance, amazonInfoProvider, getInstanceConfigNamespace());
-
             // Copied from CompositeInstanceConfigFactory.get
             DiscoveryManager.getInstance().setEurekaInstanceConfig(eurekaInstanceConfig);
         }
-
         return eurekaInstanceConfig;
     }
 }

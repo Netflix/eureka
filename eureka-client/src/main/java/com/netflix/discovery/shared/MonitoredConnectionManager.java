@@ -1,7 +1,6 @@
 package com.netflix.discovery.shared;
 
 import java.util.concurrent.TimeUnit;
-
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.http.conn.ClientConnectionRequest;
 import org.apache.http.conn.routing.HttpRoute;
@@ -16,7 +15,6 @@ import org.apache.http.params.HttpParams;
  * connection reuse statistics, as its underlying connection pool.
  *
  * @author awang
- *
  */
 public class MonitoredConnectionManager extends ThreadSafeClientConnManager {
 
@@ -25,8 +23,7 @@ public class MonitoredConnectionManager extends ThreadSafeClientConnManager {
         initMonitors(name);
     }
 
-    public MonitoredConnectionManager(String name, SchemeRegistry schreg, long connTTL,
-                                      TimeUnit connTTLTimeUnit) {
+    public MonitoredConnectionManager(String name, SchemeRegistry schreg, long connTTL, TimeUnit connTTLTimeUnit) {
         super(schreg, connTTL, connTTLTimeUnit);
         initMonitors(name);
     }
@@ -49,8 +46,7 @@ public class MonitoredConnectionManager extends ThreadSafeClientConnManager {
     }
 
     @Override
-    protected ConnPoolByRoute createConnectionPool(long connTTL,
-                                                   TimeUnit connTTLTimeUnit) {
+    protected ConnPoolByRoute createConnectionPool(long connTTL, TimeUnit connTTLTimeUnit) {
         return new NamedConnectionPool(connOperator, connPerRoute, 20, connTTL, connTTLTimeUnit);
     }
 
@@ -60,8 +56,7 @@ public class MonitoredConnectionManager extends ThreadSafeClientConnManager {
     }
 
     @Override
-    public ClientConnectionRequest requestConnection(HttpRoute route,
-                                                     Object state) {
+    public ClientConnectionRequest requestConnection(HttpRoute route, Object state) {
         // TODO Auto-generated method stub
         return super.requestConnection(route, state);
     }

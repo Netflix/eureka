@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.transport.decorator;
 
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import com.netflix.discovery.EurekaClientNames;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
@@ -48,17 +46,16 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
     private final EurekaHttpClient delegate;
 
     private final Map<RequestType, EurekaHttpClientRequestMetrics> metricsByRequestType;
+
     private final ExceptionsMetric exceptionsMetric;
+
     private final boolean shutdownMetrics;
 
     public MetricsCollectingEurekaHttpClient(EurekaHttpClient delegate) {
         this(delegate, initializeMetrics(), new ExceptionsMetric(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "exceptions"), true);
     }
 
-    private MetricsCollectingEurekaHttpClient(EurekaHttpClient delegate,
-                                              Map<RequestType, EurekaHttpClientRequestMetrics> metricsByRequestType,
-                                              ExceptionsMetric exceptionsMetric,
-                                              boolean shutdownMetrics) {
+    private MetricsCollectingEurekaHttpClient(EurekaHttpClient delegate, Map<RequestType, EurekaHttpClientRequestMetrics> metricsByRequestType, ExceptionsMetric exceptionsMetric, boolean shutdownMetrics) {
         this.delegate = delegate;
         this.metricsByRequestType = metricsByRequestType;
         this.exceptionsMetric = exceptionsMetric;
@@ -94,14 +91,10 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
         final Map<RequestType, EurekaHttpClientRequestMetrics> metricsByRequestType = initializeMetrics();
         final ExceptionsMetric exceptionMetrics = new ExceptionsMetric(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "exceptions");
         return new EurekaHttpClientFactory() {
+
             @Override
             public EurekaHttpClient newClient() {
-                return new MetricsCollectingEurekaHttpClient(
-                        delegateFactory.newClient(),
-                        metricsByRequestType,
-                        exceptionMetrics,
-                        false
-                );
+                return new MetricsCollectingEurekaHttpClient(delegateFactory.newClient(), metricsByRequestType, exceptionMetrics, false);
             }
 
             @Override
@@ -116,14 +109,10 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
         final Map<RequestType, EurekaHttpClientRequestMetrics> metricsByRequestType = initializeMetrics();
         final ExceptionsMetric exceptionMetrics = new ExceptionsMetric(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "exceptions");
         return new TransportClientFactory() {
+
             @Override
             public EurekaHttpClient newClient(EurekaEndpoint endpoint) {
-                return new MetricsCollectingEurekaHttpClient(
-                        delegateFactory.newClient(endpoint),
-                        metricsByRequestType,
-                        exceptionMetrics,
-                        false
-                );
+                return new MetricsCollectingEurekaHttpClient(delegateFactory.newClient(endpoint), metricsByRequestType, exceptionMetrics, false);
             }
 
             @Override
@@ -154,7 +143,7 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
 
     private static Status mappedStatus(EurekaHttpResponse<?> httpResponse) {
         int category = httpResponse.getStatusCode() / 100;
-        switch (category) {
+        switch(category) {
             case 1:
                 return Status.x100;
             case 2:
@@ -171,30 +160,27 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
 
     static class EurekaHttpClientRequestMetrics {
 
-        enum Status {x100, x200, x300, x400, x500, Unknown}
+        enum Status {
+
+            x100,
+            x200,
+            x300,
+            x400,
+            x500,
+            Unknown
+        }
 
         private final Timer latencyTimer;
+
         private final Counter connectionErrors;
+
         private final Map<Status, Counter> countersByStatus;
 
         EurekaHttpClientRequestMetrics(String resourceName) {
             this.countersByStatus = createStatusCounters(resourceName);
-
-            latencyTimer = new BasicTimer(
-                    MonitorConfig.builder(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "latency")
-                            .withTag("id", resourceName)
-                            .withTag("class", MetricsCollectingEurekaHttpClient.class.getSimpleName())
-                            .build(),
-                    TimeUnit.MILLISECONDS
-            );
+            latencyTimer = new BasicTimer(MonitorConfig.builder(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "latency").withTag("id", resourceName).withTag("class", MetricsCollectingEurekaHttpClient.class.getSimpleName()).build(), TimeUnit.MILLISECONDS);
             ServoUtil.register(latencyTimer);
-
-            this.connectionErrors = new BasicCounter(
-                    MonitorConfig.builder(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "connectionErrors")
-                            .withTag("id", resourceName)
-                            .withTag("class", MetricsCollectingEurekaHttpClient.class.getSimpleName())
-                            .build()
-            );
+            this.connectionErrors = new BasicCounter(MonitorConfig.builder(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "connectionErrors").withTag("id", resourceName).withTag("class", MetricsCollectingEurekaHttpClient.class.getSimpleName()).build());
             ServoUtil.register(connectionErrors);
         }
 
@@ -205,20 +191,11 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
 
         private static Map<Status, Counter> createStatusCounters(String resourceName) {
             Map<Status, Counter> result = new EnumMap<>(Status.class);
-
             for (Status status : Status.values()) {
-                BasicCounter counter = new BasicCounter(
-                        MonitorConfig.builder(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "request")
-                                .withTag("id", resourceName)
-                                .withTag("class", MetricsCollectingEurekaHttpClient.class.getSimpleName())
-                                .withTag("status", status.name())
-                                .build()
-                );
+                BasicCounter counter = new BasicCounter(MonitorConfig.builder(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "request").withTag("id", resourceName).withTag("class", MetricsCollectingEurekaHttpClient.class.getSimpleName()).withTag("status", status.name()).build());
                 ServoUtil.register(counter);
-
                 result.put(status, counter);
             }
-
             return result;
         }
     }

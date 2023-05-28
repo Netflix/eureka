@@ -8,7 +8,6 @@ import com.netflix.discovery.shared.resolver.ResolverUtils;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -17,24 +16,23 @@ import java.util.concurrent.TimeUnit;
  * @author David Liu
  */
 public class ApplicationsResolver implements ClusterResolver<AwsEndpoint> {
+
     private static final Logger logger = LoggerFactory.getLogger(ApplicationsResolver.class);
 
     private final EurekaClientConfig clientConfig;
+
     private final EurekaTransportConfig transportConfig;
+
     private final ApplicationsSource applicationsSource;
+
     private final String vipAddress;
 
     @Deprecated
-    public ApplicationsResolver(EurekaClientConfig clientConfig,
-                                EurekaTransportConfig transportConfig,
-                                ApplicationsSource applicationsSource) {
+    public ApplicationsResolver(EurekaClientConfig clientConfig, EurekaTransportConfig transportConfig, ApplicationsSource applicationsSource) {
         this(clientConfig, transportConfig, applicationsSource, transportConfig.getReadClusterVip());
     }
 
-    public ApplicationsResolver(EurekaClientConfig clientConfig,
-                                EurekaTransportConfig transportConfig,
-                                ApplicationsSource applicationsSource,
-                                String vipAddress) {
+    public ApplicationsResolver(EurekaClientConfig clientConfig, EurekaTransportConfig transportConfig, ApplicationsSource applicationsSource, String vipAddress) {
         this.clientConfig = clientConfig;
         this.transportConfig = transportConfig;
         this.applicationsSource = applicationsSource;
@@ -49,10 +47,7 @@ public class ApplicationsResolver implements ClusterResolver<AwsEndpoint> {
     @Override
     public List<AwsEndpoint> getClusterEndpoints() {
         List<AwsEndpoint> result = new ArrayList<>();
-
-        Applications applications = applicationsSource.getApplications(
-                transportConfig.getApplicationsResolverDataStalenessThresholdSeconds(), TimeUnit.SECONDS);
-
+        Applications applications = applicationsSource.getApplications(transportConfig.getApplicationsResolverDataStalenessThresholdSeconds(), TimeUnit.SECONDS);
         if (applications != null && vipAddress != null) {
             List<InstanceInfo> validInstanceInfos = applications.getInstancesByVirtualHostName(vipAddress);
             for (InstanceInfo instanceInfo : validInstanceInfos) {
@@ -64,13 +59,12 @@ public class ApplicationsResolver implements ClusterResolver<AwsEndpoint> {
                 }
             }
         }
-
         logger.debug("Retrieved endpoint list {}", result);
         return result;
-
     }
 
     public interface ApplicationsSource {
+
         /**
          * @return the known set of Applications, or null if the data is beyond the stalenss threshold
          */

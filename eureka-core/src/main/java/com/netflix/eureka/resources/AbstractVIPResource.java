@@ -13,11 +13,9 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.eureka.resources;
 
 import javax.ws.rs.core.Response;
-
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.eureka.EurekaServerContext;
 import com.netflix.eureka.EurekaServerContextHolder;
@@ -38,6 +36,7 @@ abstract class AbstractVIPResource {
     private static final Logger logger = LoggerFactory.getLogger(AbstractVIPResource.class);
 
     private final PeerAwareInstanceRegistry registry;
+
     private final ResponseCache responseCache;
 
     AbstractVIPResource(EurekaServerContext server) {
@@ -49,8 +48,7 @@ abstract class AbstractVIPResource {
         this(EurekaServerContextHolder.getInstance().getServerContext());
     }
 
-    protected Response getVipResponse(String version, String entityName, String acceptHeader,
-                                      EurekaAccept eurekaAccept, Key.EntityType entityType) {
+    protected Response getVipResponse(String version, String entityName, String acceptHeader, EurekaAccept eurekaAccept, Key.EntityType entityType) {
         if (!registry.shouldAllowAccess(false)) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
@@ -59,18 +57,9 @@ abstract class AbstractVIPResource {
         if (acceptHeader == null || !acceptHeader.contains("json")) {
             keyType = Key.KeyType.XML;
         }
-
-        Key cacheKey = new Key(
-                entityType,
-                entityName,
-                keyType,
-                CurrentRequestVersion.get(),
-                eurekaAccept
-        );
-
+        Key cacheKey = new Key(entityType, entityName, keyType, CurrentRequestVersion.get(), eurekaAccept);
         String payLoad = responseCache.get(cacheKey);
         CurrentRequestVersion.remove();
-
         if (payLoad != null) {
             logger.debug("Found: {}", entityName);
             return Response.ok(payLoad).build();

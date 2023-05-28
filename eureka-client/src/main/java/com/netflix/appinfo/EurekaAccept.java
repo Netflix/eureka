@@ -2,7 +2,6 @@ package com.netflix.appinfo;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import com.netflix.discovery.converters.wrappers.CodecWrappers;
 import com.netflix.discovery.converters.wrappers.CodecWrappers.JacksonJson;
 import com.netflix.discovery.converters.wrappers.CodecWrappers.JacksonJsonMini;
@@ -17,6 +16,7 @@ import com.netflix.discovery.converters.wrappers.DecoderWrapper;
  * @author David Liu
  */
 public enum EurekaAccept {
+
     full, compact;
 
     public static final String HTTP_X_EUREKA_ACCEPT = "X-Eureka-Accept";
@@ -29,7 +29,6 @@ public enum EurekaAccept {
         decoderNameToAcceptMap.put(CodecWrappers.getCodecName(XStreamJson.class), full);
         decoderNameToAcceptMap.put(CodecWrappers.getCodecName(XStreamXml.class), full);
         decoderNameToAcceptMap.put(CodecWrappers.getCodecName(JacksonXml.class), full);
-
         decoderNameToAcceptMap.put(CodecWrappers.getCodecName(JacksonJsonMini.class), compact);
         decoderNameToAcceptMap.put(CodecWrappers.getCodecName(JacksonXmlMini.class), compact);
     }
@@ -42,7 +41,6 @@ public enum EurekaAccept {
         if (name == null || name.isEmpty()) {
             return full;
         }
-
         try {
             return EurekaAccept.valueOf(name.toLowerCase());
         } catch (Exception e) {

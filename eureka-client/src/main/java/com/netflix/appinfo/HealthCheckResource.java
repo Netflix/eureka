@@ -13,14 +13,12 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.appinfo;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,20 +27,17 @@ import org.slf4j.LoggerFactory;
  *
  * This can be used a {@link HealthCheckCallback} resource if required.
  * @author Karthik Ranganathan, Greg Kim
- *
  */
 @Path("/healthcheck")
 public class HealthCheckResource {
-    private static final Logger s_logger = LoggerFactory
-            .getLogger(HealthCheckResource.class);
+
+    private static final Logger s_logger = LoggerFactory.getLogger(HealthCheckResource.class);
 
     @GET
     public Response doHealthCheck() {
         try {
-            InstanceInfo myInfo = ApplicationInfoManager.getInstance()
-                    .getInfo();
-
-            switch (myInfo.getStatus()) {
+            InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
+            switch(myInfo.getStatus()) {
                 case UP:
                     // Return status 200
                     return Response.status(Status.OK).build();

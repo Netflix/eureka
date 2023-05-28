@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.transport.decorator;
 
 import java.util.ArrayList;
@@ -21,7 +20,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicReference;
-
 import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
@@ -36,7 +34,6 @@ import com.netflix.servo.annotations.Monitor;
 import com.netflix.servo.monitor.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import static com.netflix.discovery.EurekaClientNames.METRIC_TRANSPORT_PREFIX;
 
 /**
@@ -61,22 +58,22 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
     public static final int DEFAULT_NUMBER_OF_RETRIES = 3;
 
     private final String name;
+
     private final EurekaTransportConfig transportConfig;
+
     private final ClusterResolver clusterResolver;
+
     private final TransportClientFactory clientFactory;
+
     private final ServerStatusEvaluator serverStatusEvaluator;
+
     private final int numberOfRetries;
 
     private final AtomicReference<EurekaHttpClient> delegate = new AtomicReference<>();
 
     private final Set<EurekaEndpoint> quarantineSet = new ConcurrentSkipListSet<>();
 
-    public RetryableEurekaHttpClient(String name,
-                                     EurekaTransportConfig transportConfig,
-                                     ClusterResolver clusterResolver,
-                                     TransportClientFactory clientFactory,
-                                     ServerStatusEvaluator serverStatusEvaluator,
-                                     int numberOfRetries) {
+    public RetryableEurekaHttpClient(String name, EurekaTransportConfig transportConfig, ClusterResolver clusterResolver, TransportClientFactory clientFactory, ServerStatusEvaluator serverStatusEvaluator, int numberOfRetries) {
         this.name = name;
         this.transportConfig = transportConfig;
         this.clusterResolver = clusterResolver;
@@ -89,7 +86,7 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
     @Override
     public void shutdown() {
         TransportUtils.shutdown(delegate.get());
-        if(Monitors.isObjectRegistered(name, this)) {
+        if (Monitors.isObjectRegistered(name, this)) {
             Monitors.unregisterObject(name, this);
         }
     }
@@ -111,11 +108,9 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
                 if (endpointIdx >= candidateHosts.size()) {
                     throw new TransportException("Cannot execute request on any known server");
                 }
-
                 currentEndpoint = candidateHosts.get(endpointIdx++);
                 currentHttpClient = clientFactory.newClient(currentEndpoint);
             }
-
             try {
                 EurekaHttpResponse<R> response = requestExecutor.execute(currentHttpClient);
                 if (serverStatusEvaluator.accept(response.getStatusCode(), requestExecutor.getRequestType())) {
@@ -127,9 +122,9 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
                 }
                 logger.warn("Request execution failure with status code {}; retrying on another server if available", response.getStatusCode());
             } catch (Exception e) {
-                logger.warn("Request execution failed with message: {}", e.getMessage());  // just log message as the underlying client should log the stacktrace
+                // just log message as the underlying client should log the stacktrace
+                logger.warn("Request execution failed with message: {}", e.getMessage());
             }
-
             // Connection error or 5xx from the server that must be retried on another server
             delegate.compareAndSet(currentHttpClient, null);
             if (currentEndpoint != null) {
@@ -139,16 +134,12 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
         throw new TransportException("Retry limit reached; giving up on completing the request");
     }
 
-    public static EurekaHttpClientFactory createFactory(final String name,
-                                                        final EurekaTransportConfig transportConfig,
-                                                        final ClusterResolver<EurekaEndpoint> clusterResolver,
-                                                        final TransportClientFactory delegateFactory,
-                                                        final ServerStatusEvaluator serverStatusEvaluator) {
+    public static EurekaHttpClientFactory createFactory(final String name, final EurekaTransportConfig transportConfig, final ClusterResolver<EurekaEndpoint> clusterResolver, final TransportClientFactory delegateFactory, final ServerStatusEvaluator serverStatusEvaluator) {
         return new EurekaHttpClientFactory() {
+
             @Override
             public EurekaHttpClient newClient() {
-                return new RetryableEurekaHttpClient(name, transportConfig, clusterResolver, delegateFactory,
-                        serverStatusEvaluator, DEFAULT_NUMBER_OF_RETRIES);
+                return new RetryableEurekaHttpClient(name, transportConfig, clusterResolver, delegateFactory, serverStatusEvaluator, DEFAULT_NUMBER_OF_RETRIES);
             }
 
             @Override
@@ -161,7 +152,6 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
     private List<EurekaEndpoint> getHostCandidates() {
         List<EurekaEndpoint> candidateHosts = clusterResolver.getClusterEndpoints();
         quarantineSet.retainAll(candidateHosts);
-
         // If enough hosts are bad, we have no choice but start over again
         int threshold = (int) (candidateHosts.size() * transportConfig.getRetryableClientQuarantineRefreshPercentage());
         //Prevent threshold is too large
@@ -182,12 +172,10 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
             }
             candidateHosts = remainingHosts;
         }
-
         return candidateHosts;
     }
 
-    @Monitor(name = METRIC_TRANSPORT_PREFIX + "quarantineSize",
-            description = "number of servers quarantined", type = DataSourceType.GAUGE)
+    @Monitor(name = METRIC_TRANSPORT_PREFIX + "quarantineSize", description = "number of servers quarantined", type = DataSourceType.GAUGE)
     public long getQuarantineSetSize() {
         return quarantineSet.size();
     }

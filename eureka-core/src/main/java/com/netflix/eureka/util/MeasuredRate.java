@@ -18,7 +18,6 @@ package com.netflix.eureka.util;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,11 +27,15 @@ import org.slf4j.LoggerFactory;
  * @author Karthik Ranganathan,Greg Kim
  */
 public class MeasuredRate {
+
     private static final Logger logger = LoggerFactory.getLogger(MeasuredRate.class);
+
     private final AtomicLong lastBucket = new AtomicLong(0);
+
     private final AtomicLong currentBucket = new AtomicLong(0);
 
     private final long sampleInterval;
+
     private final Timer timer;
 
     private volatile boolean isActive;
@@ -60,7 +63,6 @@ public class MeasuredRate {
                     }
                 }
             }, sampleInterval, sampleInterval);
-
             isActive = true;
         }
     }

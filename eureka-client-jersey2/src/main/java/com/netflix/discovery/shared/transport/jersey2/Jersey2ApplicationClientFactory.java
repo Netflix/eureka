@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.transport.jersey2;
 
 import javax.net.ssl.HostnameVerifier;
@@ -34,7 +33,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-
 import com.netflix.appinfo.AbstractEurekaIdentity;
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.appinfo.EurekaClientIdentity;
@@ -49,7 +47,6 @@ import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.client.JerseyClient;
 import org.glassfish.jersey.message.GZipEncoder;
-
 import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
 
 /**
@@ -58,9 +55,11 @@ import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
 public class Jersey2ApplicationClientFactory implements TransportClientFactory {
 
     public static final String HTTP_X_DISCOVERY_ALLOW_REDIRECT = "X-Discovery-AllowRedirect";
+
     private static final String KEY_STORE_TYPE = "JKS";
 
     private final Client jersey2Client;
+
     private final MultivaluedMap<String, Object> additionalHeaders;
 
     public Jersey2ApplicationClientFactory(Client jersey2Client, MultivaluedMap<String, Object> additionalHeaders) {
@@ -77,41 +76,27 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
     public void shutdown() {
         jersey2Client.close();
     }
-    
-    public static Jersey2ApplicationClientFactory create(EurekaClientConfig clientConfig,
-            Collection<ClientRequestFilter> additionalFilters,
-            InstanceInfo myInstanceInfo,
-            AbstractEurekaIdentity clientIdentity) {
+
+    public static Jersey2ApplicationClientFactory create(EurekaClientConfig clientConfig, Collection<ClientRequestFilter> additionalFilters, InstanceInfo myInstanceInfo, AbstractEurekaIdentity clientIdentity) {
         return create(clientConfig, additionalFilters, myInstanceInfo, clientIdentity, Optional.empty(), Optional.empty());
     }
-    
-    public static Jersey2ApplicationClientFactory create(EurekaClientConfig clientConfig,
-            Collection<ClientRequestFilter> additionalFilters,
-            InstanceInfo myInstanceInfo,
-            AbstractEurekaIdentity clientIdentity,
-            Optional<SSLContext> sslContext,
-            Optional<HostnameVerifier> hostnameVerifier) {
+
+    public static Jersey2ApplicationClientFactory create(EurekaClientConfig clientConfig, Collection<ClientRequestFilter> additionalFilters, InstanceInfo myInstanceInfo, AbstractEurekaIdentity clientIdentity, Optional<SSLContext> sslContext, Optional<HostnameVerifier> hostnameVerifier) {
         Jersey2ApplicationClientFactoryBuilder clientBuilder = newBuilder();
         clientBuilder.withAdditionalFilters(additionalFilters);
         clientBuilder.withMyInstanceInfo(myInstanceInfo);
         clientBuilder.withUserAgent("Java-EurekaClient");
         clientBuilder.withClientConfig(clientConfig);
         clientBuilder.withClientIdentity(clientIdentity);
-        
         sslContext.ifPresent(clientBuilder::withSSLContext);
         hostnameVerifier.ifPresent(clientBuilder::withHostnameVerifier);
-        
         if ("true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
             clientBuilder.withClientName("DiscoveryClient-HTTPClient-System").withSystemSSLConfiguration();
         } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
-            clientBuilder.withClientName("Proxy-DiscoveryClient-HTTPClient")
-            .withProxy(
-                    clientConfig.getProxyHost(), Integer.parseInt(clientConfig.getProxyPort()),
-                    clientConfig.getProxyUserName(), clientConfig.getProxyPassword());
+            clientBuilder.withClientName("Proxy-DiscoveryClient-HTTPClient").withProxy(clientConfig.getProxyHost(), Integer.parseInt(clientConfig.getProxyPort()), clientConfig.getProxyUserName(), clientConfig.getProxyPassword());
         } else {
             clientBuilder.withClientName("DiscoveryClient-HTTPClient");
         }
-        
         return clientBuilder.build();
     }
 
@@ -122,6 +107,7 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
     public static class Jersey2ApplicationClientFactoryBuilder extends EurekaClientFactoryBuilder<Jersey2ApplicationClientFactory, Jersey2ApplicationClientFactoryBuilder> {
 
         private List<Feature> features = new ArrayList<>();
+
         private List<ClientRequestFilter> additionalFilters = new ArrayList<>();
 
         public Jersey2ApplicationClientFactoryBuilder withFeature(Feature feature) {
@@ -140,26 +126,23 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
         public Jersey2ApplicationClientFactory build() {
             ClientBuilder clientBuilder = ClientBuilder.newBuilder();
             ClientConfig clientConfig = new ClientConfig();
-            
             for (ClientRequestFilter filter : additionalFilters) {
                 clientConfig.register(filter);
             }
-
             for (Feature feature : features) {
                 clientConfig.register(feature);
             }
-            
             addProviders(clientConfig);
             addSSLConfiguration(clientBuilder);
             addProxyConfiguration(clientConfig);
-            
             if (hostnameVerifier != null) {
                 clientBuilder.hostnameVerifier(hostnameVerifier);
             }
-
             // Common properties to all clients
             final String fullUserAgentName = (userAgent == null ? clientName : userAgent) + "/v" + buildVersion();
-            clientBuilder.register(new ClientRequestFilter() { // Can we do it better, without filter?
+            clientBuilder.register(new // Can we do it better, without filter?
+            ClientRequestFilter() {
+
                 @Override
                 public void filter(ClientRequestContext requestContext) {
                     requestContext.getHeaders().put(HttpHeaders.USER_AGENT, Collections.<Object>singletonList(fullUserAgentName));
@@ -168,19 +151,14 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
             clientConfig.property(ClientProperties.FOLLOW_REDIRECTS, allowRedirect);
             clientConfig.property(ClientProperties.READ_TIMEOUT, readTimeout);
             clientConfig.property(ClientProperties.CONNECT_TIMEOUT, connectionTimeout);
-
             clientBuilder.withConfig(clientConfig);
-
             // Add gzip content encoding support
             clientBuilder.register(new GZipEncoder());
-
             // always enable client identity headers
             String ip = myInstanceInfo == null ? null : myInstanceInfo.getIPAddr();
             final AbstractEurekaIdentity identity = clientIdentity == null ? new EurekaClientIdentity(ip) : clientIdentity;
             clientBuilder.register(new Jersey2EurekaIdentityHeaderFilter(identity));
-
             JerseyClient jersey2Client = (JerseyClient) clientBuilder.build();
-
             MultivaluedMap<String, Object> additionalHeaders = new MultivaluedHashMap<>();
             if (allowRedirect) {
                 additionalHeaders.add(HTTP_X_DISCOVERY_ALLOW_REDIRECT, "true");
@@ -188,7 +166,6 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
             if (EurekaAccept.compact == eurekaAccept) {
                 additionalHeaders.add(EurekaAccept.HTTP_X_EUREKA_ACCEPT, eurekaAccept.name());
             }
-
             return new Jersey2ApplicationClientFactory(jersey2Client, additionalHeaders);
         }
 
@@ -207,8 +184,7 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
                 }
             } catch (Exception ex) {
                 throw new IllegalArgumentException("Cannot setup SSL for Jersey2 client", ex);
-            }
-            finally {
+            } finally {
                 if (fin != null) {
                     try {
                         fin.close();
@@ -238,7 +214,6 @@ public class Jersey2ApplicationClientFactory implements TransportClientFactory {
         private void addProviders(ClientConfig clientConfig) {
             DiscoveryJerseyProvider discoveryJerseyProvider = new DiscoveryJerseyProvider(encoderWrapper, decoderWrapper);
             clientConfig.register(discoveryJerseyProvider);
-
             // Disable json autodiscovery, since json (de)serialization is provided by DiscoveryJerseyProvider
             clientConfig.property(ClientProperties.JSON_PROCESSING_FEATURE_DISABLE, Boolean.TRUE);
             clientConfig.property(ClientProperties.MOXY_JSON_FEATURE_DISABLE, Boolean.TRUE);

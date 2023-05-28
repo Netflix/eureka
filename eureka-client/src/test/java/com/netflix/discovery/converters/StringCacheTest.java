@@ -2,7 +2,6 @@ package com.netflix.discovery.converters;
 
 import com.netflix.discovery.util.StringCache;
 import org.junit.Test;
-
 import static org.junit.Assert.assertTrue;
 
 /**

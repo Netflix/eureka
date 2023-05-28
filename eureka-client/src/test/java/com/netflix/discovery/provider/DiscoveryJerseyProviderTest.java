@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.provider;
 
 import javax.ws.rs.core.MediaType;
@@ -21,13 +20,11 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.converters.wrappers.CodecWrappers;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.junit.Test;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -38,10 +35,7 @@ public class DiscoveryJerseyProviderTest {
 
     private static final InstanceInfo INSTANCE = InstanceInfoGenerator.takeOne();
 
-    private final DiscoveryJerseyProvider jerseyProvider = new DiscoveryJerseyProvider(
-            CodecWrappers.getEncoder(CodecWrappers.JacksonJson.class),
-            CodecWrappers.getDecoder(CodecWrappers.JacksonJson.class)
-    );
+    private final DiscoveryJerseyProvider jerseyProvider = new DiscoveryJerseyProvider(CodecWrappers.getEncoder(CodecWrappers.JacksonJson.class), CodecWrappers.getDecoder(CodecWrappers.JacksonJson.class));
 
     @Test
     public void testJsonEncodingDecoding() throws Exception {
@@ -63,16 +57,12 @@ public class DiscoveryJerseyProviderTest {
     private void testEncodingDecoding(MediaType mediaType) throws IOException {
         // Write
         assertThat(jerseyProvider.isWriteable(InstanceInfo.class, InstanceInfo.class, null, mediaType), is(true));
-
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         jerseyProvider.writeTo(INSTANCE, InstanceInfo.class, InstanceInfo.class, null, mediaType, null, out);
-
         // Read
         assertThat(jerseyProvider.isReadable(InstanceInfo.class, InstanceInfo.class, null, mediaType), is(true));
-
         ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
         InstanceInfo decodedInstance = (InstanceInfo) jerseyProvider.readFrom(InstanceInfo.class, InstanceInfo.class, null, mediaType, null, in);
-
         assertThat(decodedInstance, is(equalTo(INSTANCE)));
     }
 
@@ -81,7 +71,6 @@ public class DiscoveryJerseyProviderTest {
         Map<String, String> params = new HashMap<>();
         params.put("charset", "ISO-8859");
         MediaType mediaTypeWithNonSupportedCharset = new MediaType("application", "json", params);
-
         assertThat(jerseyProvider.isReadable(InstanceInfo.class, InstanceInfo.class, null, mediaTypeWithNonSupportedCharset), is(false));
     }
 }
