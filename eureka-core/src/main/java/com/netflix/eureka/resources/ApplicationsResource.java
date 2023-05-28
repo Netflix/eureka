@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.eureka.resources;
 
 import javax.annotation.Nullable;
@@ -30,7 +29,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 import java.util.Arrays;
-
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.eureka.EurekaServerContext;
 import com.netflix.eureka.EurekaServerContextHolder;
@@ -49,20 +47,27 @@ import com.netflix.eureka.util.EurekaMonitors;
  * {@link com.netflix.discovery.shared.Applications}.
  *
  * @author Karthik Ranganathan, Greg Kim
- *
  */
 @Path("/{version}/apps")
-@Produces({"application/xml", "application/json"})
+@Produces({ "application/xml", "application/json" })
 public class ApplicationsResource {
+
     private static final String HEADER_ACCEPT = "Accept";
+
     private static final String HEADER_ACCEPT_ENCODING = "Accept-Encoding";
+
     private static final String HEADER_CONTENT_ENCODING = "Content-Encoding";
+
     private static final String HEADER_CONTENT_TYPE = "Content-Type";
+
     private static final String HEADER_GZIP_VALUE = "gzip";
+
     private static final String HEADER_JSON_VALUE = "json";
 
     private final EurekaServerConfig serverConfig;
+
     private final PeerAwareInstanceRegistry registry;
+
     private final ResponseCache responseCache;
 
     @Inject
@@ -87,9 +92,7 @@ public class ApplicationsResource {
      * @return information about a particular application.
      */
     @Path("{appId}")
-    public ApplicationResource getApplicationResource(
-            @PathParam("version") String version,
-            @PathParam("appId") String appId) {
+    public ApplicationResource getApplicationResource(@PathParam("version") String version, @PathParam("appId") String appId) {
         CurrentRequestVersion.set(Version.toEnum(version));
         try {
             return new ApplicationResource(appId, serverConfig, registry);
@@ -114,23 +117,17 @@ public class ApplicationsResource {
      *         from the {@link AbstractInstanceRegistry}.
      */
     @GET
-    public Response getContainers(@PathParam("version") String version,
-                                  @HeaderParam(HEADER_ACCEPT) String acceptHeader,
-                                  @HeaderParam(HEADER_ACCEPT_ENCODING) String acceptEncoding,
-                                  @HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept,
-                                  @Context UriInfo uriInfo,
-                                  @Nullable @QueryParam("regions") String regionsStr) {
-
+    public Response getContainers(@PathParam("version") String version, @HeaderParam(HEADER_ACCEPT) String acceptHeader, @HeaderParam(HEADER_ACCEPT_ENCODING) String acceptEncoding, @HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept, @Context UriInfo uriInfo, @Nullable @QueryParam("regions") String regionsStr) {
         boolean isRemoteRegionRequested = null != regionsStr && !regionsStr.isEmpty();
         String[] regions = null;
         if (!isRemoteRegionRequested) {
             EurekaMonitors.GET_ALL.increment();
         } else {
             regions = regionsStr.toLowerCase().split(",");
-            Arrays.sort(regions); // So we don't have different caches for same regions queried in different order.
+            // So we don't have different caches for same regions queried in different order.
+            Arrays.sort(regions);
             EurekaMonitors.GET_ALL_WITH_REMOTE_REGIONS.increment();
         }
-
         // Check if the server allows the access to the registry. The server can
         // restrict access if it is not
         // ready to serve traffic depending on various reasons.
@@ -144,21 +141,12 @@ public class ApplicationsResource {
             keyType = Key.KeyType.XML;
             returnMediaType = MediaType.APPLICATION_XML;
         }
-
-        Key cacheKey = new Key(Key.EntityType.Application,
-                ResponseCacheImpl.ALL_APPS,
-                keyType, CurrentRequestVersion.get(), EurekaAccept.fromString(eurekaAccept), regions
-        );
-
+        Key cacheKey = new Key(Key.EntityType.Application, ResponseCacheImpl.ALL_APPS, keyType, CurrentRequestVersion.get(), EurekaAccept.fromString(eurekaAccept), regions);
         Response response;
         if (acceptEncoding != null && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
-            response = Response.ok(responseCache.getGZIP(cacheKey))
-                    .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE)
-                    .header(HEADER_CONTENT_TYPE, returnMediaType)
-                    .build();
+            response = Response.ok(responseCache.getGZIP(cacheKey)).header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE).header(HEADER_CONTENT_TYPE, returnMediaType).build();
         } else {
-            response = Response.ok(responseCache.get(cacheKey))
-                    .build();
+            response = Response.ok(responseCache.get(cacheKey)).build();
         }
         CurrentRequestVersion.remove();
         return response;
@@ -194,30 +182,22 @@ public class ApplicationsResource {
      */
     @Path("delta")
     @GET
-    public Response getContainerDifferential(
-            @PathParam("version") String version,
-            @HeaderParam(HEADER_ACCEPT) String acceptHeader,
-            @HeaderParam(HEADER_ACCEPT_ENCODING) String acceptEncoding,
-            @HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept,
-            @Context UriInfo uriInfo, @Nullable @QueryParam("regions") String regionsStr) {
-
+    public Response getContainerDifferential(@PathParam("version") String version, @HeaderParam(HEADER_ACCEPT) String acceptHeader, @HeaderParam(HEADER_ACCEPT_ENCODING) String acceptEncoding, @HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept, @Context UriInfo uriInfo, @Nullable @QueryParam("regions") String regionsStr) {
         boolean isRemoteRegionRequested = null != regionsStr && !regionsStr.isEmpty();
-
         // If the delta flag is disabled in discovery or if the lease expiration
         // has been disabled, redirect clients to get all instances
         if ((serverConfig.shouldDisableDelta()) || (!registry.shouldAllowAccess(isRemoteRegionRequested))) {
             return Response.status(Status.FORBIDDEN).build();
         }
-
         String[] regions = null;
         if (!isRemoteRegionRequested) {
             EurekaMonitors.GET_ALL_DELTA.increment();
         } else {
             regions = regionsStr.toLowerCase().split(",");
-            Arrays.sort(regions); // So we don't have different caches for same regions queried in different order.
+            // So we don't have different caches for same regions queried in different order.
+            Arrays.sort(regions);
             EurekaMonitors.GET_ALL_DELTA_WITH_REMOTE_REGIONS.increment();
         }
-
         CurrentRequestVersion.set(Version.toEnum(version));
         KeyType keyType = Key.KeyType.JSON;
         String returnMediaType = MediaType.APPLICATION_JSON;
@@ -225,23 +205,13 @@ public class ApplicationsResource {
             keyType = Key.KeyType.XML;
             returnMediaType = MediaType.APPLICATION_XML;
         }
-
-        Key cacheKey = new Key(Key.EntityType.Application,
-                ResponseCacheImpl.ALL_APPS_DELTA,
-                keyType, CurrentRequestVersion.get(), EurekaAccept.fromString(eurekaAccept), regions
-        );
-
+        Key cacheKey = new Key(Key.EntityType.Application, ResponseCacheImpl.ALL_APPS_DELTA, keyType, CurrentRequestVersion.get(), EurekaAccept.fromString(eurekaAccept), regions);
         final Response response;
-
         if (acceptEncoding != null && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
-             response = Response.ok(responseCache.getGZIP(cacheKey))
-                    .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE)
-                    .header(HEADER_CONTENT_TYPE, returnMediaType)
-                    .build();
+            response = Response.ok(responseCache.getGZIP(cacheKey)).header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE).header(HEADER_CONTENT_TYPE, returnMediaType).build();
         } else {
             response = Response.ok(responseCache.get(cacheKey)).build();
         }
-
         CurrentRequestVersion.remove();
         return response;
     }

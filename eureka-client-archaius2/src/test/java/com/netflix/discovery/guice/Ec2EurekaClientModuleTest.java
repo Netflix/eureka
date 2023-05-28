@@ -30,32 +30,15 @@ public class Ec2EurekaClientModuleTest {
 
     @Before
     public void setUp() throws Exception {
-        injector = InjectorBuilder
-                .fromModules(
-                        new ArchaiusModule() {
-                            @Override
-                            protected void configureArchaius() {
-                                bindApplicationConfigurationOverride().toInstance(
-                                        MapConfig.builder()
-                                                .put("eureka.region", "default")
-                                                .put("eureka.shouldFetchRegistry", "false")
-                                                .put("eureka.registration.enabled", "false")
-                                                .put("eureka.serviceUrl.default", "http://localhost:8080/eureka/v2")
-                                                .put("eureka.vipAddress", "some-thing")
-                                                .put("eureka.validateInstanceId", "false")
-                                                .put("eureka.mt.num_retries", 0)
-                                                .put("eureka.mt.connect_timeout", 1000)
-                                                .put("eureka.shouldInitAsEc2", true)
-                                                 // this override is required to force EC2 env as out tests may not
-                                                 // be executed in EC2
-                                                .put("eureka.instanceDeploymentEnvironment", "ec2")
-                                                .build()
-                                );
-                            }
-                        },
-                        new EurekaClientModule()
-                )
-                .createInjector();
+        injector = InjectorBuilder.fromModules(new ArchaiusModule() {
+
+            @Override
+            protected void configureArchaius() {
+                bindApplicationConfigurationOverride().toInstance(MapConfig.builder().put("eureka.region", "default").put("eureka.shouldFetchRegistry", "false").put("eureka.registration.enabled", "false").put("eureka.serviceUrl.default", "http://localhost:8080/eureka/v2").put("eureka.vipAddress", "some-thing").put("eureka.validateInstanceId", "false").put("eureka.mt.num_retries", 0).put("eureka.mt.connect_timeout", 1000).put("eureka.shouldInitAsEc2", true).// this override is required to force EC2 env as out tests may not
+                // be executed in EC2
+                put("eureka.instanceDeploymentEnvironment", "ec2").build());
+            }
+        }, new EurekaClientModule()).createInjector();
     }
 
     @After
@@ -70,24 +53,18 @@ public class Ec2EurekaClientModuleTest {
     public void testDI() {
         InstanceInfo instanceInfo = injector.getInstance(InstanceInfo.class);
         Assert.assertEquals(ApplicationInfoManager.getInstance().getInfo(), instanceInfo);
-
         VipAddressResolver vipAddressResolver = injector.getInstance(VipAddressResolver.class);
         Assert.assertTrue(vipAddressResolver instanceof Archaius2VipAddressResolver);
-
         EurekaClient eurekaClient = injector.getInstance(EurekaClient.class);
         DiscoveryClient discoveryClient = injector.getInstance(DiscoveryClient.class);
-
         Assert.assertEquals(DiscoveryManager.getInstance().getEurekaClient(), eurekaClient);
         Assert.assertEquals(DiscoveryManager.getInstance().getDiscoveryClient(), discoveryClient);
         Assert.assertEquals(eurekaClient, discoveryClient);
-
         EurekaClientConfig eurekaClientConfig = injector.getInstance(EurekaClientConfig.class);
         Assert.assertEquals(DiscoveryManager.getInstance().getEurekaClientConfig(), eurekaClientConfig);
-
         EurekaInstanceConfig eurekaInstanceConfig = injector.getInstance(EurekaInstanceConfig.class);
         Assert.assertEquals(DiscoveryManager.getInstance().getEurekaInstanceConfig(), eurekaInstanceConfig);
         Assert.assertTrue(eurekaInstanceConfig instanceof Ec2EurekaArchaius2InstanceConfig);
-
         ApplicationInfoManager applicationInfoManager = injector.getInstance(ApplicationInfoManager.class);
         InstanceInfo myInfo = applicationInfoManager.getInfo();
         Assert.assertTrue(myInfo.getDataCenterInfo() instanceof AmazonInfo);

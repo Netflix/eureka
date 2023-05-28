@@ -13,14 +13,12 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.appinfo;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.discovery.StatusChangeEvent;
@@ -40,15 +38,15 @@ import org.slf4j.LoggerFactory;
  * {@link AbstractInstanceConfig}.
  * </p>
  *
- *
  * @author Karthik Ranganathan, Greg Kim
- *
  */
 @Singleton
 public class ApplicationInfoManager {
+
     private static final Logger logger = LoggerFactory.getLogger(ApplicationInfoManager.class);
 
     private static final InstanceStatusMapper NO_OP_MAPPER = new InstanceStatusMapper() {
+
         @Override
         public InstanceStatus map(InstanceStatus prev) {
             return prev;
@@ -58,12 +56,15 @@ public class ApplicationInfoManager {
     private static ApplicationInfoManager instance = new ApplicationInfoManager(null, null, null);
 
     protected final Map<String, StatusChangeListener> listeners;
+
     private final InstanceStatusMapper instanceStatusMapper;
 
     private InstanceInfo instanceInfo;
+
     private EurekaInstanceConfig config;
 
     public static class OptionalArgs {
+
         private InstanceStatusMapper instanceStatusMapper;
 
         @com.google.inject.Inject(optional = true)
@@ -90,12 +91,12 @@ public class ApplicationInfoManager {
         } else {
             this.instanceStatusMapper = NO_OP_MAPPER;
         }
-
         // Hack to allow for getInstance() to use the DI'd ApplicationInfoManager
         instance = this;
     }
 
-    public ApplicationInfoManager(EurekaInstanceConfig config, /* nullable */ OptionalArgs optionalArgs) {
+    public ApplicationInfoManager(EurekaInstanceConfig config, /* nullable */
+    OptionalArgs optionalArgs) {
         this(config, new EurekaConfigBasedInstanceInfoProvider(config).get(), optionalArgs);
     }
 
@@ -169,7 +170,6 @@ public class ApplicationInfoManager {
         if (next == null) {
             return;
         }
-
         InstanceStatus prev = instanceInfo.setStatus(next);
         if (prev != null) {
             for (StatusChangeListener listener : listeners.values()) {
@@ -199,12 +199,10 @@ public class ApplicationInfoManager {
      */
     public void refreshDataCenterInfoIfRequired() {
         String existingAddress = instanceInfo.getHostName();
-
         String existingSpotInstanceAction = null;
         if (instanceInfo.getDataCenterInfo() instanceof AmazonInfo) {
             existingSpotInstanceAction = ((AmazonInfo) instanceInfo.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.spotInstanceAction);
         }
-
         String newAddress;
         if (config instanceof RefreshableInstanceConfig) {
             // Refresh data center info, and return up to date address
@@ -213,21 +211,17 @@ public class ApplicationInfoManager {
             newAddress = config.getHostName(true);
         }
         String newIp = config.getIpAddress();
-
         if (newAddress != null && !newAddress.equals(existingAddress)) {
             logger.warn("The address changed from : {} => {}", existingAddress, newAddress);
             updateInstanceInfo(newAddress, newIp);
         }
-
         if (config.getDataCenterInfo() instanceof AmazonInfo) {
             String newSpotInstanceAction = ((AmazonInfo) config.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.spotInstanceAction);
             if (newSpotInstanceAction != null && !newSpotInstanceAction.equals(existingSpotInstanceAction)) {
-                logger.info(String.format("The spot instance termination action changed from: %s => %s",
-                        existingSpotInstanceAction,
-                        newSpotInstanceAction));
-                updateInstanceInfo(null , null );
+                logger.info(String.format("The spot instance termination action changed from: %s => %s", existingSpotInstanceAction, newSpotInstanceAction));
+                updateInstanceInfo(null, null);
             }
-        }        
+        }
     }
 
     private void updateInstanceInfo(String newAddress, String newIp) {
@@ -253,16 +247,14 @@ public class ApplicationInfoManager {
         int currentLeaseDuration = config.getLeaseExpirationDurationInSeconds();
         int currentLeaseRenewal = config.getLeaseRenewalIntervalInSeconds();
         if (leaseInfo.getDurationInSecs() != currentLeaseDuration || leaseInfo.getRenewalIntervalInSecs() != currentLeaseRenewal) {
-            LeaseInfo newLeaseInfo = LeaseInfo.Builder.newBuilder()
-                    .setRenewalIntervalInSecs(currentLeaseRenewal)
-                    .setDurationInSecs(currentLeaseDuration)
-                    .build();
+            LeaseInfo newLeaseInfo = LeaseInfo.Builder.newBuilder().setRenewalIntervalInSecs(currentLeaseRenewal).setDurationInSecs(currentLeaseDuration).build();
             instanceInfo.setLeaseInfo(newLeaseInfo);
             instanceInfo.setIsDirty();
         }
     }
 
     public static interface StatusChangeListener {
+
         String getId();
 
         void notify(StatusChangeEvent statusChangeEvent);
@@ -278,5 +270,4 @@ public class ApplicationInfoManager {
          */
         InstanceStatus map(InstanceStatus prev);
     }
-
 }

@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 import com.google.common.collect.Lists;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.ApplicationInfoManager;
@@ -29,7 +28,6 @@ import com.netflix.eureka.resources.ServerCodecs;
 import com.netflix.eureka.test.async.executor.SingleEvent;
 import org.junit.After;
 import org.junit.Before;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,22 +41,35 @@ import static org.mockito.Mockito.spy;
 public class AbstractTester {
 
     public static final String REMOTE_REGION_NAME = "us-east-1";
+
     public static final String REMOTE_REGION_APP_NAME = "MYAPP";
+
     public static final String REMOTE_REGION_INSTANCE_1_HOSTNAME = "blah";
+
     public static final String REMOTE_REGION_INSTANCE_2_HOSTNAME = "blah2";
+
     public static final String LOCAL_REGION_APP_NAME = "MYLOCAPP";
+
     public static final String LOCAL_REGION_INSTANCE_1_HOSTNAME = "blahloc";
+
     public static final String LOCAL_REGION_INSTANCE_2_HOSTNAME = "blahloc2";
+
     public static final String REMOTE_ZONE = "us-east-1c";
 
     protected final List<Pair<String, String>> registeredApps = new ArrayList<>();
+
     protected final Map<String, Application> remoteRegionApps = new HashMap<>();
+
     protected final Map<String, Application> remoteRegionAppsDelta = new HashMap<>();
 
     protected MockRemoteEurekaServer mockRemoteEurekaServer;
+
     protected EurekaServerConfig serverConfig;
+
     protected EurekaServerContext serverContext;
+
     protected EurekaClient client;
+
     protected PeerAwareInstanceRegistryImpl registry;
 
     @Before
@@ -70,14 +81,10 @@ public class AbstractTester {
         ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegion.registryFetchIntervalInSeconds", "5");
         ConfigurationManager.getConfigInstance().setProperty("eureka.renewalThresholdUpdateIntervalMs", "5000");
         ConfigurationManager.getConfigInstance().setProperty("eureka.evictionIntervalTimerInMs", "10000");
-
         populateRemoteRegistryAtStartup();
         mockRemoteEurekaServer = newMockRemoteServer();
         mockRemoteEurekaServer.start();
-
-        ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegionUrlsWithName",
-                REMOTE_REGION_NAME + ";http://localhost:" + mockRemoteEurekaServer.getPort() + MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
-
+        ConfigurationManager.getConfigInstance().setProperty("eureka.remoteRegionUrlsWithName", REMOTE_REGION_NAME + ";http://localhost:" + mockRemoteEurekaServer.getPort() + MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
         serverConfig = spy(new DefaultEurekaServerConfig());
         InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
         builder.setIPAddr("10.10.101.00");
@@ -85,33 +92,21 @@ public class AbstractTester {
         builder.setAppName("EurekaTestApp-" + UUID.randomUUID());
         builder.setLeaseInfo(LeaseInfo.Builder.newBuilder().build());
         builder.setDataCenterInfo(getDataCenterInfo());
-
-        ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
-                "http://localhost:" + mockRemoteEurekaServer.getPort() + MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
-
+        ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default", "http://localhost:" + mockRemoteEurekaServer.getPort() + MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
         DefaultEurekaClientConfig clientConfig = new DefaultEurekaClientConfig();
         // setup config in advance, used in initialize converter
         ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), builder.build());
-
         client = new DiscoveryClient(applicationInfoManager, clientConfig);
-
         ServerCodecs serverCodecs = new DefaultServerCodecs(serverConfig);
         registry = makePeerAwareInstanceRegistry(serverConfig, clientConfig, serverCodecs, client);
-        serverContext = new DefaultEurekaServerContext(
-                serverConfig,
-                serverCodecs,
-                registry,
-                mock(PeerEurekaNodes.class),
-                applicationInfoManager
-        );
-
+        serverContext = new DefaultEurekaServerContext(serverConfig, serverCodecs, registry, mock(PeerEurekaNodes.class), applicationInfoManager);
         serverContext.initialize();
-
         registry.openForTraffic(applicationInfoManager, 1);
     }
 
     protected DataCenterInfo getDataCenterInfo() {
         return new DataCenterInfo() {
+
             @Override
             public Name getName() {
                 return Name.MyOwn;
@@ -119,15 +114,13 @@ public class AbstractTester {
         };
     }
 
-    protected PeerAwareInstanceRegistryImpl makePeerAwareInstanceRegistry(EurekaServerConfig serverConfig,
-                                                                      EurekaClientConfig clientConfig,
-                                                                      ServerCodecs serverCodecs,
-                                                                      EurekaClient eurekaClient) {
+    protected PeerAwareInstanceRegistryImpl makePeerAwareInstanceRegistry(EurekaServerConfig serverConfig, EurekaClientConfig clientConfig, ServerCodecs serverCodecs, EurekaClient eurekaClient) {
         return new TestPeerAwareInstanceRegistry(serverConfig, clientConfig, serverCodecs, eurekaClient);
     }
 
     protected MockRemoteEurekaServer newMockRemoteServer() {
-        return new MockRemoteEurekaServer(0 /* use ephemeral */, remoteRegionApps, remoteRegionAppsDelta);
+        return new MockRemoteEurekaServer(0, /* use ephemeral */
+        remoteRegionApps, remoteRegionAppsDelta);
     }
 
     @After
@@ -145,18 +138,11 @@ public class AbstractTester {
     }
 
     private static Application createRemoteApps() {
-        Application myapp = new Application(REMOTE_REGION_APP_NAME);
-        InstanceInfo instanceInfo = createRemoteInstance(REMOTE_REGION_INSTANCE_1_HOSTNAME);
-        //instanceInfo.setActionType(InstanceInfo.ActionType.MODIFIED);
-        myapp.addInstance(instanceInfo);
-        return myapp;
+        return createRemoteAppInstance();
     }
 
     private static Application createRemoteAppsDelta() {
-        Application myapp = new Application(REMOTE_REGION_APP_NAME);
-        InstanceInfo instanceInfo = createRemoteInstance(REMOTE_REGION_INSTANCE_1_HOSTNAME);
-        myapp.addInstance(instanceInfo);
-        return myapp;
+        return createRemoteAppInstance();
     }
 
     protected static InstanceInfo createRemoteInstance(String instanceHostName) {
@@ -226,10 +212,7 @@ public class AbstractTester {
 
     private static class TestPeerAwareInstanceRegistry extends PeerAwareInstanceRegistryImpl {
 
-        public TestPeerAwareInstanceRegistry(EurekaServerConfig serverConfig,
-                                             EurekaClientConfig clientConfig,
-                                             ServerCodecs serverCodecs,
-                                             EurekaClient eurekaClient) {
+        public TestPeerAwareInstanceRegistry(EurekaServerConfig serverConfig, EurekaClientConfig clientConfig, ServerCodecs serverCodecs, EurekaClient eurekaClient) {
             super(serverConfig, clientConfig, serverCodecs, eurekaClient);
         }
 
@@ -255,7 +238,6 @@ public class AbstractTester {
         registeredApps.add(new Pair<String, String>(LOCAL_REGION_APP_NAME, remoteInstance.getId()));
     }
 
-
     /**
      * Send renewal request to Eureka server to renew lease for 45 instances.
      *
@@ -263,11 +245,11 @@ public class AbstractTester {
      */
     protected SingleEvent.Action renewPartOfTheWholeInstancesAction() {
         return new SingleEvent.Action() {
+
             @Override
             public void execute() {
                 for (int j = 0; j < 45; j++) {
-                    registry.renew(LOCAL_REGION_APP_NAME,
-                        LOCAL_REGION_INSTANCE_1_HOSTNAME + j, false);
+                    registry.renew(LOCAL_REGION_APP_NAME, LOCAL_REGION_INSTANCE_1_HOSTNAME + j, false);
                 }
             }
         };
@@ -281,9 +263,7 @@ public class AbstractTester {
      * @return single event.
      */
     protected SingleEvent buildEvent(int intervalTimeInSecs, SingleEvent.Action action) {
-        return SingleEvent.Builder.newBuilder()
-            .withIntervalTimeInMs(intervalTimeInSecs * 1000)
-            .withAction(action).build();
+        return SingleEvent.Builder.newBuilder().withIntervalTimeInMs(intervalTimeInSecs * 1000).withAction(action).build();
     }
 
     /**
@@ -297,10 +277,16 @@ public class AbstractTester {
     protected List<SingleEvent> buildEvents(int intervalTimeInSecs, int eventCount, SingleEvent.Action action) {
         List<SingleEvent> result = Lists.newArrayListWithCapacity(eventCount);
         for (int i = 0; i < eventCount; i++) {
-            result.add(SingleEvent.Builder.newBuilder()
-                .withIntervalTimeInMs(intervalTimeInSecs * 1000)
-                .withAction(action).build());
+            result.add(SingleEvent.Builder.newBuilder().withIntervalTimeInMs(intervalTimeInSecs * 1000).withAction(action).build());
         }
         return result;
+    }
+
+    private static Application createRemoteAppInstance() {
+        Application myapp = new Application(REMOTE_REGION_APP_NAME);
+        InstanceInfo instanceInfo = createRemoteInstance(REMOTE_REGION_INSTANCE_1_HOSTNAME);
+        //instanceInfo.setActionType(InstanceInfo.ActionType.MODIFIED);
+        myapp.addInstance(instanceInfo);
+        return myapp;
     }
 }

@@ -25,7 +25,6 @@ import com.netflix.discovery.shared.resolver.ResolverUtils;
 import com.netflix.discovery.shared.transport.EurekaArchaius2TransportConfig;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import com.netflix.discovery.shared.transport.jersey.Jersey1DiscoveryClientOptionalArgs;
-
 import javax.inject.Named;
 import javax.inject.Singleton;
 
@@ -33,6 +32,7 @@ final class InternalEurekaClientModule extends AbstractModule {
 
     @Singleton
     static class ModuleConfig {
+
         @Inject
         Config config;
 
@@ -56,9 +56,7 @@ final class InternalEurekaClientModule extends AbstractModule {
         }
 
         EurekaInstanceConfigFactory getInstanceConfigProvider() {
-            return instanceConfigFactory == null
-                    ? new CompositeInstanceConfigFactory(config, getInstanceConfigNamespace())
-                    : instanceConfigFactory;
+            return instanceConfigFactory == null ? new CompositeInstanceConfigFactory(config, getInstanceConfigNamespace()) : instanceConfigFactory;
         }
     }
 
@@ -66,15 +64,11 @@ final class InternalEurekaClientModule extends AbstractModule {
     protected void configure() {
         // require binding for Config from archaius2
         requireBinding(Config.class);
-
         bind(ApplicationInfoManager.class).asEagerSingleton();
-
         bind(VipAddressResolver.class).to(Archaius2VipAddressResolver.class);
         bind(InstanceInfo.class).toProvider(EurekaConfigBasedInstanceInfoProvider.class);
         bind(EurekaClient.class).to(DiscoveryClient.class);
         bind(EndpointRandomizer.class).toInstance(ResolverUtils::randomize);
-
-
         // Default to the jersey1 discovery client optional args
         bind(AbstractDiscoveryClientOptionalArgs.class).to(Jersey1DiscoveryClientOptionalArgs.class).in(Scopes.SINGLETON);
     }
@@ -107,10 +101,8 @@ final class InternalEurekaClientModule extends AbstractModule {
         return getClass().hashCode();
     }
 
-
     // need this internal class to ensure config file loading happens
     @ConfigurationSource(CommonConstants.CONFIG_FILE_NAME)
     private static class EurekaConfigLoader {
-
     }
 }

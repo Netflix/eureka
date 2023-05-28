@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import com.fasterxml.jackson.annotation.JsonRootName;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.Annotated;
@@ -23,9 +22,7 @@ import com.netflix.discovery.converters.jackson.mixin.MiniInstanceInfoMixIn;
  */
 public abstract class AbstractEurekaJacksonCodec {
 
-    protected static final Set<String> MINI_AMAZON_INFO_INCLUDE_KEYS = new HashSet<>(
-            Arrays.asList("instance-id", "public-ipv4", "public-hostname", "local-ipv4", "availability-zone")
-    );
+    protected static final Set<String> MINI_AMAZON_INFO_INCLUDE_KEYS = new HashSet<>(Arrays.asList("instance-id", "public-ipv4", "public-hostname", "local-ipv4", "availability-zone"));
 
     public abstract <T> ObjectMapper getObjectMapper(Class<T> type);
 
@@ -42,6 +39,7 @@ public abstract class AbstractEurekaJacksonCodec {
         SimpleFilterProvider filters = new SimpleFilterProvider();
         final String filterName = "exclude-amazon-info-entries";
         mapper.setAnnotationIntrospector(new JacksonAnnotationIntrospector() {
+
             @Override
             public Object findFilterId(Annotated a) {
                 if (Map.class.isAssignableFrom(a.getRawType())) {
@@ -51,6 +49,7 @@ public abstract class AbstractEurekaJacksonCodec {
             }
         });
         filters.addFilter(filterName, new SimpleBeanPropertyFilter() {
+
             @Override
             protected boolean include(BeanPropertyWriter writer) {
                 return true;

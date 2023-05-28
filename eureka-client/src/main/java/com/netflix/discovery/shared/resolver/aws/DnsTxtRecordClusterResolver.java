@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.resolver.aws;
 
 import javax.naming.NamingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import com.netflix.discovery.endpoint.DnsResolver;
 import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.ClusterResolverException;
@@ -34,7 +32,6 @@ import org.slf4j.LoggerFactory;
  * server pools shall be provided (either CNAMEs or A records).
  * If no TXT record is found at the provided address, the resolver will add 'txt.' suffix to the address, and try
  * to resolve that address.
- *
  *
  * <h3>Example</h3>
  * Lets assume we have a service with root domain myservice.net, and a deployment in AWS us-east-1 on all three zones.
@@ -80,10 +77,15 @@ public class DnsTxtRecordClusterResolver implements ClusterResolver<AwsEndpoint>
     private static final Logger logger = LoggerFactory.getLogger(DnsTxtRecordClusterResolver.class);
 
     private final String region;
+
     private final String rootClusterDNS;
+
     private final boolean extractZoneFromDNS;
+
     private final int port;
+
     private final boolean isSecure;
+
     private final String relativeUri;
 
     /**
@@ -111,7 +113,6 @@ public class DnsTxtRecordClusterResolver implements ClusterResolver<AwsEndpoint>
     public List<AwsEndpoint> getClusterEndpoints() {
         List<AwsEndpoint> eurekaEndpoints = resolve(region, rootClusterDNS, extractZoneFromDNS, port, isSecure, relativeUri);
         logger.debug("Resolved {} to {}", rootClusterDNS, eurekaEndpoints);
-
         return eurekaEndpoints;
     }
 

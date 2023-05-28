@@ -1,24 +1,21 @@
 package com.netflix.discovery.shared.transport;
 
 import com.netflix.config.DynamicPropertyFactory;
-
 import static com.netflix.discovery.shared.transport.PropertyBasedTransportConfigConstants.*;
 
 /**
  * @author David Liu
  */
 public class DefaultEurekaTransportConfig implements EurekaTransportConfig {
+
     private static final String SUB_NAMESPACE = TRANSPORT_CONFIG_SUB_NAMESPACE + ".";
 
     private final String namespace;
+
     private final DynamicPropertyFactory configInstance;
 
     public DefaultEurekaTransportConfig(String parentNamespace, DynamicPropertyFactory configInstance) {
-        this.namespace = parentNamespace == null
-                ? SUB_NAMESPACE
-                : (parentNamespace.endsWith(".")
-                    ? parentNamespace + SUB_NAMESPACE
-                    : parentNamespace + "." + SUB_NAMESPACE);
+        this.namespace = parentNamespace == null ? SUB_NAMESPACE : (parentNamespace.endsWith(".") ? parentNamespace + SUB_NAMESPACE : parentNamespace + "." + SUB_NAMESPACE);
         this.configInstance = configInstance;
     }
 

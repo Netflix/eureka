@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.resolver;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
-
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
@@ -50,10 +48,7 @@ public class LegacyClusterResolver implements ClusterResolver<AwsEndpoint> {
     private final ClusterResolver<AwsEndpoint> delegate;
 
     public LegacyClusterResolver(EurekaClientConfig clientConfig, String myZone, EndpointRandomizer randomizer) {
-        this.delegate = new ReloadingClusterResolver<>(
-                new LegacyClusterResolverFactory(clientConfig, myZone, randomizer),
-                clientConfig.getEurekaServiceUrlPollIntervalSeconds() * 1000
-        );
+        this.delegate = new ReloadingClusterResolver<>(new LegacyClusterResolverFactory(clientConfig, myZone, randomizer), clientConfig.getEurekaServiceUrlPollIntervalSeconds() * 1000);
     }
 
     @Override
@@ -69,8 +64,11 @@ public class LegacyClusterResolver implements ClusterResolver<AwsEndpoint> {
     static class LegacyClusterResolverFactory implements ClusterResolverFactory<AwsEndpoint> {
 
         private final EurekaClientConfig clientConfig;
+
         private final String myRegion;
+
         private final String myZone;
+
         private final EndpointRandomizer randomizer;
 
         LegacyClusterResolverFactory(EurekaClientConfig clientConfig, String myZone, EndpointRandomizer randomizer) {
@@ -85,20 +83,12 @@ public class LegacyClusterResolver implements ClusterResolver<AwsEndpoint> {
             ClusterResolver<AwsEndpoint> newResolver;
             if (clientConfig.shouldUseDnsForFetchingServiceUrls()) {
                 String discoveryDnsName = "txt." + myRegion + '.' + clientConfig.getEurekaServerDNSName();
-                newResolver = new DnsTxtRecordClusterResolver(
-                        myRegion,
-                        discoveryDnsName,
-                        true,
-                        Integer.parseInt(clientConfig.getEurekaServerPort()),
-                        false,
-                        clientConfig.getEurekaServerURLContext()
-                );
+                newResolver = new DnsTxtRecordClusterResolver(myRegion, discoveryDnsName, true, Integer.parseInt(clientConfig.getEurekaServerPort()), false, clientConfig.getEurekaServerURLContext());
                 newResolver = new ZoneAffinityClusterResolver(newResolver, myZone, clientConfig.shouldPreferSameZoneEureka(), randomizer);
             } else {
                 // FIXME Not randomized in the EndpointUtils.getServiceUrlsFromConfig, and no zone info to do this here
                 newResolver = new StaticClusterResolver<>(myRegion, createEurekaEndpointsFromConfig());
             }
-
             return newResolver;
         }
 
@@ -108,14 +98,7 @@ public class LegacyClusterResolver implements ClusterResolver<AwsEndpoint> {
             for (String serviceUrl : serviceUrls) {
                 try {
                     URI serviceURI = new URI(serviceUrl);
-                    endpoints.add(new AwsEndpoint(
-                            serviceURI.getHost(),
-                            serviceURI.getPort(),
-                            "https".equalsIgnoreCase(serviceURI.getSchemeSpecificPart()),
-                            serviceURI.getPath(),
-                            myRegion,
-                            myZone
-                    ));
+                    endpoints.add(new AwsEndpoint(serviceURI.getHost(), serviceURI.getPort(), "https".equalsIgnoreCase(serviceURI.getSchemeSpecificPart()), serviceURI.getPath(), myRegion, myZone));
                 } catch (URISyntaxException ignore) {
                     logger.warn("Invalid eureka server URI: {}; removing from the server pool", serviceUrl);
                 }

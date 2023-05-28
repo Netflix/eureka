@@ -21,9 +21,9 @@ final class EurekaJacksonJsonModifiers {
 
     public static BeanSerializerModifier createJsonSerializerModifier(final KeyFormatter keyFormatter, final boolean compactMode) {
         return new BeanSerializerModifier() {
+
             @Override
-            public JsonSerializer<?> modifySerializer(SerializationConfig config,
-                                                      BeanDescription beanDesc, JsonSerializer<?> serializer) {
+            public JsonSerializer<?> modifySerializer(SerializationConfig config, BeanDescription beanDesc, JsonSerializer<?> serializer) {
                 if (beanDesc.getBeanClass().isAssignableFrom(Applications.class)) {
                     return new ApplicationsJsonBeanSerializer((BeanSerializerBase) serializer, keyFormatter);
                 }

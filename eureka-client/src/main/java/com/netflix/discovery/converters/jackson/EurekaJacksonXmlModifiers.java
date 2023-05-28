@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.converters.jackson;
 
 import com.fasterxml.jackson.databind.BeanDescription;
@@ -37,9 +36,9 @@ public final class EurekaJacksonXmlModifiers {
 
     public static BeanSerializerModifier createXmlSerializerModifier(final KeyFormatter keyFormatter) {
         return new BeanSerializerModifier() {
+
             @Override
-            public JsonSerializer<?> modifySerializer(SerializationConfig config,
-                                                      BeanDescription beanDesc, JsonSerializer<?> serializer) {
+            public JsonSerializer<?> modifySerializer(SerializationConfig config, BeanDescription beanDesc, JsonSerializer<?> serializer) {
                 if (beanDesc.getBeanClass().isAssignableFrom(Applications.class)) {
                     return new ApplicationsXmlBeanSerializer((BeanSerializerBase) serializer, keyFormatter);
                 }

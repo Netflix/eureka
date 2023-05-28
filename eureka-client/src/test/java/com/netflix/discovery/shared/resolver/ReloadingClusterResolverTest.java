@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.resolver;
 
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
 import com.netflix.discovery.shared.resolver.aws.SampleCluster;
 import org.junit.Test;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -41,15 +38,12 @@ public class ReloadingClusterResolverTest {
     public void testDataAreReloadedPeriodically() throws Exception {
         List<AwsEndpoint> firstEndpointList = SampleCluster.UsEast1a.build();
         factory.setEndpoints(firstEndpointList);
-
         // First endpoint list is loaded eagerly
         resolver = new ReloadingClusterResolver<>(factory, 1);
         assertThat(resolver.getClusterEndpoints(), is(equalTo(firstEndpointList)));
-
         // Swap with a different one
         List<AwsEndpoint> secondEndpointList = SampleCluster.UsEast1b.build();
         factory.setEndpoints(secondEndpointList);
-
         assertThat(awaitUpdate(resolver, secondEndpointList), is(true));
     }
 
@@ -57,22 +51,17 @@ public class ReloadingClusterResolverTest {
     public void testIdenticalListsDoNotCauseReload() throws Exception {
         List<AwsEndpoint> firstEndpointList = SampleCluster.UsEast1a.build();
         factory.setEndpoints(firstEndpointList);
-
         // First endpoint list is loaded eagerly
         resolver = new ReloadingClusterResolver(factory, 1);
         assertThat(resolver.getClusterEndpoints(), is(equalTo(firstEndpointList)));
-
         // Now inject the same one but in the different order
         List<AwsEndpoint> snapshot = resolver.getClusterEndpoints();
         factory.setEndpoints(ResolverUtils.randomize(firstEndpointList));
         Thread.sleep(5);
-
         assertThat(resolver.getClusterEndpoints(), is(equalTo(snapshot)));
-
         // Now inject different list
         List<AwsEndpoint> secondEndpointList = SampleCluster.UsEast1b.build();
         factory.setEndpoints(secondEndpointList);
-
         assertThat(awaitUpdate(resolver, secondEndpointList), is(true));
     }
 

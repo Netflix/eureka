@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.eureka;
 
 import org.junit.Before;
@@ -21,17 +20,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.util.Enumeration;
-
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
@@ -42,6 +38,7 @@ import static org.mockito.Mockito.*;
 public class GzipEncodingEnforcingFilterTest {
 
     private static final String ACCEPT_ENCODING_HEADER = "Accept-Encoding";
+
     @Mock
     private HttpServletRequest request;
 
@@ -59,6 +56,7 @@ public class GzipEncodingEnforcingFilterTest {
     public void setUp() throws Exception {
         filter = new GzipEncodingEnforcingFilter();
         filterChain = new FilterChain() {
+
             @Override
             public void doFilter(ServletRequest req, ServletResponse response) throws IOException, ServletException {
                 filteredRequest = (HttpServletRequest) req;
@@ -91,6 +89,7 @@ public class GzipEncodingEnforcingFilterTest {
         noneGzipRequest();
         when(request.getHeader("Test")).thenReturn("ok");
         when(request.getHeaders("Test")).thenReturn(new Enumeration() {
+
             private int c = 0;
 
             @Override

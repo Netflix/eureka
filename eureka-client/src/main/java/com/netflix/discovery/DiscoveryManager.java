@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.discovery;
 
 import com.netflix.appinfo.ApplicationInfoManager;
@@ -36,16 +35,20 @@ import org.slf4j.LoggerFactory;
  * <em>eureka-client.properties</em> is assumed as the default.
  *
  * @author Karthik Ranganathan
- *
  */
 @Deprecated
 public class DiscoveryManager {
+
     private static final Logger logger = LoggerFactory.getLogger(DiscoveryManager.class);
+
     private DiscoveryClient discoveryClient;
+
     private EurekaClient clientOverride;
 
     private EurekaInstanceConfig eurekaInstanceConfig;
+
     private EurekaClientConfig eurekaClientConfig;
+
     private static final DiscoveryManager s_instance = new DiscoveryManager();
 
     private DiscoveryManager() {
@@ -79,8 +82,7 @@ public class DiscoveryManager {
      *            registration with Eureka.
      * @param eurekaConfig the eureka client configuration of the instance.
      */
-    public void initComponent(EurekaInstanceConfig config,
-                              EurekaClientConfig eurekaConfig, AbstractDiscoveryClientOptionalArgs args) {
+    public void initComponent(EurekaInstanceConfig config, EurekaClientConfig eurekaConfig, AbstractDiscoveryClientOptionalArgs args) {
         this.eurekaInstanceConfig = config;
         this.eurekaClientConfig = eurekaConfig;
         if (ApplicationInfoManager.getInstance().getInfo() == null) {
@@ -91,8 +93,7 @@ public class DiscoveryManager {
         discoveryClient = new DiscoveryClient(info, eurekaConfig, args);
     }
 
-    public void initComponent(EurekaInstanceConfig config,
-                              EurekaClientConfig eurekaConfig) {
+    public void initComponent(EurekaInstanceConfig config, EurekaClientConfig eurekaConfig) {
         initComponent(config, eurekaConfig, null);
     }
 
@@ -127,7 +128,6 @@ public class DiscoveryManager {
     }
 
     /**
-     *
      * Get the {@link EurekaClient} implementation.
      * @return the client that is used to talk to eureka.
      */

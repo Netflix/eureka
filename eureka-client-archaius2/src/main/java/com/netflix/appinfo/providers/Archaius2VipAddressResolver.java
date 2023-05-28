@@ -3,7 +3,6 @@ package com.netflix.appinfo.providers;
 import com.netflix.archaius.api.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.regex.Matcher;
@@ -28,14 +27,11 @@ public class Archaius2VipAddressResolver implements VipAddressResolver {
         if (vipAddressMacro == null) {
             return null;
         }
-
         String result = vipAddressMacro;
-
         Matcher matcher = VIP_ATTRIBUTES_PATTERN.matcher(result);
         while (matcher.find()) {
             String key = matcher.group(1);
             String value = config.getString(key, "");
-
             logger.debug("att:{}", matcher.group());
             logger.debug(", att key:{}", key);
             logger.debug(", att value:{}", value);
@@ -43,7 +39,6 @@ public class Archaius2VipAddressResolver implements VipAddressResolver {
             result = result.replaceAll("\\$\\{" + key + "\\}", value);
             matcher = VIP_ATTRIBUTES_PATTERN.matcher(result);
         }
-
         return result;
     }
 }

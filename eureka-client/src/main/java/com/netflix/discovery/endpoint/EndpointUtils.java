@@ -4,7 +4,6 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -19,20 +18,25 @@ import java.util.TreeSet;
  * It *does not yet* clean up the moved code.
  */
 public class EndpointUtils {
+
     private static final Logger logger = LoggerFactory.getLogger(EndpointUtils.class);
 
     public static final String DEFAULT_REGION = "default";
+
     public static final String DEFAULT_ZONE = "default";
 
     public enum DiscoveryUrlType {
+
         CNAME, A
     }
 
     public static interface ServiceUrlRandomizer {
+
         void randomize(List<String> urlList);
     }
 
     public static class InstanceInfoBasedUrlRandomizer implements ServiceUrlRandomizer {
+
         private final InstanceInfo instanceInfo;
 
         public InstanceInfoBasedUrlRandomizer(InstanceInfo instanceInfo) {
@@ -116,16 +120,14 @@ public class EndpointUtils {
                 }
             }
             if (zoneFound) {
-                logger.debug("The zone index from the list {} that matches the instance zone {} is {}",
-                        zones, instanceZone, zoneIndex);
+                logger.debug("The zone index from the list {} that matches the instance zone {} is {}", zones, instanceZone, zoneIndex);
                 break;
             }
             zoneIndex++;
         }
         if (zoneIndex >= zones.size()) {
             if (logger.isWarnEnabled()) {
-                logger.warn("No match for the zone {} in the list of available zones {}",
-                        instanceZone, zones.toArray());
+                logger.warn("No match for the zone {} in the list of available zones {}", instanceZone, zones.toArray());
             }
         } else {
             // Rearrange the zones with the instance zone first
@@ -134,7 +136,6 @@ public class EndpointUtils {
                 zones.add(zone);
             }
         }
-
         // Now get the eureka urls for all the zones in the order and return it
         List<String> serviceUrls = new ArrayList<>();
         for (String zone : zones) {
@@ -145,11 +146,7 @@ public class EndpointUtils {
                     randomizer.randomize(ec2Urls);
                 }
                 for (String ec2Url : ec2Urls) {
-                    StringBuilder sb = new StringBuilder()
-                            .append("http://")
-                            .append(ec2Url)
-                            .append(":")
-                            .append(clientConfig.getEurekaServerPort());
+                    StringBuilder sb = new StringBuilder().append("http://").append(ec2Url).append(":").append(clientConfig.getEurekaServerPort());
                     if (clientConfig.getEurekaServerURLContext() != null) {
                         if (!clientConfig.getEurekaServerURLContext().startsWith("/")) {
                             sb.append("/");
@@ -171,10 +168,8 @@ public class EndpointUtils {
         String primaryServiceUrl = serviceUrls.remove(0);
         randomizer.randomize(serviceUrls);
         serviceUrls.add(0, primaryServiceUrl);
-
         if (logger.isDebugEnabled()) {
-            logger.debug("This client will talk to the following serviceUrls in order : {} ",
-                    (Object) serviceUrls.toArray());
+            logger.debug("This client will talk to the following serviceUrls in order : {} ", (Object) serviceUrls.toArray());
         }
         return serviceUrls;
     }
@@ -197,7 +192,6 @@ public class EndpointUtils {
         }
         logger.debug("The availability zone for the given region {} are {}", region, availZones);
         int myZoneOffset = getZoneOffset(instanceZone, preferSameZone, availZones);
-
         List<String> serviceUrls = clientConfig.getEurekaServerServiceUrls(availZones[myZoneOffset]);
         if (serviceUrls != null) {
             orderedUrls.addAll(serviceUrls);
@@ -214,7 +208,6 @@ public class EndpointUtils {
                 currentOffset++;
             }
         }
-
         if (orderedUrls.size() < 1) {
             throw new IllegalArgumentException("DiscoveryClient: invalid serviceUrl specified!");
         }
@@ -239,7 +232,6 @@ public class EndpointUtils {
         }
         logger.debug("The availability zone for the given region {} are {}", region, availZones);
         int myZoneOffset = getZoneOffset(instanceZone, preferSameZone, availZones);
-
         String zone = availZones[myZoneOffset];
         List<String> serviceUrls = clientConfig.getEurekaServerServiceUrls(zone);
         if (serviceUrls != null) {
@@ -258,7 +250,6 @@ public class EndpointUtils {
                 currentOffset++;
             }
         }
-
         if (orderedUrls.size() < 1) {
             throw new IllegalArgumentException("DiscoveryClient: invalid serviceUrl specified!");
         }
@@ -317,18 +308,13 @@ public class EndpointUtils {
         String discoveryDnsName = null;
         try {
             discoveryDnsName = "txt." + region + "." + clientConfig.getEurekaServerDNSName();
-
             logger.debug("The region url to be looked up is {} :", discoveryDnsName);
             Set<String> zoneCnamesForRegion = new TreeSet<>(DnsResolver.getCNamesFromTxtRecord(discoveryDnsName));
             Map<String, List<String>> zoneCnameMapForRegion = new TreeMap<String, List<String>>();
             for (String zoneCname : zoneCnamesForRegion) {
                 String zone = null;
                 if (isEC2Url(zoneCname)) {
-                    throw new RuntimeException(
-                            "Cannot find the right DNS entry for "
-                                    + discoveryDnsName
-                                    + ". "
-                                    + "Expected mapping of the format <aws_zone>.<domain_name>");
+                    throw new RuntimeException("Cannot find the right DNS entry for " + discoveryDnsName + ". " + "Expected mapping of the format <aws_zone>.<domain_name>");
                 } else {
                     String[] cnameTokens = zoneCname.split("\\.");
                     zone = cnameTokens[0];
@@ -375,9 +361,7 @@ public class EndpointUtils {
                 return i;
             }
         }
-        logger.warn("DISCOVERY: Could not pick a zone based on preferred zone settings. My zone - {}," +
-                " preferSameZone - {}. Defaulting to {}", myZone, preferSameZone, availZones[0]);
-
+        logger.warn("DISCOVERY: Could not pick a zone based on preferred zone settings. My zone - {}," + " preferSameZone - {}. Defaulting to {}", myZone, preferSameZone, availZones[0]);
         return 0;
     }
 }

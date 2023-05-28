@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.discovery.provider;
 
 import javax.ws.rs.Consumes;
@@ -31,7 +30,6 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Map;
-
 import com.netflix.discovery.converters.wrappers.CodecWrappers;
 import com.netflix.discovery.converters.wrappers.CodecWrappers.LegacyJacksonJson;
 import com.netflix.discovery.converters.wrappers.DecoderWrapper;
@@ -47,17 +45,20 @@ import org.slf4j.LoggerFactory;
  * @author Karthik Ranganathan
  */
 @Provider
-@Produces({"application/json", "application/xml"})
+@Produces({ "application/json", "application/xml" })
 @Consumes("*/*")
 public class DiscoveryJerseyProvider implements MessageBodyWriter<Object>, MessageBodyReader<Object> {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DiscoveryJerseyProvider.class);
 
     private final EncoderWrapper jsonEncoder;
+
     private final DecoderWrapper jsonDecoder;
 
     // XML support is maintained for legacy/custom clients. These codecs are used only on the server side only, while
     // Eureka client is using JSON only.
     private final EncoderWrapper xmlEncoder;
+
     private final DecoderWrapper xmlDecoder;
 
     public DiscoveryJerseyProvider() {
@@ -69,14 +70,11 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter<Object>, Messa
         this.jsonDecoder = jsonDecoder == null ? CodecWrappers.getDecoder(LegacyJacksonJson.class) : jsonDecoder;
         LOGGER.info("Using JSON encoding codec {}", this.jsonEncoder.codecName());
         LOGGER.info("Using JSON decoding codec {}", this.jsonDecoder.codecName());
-
         if (jsonEncoder instanceof CodecWrappers.JacksonJsonMini) {
             throw new UnsupportedOperationException("Encoder: " + jsonEncoder.codecName() + "is not supported for the client");
         }
-
         this.xmlEncoder = CodecWrappers.getEncoder(CodecWrappers.XStreamXml.class);
         this.xmlDecoder = CodecWrappers.getDecoder(CodecWrappers.XStreamXml.class);
-
         LOGGER.info("Using XML encoding codec {}", this.xmlEncoder.codecName());
         LOGGER.info("Using XML decoding codec {}", this.xmlDecoder.codecName());
     }
@@ -87,22 +85,21 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter<Object>, Messa
     }
 
     @Override
-    public Object readFrom(Class serializableClass, Type type,
-                           Annotation[] annotations, MediaType mediaType,
-                           MultivaluedMap headers, InputStream inputStream) throws IOException {
+    public Object readFrom(Class serializableClass, Type type, Annotation[] annotations, MediaType mediaType, MultivaluedMap headers, InputStream inputStream) throws IOException {
         DecoderWrapper decoder;
         if (MediaType.MEDIA_TYPE_WILDCARD.equals(mediaType.getSubtype())) {
             decoder = xmlDecoder;
         } else if ("json".equalsIgnoreCase(mediaType.getSubtype())) {
             decoder = jsonDecoder;
         } else {
-            decoder = xmlDecoder; // default
+            // default
+            decoder = xmlDecoder;
         }
-
         try {
             return decoder.decode(inputStream, serializableClass);
         } catch (Throwable e) {
-            if (e instanceof Error) { // See issue: https://github.com/Netflix/eureka/issues/72 on why we catch Error here.
+            if (e instanceof Error) {
+                // See issue: https://github.com/Netflix/eureka/issues/72 on why we catch Error here.
                 closeInputOnError(inputStream);
                 throw new WebApplicationException(e, createErrorReply(500, e, mediaType));
             }
@@ -122,16 +119,12 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter<Object>, Messa
     }
 
     @Override
-    public void writeTo(Object serializableObject, Class serializableClass,
-                        Type type, Annotation[] annotations, MediaType mediaType,
-                        MultivaluedMap headers, OutputStream outputStream) throws IOException, WebApplicationException {
+    public void writeTo(Object serializableObject, Class serializableClass, Type type, Annotation[] annotations, MediaType mediaType, MultivaluedMap headers, OutputStream outputStream) throws IOException, WebApplicationException {
         EncoderWrapper encoder = "json".equalsIgnoreCase(mediaType.getSubtype()) ? jsonEncoder : xmlEncoder;
-
         // XML codec may not be available
         if (encoder == null) {
             throw new WebApplicationException(createErrorReply(400, "No codec available to serialize content type " + mediaType, mediaType));
         }
-
         encoder.encode(serializableObject, outputStream);
     }
 
@@ -157,9 +150,7 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter<Object>, Messa
             return true;
         }
         String charset = parameters.get("charset");
-        return charset == null
-                || "UTF-8".equalsIgnoreCase(charset)
-                || "ISO-8859-1".equalsIgnoreCase(charset);
+        return charset == null || "UTF-8".equalsIgnoreCase(charset) || "ISO-8859-1".equalsIgnoreCase(charset);
     }
 
     /**

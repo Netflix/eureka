@@ -5,7 +5,6 @@ import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.transport.JerseyReplicationClient;
 import com.netflix.eureka.resources.DefaultServerCodecs;
-
 import static com.netflix.discovery.util.EurekaEntityFunctions.countInstances;
 
 /**
@@ -20,11 +19,7 @@ public class DiagnosticClient {
         String discoveryURL = args[0];
         long startTime = System.currentTimeMillis();
         EurekaServerConfig serverConfig = new DefaultEurekaServerConfig("eureka.");
-        JerseyReplicationClient client = JerseyReplicationClient.createReplicationClient(
-                serverConfig,
-                new DefaultServerCodecs(serverConfig),
-                discoveryURL
-        );
+        JerseyReplicationClient client = JerseyReplicationClient.createReplicationClient(serverConfig, new DefaultServerCodecs(serverConfig), discoveryURL);
         Applications applications = client.getApplications().getEntity();
         System.out.println("Applications count=" + applications.getRegisteredApplications().size());
         System.out.println("Instance count=" + countInstances(applications));
@@ -44,11 +39,7 @@ public class DiagnosticClient {
                 System.out.println("Hash codes match: " + delta.getAppsHashCode() + "(delta count=" + countInstances(delta) + ')');
                 applications = merged;
             } else {
-                System.out.println("ERROR: hash codes do not match (" + delta.getAppsHashCode() + "(delta) != "
-                                + merged.getAppsHashCode() + " (merged) != "
-                                + applications.getAppsHashCode() + "(old apps)" +
-                                "(delta count=" + countInstances(delta) + ')'
-                );
+                System.out.println("ERROR: hash codes do not match (" + delta.getAppsHashCode() + "(delta) != " + merged.getAppsHashCode() + " (merged) != " + applications.getAppsHashCode() + "(old apps)" + "(delta count=" + countInstances(delta) + ')');
                 applications = client.getApplications().getEntity();
             }
         }

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery;
 
 /**
@@ -40,8 +39,11 @@ public final class EurekaClientNames {
     public static final String METRIC_TRANSPORT_PREFIX = METRIC_PREFIX + "transport.";
 
     public static final String RESOLVER = "resolver";
+
     public static final String BOOTSTRAP = "bootstrap";
+
     public static final String QUERY = "query";
+
     public static final String REGISTRATION = "registration";
 
     private EurekaClientNames() {

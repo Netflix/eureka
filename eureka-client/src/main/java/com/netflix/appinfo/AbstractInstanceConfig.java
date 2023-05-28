@@ -18,10 +18,8 @@ package com.netflix.appinfo;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Map;
-
 import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.shared.Pair;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,9 +29,9 @@ import org.slf4j.LoggerFactory;
  * their instance with eureka server.
  *
  * @author Karthik Ranganathan
- *
  */
 public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
+
     private static final Logger logger = LoggerFactory.getLogger(AbstractInstanceConfig.class);
 
     /**
@@ -41,16 +39,25 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
      */
     @Deprecated
     public static final String DEFAULT_NAMESPACE = CommonConstants.DEFAULT_CONFIG_NAMESPACE;
-    
+
     private static final int LEASE_EXPIRATION_DURATION_SECONDS = 90;
+
     private static final int LEASE_RENEWAL_INTERVAL_SECONDS = 30;
+
     private static final boolean SECURE_PORT_ENABLED = false;
+
     private static final boolean NON_SECURE_PORT_ENABLED = true;
+
     private static final int NON_SECURE_PORT = 80;
+
     private static final int SECURE_PORT = 443;
+
     private static final boolean INSTANCE_ENABLED_ON_INIT = false;
+
     private static final Pair<String, String> hostInfo = getHostInfo();
+
     private DataCenterInfo info = new DataCenterInfo() {
+
         @Override
         public Name getName() {
             return Name.MyOwn;
@@ -58,7 +65,6 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
     };
 
     protected AbstractInstanceConfig() {
-
     }
 
     protected AbstractInstanceConfig(DataCenterInfo info) {
@@ -165,8 +171,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
      */
     @Override
     public String getASGName() {
-        // TODO Auto-generated method stub
-        return null;
+        return generateNullMethod();
     }
 
     /*
@@ -186,8 +191,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
      */
     @Override
     public Map<String, String> getMetadataMap() {
-        // TODO Auto-generated method stub
-        return null;
+        return generateNullMethod();
     }
 
     /*
@@ -211,7 +215,9 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
         return hostInfo.first();
     }
 
-    public boolean shouldBroadcastPublicIpv4Addr () { return false; }
+    public boolean shouldBroadcastPublicIpv4Addr() {
+        return false;
+    }
 
     private static Pair<String, String> getHostInfo() {
         Pair<String, String> pair;
@@ -225,4 +231,13 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
         return pair;
     }
 
+    /*
+     * (non-Javadoc)
+     *
+     * @see com.netflix.appinfo.InstanceConfig#getASGName()
+     */
+    private String generateNullMethod() {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

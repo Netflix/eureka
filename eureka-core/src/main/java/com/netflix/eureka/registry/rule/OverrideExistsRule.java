@@ -4,7 +4,6 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.eureka.lease.Lease;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 
 /**
@@ -27,8 +26,7 @@ public class OverrideExistsRule implements InstanceStatusOverrideRule {
         InstanceInfo.InstanceStatus overridden = statusOverrides.get(instanceInfo.getId());
         // If there are instance specific overrides, then they win - otherwise the ASG status
         if (overridden != null) {
-            logger.debug("The instance specific override for instance {} and the value is {}",
-                    instanceInfo.getId(), overridden.name());
+            logger.debug("The instance specific override for instance {} and the value is {}", instanceInfo.getId(), overridden.name());
             return StatusOverrideResult.matchingStatus(overridden);
         }
         return StatusOverrideResult.NO_MATCH;
@@ -38,5 +36,4 @@ public class OverrideExistsRule implements InstanceStatusOverrideRule {
     public String toString() {
         return OverrideExistsRule.class.getName();
     }
-
 }

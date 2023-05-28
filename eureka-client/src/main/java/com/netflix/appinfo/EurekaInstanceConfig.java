@@ -16,7 +16,6 @@
 package com.netflix.appinfo;
 
 import java.util.Map;
-
 import com.google.inject.ImplementedBy;
 
 /**
@@ -37,7 +36,6 @@ import com.google.inject.ImplementedBy;
  * </p>
  *
  * @author Karthik Ranganathan
- *
  */
 @ImplementedBy(CloudInstanceConfig.class)
 public interface EurekaInstanceConfig {
@@ -372,5 +370,4 @@ public interface EurekaInstanceConfig {
      * @return the namespace used to find properties.
      */
     String getNamespace();
-
 }

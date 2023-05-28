@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationInstance;
@@ -15,7 +14,6 @@ import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
 import com.netflix.eureka.util.batcher.TaskProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import static com.netflix.eureka.cluster.protocol.ReplicationInstance.ReplicationInstanceBuilder.aReplicationInstance;
 
 /**
@@ -30,8 +28,8 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
     private final String peerId;
 
     private volatile long lastNetworkErrorTime;
-    
-    private static final Pattern READ_TIME_OUT_PATTERN = Pattern.compile(".*read.*time.*out.*"); 
+
+    private static final Pattern READ_TIME_OUT_PATTERN = Pattern.compile(".*read.*time.*out.*");
 
     ReplicationTaskProcessor(String peerId, HttpReplicationClient replicationClient) {
         this.replicationClient = replicationClient;
@@ -57,16 +55,15 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
                 return ProcessingResult.PermanentError;
             }
         } catch (Throwable e) {
-        	if (maybeReadTimeOut(e)) {
+            if (maybeReadTimeOut(e)) {
                 logger.error("It seems to be a socket read timeout exception, it will retry later. if it continues to happen and some eureka node occupied all the cpu time, you should set property 'eureka.server.peer-node-read-timeout-ms' to a bigger value", e);
-            	//read timeout exception is more Congestion then TransientError, return Congestion for longer delay 
+                //read timeout exception is more Congestion then TransientError, return Congestion for longer delay
                 return ProcessingResult.Congestion;
             } else if (isNetworkConnectException(e)) {
                 logNetworkErrorSample(task, e);
                 return ProcessingResult.TransientError;
             } else {
-                logger.error("{}: {} Not re-trying this exception because it does not seem to be a network exception",
-                        peerId, task.getTaskName(), e);
+                logger.error("{}: {} Not re-trying this exception because it does not seem to be a network exception", peerId, task.getTaskName(), e);
                 return ProcessingResult.PermanentError;
             }
         }
@@ -94,7 +91,7 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
         } catch (Throwable e) {
             if (maybeReadTimeOut(e)) {
                 logger.error("It seems to be a socket read timeout exception, it will retry later. if it continues to happen and some eureka node occupied all the cpu time, you should set property 'eureka.server.peer-node-read-timeout-ms' to a bigger value", e);
-            	//read timeout exception is more Congestion then TransientError, return Congestion for longer delay 
+                //read timeout exception is more Congestion then TransientError, return Congestion for longer delay
                 return ProcessingResult.Congestion;
             } else if (isNetworkConnectException(e)) {
                 logNetworkErrorSample(null, e);
@@ -144,7 +141,6 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
             task.handleSuccess();
             return;
         }
-
         try {
             task.handleFailure(response.getStatusCode(), response.getResponseEntity());
         } catch (Throwable e) {
@@ -182,7 +178,7 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
         } while (e != null);
         return false;
     }
-    
+
     /**
      * Check if the exception is socket read time out exception
      *
@@ -193,18 +189,17 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
     private static boolean maybeReadTimeOut(Throwable e) {
         do {
             if (IOException.class.isInstance(e)) {
-            	String message = e.getMessage().toLowerCase();
-            	Matcher matcher = READ_TIME_OUT_PATTERN.matcher(message);
-            	if(matcher.find()) {
-            		return true;
-            	}
+                String message = e.getMessage().toLowerCase();
+                Matcher matcher = READ_TIME_OUT_PATTERN.matcher(message);
+                if (matcher.find()) {
+                    return true;
+                }
             }
             e = e.getCause();
         } while (e != null);
         return false;
     }
-    
-    
+
     private static ReplicationInstance createReplicationInstanceOf(InstanceReplicationTask task) {
         ReplicationInstanceBuilder instanceBuilder = aReplicationInstance();
         instanceBuilder.withAppName(task.getAppName());
@@ -224,4 +219,3 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
         return instanceBuilder.build();
     }
 }
-

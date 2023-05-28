@@ -74,17 +74,14 @@ public class SingleEvent {
 
     @Override
     public String toString() {
-        return "SingleEvent{" +
-            "intervalTimeInMs=" + intervalTimeInMs +
-            ", action=" + action +
-            '}';
+        return "SingleEvent{" + "intervalTimeInMs=" + intervalTimeInMs + ", action=" + action + '}';
     }
 
     /**
      * Action to perform.
      */
     public interface Action {
+
         void execute();
     }
-
 }

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.eureka.util.batcher;
 
 import com.netflix.eureka.util.batcher.TaskProcessor.ProcessingResult;
@@ -33,9 +32,11 @@ class TrafficShaper {
     private static final long MAX_DELAY = 30 * 1000;
 
     private final long congestionRetryDelayMs;
+
     private final long networkFailureRetryMs;
 
     private volatile long lastCongestionError;
+
     private volatile long lastNetworkFailure;
 
     TrafficShaper(long congestionRetryDelayMs, long networkFailureRetryMs) {
@@ -55,7 +56,6 @@ class TrafficShaper {
         if (lastCongestionError == -1 && lastNetworkFailure == -1) {
             return 0;
         }
-
         long now = System.currentTimeMillis();
         if (lastCongestionError != -1) {
             long congestionDelay = now - lastCongestionError;
@@ -64,7 +64,6 @@ class TrafficShaper {
             }
             lastCongestionError = -1;
         }
-
         if (lastNetworkFailure != -1) {
             long failureDelay = now - lastNetworkFailure;
             if (failureDelay >= 0 && failureDelay < networkFailureRetryMs) {

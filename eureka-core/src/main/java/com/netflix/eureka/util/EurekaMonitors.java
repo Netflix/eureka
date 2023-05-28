@@ -13,11 +13,9 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.eureka.util;
 
 import java.util.concurrent.atomic.AtomicLong;
-
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
@@ -37,24 +35,19 @@ import com.netflix.servo.monitor.Monitors;
  * <p>
  *
  * @author Karthik Ranganathan, Greg Kim
- *
  */
 public enum EurekaMonitors {
+
     RENEW("renewCounter", "Number of total renews seen since startup"),
     CANCEL("cancelCounter", "Number of total cancels seen since startup"),
     GET_ALL_CACHE_MISS("getAllCacheMissCounter", "Number of total registry queries seen since startup"),
-    GET_ALL_CACHE_MISS_DELTA("getAllCacheMissDeltaCounter",
-            "Number of total registry queries for delta seen since startup"),
-    GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS("getAllWithRemoteRegionCacheMissCounter",
-            "Number of total registry with remote region queries seen since startup"),
-    GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS_DELTA("getAllWithRemoteRegionCacheMissDeltaCounter",
-            "Number of total registry queries for delta with remote region seen since startup"),
+    GET_ALL_CACHE_MISS_DELTA("getAllCacheMissDeltaCounter", "Number of total registry queries for delta seen since startup"),
+    GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS("getAllWithRemoteRegionCacheMissCounter", "Number of total registry with remote region queries seen since startup"),
+    GET_ALL_WITH_REMOTE_REGIONS_CACHE_MISS_DELTA("getAllWithRemoteRegionCacheMissDeltaCounter", "Number of total registry queries for delta with remote region seen since startup"),
     GET_ALL_DELTA("getAllDeltaCounter", "Number of total deltas since startup"),
-    GET_ALL_DELTA_WITH_REMOTE_REGIONS("getAllDeltaWithRemoteRegionCounter",
-            "Number of total deltas with remote regions since startup"),
+    GET_ALL_DELTA_WITH_REMOTE_REGIONS("getAllDeltaWithRemoteRegionCounter", "Number of total deltas with remote regions since startup"),
     GET_ALL("getAllCounter", "Number of total registry queries seen since startup"),
-    GET_ALL_WITH_REMOTE_REGIONS("getAllWithRemoteRegionCounter",
-            "Number of total registry queries with remote regions, seen since startup"),
+    GET_ALL_WITH_REMOTE_REGIONS("getAllWithRemoteRegionCounter", "Number of total registry queries with remote regions, seen since startup"),
     GET_APPLICATION("getApplicationCounter", "Number of total application queries seen since startup"),
     REGISTER("registerCounter", "Number of total registers seen since startup"),
     EXPIRED("expiredCounter", "Number of total expired leases since startup"),
@@ -78,7 +71,6 @@ public enum EurekaMonitors {
     private EurekaMonitors(String name, String description) {
         this.name = name;
         this.description = description;
-
         DataCenterInfo dcInfo = ApplicationInfoManager.getInstance().getInfo().getDataCenterInfo();
         if (dcInfo.getName() == Name.Amazon) {
             myZoneCounterName = ((AmazonInfo) dcInfo).get(MetaDataKey.availabilityZone) + "." + name;
@@ -110,7 +102,6 @@ public enum EurekaMonitors {
      */
     public void increment(boolean isReplication) {
         counter.incrementAndGet();
-
         if (!isReplication) {
             myZoneCounter.incrementAndGet();
         }

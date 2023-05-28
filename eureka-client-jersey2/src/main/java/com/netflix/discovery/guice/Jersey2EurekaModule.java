@@ -23,21 +23,18 @@ import com.netflix.discovery.shared.transport.jersey2.Jersey2TransportClientFact
  * @author David Liu
  */
 public final class Jersey2EurekaModule extends AbstractModule {
+
     @Override
     protected void configure() {
         // need to eagerly initialize
         bind(ApplicationInfoManager.class).asEagerSingleton();
-
         //
         // override these in additional modules if necessary with Modules.override()
         //
-
         bind(EurekaInstanceConfig.class).toProvider(CloudInstanceConfigProvider.class).in(Scopes.SINGLETON);
         bind(EurekaClientConfig.class).toProvider(DefaultEurekaClientConfigProvider.class).in(Scopes.SINGLETON);
-
         // this is the self instanceInfo used for registration purposes
         bind(InstanceInfo.class).toProvider(EurekaConfigBasedInstanceInfoProvider.class).in(Scopes.SINGLETON);
-
         bind(EurekaClient.class).to(DiscoveryClient.class).in(Scopes.SINGLETON);
         bind(EndpointRandomizer.class).toInstance(ResolverUtils::randomize);
         // jersey2 support bindings

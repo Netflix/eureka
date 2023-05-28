@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.discovery.converters;
 
 import com.netflix.appinfo.InstanceInfo;
@@ -35,27 +34,25 @@ import com.thoughtworks.xstream.io.xml.XmlFriendlyNameCoder;
  * </p>
  *
  * @author Karthik Ranganathan
- *
  */
 public class JsonXStream extends XStream {
 
     private static final JsonXStream s_instance = new JsonXStream();
+
     static {
         XStream.setupDefaultSecurity(s_instance);
-        s_instance.allowTypesByWildcard(new String[] {
-                "com.netflix.discovery.**", "com.netflix.appinfo.**"
-        });
+        s_instance.allowTypesByWildcard(new String[] { "com.netflix.discovery.**", "com.netflix.appinfo.**" });
     }
 
     public JsonXStream() {
         super(new JettisonMappedXmlDriver() {
+
             private final NameCoder coder = initializeNameCoder();
 
             protected NameCoder getNameCoder() {
                 return this.coder;
             }
         });
-
         registerConverter(new Converters.ApplicationConverter());
         registerConverter(new Converters.ApplicationsConverter());
         registerConverter(new Converters.DataCenterInfoConverter());
@@ -63,7 +60,7 @@ public class JsonXStream extends XStream {
         registerConverter(new Converters.LeaseInfoConverter());
         registerConverter(new Converters.MetadataConverter());
         setMode(XStream.NO_REFERENCES);
-        processAnnotations(new Class[]{InstanceInfo.class, Application.class, Applications.class});
+        processAnnotations(new Class[] { InstanceInfo.class, Application.class, Applications.class });
     }
 
     public static JsonXStream getInstance() {
@@ -71,12 +68,10 @@ public class JsonXStream extends XStream {
     }
 
     private static XmlFriendlyNameCoder initializeNameCoder() {
-        EurekaClientConfig clientConfig = DiscoveryManager
-                .getInstance().getEurekaClientConfig();
+        EurekaClientConfig clientConfig = DiscoveryManager.getInstance().getEurekaClientConfig();
         if (clientConfig == null) {
             return new XmlFriendlyNameCoder();
         }
         return new XmlFriendlyNameCoder(clientConfig.getDollarReplacement(), clientConfig.getEscapeCharReplacement());
     }
-
 }

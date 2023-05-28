@@ -3,27 +3,27 @@ package com.netflix.discovery;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import com.google.inject.Inject;
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
 import com.netflix.discovery.internal.util.InternalPrefixedConfig;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
-
 import javax.inject.Singleton;
-
 import static com.netflix.discovery.PropertyBasedClientConfigConstants.*;
 
 @Singleton
 @ConfigurationSource(CommonConstants.CONFIG_FILE_NAME)
 public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
+
     public static final String DEFAULT_ZONE = "defaultZone";
 
     private static final String DEFAULT_NAMESPACE = "eureka";
 
     private final Config configInstance;
+
     private final InternalPrefixedConfig prefixedConfig;
+
     private final EurekaTransportConfig transportConfig;
 
     @Inject
@@ -98,17 +98,11 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
     }
 
     public String getEurekaServerPort() {
-        return prefixedConfig.getString(
-                EUREKA_SERVER_PORT_KEY,
-                prefixedConfig.getString(EUREKA_SERVER_FALLBACK_PORT_KEY, null)
-        );
+        return prefixedConfig.getString(EUREKA_SERVER_PORT_KEY, prefixedConfig.getString(EUREKA_SERVER_FALLBACK_PORT_KEY, null));
     }
 
     public String getEurekaServerDNSName() {
-        return prefixedConfig.getString(
-                EUREKA_SERVER_DNS_NAME_KEY,
-                prefixedConfig.getString(EUREKA_SERVER_FALLBACK_DNS_NAME_KEY, null)
-        );
+        return prefixedConfig.getString(EUREKA_SERVER_DNS_NAME_KEY, prefixedConfig.getString(EUREKA_SERVER_FALLBACK_DNS_NAME_KEY, null));
     }
 
     public boolean shouldUseDnsForFetchingServiceUrls() {
@@ -144,10 +138,7 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
     }
 
     public String getRegion() {
-        return prefixedConfig.getString(
-                CLIENT_REGION_KEY,
-                prefixedConfig.getString(CLIENT_REGION_FALLBACK_KEY, Values.DEFAULT_CLIENT_REGION)
-        );
+        return prefixedConfig.getString(CLIENT_REGION_KEY, prefixedConfig.getString(CLIENT_REGION_FALLBACK_KEY, Values.DEFAULT_CLIENT_REGION));
     }
 
     public String[] getAvailabilityZones(String region) {
@@ -159,10 +150,7 @@ public class EurekaArchaius2ClientConfig implements EurekaClientConfig {
         if (serviceUrls == null || serviceUrls.isEmpty()) {
             serviceUrls = prefixedConfig.getString(CONFIG_EUREKA_SERVER_SERVICE_URL_PREFIX + ".default", null);
         }
-
-        return serviceUrls != null
-                ? Arrays.asList(serviceUrls.split(","))
-                : Collections.<String>emptyList();
+        return serviceUrls != null ? Arrays.asList(serviceUrls.split(",")) : Collections.<String>emptyList();
     }
 
     public boolean shouldFilterOnlyUpInstances() {

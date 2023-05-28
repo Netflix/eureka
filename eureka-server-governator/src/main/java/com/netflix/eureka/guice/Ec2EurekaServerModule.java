@@ -19,21 +19,18 @@ import com.netflix.eureka.resources.ServerCodecs;
  * @author David Liu
  */
 public class Ec2EurekaServerModule extends AbstractModule {
+
     @Override
     protected void configure() {
         bind(EurekaServerConfig.class).to(DefaultEurekaServerConfig.class).in(Scopes.SINGLETON);
         bind(PeerEurekaNodes.class).in(Scopes.SINGLETON);
-
         bind(AwsBinderDelegate.class).asEagerSingleton();
-
         // registry and interfaces
         bind(AwsInstanceRegistry.class).asEagerSingleton();
         bind(InstanceRegistry.class).to(AwsInstanceRegistry.class);
         bind(AbstractInstanceRegistry.class).to(AwsInstanceRegistry.class);
         bind(PeerAwareInstanceRegistry.class).to(AwsInstanceRegistry.class);
-
         bind(ServerCodecs.class).to(DefaultServerCodecs.class).in(Scopes.SINGLETON);
-
         bind(EurekaServerContext.class).to(DefaultEurekaServerContext.class).in(Scopes.SINGLETON);
     }
 

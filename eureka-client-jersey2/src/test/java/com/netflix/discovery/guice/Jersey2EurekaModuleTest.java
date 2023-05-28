@@ -35,18 +35,15 @@ public class Jersey2EurekaModuleTest {
         ConfigurationManager.getConfigInstance().setProperty("eureka.shouldFetchRegistry", "false");
         ConfigurationManager.getConfigInstance().setProperty("eureka.registration.enabled", "false");
         ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default", "http://localhost:8080/eureka/v2");
+        injector = InjectorBuilder.fromModule(new Jersey2EurekaModule()).overrideWith(new AbstractModule() {
 
-        injector = InjectorBuilder
-                .fromModule(new Jersey2EurekaModule())
-                .overrideWith(new AbstractModule() {
-                    @Override
-                    protected void configure() {
-                        // the default impl of EurekaInstanceConfig is CloudInstanceConfig, which we only want in an AWS
-                        // environment. Here we override that by binding MyDataCenterInstanceConfig to EurekaInstanceConfig.
-                        bind(EurekaInstanceConfig.class).toProvider(MyDataCenterInstanceConfigProvider.class).in(Scopes.SINGLETON);
-                    }
-                })
-                .createInjector();
+            @Override
+            protected void configure() {
+                // the default impl of EurekaInstanceConfig is CloudInstanceConfig, which we only want in an AWS
+                // environment. Here we override that by binding MyDataCenterInstanceConfig to EurekaInstanceConfig.
+                bind(EurekaInstanceConfig.class).toProvider(MyDataCenterInstanceConfigProvider.class).in(Scopes.SINGLETON);
+            }
+        }).createInjector();
     }
 
     @After
@@ -62,23 +59,18 @@ public class Jersey2EurekaModuleTest {
     public void testDI() {
         InstanceInfo instanceInfo = injector.getInstance(InstanceInfo.class);
         Assert.assertEquals(ApplicationInfoManager.getInstance().getInfo(), instanceInfo);
-
         EurekaClient eurekaClient = injector.getInstance(EurekaClient.class);
         DiscoveryClient discoveryClient = injector.getInstance(DiscoveryClient.class);
-
         Assert.assertEquals(DiscoveryManager.getInstance().getEurekaClient(), eurekaClient);
         Assert.assertEquals(DiscoveryManager.getInstance().getDiscoveryClient(), discoveryClient);
         Assert.assertEquals(eurekaClient, discoveryClient);
-
         EurekaClientConfig eurekaClientConfig = injector.getInstance(EurekaClientConfig.class);
         Assert.assertEquals(DiscoveryManager.getInstance().getEurekaClientConfig(), eurekaClientConfig);
-
         EurekaInstanceConfig eurekaInstanceConfig = injector.getInstance(EurekaInstanceConfig.class);
         Assert.assertEquals(DiscoveryManager.getInstance().getEurekaInstanceConfig(), eurekaInstanceConfig);
-
         Binding<TransportClientFactories> binding = injector.getExistingBinding(Key.get(TransportClientFactories.class));
-        Assert.assertNotNull(binding);  // has a binding for jersey2
-
+        // has a binding for jersey2
+        Assert.assertNotNull(binding);
         TransportClientFactories transportClientFactories = injector.getInstance(TransportClientFactories.class);
         Assert.assertTrue(transportClientFactories instanceof Jersey2TransportClientFactories);
     }

@@ -1,7 +1,6 @@
 package com.netflix.discovery.internal.util;
 
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -20,8 +19,8 @@ public final class AmazonInfoUtils {
         uc.setConnectTimeout(connectionTimeoutMs);
         uc.setReadTimeout(readTimeoutMs);
         uc.setRequestProperty("User-Agent", "eureka-java-client");
-
-        if (uc.getResponseCode() != HttpURLConnection.HTTP_OK) {  // need to read the error for clean connection close
+        if (uc.getResponseCode() != HttpURLConnection.HTTP_OK) {
+            // need to read the error for clean connection close
             BufferedReader br = new BufferedReader(new InputStreamReader(uc.getErrorStream()));
             try {
                 while (br.readLine() != null) {
@@ -31,9 +30,8 @@ public final class AmazonInfoUtils {
                 br.close();
             }
         } else {
-           return metaDataKey.read(uc.getInputStream());
+            return metaDataKey.read(uc.getInputStream());
         }
-
         return null;
     }
 }

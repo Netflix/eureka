@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.transport.jersey;
 
 import java.util.concurrent.Executors;
@@ -21,7 +20,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import com.netflix.servo.monitor.BasicCounter;
 import com.netflix.servo.monitor.BasicTimer;
 import com.netflix.servo.monitor.Counter;
@@ -42,38 +40,33 @@ public class ApacheHttpClientConnectionCleaner {
 
     private static final int HTTP_CONNECTION_CLEANER_INTERVAL_MS = 30 * 1000;
 
-    private final ScheduledExecutorService eurekaConnCleaner =
-            Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+    private final ScheduledExecutorService eurekaConnCleaner = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
 
-                private final AtomicInteger threadNumber = new AtomicInteger(1);
+        private final AtomicInteger threadNumber = new AtomicInteger(1);
 
-                @Override
-                public Thread newThread(Runnable r) {
-                    Thread thread = new Thread(r, "Apache-HttpClient-Conn-Cleaner" + threadNumber.incrementAndGet());
-                    thread.setDaemon(true);
-                    return thread;
-                }
-            });
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread thread = new Thread(r, "Apache-HttpClient-Conn-Cleaner" + threadNumber.incrementAndGet());
+            thread.setDaemon(true);
+            return thread;
+        }
+    });
 
     private final ApacheHttpClient4 apacheHttpClient;
 
     private final BasicTimer executionTimeStats;
+
     private final Counter cleanupFailed;
 
     public ApacheHttpClientConnectionCleaner(ApacheHttpClient4 apacheHttpClient, final long connectionIdleTimeout) {
         this.apacheHttpClient = apacheHttpClient;
-        this.eurekaConnCleaner.scheduleWithFixedDelay(
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        cleanIdle(connectionIdleTimeout);
-                    }
-                },
-                HTTP_CONNECTION_CLEANER_INTERVAL_MS,
-                HTTP_CONNECTION_CLEANER_INTERVAL_MS,
-                TimeUnit.MILLISECONDS
-        );
+        this.eurekaConnCleaner.scheduleWithFixedDelay(new Runnable() {
 
+            @Override
+            public void run() {
+                cleanIdle(connectionIdleTimeout);
+            }
+        }, HTTP_CONNECTION_CLEANER_INTERVAL_MS, HTTP_CONNECTION_CLEANER_INTERVAL_MS, TimeUnit.MILLISECONDS);
         MonitorConfig.Builder monitorConfigBuilder = MonitorConfig.builder("Eureka-Connection-Cleaner-Time");
         executionTimeStats = new BasicTimer(monitorConfigBuilder.build());
         cleanupFailed = new BasicCounter(MonitorConfig.builder("Eureka-Connection-Cleaner-Failure").build());
@@ -93,9 +86,7 @@ public class ApacheHttpClientConnectionCleaner {
     public void cleanIdle(long delayMs) {
         Stopwatch start = executionTimeStats.start();
         try {
-            apacheHttpClient.getClientHandler().getHttpClient()
-                    .getConnectionManager()
-                    .closeIdleConnections(delayMs, TimeUnit.SECONDS);
+            apacheHttpClient.getClientHandler().getHttpClient().getConnectionManager().closeIdleConnections(delayMs, TimeUnit.SECONDS);
         } catch (Throwable e) {
             logger.error("Cannot clean connections", e);
             cleanupFailed.increment();

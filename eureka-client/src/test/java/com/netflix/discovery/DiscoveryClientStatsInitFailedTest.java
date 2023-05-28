@@ -37,5 +37,4 @@ public class DiscoveryClientStatsInitFailedTest extends BaseDiscoveryClientTeste
         DiscoveryClient clientImpl = (DiscoveryClient) client;
         Assert.assertFalse(clientImpl.getStats().initSucceeded());
     }
-
 }

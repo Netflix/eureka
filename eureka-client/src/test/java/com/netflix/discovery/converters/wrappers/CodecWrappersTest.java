@@ -2,7 +2,6 @@ package com.netflix.discovery.converters.wrappers;
 
 import junit.framework.Assert;
 import org.junit.Test;
-
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,9 +18,7 @@ public class CodecWrappersTest {
     public void testRegisterNewWrapper() {
         Assert.assertNull(CodecWrappers.getEncoder(testWrapperName));
         Assert.assertNull(CodecWrappers.getDecoder(testWrapperName));
-
         CodecWrappers.registerWrapper(new TestWrapper());
-
         Assert.assertNotNull(CodecWrappers.getEncoder(testWrapperName));
         Assert.assertNotNull(CodecWrappers.getDecoder(testWrapperName));
     }
@@ -45,7 +42,6 @@ public class CodecWrappersTest {
 
         @Override
         public <T> void encode(T object, OutputStream outputStream) throws IOException {
-
         }
 
         @Override

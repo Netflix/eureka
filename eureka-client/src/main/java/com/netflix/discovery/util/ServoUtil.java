@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.util;
 
 import java.util.Collection;
-
 import com.netflix.servo.DefaultMonitorRegistry;
 import com.netflix.servo.monitor.Monitor;
 import org.slf4j.Logger;

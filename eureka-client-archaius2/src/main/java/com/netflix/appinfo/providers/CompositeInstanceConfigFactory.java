@@ -14,7 +14,6 @@ import com.netflix.discovery.internal.util.AmazonInfoUtils;
 import com.netflix.discovery.internal.util.InternalPrefixedConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.net.SocketTimeoutException;
@@ -45,12 +44,15 @@ import java.net.URL;
 @Singleton
 @ConfigurationSource(CommonConstants.CONFIG_FILE_NAME)
 public class CompositeInstanceConfigFactory implements EurekaInstanceConfigFactory {
+
     private static final Logger logger = LoggerFactory.getLogger(CompositeInstanceConfigFactory.class);
 
     private static final String DEPLOYMENT_ENVIRONMENT_OVERRIDE_KEY = "instanceDeploymentEnvironment";
 
     private final String namespace;
+
     private final Config configInstance;
+
     private final InternalPrefixedConfig prefixedConfig;
 
     private EurekaInstanceConfig eurekaInstanceConfig;
@@ -75,14 +77,11 @@ public class CompositeInstanceConfigFactory implements EurekaInstanceConfigFacto
                 eurekaInstanceConfig = new EurekaArchaius2InstanceConfig(configInstance, namespace);
                 logger.info("Creating generic instance config");
             }
-
             // TODO: Remove this when DiscoveryManager is finally no longer used
             DiscoveryManager.getInstance().setEurekaInstanceConfig(eurekaInstanceConfig);
         }
-
         return eurekaInstanceConfig;
     }
-
 
     private boolean isInEc2(AmazonInfoConfig amazonInfoConfig) {
         String deploymentEnvironmentOverride = getDeploymentEnvironmentOverride();
@@ -100,13 +99,7 @@ public class CompositeInstanceConfigFactory implements EurekaInstanceConfigFacto
     private boolean autoDetectEc2(AmazonInfoConfig amazonInfoConfig) {
         try {
             URL url = AmazonInfo.MetaDataKey.instanceId.getURL(null, null);
-            String id = AmazonInfoUtils.readEc2MetadataUrl(
-                    AmazonInfo.MetaDataKey.instanceId,
-                    url,
-                    amazonInfoConfig.getConnectTimeout(),
-                    amazonInfoConfig.getReadTimeout()
-            );
-
+            String id = AmazonInfoUtils.readEc2MetadataUrl(AmazonInfo.MetaDataKey.instanceId, url, amazonInfoConfig.getConnectTimeout(), amazonInfoConfig.getReadTimeout());
             if (id != null) {
                 logger.info("Auto detected EC2 deployment environment, instanceId = {}", id);
                 return true;

@@ -9,10 +9,8 @@ import java.util.PrimitiveIterator.OfInt;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -22,11 +20,11 @@ import com.fasterxml.jackson.databind.ObjectReader;
  * that works with Jackson's DeserializationContext. Definitely NOT thread-safe,
  * intended to avoid the costs associated with thread synchronization and
  * short-lived heap allocations (e.g., Strings)
- *
  */
 public class DeserializerStringCache implements Function<String, String> {
 
     public enum CacheScope {
+
         // Strings in this scope are freed on deserialization of each
         // Application element
         APPLICATION_SCOPE,
@@ -36,36 +34,41 @@ public class DeserializerStringCache implements Function<String, String> {
     }
 
     private static final Logger logger = LoggerFactory.getLogger(DeserializerStringCache.class);
+
     private static final boolean debugLogEnabled = logger.isDebugEnabled();
+
     private static final String ATTR_STRING_CACHE = "deserInternCache";
+
     private static final int LENGTH_LIMIT = 256;
+
     private static final int LRU_LIMIT = 1024 * 40;
 
     private final Map<CharBuffer, String> globalCache;
+
     private final Map<CharBuffer, String> applicationCache;
+
     private final int lengthLimit = LENGTH_LIMIT;
 
     /**
      * adds a new DeserializerStringCache to the passed-in ObjectReader
-     * 
+     *
      * @param reader
      * @return a wrapped ObjectReader with the string cache attribute
      */
     public static ObjectReader init(ObjectReader reader) {
-        return reader.withAttribute(ATTR_STRING_CACHE, new DeserializerStringCache(
-                new HashMap<CharBuffer, String>(2048), new LinkedHashMap<CharBuffer, String>(4096, 0.75f, true) {
-                    @Override
-                    protected boolean removeEldestEntry(Entry<CharBuffer, String> eldest) {
-                        return size() > LRU_LIMIT;
-                    }
+        return reader.withAttribute(ATTR_STRING_CACHE, new DeserializerStringCache(new HashMap<CharBuffer, String>(2048), new LinkedHashMap<CharBuffer, String>(4096, 0.75f, true) {
 
-                }));
+            @Override
+            protected boolean removeEldestEntry(Entry<CharBuffer, String> eldest) {
+                return size() > LRU_LIMIT;
+            }
+        }));
     }
 
     /**
      * adds an existing DeserializerStringCache from the DeserializationContext
      * to an ObjectReader
-     * 
+     *
      * @param reader
      *            a new ObjectReader
      * @param context
@@ -83,7 +86,7 @@ public class DeserializerStringCache implements Function<String, String> {
 
     /**
      * extracts a DeserializerStringCache from the DeserializationContext
-     * 
+     *
      * @param context
      *            an existing DeserializationContext containing a
      *            DeserializerStringCache
@@ -92,8 +95,7 @@ public class DeserializerStringCache implements Function<String, String> {
     public static DeserializerStringCache from(DeserializationContext context) {
         return withCache(context, cache -> {
             if (cache == null) {
-                cache = new DeserializerStringCache(new HashMap<CharBuffer, String>(),
-                        new HashMap<CharBuffer, String>());
+                cache = new DeserializerStringCache(new HashMap<CharBuffer, String>(), new HashMap<CharBuffer, String>());
             }
             return cache;
         });
@@ -101,7 +103,7 @@ public class DeserializerStringCache implements Function<String, String> {
 
     /**
      * clears app-scoped cache entries from the specified ObjectReader
-     * 
+     *
      * @param reader
      */
     public static void clear(ObjectReader reader) {
@@ -111,7 +113,7 @@ public class DeserializerStringCache implements Function<String, String> {
     /**
      * clears cache entries in the given scope from the specified ObjectReader.
      * Always clears app-scoped entries.
-     * 
+     *
      * @param reader
      * @param scope
      */
@@ -131,7 +133,7 @@ public class DeserializerStringCache implements Function<String, String> {
 
     /**
      * clears app-scoped cache entries from the specified DeserializationContext
-     * 
+     *
      * @param context
      */
     public static void clear(DeserializationContext context) {
@@ -141,7 +143,7 @@ public class DeserializerStringCache implements Function<String, String> {
     /**
      * clears cache entries in the given scope from the specified
      * DeserializationContext. Always clears app-scoped entries.
-     * 
+     *
      * @param context
      * @param scope
      */
@@ -165,8 +167,7 @@ public class DeserializerStringCache implements Function<String, String> {
     }
 
     private static <T> T withCache(ObjectReader reader, Function<DeserializerStringCache, T> consumer) {
-        DeserializerStringCache cache = (DeserializerStringCache) reader.getAttributes()
-                .getAttribute(ATTR_STRING_CACHE);
+        DeserializerStringCache cache = (DeserializerStringCache) reader.getAttributes().getAttribute(ATTR_STRING_CACHE);
         return consumer.apply(cache);
     }
 
@@ -183,7 +184,7 @@ public class DeserializerStringCache implements Function<String, String> {
      * returns a String read from the JsonParser argument's current position.
      * The returned value may be interned at the app scope to reduce heap
      * consumption
-     * 
+     *
      * @param jp
      * @return a possibly interned String
      * @throws IOException
@@ -200,7 +201,7 @@ public class DeserializerStringCache implements Function<String, String> {
      * returns a String read from the JsonParser argument's current position.
      * The returned value may be interned at the given cacheScope to reduce heap
      * consumption
-     * 
+     *
      * @param jp
      * @param cacheScope
      * @return a possibly interned String
@@ -213,7 +214,7 @@ public class DeserializerStringCache implements Function<String, String> {
     /**
      * returns a String that may be interned at app-scope to reduce heap
      * consumption
-     * 
+     *
      * @param charValue
      * @return a possibly interned String
      */
@@ -224,7 +225,7 @@ public class DeserializerStringCache implements Function<String, String> {
     /**
      * returns a object of type T that may be interned at the specified scope to
      * reduce heap consumption
-     * 
+     *
      * @param charValue
      * @param cacheScope
      * @param trabsform
@@ -250,7 +251,7 @@ public class DeserializerStringCache implements Function<String, String> {
     /**
      * returns a String that may be interned at the app-scope to reduce heap
      * consumption
-     * 
+     *
      * @param stringValue
      * @return a possibly interned String
      */
@@ -262,18 +263,17 @@ public class DeserializerStringCache implements Function<String, String> {
     /**
      * returns a String that may be interned at the given scope to reduce heap
      * consumption
-     * 
+     *
      * @param stringValue
      * @param cacheScope
      * @return a possibly interned String
      */
     public String apply(final String stringValue, CacheScope cacheScope) {
         if (stringValue != null && (lengthLimit < 0 || stringValue.length() <= lengthLimit)) {
-            return (String) (cacheScope == CacheScope.GLOBAL_SCOPE ? globalCache : applicationCache)
-                    .computeIfAbsent(CharBuffer.wrap(stringValue), s -> {
-                        logger.trace(" (string) writing new interned value {} into {} cache scope", stringValue, cacheScope);
-                        return stringValue;
-                    });
+            return (String) (cacheScope == CacheScope.GLOBAL_SCOPE ? globalCache : applicationCache).computeIfAbsent(CharBuffer.wrap(stringValue), s -> {
+                logger.trace(" (string) writing new interned value {} into {} cache scope", stringValue, cacheScope);
+                return stringValue;
+            });
         }
         return stringValue;
     }
@@ -283,6 +283,7 @@ public class DeserializerStringCache implements Function<String, String> {
     }
 
     private interface CharBuffer {
+
         static final int DEFAULT_VARIANT = -1;
 
         public static CharBuffer wrap(JsonParser source, Supplier<String> stringSource) throws IOException {
@@ -306,11 +307,17 @@ public class DeserializerStringCache implements Function<String, String> {
         OfInt chars();
 
         static class ArrayCharBuffer implements CharBuffer {
+
             private final char[] source;
+
             private final int offset;
+
             private final int length;
+
             private final Supplier<String> valueTransform;
+
             private final int variant;
+
             private final int hash;
 
             ArrayCharBuffer(JsonParser source) throws IOException {
@@ -323,7 +330,7 @@ public class DeserializerStringCache implements Function<String, String> {
                 this.length = source.getTextLength();
                 this.valueTransform = valueTransform;
                 this.variant = valueTransform == null ? DEFAULT_VARIANT : System.identityHashCode(valueTransform.getClass());
-                this.hash =  31 * arrayHash(this.source, offset, length) + variant;
+                this.hash = 31 * arrayHash(this.source, offset, length) + variant;
             }
 
             @Override
@@ -345,16 +352,14 @@ public class DeserializerStringCache implements Function<String, String> {
             public boolean equals(Object other) {
                 if (other instanceof CharBuffer) {
                     CharBuffer otherBuffer = (CharBuffer) other;
-                    if (otherBuffer.length() == length) {
-                        if (otherBuffer.variant() == variant) {
-                            OfInt otherText = otherBuffer.chars();
-                            for (int i = offset; i < length; i++) {
-                                if (source[i] != otherText.nextInt()) {
-                                    return false;
-                                }
+                    if (otherBuffer.length() == length && otherBuffer.variant() == variant) {
+                        OfInt otherText = otherBuffer.chars();
+                        for (int i = offset; i < length; i++) {
+                            if (source[i] != otherText.nextInt()) {
+                                return false;
                             }
-                        return true;
                         }
+                        return true;
                     }
                 }
                 return false;
@@ -363,7 +368,9 @@ public class DeserializerStringCache implements Function<String, String> {
             @Override
             public OfInt chars() {
                 return new OfInt() {
+
                     int index = offset;
+
                     int limit = index + length;
 
                     @Override
@@ -380,7 +387,7 @@ public class DeserializerStringCache implements Function<String, String> {
 
             @Override
             public String toString() {
-                return valueTransform  == null ? new String(this.source, offset, length) : valueTransform.get();
+                return valueTransform == null ? new String(this.source, offset, length) : valueTransform.get();
             }
 
             @Override
@@ -404,8 +411,11 @@ public class DeserializerStringCache implements Function<String, String> {
         }
 
         static class StringCharBuffer implements CharBuffer {
+
             private final String source;
+
             private final int variant;
+
             private final int hashCode;
 
             StringCharBuffer(String source) {
@@ -416,7 +426,7 @@ public class DeserializerStringCache implements Function<String, String> {
                 this.source = source;
                 this.variant = variant;
                 this.hashCode = 31 * source.hashCode() + variant;
-            }            
+            }
 
             @Override
             public int hashCode() {
@@ -461,6 +471,7 @@ public class DeserializerStringCache implements Function<String, String> {
             @Override
             public OfInt chars() {
                 return new OfInt() {
+
                     int index;
 
                     @Override
@@ -481,6 +492,5 @@ public class DeserializerStringCache implements Function<String, String> {
                 return source;
             }
         }
-
     }
 }

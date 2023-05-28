@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.converters.jackson.serializer;
 
 import java.io.IOException;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
@@ -30,6 +28,7 @@ import com.netflix.appinfo.InstanceInfo.PortType;
  * Custom bean serializer to deal with legacy port layout (check {@link InstanceInfo.PortWrapper} for more information).
  */
 public class InstanceInfoXmlBeanSerializer extends XmlBeanSerializer {
+
     public InstanceInfoXmlBeanSerializer(BeanSerializerBase src) {
         super(src);
     }
@@ -38,9 +37,7 @@ public class InstanceInfoXmlBeanSerializer extends XmlBeanSerializer {
     protected void serializeFields(Object bean, JsonGenerator jgen0, SerializerProvider provider) throws IOException {
         super.serializeFields(bean, jgen0, provider);
         InstanceInfo instanceInfo = (InstanceInfo) bean;
-
         ToXmlGenerator xgen = (ToXmlGenerator) jgen0;
-
         xgen.writeFieldName("port");
         xgen.writeStartObject();
         xgen.setNextIsAttribute(true);
@@ -51,7 +48,6 @@ public class InstanceInfoXmlBeanSerializer extends XmlBeanSerializer {
         xgen.setNextIsUnwrapped(true);
         xgen.writeString(Integer.toString(instanceInfo.getPort()));
         xgen.writeEndObject();
-
         xgen.writeFieldName("securePort");
         xgen.writeStartObject();
         xgen.setNextIsAttribute(true);

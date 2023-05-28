@@ -5,11 +5,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-
 import javax.inject.Provider;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
-
 import com.google.inject.Inject;
 import com.netflix.appinfo.HealthCheckCallback;
 import com.netflix.appinfo.HealthCheckHandler;
@@ -22,6 +20,7 @@ import com.netflix.eventbus.spi.EventBus;
  * <T> The type for client supplied filters (supports jersey1 and jersey2)
  */
 public abstract class AbstractDiscoveryClientOptionalArgs<T> {
+
     Provider<HealthCheckCallback> healthCheckCallbackProvider;
 
     Provider<HealthCheckHandler> healthCheckHandlerProvider;
@@ -31,9 +30,9 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
     Collection<T> additionalFilters;
 
     EurekaJerseyClient eurekaJerseyClient;
-    
+
     TransportClientFactory transportClientFactory;
-    
+
     TransportClientFactories transportClientFactories;
 
     private Set<EurekaEventListener> eventListeners;
@@ -49,14 +48,14 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
         }
         eventListeners.addAll(listeners);
     }
-    
+
     @Inject(optional = true)
     public void setEventBus(final EventBus eventBus) {
         if (eventListeners == null) {
             eventListeners = new HashSet<>();
         }
-        
         eventListeners.add(new EurekaEventListener() {
+
             @Override
             public void onEvent(EurekaEvent event) {
                 eventBus.publish(event);
@@ -64,12 +63,12 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
         });
     }
 
-    @Inject(optional = true) 
+    @Inject(optional = true)
     public void setHealthCheckCallbackProvider(Provider<HealthCheckCallback> healthCheckCallbackProvider) {
         this.healthCheckCallbackProvider = healthCheckCallbackProvider;
     }
 
-    @Inject(optional = true) 
+    @Inject(optional = true)
     public void setHealthCheckHandlerProvider(Provider<HealthCheckHandler> healthCheckHandlerProvider) {
         this.healthCheckHandlerProvider = healthCheckHandlerProvider;
     }
@@ -79,21 +78,20 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
         this.preRegistrationHandler = preRegistrationHandler;
     }
 
-
-    @Inject(optional = true) 
+    @Inject(optional = true)
     public void setAdditionalFilters(Collection<T> additionalFilters) {
         this.additionalFilters = additionalFilters;
     }
 
-    @Inject(optional = true) 
+    @Inject(optional = true)
     public void setEurekaJerseyClient(EurekaJerseyClient eurekaJerseyClient) {
         this.eurekaJerseyClient = eurekaJerseyClient;
     }
-    
+
     Set<EurekaEventListener> getEventListeners() {
         return eventListeners == null ? Collections.<EurekaEventListener>emptySet() : eventListeners;
     }
-    
+
     public TransportClientFactories getTransportClientFactories() {
         return transportClientFactories;
     }
@@ -102,7 +100,7 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
     public void setTransportClientFactories(TransportClientFactories transportClientFactories) {
         this.transportClientFactories = transportClientFactories;
     }
-    
+
     public Optional<SSLContext> getSSLContext() {
         return sslContext;
     }
@@ -111,7 +109,7 @@ public abstract class AbstractDiscoveryClientOptionalArgs<T> {
     public void setSSLContext(SSLContext sslContext) {
         this.sslContext = Optional.of(sslContext);
     }
-    
+
     public Optional<HostnameVerifier> getHostnameVerifier() {
         return hostnameVerifier;
     }

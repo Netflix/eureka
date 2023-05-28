@@ -6,7 +6,6 @@ import java.util.jar.Attributes.Name;
 import java.util.jar.Manifest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +20,8 @@ public final class DiscoveryBuildInfo {
 
     private final Manifest manifest;
 
-    /* Visible for testing. */ DiscoveryBuildInfo(Class<?> clazz) {
+    /* Visible for testing. */
+    DiscoveryBuildInfo(Class<?> clazz) {
         Manifest resolvedManifest = null;
         try {
             String jarUrl = resolveJarUrl(clazz);

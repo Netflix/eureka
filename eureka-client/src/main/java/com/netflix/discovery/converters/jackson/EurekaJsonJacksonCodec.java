@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.converters.jackson;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +38,7 @@ import com.netflix.discovery.shared.Applications;
 public class EurekaJsonJacksonCodec extends AbstractEurekaJacksonCodec {
 
     private final ObjectMapper wrappedJsonMapper;
+
     private final ObjectMapper unwrappedJsonMapper;
 
     private final Map<Class<?>, ObjectMapper> mappers = new ConcurrentHashMap<>();
@@ -57,7 +56,6 @@ public class EurekaJsonJacksonCodec extends AbstractEurekaJacksonCodec {
         ObjectMapper newMapper = new ObjectMapper();
         SimpleModule jsonModule = new SimpleModule();
         jsonModule.setSerializerModifier(EurekaJacksonJsonModifiers.createJsonSerializerModifier(keyFormatter, compact));
-
         newMapper.registerModule(jsonModule);
         newMapper.setSerializationInclusion(Include.NON_NULL);
         newMapper.configure(SerializationFeature.WRAP_ROOT_VALUE, wrapped);

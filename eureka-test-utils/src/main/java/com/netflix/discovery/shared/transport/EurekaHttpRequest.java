@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.transport;
 
 import java.net.URI;
@@ -26,7 +25,9 @@ import java.util.Map;
 public class EurekaHttpRequest {
 
     private final String requestMethod;
+
     private final URI requestURI;
+
     private final Map<String, String> headers;
 
     public EurekaHttpRequest(String requestMethod, URI requestURI, Map<String, String> headers) {

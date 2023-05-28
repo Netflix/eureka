@@ -13,14 +13,12 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.eureka.resources;
 
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.eureka.EurekaServerContext;
 import com.netflix.eureka.EurekaServerContextHolder;
 import com.netflix.eureka.registry.Key;
-
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
@@ -33,10 +31,9 @@ import javax.ws.rs.core.Response;
  * A <em>jersey</em> resource for retrieving all instances with a given secure VIP address.
  *
  * @author Karthik Ranganathan
- *
  */
 @Path("/{version}/svips")
-@Produces({"application/xml", "application/json"})
+@Produces({ "application/xml", "application/json" })
 public class SecureVIPResource extends AbstractVIPResource {
 
     @Inject
@@ -50,12 +47,7 @@ public class SecureVIPResource extends AbstractVIPResource {
 
     @GET
     @Path("{svipAddress}")
-    public Response statusUpdate(@PathParam("version") String version,
-                                 @PathParam("svipAddress") String svipAddress,
-                                 @HeaderParam("Accept") final String acceptHeader,
-                                 @HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept) {
-        return getVipResponse(version, svipAddress, acceptHeader,
-                EurekaAccept.fromString(eurekaAccept), Key.EntityType.SVIP);
+    public Response statusUpdate(@PathParam("version") String version, @PathParam("svipAddress") String svipAddress, @HeaderParam("Accept") final String acceptHeader, @HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept) {
+        return getVipResponse(version, svipAddress, acceptHeader, EurekaAccept.fromString(eurekaAccept), Key.EntityType.SVIP);
     }
-
 }

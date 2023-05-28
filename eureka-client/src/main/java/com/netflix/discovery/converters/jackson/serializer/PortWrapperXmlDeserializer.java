@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.converters.jackson.serializer;
 
 import java.io.IOException;
-
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -40,7 +38,8 @@ public class PortWrapperXmlDeserializer extends StdDeserializer<InstanceInfo.Por
         int port = 0;
         while (jp.nextToken() == JsonToken.FIELD_NAME) {
             String fieldName = jp.getCurrentName();
-            jp.nextToken(); // to point to value
+            // to point to value
+            jp.nextToken();
             if ("enabled".equals(fieldName)) {
                 enabled = Boolean.valueOf(jp.getValueAsString());
             } else if (fieldName == null || "".equals(fieldName)) {

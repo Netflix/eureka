@@ -13,14 +13,12 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.discovery.converters;
 
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
 import com.netflix.discovery.provider.ISerializer;
 import com.thoughtworks.xstream.XStream;
 
@@ -36,11 +34,11 @@ import com.thoughtworks.xstream.XStream;
  * <p>
  *
  * @author Karthik Ranganathan, Greg Kim.
- *
  */
 public class EntityBodyConverter implements ISerializer {
 
     private static final String XML = "xml";
+
     private static final String JSON = "json";
 
     /*
@@ -49,15 +47,12 @@ public class EntityBodyConverter implements ISerializer {
      * @see com.netflix.discovery.provider.ISerializer#read(java.io.InputStream,
      * java.lang.Class, javax.ws.rs.core.MediaType)
      */
-    public Object read(InputStream is, Class type, MediaType mediaType)
-            throws IOException {
+    public Object read(InputStream is, Class type, MediaType mediaType) throws IOException {
         XStream xstream = getXStreamInstance(mediaType);
         if (xstream != null) {
             return xstream.fromXML(is);
         } else {
-            throw new IllegalArgumentException("Content-type: "
-                    + mediaType.getType() + " is currently not supported for "
-                    + type.getName());
+            throw new IllegalArgumentException("Content-type: " + mediaType.getType() + " is currently not supported for " + type.getName());
         }
     }
 
@@ -67,15 +62,12 @@ public class EntityBodyConverter implements ISerializer {
      * @see com.netflix.discovery.provider.ISerializer#write(java.lang.Object,
      * java.io.OutputStream, javax.ws.rs.core.MediaType)
      */
-    public void write(Object object, OutputStream os, MediaType mediaType)
-            throws IOException {
+    public void write(Object object, OutputStream os, MediaType mediaType) throws IOException {
         XStream xstream = getXStreamInstance(mediaType);
         if (xstream != null) {
             xstream.toXML(object, os);
         } else {
-            throw new IllegalArgumentException("Content-type: "
-                    + mediaType.getType() + " is currently not supported for "
-                    + object.getClass().getName());
+            throw new IllegalArgumentException("Content-type: " + mediaType.getType() + " is currently not supported for " + object.getClass().getName());
         }
     }
 

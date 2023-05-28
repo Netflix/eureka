@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.converters.jackson.builder;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -42,9 +40,10 @@ import com.netflix.discovery.util.StringCache;
  *
  * @author Tomasz Bak
  */
-public class StringInterningAmazonInfoBuilder extends JsonDeserializer<AmazonInfo>{
+public class StringInterningAmazonInfoBuilder extends JsonDeserializer<AmazonInfo> {
 
     private static final Map<String, CacheScope> VALUE_INTERN_KEYS;
+
     private static final char[] BUF_METADATA = "metadata".toCharArray();
 
     static {
@@ -106,28 +105,23 @@ public class StringInterningAmazonInfoBuilder extends JsonDeserializer<AmazonInf
     }
 
     @Override
-    public AmazonInfo deserialize(JsonParser jp, DeserializationContext context)
-            throws IOException {
-        Map<String,String> metadata = EurekaJacksonCodec.METADATA_MAP_SUPPLIER.get();
-        DeserializerStringCache intern = DeserializerStringCache.from(context);        
-
+    public AmazonInfo deserialize(JsonParser jp, DeserializationContext context) throws IOException {
+        Map<String, String> metadata = EurekaJacksonCodec.METADATA_MAP_SUPPLIER.get();
+        DeserializerStringCache intern = DeserializerStringCache.from(context);
         if (skipToMetadata(jp)) {
             JsonToken jsonToken = jp.nextToken();
-            while((jsonToken = jp.nextToken()) != JsonToken.END_OBJECT) {
+            while ((jsonToken = jp.nextToken()) != JsonToken.END_OBJECT) {
                 String metadataKey = intern.apply(jp, CacheScope.GLOBAL_SCOPE);
                 jp.nextToken();
                 CacheScope scope = VALUE_INTERN_KEYS.get(metadataKey);
-                String metadataValue =  (scope != null) ? intern.apply(jp, scope) : intern.apply(jp, CacheScope.APPLICATION_SCOPE);
+                String metadataValue = (scope != null) ? intern.apply(jp, scope) : intern.apply(jp, CacheScope.APPLICATION_SCOPE);
                 metadata.put(metadataKey, metadataValue);
             }
             skipToEnd(jp);
         }
-
         if (jp.getCurrentToken() == JsonToken.END_OBJECT) {
             jp.nextToken();
         }
-
         return new AmazonInfo(Name.Amazon.name(), metadata);
     }
-  
 }

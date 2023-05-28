@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @Singleton
 public class GzipEncodingEnforcingFilter implements Filter {
+
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
     }
@@ -81,6 +82,7 @@ public class GzipEncodingEnforcingFilter implements Filter {
     private static class EnumWrapper<E> implements Enumeration<E> {
 
         private final Enumeration<E> delegate;
+
         private final AtomicReference<E> extraElementRef;
 
         private EnumWrapper(E extraElement) {

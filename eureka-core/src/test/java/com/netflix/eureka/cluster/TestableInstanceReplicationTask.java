@@ -2,7 +2,6 @@ package com.netflix.eureka.cluster;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 
@@ -13,21 +12,20 @@ class TestableInstanceReplicationTask extends InstanceReplicationTask {
 
     public static final String APP_NAME = "testableReplicationTaskApp";
 
-    public enum ProcessingState {Pending, Finished, Failed}
+    public enum ProcessingState {
+
+        Pending, Finished, Failed
+    }
 
     private final int replyStatusCode;
+
     private final int networkFailuresRepeatCount;
 
     private final AtomicReference<ProcessingState> processingState = new AtomicReference<>(ProcessingState.Pending);
 
     private volatile int triggeredNetworkFailures;
 
-    TestableInstanceReplicationTask(String peerNodeName,
-                                    String appName,
-                                    String id,
-                                    Action action,
-                                    int replyStatusCode,
-                                    int networkFailuresRepeatCount) {
+    TestableInstanceReplicationTask(String peerNodeName, String appName, String id, Action action, int replyStatusCode, int networkFailuresRepeatCount) {
         super(peerNodeName, action, appName, id);
         this.replyStatusCode = replyStatusCode;
         this.networkFailuresRepeatCount = networkFailuresRepeatCount;
@@ -65,7 +63,9 @@ class TestableInstanceReplicationTask extends InstanceReplicationTask {
         private int autoId;
 
         private int replyStatusCode = 200;
+
         private Action action = Action.Heartbeat;
+
         private int networkFailuresRepeatCount;
 
         public TestableReplicationTaskBuilder withReplyStatusCode(int replyStatusCode) {
@@ -84,14 +84,7 @@ class TestableInstanceReplicationTask extends InstanceReplicationTask {
         }
 
         public TestableInstanceReplicationTask build() {
-            return new TestableInstanceReplicationTask(
-                    "peerNodeName#test",
-                    APP_NAME,
-                    "id#" + autoId++,
-                    action,
-                    replyStatusCode,
-                    networkFailuresRepeatCount
-            );
+            return new TestableInstanceReplicationTask("peerNodeName#test", APP_NAME, "id#" + autoId++, action, replyStatusCode, networkFailuresRepeatCount);
         }
     }
 }

@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.transport.jersey;
 
 import java.net.URI;
-
 import com.google.common.base.Preconditions;
 import com.netflix.discovery.shared.resolver.DefaultEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
@@ -41,12 +39,8 @@ public class JerseyApplicationClientTest extends EurekaHttpClientCompatibilityTe
     @Override
     protected EurekaHttpClient getEurekaHttpClient(URI serviceURI) {
         Preconditions.checkState(jerseyHttpClient == null, "EurekaHttpClient has been already created");
-
-        TransportClientFactory clientFactory = JerseyEurekaHttpClientFactory.newBuilder()
-                .withClientName("compatibilityTestClient")
-                .build();
+        TransportClientFactory clientFactory = JerseyEurekaHttpClientFactory.newBuilder().withClientName("compatibilityTestClient").build();
         jerseyHttpClient = (JerseyApplicationClient) clientFactory.newClient(new DefaultEndpoint(serviceURI.toString()));
-
         return jerseyHttpClient;
     }
 }

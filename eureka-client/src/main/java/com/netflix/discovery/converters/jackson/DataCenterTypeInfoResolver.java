@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.MyDataCenterInfo;
-
 import java.io.IOException;
 
 /**

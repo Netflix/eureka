@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.transport;
 
 import java.net.URI;
-
 import com.google.common.base.Preconditions;
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.discovery.converters.wrappers.CodecWrappers.JacksonJson;
@@ -31,6 +29,7 @@ import org.junit.After;
 public class SimpleEurekaHttpServerTest extends EurekaHttpClientCompatibilityTestSuite {
 
     private TransportClientFactory httpClientFactory;
+
     private EurekaHttpClient eurekaHttpClient;
 
     @Override
@@ -43,16 +42,8 @@ public class SimpleEurekaHttpServerTest extends EurekaHttpClientCompatibilityTes
     @Override
     protected EurekaHttpClient getEurekaHttpClient(URI serviceURI) {
         Preconditions.checkState(eurekaHttpClient == null, "EurekaHttpClient has been already created");
-
-        httpClientFactory = JerseyEurekaHttpClientFactory.newBuilder()
-                .withClientName("test")
-                .withMaxConnectionsPerHost(10)
-                .withMaxTotalConnections(10)
-                .withDecoder(JacksonJson.class.getSimpleName(), EurekaAccept.full.name())
-                .withEncoder(JacksonJson.class.getSimpleName())
-                .build();
+        httpClientFactory = JerseyEurekaHttpClientFactory.newBuilder().withClientName("test").withMaxConnectionsPerHost(10).withMaxTotalConnections(10).withDecoder(JacksonJson.class.getSimpleName(), EurekaAccept.full.name()).withEncoder(JacksonJson.class.getSimpleName()).build();
         this.eurekaHttpClient = httpClientFactory.newClient(new DefaultEndpoint(serviceURI.toString()));
-
         return eurekaHttpClient;
     }
 }

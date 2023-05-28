@@ -8,18 +8,21 @@ import com.netflix.eureka.cluster.PeerEurekaNodes;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.net.URI;
 
 /**
  * @author David Liu
  */
 public class StatusUtil {
+
     private static final Logger logger = LoggerFactory.getLogger(StatusUtil.class);
 
     private final String myAppName;
+
     private final PeerAwareInstanceRegistry registry;
+
     private final PeerEurekaNodes peerEurekaNodes;
+
     private final InstanceInfo instanceInfo;
 
     public StatusUtil(EurekaServerContext server) {
@@ -35,9 +38,7 @@ public class StatusUtil {
         int upReplicasCount = 0;
         StringBuilder upReplicas = new StringBuilder();
         StringBuilder downReplicas = new StringBuilder();
-
         StringBuilder replicaHostNames = new StringBuilder();
-
         for (PeerEurekaNode node : peerEurekaNodes.getPeerEurekaNodes()) {
             if (replicaHostNames.length() > 0) {
                 replicaHostNames.append(", ");
@@ -50,23 +51,18 @@ public class StatusUtil {
                 downReplicas.append(node.getServiceUrl()).append(',');
             }
         }
-
         builder.add("registered-replicas", replicaHostNames.toString());
         builder.add("available-replicas", upReplicas.toString());
         builder.add("unavailable-replicas", downReplicas.toString());
-        
         // Only set the healthy flag if a threshold has been configured.
         if (peerEurekaNodes.getMinNumberOfAvailablePeers() > -1) {
             builder.isHealthy(upReplicasCount >= peerEurekaNodes.getMinNumberOfAvailablePeers());
         }
-
         builder.withInstanceInfo(this.instanceInfo);
-
         return builder.build();
     }
 
     private boolean isReplicaAvailable(String url) {
-
         try {
             Application app = registry.getApplication(myAppName, false);
             if (app == null) {

@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.junit.resource;
 
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.SimpleEurekaHttpServer;
 import org.junit.rules.ExternalResource;
-
 import static org.mockito.Mockito.mock;
 
 /**

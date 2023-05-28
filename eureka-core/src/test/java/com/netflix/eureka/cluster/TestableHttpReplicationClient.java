@@ -9,7 +9,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.Application;
@@ -19,7 +18,6 @@ import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
-
 import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEurekaHttpResponse;
 
 /**
@@ -31,19 +29,22 @@ import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEureka
 public class TestableHttpReplicationClient implements HttpReplicationClient {
 
     private int[] networkStatusCodes;
-    private InstanceInfo instanceInfoFromPeer;
-    private int networkFailuresRepeatCount;
-    private int readtimeOutRepeatCount;
 
+    private InstanceInfo instanceInfoFromPeer;
+
+    private int networkFailuresRepeatCount;
+
+    private int readtimeOutRepeatCount;
 
     private int batchStatusCode;
 
     private final AtomicInteger callCounter = new AtomicInteger();
+
     private final AtomicInteger networkFailureCounter = new AtomicInteger();
+
     private final AtomicInteger readTimeOutCounter = new AtomicInteger();
 
     private long processingDelayMs;
-    
 
     private final BlockingQueue<HandledRequest> handledRequests = new LinkedBlockingQueue<>();
 
@@ -114,53 +115,49 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
 
     @Override
     public EurekaHttpResponse<Applications> getApplications(String... regions) {
-        throw new IllegalStateException("method not supported");
+        return notSupportedMethod(regions);
     }
 
     @Override
     public EurekaHttpResponse<Applications> getDelta(String... regions) {
-        throw new IllegalStateException("method not supported");
+        return notSupportedMethod(regions);
     }
 
     @Override
     public EurekaHttpResponse<Applications> getVip(String vipAddress, String... regions) {
-        throw new IllegalStateException("method not supported");
+        return unsupportedMethod(vipAddress, regions);
     }
 
     @Override
     public EurekaHttpResponse<Applications> getSecureVip(String secureVipAddress, String... regions) {
-        throw new IllegalStateException("method not supported");
+        return unsupportedMethod(secureVipAddress, regions);
     }
 
     @Override
     public EurekaHttpResponse<Application> getApplication(String appName) {
-        throw new IllegalStateException("method not supported");
+        return UnsupportedOperationException(appName);
     }
 
     @Override
     public EurekaHttpResponse<InstanceInfo> getInstance(String id) {
-        throw new IllegalStateException("method not supported");
+        return UnsupportedOperationException(id);
     }
 
     @Override
     public EurekaHttpResponse<InstanceInfo> getInstance(String appName, String id) {
-        throw new IllegalStateException("method not supported");
+        return unsupportedMethod(appName, id);
     }
 
     @Override
     public EurekaHttpResponse<ReplicationListResponse> submitBatchUpdates(ReplicationList replicationList) {
-    	
         if (readTimeOutCounter.get() < readtimeOutRepeatCount) {
             readTimeOutCounter.incrementAndGet();
             throw new RuntimeException(new SocketTimeoutException("Read timed out"));
         }
-    	
-    	
         if (networkFailureCounter.get() < networkFailuresRepeatCount) {
             networkFailureCounter.incrementAndGet();
             throw new RuntimeException(new IOException("simulated network failure"));
         }
-
         if (processingDelayMs > 0) {
             try {
                 Thread.sleep(processingDelayMs);
@@ -168,13 +165,10 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
                 throw new RuntimeException(e);
             }
         }
-
         List<ReplicationInstanceResponse> responseList = new ArrayList<>();
         responseList.add(new ReplicationInstanceResponse(batchStatusCode, instanceInfoFromPeer));
         ReplicationListResponse replicationListResponse = new ReplicationListResponse(responseList);
-
         handledRequests.add(new HandledRequest(RequestType.Batch, replicationList));
-
         int statusCode = networkStatusCodes[callCounter.getAndIncrement()];
         return anEurekaHttpResponse(statusCode, replicationListResponse).type(MediaType.APPLICATION_JSON_TYPE).build();
     }
@@ -183,10 +177,21 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
     public void shutdown() {
     }
 
-    public enum RequestType {Heartbeat, Register, Cancel, StatusUpdate, DeleteStatusOverride, AsgStatusUpdate, Batch}
+    public enum RequestType {
+
+        Heartbeat,
+        Register,
+        Cancel,
+        StatusUpdate,
+        DeleteStatusOverride,
+        AsgStatusUpdate,
+        Batch
+    }
 
     public static class HandledRequest {
+
         private final RequestType requestType;
+
         private final Object data;
 
         public HandledRequest(RequestType requestType, Object data) {
@@ -201,5 +206,17 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
         public Object getData() {
             return data;
         }
+    }
+
+    private EurekaHttpResponse<Applications> notSupportedMethod(String... regions) {
+        throw new IllegalStateException("method not supported");
+    }
+
+    private EurekaHttpResponse<Applications> unsupportedMethod(String vipAddress, String... regions) {
+        throw new IllegalStateException("method not supported");
+    }
+
+    private EurekaHttpResponse<Application> UnsupportedOperationException(String appName) {
+        throw new IllegalStateException("method not supported");
     }
 }

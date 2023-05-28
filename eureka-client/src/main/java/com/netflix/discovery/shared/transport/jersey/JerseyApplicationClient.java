@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.transport.jersey;
 
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource.Builder;
-
 import java.util.Map;
 
 /**

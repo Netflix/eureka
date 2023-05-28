@@ -11,6 +11,7 @@ import com.netflix.eureka.resources.ASGResource.ASGStatus;
 public abstract class AsgReplicationTask extends ReplicationTask {
 
     private final String asgName;
+
     private final ASGStatus newStatus;
 
     protected AsgReplicationTask(String peerNodeName, Action action, String asgName, ASGStatus newStatus) {

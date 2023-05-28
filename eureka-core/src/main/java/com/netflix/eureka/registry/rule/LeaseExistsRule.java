@@ -15,9 +15,7 @@ public class LeaseExistsRule implements InstanceStatusOverrideRule {
     private static final Logger logger = LoggerFactory.getLogger(LeaseExistsRule.class);
 
     @Override
-    public StatusOverrideResult apply(InstanceInfo instanceInfo,
-                                      Lease<InstanceInfo> existingLease,
-                                      boolean isReplication) {
+    public StatusOverrideResult apply(InstanceInfo instanceInfo, Lease<InstanceInfo> existingLease, boolean isReplication) {
         // This is for backward compatibility until all applications have ASG
         // names, otherwise while starting up
         // the client status may override status replicated from other servers
@@ -27,12 +25,8 @@ public class LeaseExistsRule implements InstanceStatusOverrideRule {
                 existingStatus = existingLease.getHolder().getStatus();
             }
             // Allow server to have its way when the status is UP or OUT_OF_SERVICE
-            if ((existingStatus != null)
-                    && (InstanceInfo.InstanceStatus.OUT_OF_SERVICE.equals(existingStatus)
-                    || InstanceInfo.InstanceStatus.UP.equals(existingStatus))) {
-                logger.debug("There is already an existing lease with status {}  for instance {}",
-                        existingLease.getHolder().getStatus().name(),
-                        existingLease.getHolder().getId());
+            if ((existingStatus != null) && (InstanceInfo.InstanceStatus.OUT_OF_SERVICE.equals(existingStatus) || InstanceInfo.InstanceStatus.UP.equals(existingStatus))) {
+                logger.debug("There is already an existing lease with status {}  for instance {}", existingLease.getHolder().getStatus().name(), existingLease.getHolder().getId());
                 return StatusOverrideResult.matchingStatus(existingLease.getHolder().getStatus());
             }
         }

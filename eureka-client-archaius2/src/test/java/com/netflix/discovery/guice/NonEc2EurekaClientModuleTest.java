@@ -29,26 +29,13 @@ public class NonEc2EurekaClientModuleTest {
 
     @Before
     public void setUp() throws Exception {
-        injector = InjectorBuilder
-                .fromModules(
-                        new ArchaiusModule() {
-                            @Override
-                            protected void configureArchaius() {
-                                bindApplicationConfigurationOverride().toInstance(
-                                        MapConfig.builder()
-                                                .put("eureka.region", "default")
-                                                .put("eureka.shouldFetchRegistry", "false")
-                                                .put("eureka.registration.enabled", "false")
-                                                .put("eureka.serviceUrl.default", "http://localhost:8080/eureka/v2")
-                                                .put("eureka.shouldInitAsEc2", "false")
-                                                .put("eureka.instanceDeploymentEnvironment", "non-ec2")
-                                                .build()
-                                );
-                            }
-                        },
-                        new EurekaClientModule()
-                )
-                .createInjector();
+        injector = InjectorBuilder.fromModules(new ArchaiusModule() {
+
+            @Override
+            protected void configureArchaius() {
+                bindApplicationConfigurationOverride().toInstance(MapConfig.builder().put("eureka.region", "default").put("eureka.shouldFetchRegistry", "false").put("eureka.registration.enabled", "false").put("eureka.serviceUrl.default", "http://localhost:8080/eureka/v2").put("eureka.shouldInitAsEc2", "false").put("eureka.instanceDeploymentEnvironment", "non-ec2").build());
+            }
+        }, new EurekaClientModule()).createInjector();
     }
 
     @After
@@ -63,24 +50,18 @@ public class NonEc2EurekaClientModuleTest {
     public void testDI() {
         InstanceInfo instanceInfo = injector.getInstance(InstanceInfo.class);
         Assert.assertEquals(ApplicationInfoManager.getInstance().getInfo(), instanceInfo);
-
         VipAddressResolver vipAddressResolver = injector.getInstance(VipAddressResolver.class);
         Assert.assertTrue(vipAddressResolver instanceof Archaius2VipAddressResolver);
-
         EurekaClient eurekaClient = injector.getInstance(EurekaClient.class);
         DiscoveryClient discoveryClient = injector.getInstance(DiscoveryClient.class);
-
         Assert.assertEquals(DiscoveryManager.getInstance().getEurekaClient(), eurekaClient);
         Assert.assertEquals(DiscoveryManager.getInstance().getDiscoveryClient(), discoveryClient);
         Assert.assertEquals(eurekaClient, discoveryClient);
-
         EurekaClientConfig eurekaClientConfig = injector.getInstance(EurekaClientConfig.class);
         Assert.assertEquals(DiscoveryManager.getInstance().getEurekaClientConfig(), eurekaClientConfig);
-
         EurekaInstanceConfig eurekaInstanceConfig = injector.getInstance(EurekaInstanceConfig.class);
         Assert.assertEquals(DiscoveryManager.getInstance().getEurekaInstanceConfig(), eurekaInstanceConfig);
         Assert.assertTrue(eurekaInstanceConfig instanceof EurekaArchaius2InstanceConfig);
-
         ApplicationInfoManager applicationInfoManager = injector.getInstance(ApplicationInfoManager.class);
         InstanceInfo myInfo = applicationInfoManager.getInfo();
         Assert.assertEquals(DataCenterInfo.Name.MyOwn, myInfo.getDataCenterInfo().getName());

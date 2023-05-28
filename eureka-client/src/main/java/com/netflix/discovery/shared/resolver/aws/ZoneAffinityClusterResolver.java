@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.resolver.aws;
 
 import java.util.Collections;
 import java.util.List;
-
 import com.netflix.discovery.shared.resolver.ClusterResolver;
 import com.netflix.discovery.shared.resolver.EndpointRandomizer;
 import com.netflix.discovery.shared.resolver.ResolverUtils;
@@ -37,19 +35,17 @@ public class ZoneAffinityClusterResolver implements ClusterResolver<AwsEndpoint>
     private static final Logger logger = LoggerFactory.getLogger(ZoneAffinityClusterResolver.class);
 
     private final ClusterResolver<AwsEndpoint> delegate;
+
     private final String myZone;
+
     private final boolean zoneAffinity;
+
     private final EndpointRandomizer randomizer;
 
     /**
      * A zoneAffinity defines zone affinity (true) or anti-affinity rules (false).
      */
-    public ZoneAffinityClusterResolver(
-            ClusterResolver<AwsEndpoint> delegate,
-            String myZone,
-            boolean zoneAffinity,
-            EndpointRandomizer randomizer
-    ) {
+    public ZoneAffinityClusterResolver(ClusterResolver<AwsEndpoint> delegate, String myZone, boolean zoneAffinity, EndpointRandomizer randomizer) {
         this.delegate = delegate;
         this.myZone = myZone;
         this.zoneAffinity = zoneAffinity;
@@ -70,9 +66,7 @@ public class ZoneAffinityClusterResolver implements ClusterResolver<AwsEndpoint>
         if (!zoneAffinity) {
             Collections.reverse(randomizedList);
         }
-
         logger.debug("Local zone={}; resolved to: {}", myZone, randomizedList);
-
         return randomizedList;
     }
 

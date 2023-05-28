@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.discovery.shared;
 
 /**
@@ -25,6 +24,7 @@ package com.netflix.discovery.shared;
  * @param <E2> Generics indicating the type information for the second one in the pair.
  */
 public class Pair<E1, E2> {
+
     public E1 first() {
         return first;
     }
@@ -42,6 +42,7 @@ public class Pair<E1, E2> {
     }
 
     private E1 first;
+
     private E2 second;
 
     public Pair(E1 first, E2 second) {

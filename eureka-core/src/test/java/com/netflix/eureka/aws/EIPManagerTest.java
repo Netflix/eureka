@@ -13,17 +13,14 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.eureka.aws;
 
 import com.google.common.collect.Lists;
 import com.netflix.discovery.EurekaClientConfig;
 import org.junit.Before;
 import org.junit.Test;
-
 import java.util.Collection;
 import java.util.List;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -34,7 +31,9 @@ import static org.mockito.Mockito.when;
  * @author Joseph Witthuhn
  */
 public class EIPManagerTest {
+
     private EurekaClientConfig config = mock(EurekaClientConfig.class);
+
     private EIPManager eipManager;
 
     @Before
@@ -46,10 +45,8 @@ public class EIPManagerTest {
     @Test
     public void shouldFilterNonElasticNames() {
         when(config.getRegion()).thenReturn("us-east-1");
-        List<String> hosts = Lists.newArrayList("example.com", "ec2-1-2-3-4.compute.amazonaws.com", "5.6.7.8",
-                "ec2-101-202-33-44.compute.amazonaws.com");
+        List<String> hosts = Lists.newArrayList("example.com", "ec2-1-2-3-4.compute.amazonaws.com", "5.6.7.8", "ec2-101-202-33-44.compute.amazonaws.com");
         when(config.getEurekaServerServiceUrls(any(String.class))).thenReturn(hosts);
-
         Collection<String> returnValue = eipManager.getCandidateEIPs("i-123", "us-east-1d");
         assertEquals(2, returnValue.size());
         assertTrue(returnValue.contains("1.2.3.4"));
@@ -59,10 +56,8 @@ public class EIPManagerTest {
     @Test
     public void shouldFilterNonElasticNamesInOtherRegion() {
         when(config.getRegion()).thenReturn("eu-west-1");
-        List<String> hosts = Lists.newArrayList("example.com", "ec2-1-2-3-4.eu-west-1.compute.amazonaws.com",
-                "5.6.7.8", "ec2-101-202-33-44.eu-west-1.compute.amazonaws.com");
+        List<String> hosts = Lists.newArrayList("example.com", "ec2-1-2-3-4.eu-west-1.compute.amazonaws.com", "5.6.7.8", "ec2-101-202-33-44.eu-west-1.compute.amazonaws.com");
         when(config.getEurekaServerServiceUrls(any(String.class))).thenReturn(hosts);
-
         Collection<String> returnValue = eipManager.getCandidateEIPs("i-123", "eu-west-1a");
         assertEquals(2, returnValue.size());
         assertTrue(returnValue.contains("1.2.3.4"));
@@ -74,7 +69,6 @@ public class EIPManagerTest {
         when(config.getRegion()).thenReturn("eu-west-1");
         List<String> hosts = Lists.newArrayList("example.com", "5.6.7.8");
         when(config.getEurekaServerServiceUrls(any(String.class))).thenReturn(hosts);
-
         eipManager.getCandidateEIPs("i-123", "eu-west-1a");
     }
 }

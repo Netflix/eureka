@@ -3,7 +3,6 @@ package com.netflix.discovery;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.UUID;
-
 import com.google.inject.util.Providers;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.ApplicationInfoManager;
@@ -23,22 +22,30 @@ import org.junit.Test;
  */
 public class BackUpRegistryTest {
 
-
     public static final String ALL_REGIONS_VIP_ADDR = "myvip";
+
     public static final String REMOTE_REGION_INSTANCE_1_HOSTNAME = "blah";
+
     public static final String REMOTE_REGION_INSTANCE_2_HOSTNAME = "blah2";
 
     public static final String LOCAL_REGION_APP_NAME = "MYAPP_LOC";
+
     public static final String LOCAL_REGION_INSTANCE_1_HOSTNAME = "blahloc";
+
     public static final String LOCAL_REGION_INSTANCE_2_HOSTNAME = "blahloc2";
 
     public static final String REMOTE_REGION_APP_NAME = "MYAPP";
+
     public static final String REMOTE_REGION = "myregion";
+
     public static final String REMOTE_ZONE = "myzone";
+
     public static final int CLIENT_REFRESH_RATE = 10;
+
     public static final int NOT_AVAILABLE_EUREKA_PORT = 756473;
 
     private EurekaClient client;
+
     private MockBackupRegistry backupRegistry;
 
     public void setUp(boolean enableRemote) throws Exception {
@@ -49,33 +56,23 @@ public class BackUpRegistryTest {
         }
         ConfigurationManager.getConfigInstance().setProperty("eureka.myregion.availabilityZones", REMOTE_ZONE);
         ConfigurationManager.getConfigInstance().setProperty("eureka.backupregistry", MockBackupRegistry.class.getName());
-        ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default",
-                "http://localhost:" + NOT_AVAILABLE_EUREKA_PORT /*Should always be unavailable*/
-                        +
-                        MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
-
+        ConfigurationManager.getConfigInstance().setProperty("eureka.serviceUrl.default", "http://localhost:" + NOT_AVAILABLE_EUREKA_PORT + /*Should always be unavailable*/
+        MockRemoteEurekaServer.EUREKA_API_BASE_PATH);
         InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
         builder.setIPAddr("10.10.101.00");
         builder.setHostName("Hosttt");
         builder.setAppName("EurekaTestApp-" + UUID.randomUUID());
         builder.setDataCenterInfo(new DataCenterInfo() {
+
             @Override
             public Name getName() {
                 return Name.MyOwn;
             }
         });
-
         ApplicationInfoManager applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), builder.build());
-
         backupRegistry = new MockBackupRegistry();
         setupBackupMock();
-        client = new DiscoveryClient(
-                applicationInfoManager,
-                new DefaultEurekaClientConfig(),
-                null,
-                Providers.of((BackupRegistry)backupRegistry),
-                ResolverUtils::randomize
-        );
+        client = new DiscoveryClient(applicationInfoManager, new DefaultEurekaClientConfig(), null, Providers.of((BackupRegistry) backupRegistry), ResolverUtils::randomize);
     }
 
     @After
@@ -101,7 +98,8 @@ public class BackUpRegistryTest {
         Applications applications = client.getApplications();
         List<Application> registeredApplications = applications.getRegisteredApplications();
         Assert.assertNotNull("Local region apps not found.", registeredApplications);
-        Assert.assertEquals("Local apps size not as expected.", 2, registeredApplications.size()); // Remote region comes with no instances.
+        // Remote region comes with no instances.
+        Assert.assertEquals("Local apps size not as expected.", 2, registeredApplications.size());
         Application localRegionApp = null;
         Application remoteRegionApp = null;
         for (Application registeredApplication : registeredApplications) {
@@ -129,7 +127,6 @@ public class BackUpRegistryTest {
     public void testAppsHashCode() throws Exception {
         setUp(true);
         Applications applications = client.getApplications();
-
         Assert.assertEquals("UP_1_", applications.getAppsHashCode());
     }
 
@@ -150,7 +147,6 @@ public class BackUpRegistryTest {
         myapp.addInstance(instanceInfo);
         return myapp;
     }
-
 
     private Application createRemoteApps() {
         Application myapp = new Application(REMOTE_REGION_APP_NAME);

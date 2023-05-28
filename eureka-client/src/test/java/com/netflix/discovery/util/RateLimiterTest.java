@@ -13,13 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.util;
 
 import org.junit.Test;
-
 import java.util.concurrent.TimeUnit;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -29,7 +26,9 @@ import static org.junit.Assert.assertTrue;
 public class RateLimiterTest {
 
     private static final long START = 1000000;
+
     private static final int BURST_SIZE = 2;
+
     private static final int AVERAGE_RATE = 10;
 
     @Test
@@ -37,7 +36,6 @@ public class RateLimiterTest {
         RateLimiter secondLimiter = new RateLimiter(TimeUnit.SECONDS);
         long secondStep = 1000 / AVERAGE_RATE;
         testEvenLoad(secondLimiter, START, BURST_SIZE, AVERAGE_RATE, secondStep);
-
         RateLimiter minuteLimiter = new RateLimiter(TimeUnit.MINUTES);
         long minuteStep = 60 * 1000 / AVERAGE_RATE;
         testEvenLoad(minuteLimiter, START, BURST_SIZE, AVERAGE_RATE, minuteStep);
@@ -55,7 +53,6 @@ public class RateLimiterTest {
         RateLimiter secondLimiter = new RateLimiter(TimeUnit.SECONDS);
         long secondStep = 1000 / AVERAGE_RATE;
         testBursts(secondLimiter, START, BURST_SIZE, AVERAGE_RATE, secondStep);
-
         RateLimiter minuteLimiter = new RateLimiter(TimeUnit.MINUTES);
         long minuteStep = 60 * 1000 / AVERAGE_RATE;
         testBursts(minuteLimiter, START, BURST_SIZE, AVERAGE_RATE, minuteStep);
@@ -66,7 +63,6 @@ public class RateLimiterTest {
         assertTrue(rateLimiter.acquire(burstSize, averageRate, start));
         assertTrue(rateLimiter.acquire(burstSize, averageRate, start));
         assertFalse(rateLimiter.acquire(burstSize, averageRate, start));
-
         // Now advance by 1.5 STEP
         assertTrue(rateLimiter.acquire(burstSize, averageRate, start + step + step / 2));
         assertFalse(rateLimiter.acquire(burstSize, averageRate, start + step + step / 2));

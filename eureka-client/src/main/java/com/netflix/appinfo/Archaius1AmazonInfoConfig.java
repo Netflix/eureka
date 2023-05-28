@@ -3,7 +3,6 @@ package com.netflix.appinfo;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.internal.util.Archaius1Utils;
-
 import static com.netflix.appinfo.PropertyBasedAmazonInfoConfigConstants.*;
 
 /**
@@ -12,16 +11,13 @@ import static com.netflix.appinfo.PropertyBasedAmazonInfoConfigConstants.*;
 public class Archaius1AmazonInfoConfig implements AmazonInfoConfig {
 
     private final DynamicPropertyFactory configInstance;
+
     private final String namespace;
 
     public Archaius1AmazonInfoConfig(String namespace) {
-        this.namespace = namespace.endsWith(".")
-                ? namespace
-                : namespace + ".";
-
+        this.namespace = namespace.endsWith(".") ? namespace : namespace + ".";
         this.configInstance = Archaius1Utils.initConfig(CommonConstants.CONFIG_FILE_NAME);
     }
-
 
     @Override
     public String getNamespace() {

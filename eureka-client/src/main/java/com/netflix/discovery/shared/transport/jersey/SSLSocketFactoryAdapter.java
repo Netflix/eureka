@@ -6,12 +6,10 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.security.cert.X509Certificate;
-
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
-
 import org.apache.http.HttpHost;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -25,7 +23,6 @@ import org.apache.http.protocol.HttpContext;
  * deprecated pre 4.3 APIs to use SSL improvements from 4.3, e.g. SNI.
  *
  * @author William Tran
- *
  */
 public class SSLSocketFactoryAdapter extends SSLSocketFactory {
 
@@ -37,7 +34,7 @@ public class SSLSocketFactoryAdapter extends SSLSocketFactory {
         super(DummySSLSocketFactory.INSTANCE, DummyX509HostnameVerifier.INSTANCE);
         this.factory = factory;
     }
-    
+
     public SSLSocketFactoryAdapter(SSLConnectionSocketFactory factory, HostnameVerifier hostnameVerifier) {
         super(DummySSLSocketFactory.INSTANCE, new WrappedX509HostnameVerifier(hostnameVerifier));
         this.factory = factory;
@@ -49,26 +46,17 @@ public class SSLSocketFactoryAdapter extends SSLSocketFactory {
     }
 
     @Override
-    public Socket connectSocket(
-            final int connectTimeout,
-            final Socket socket,
-            final HttpHost host,
-            final InetSocketAddress remoteAddress,
-            final InetSocketAddress localAddress,
-            final HttpContext context) throws IOException {
+    public Socket connectSocket(final int connectTimeout, final Socket socket, final HttpHost host, final InetSocketAddress remoteAddress, final InetSocketAddress localAddress, final HttpContext context) throws IOException {
         return factory.connectSocket(connectTimeout, socket, host, remoteAddress, localAddress, context);
     }
 
     @Override
-    public Socket createLayeredSocket(
-            final Socket socket,
-            final String target,
-            final int port,
-            final HttpContext context) throws IOException {
+    public Socket createLayeredSocket(final Socket socket, final String target, final int port, final HttpContext context) throws IOException {
         return factory.createLayeredSocket(socket, target, port, context);
     }
 
     private static class DummySSLSocketFactory extends javax.net.ssl.SSLSocketFactory {
+
         private static final DummySSLSocketFactory INSTANCE = new DummySSLSocketFactory();
 
         @Override
@@ -78,12 +66,12 @@ public class SSLSocketFactoryAdapter extends SSLSocketFactory {
 
         @Override
         public String[] getDefaultCipherSuites() {
-            throw new UnsupportedOperationException();
+            return notImplementedException();
         }
 
         @Override
         public String[] getSupportedCipherSuites() {
-            throw new UnsupportedOperationException();
+            return notImplementedException();
         }
 
         @Override
@@ -97,19 +85,22 @@ public class SSLSocketFactoryAdapter extends SSLSocketFactory {
         }
 
         @Override
-        public Socket createSocket(String host, int port, InetAddress localHost, int localPort)
-                throws IOException, UnknownHostException {
+        public Socket createSocket(String host, int port, InetAddress localHost, int localPort) throws IOException, UnknownHostException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Socket createSocket(InetAddress address, int port, InetAddress localAddress, int localPort)
-                throws IOException {
+        public Socket createSocket(InetAddress address, int port, InetAddress localAddress, int localPort) throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        private String[] notImplementedException() {
             throw new UnsupportedOperationException();
         }
     }
 
     private static class DummyX509HostnameVerifier implements X509HostnameVerifier {
+
         private static final DummyX509HostnameVerifier INSTANCE = new DummyX509HostnameVerifier();
 
         @Override
@@ -131,11 +122,12 @@ public class SSLSocketFactoryAdapter extends SSLSocketFactory {
         public void verify(String host, String[] cns, String[] subjectAlts) throws SSLException {
             throw new UnsupportedOperationException();
         }
-
     }
-    
+
     private static class WrappedX509HostnameVerifier extends DummyX509HostnameVerifier {
+
         HostnameVerifier hostnameVerifier;
+
         private WrappedX509HostnameVerifier(HostnameVerifier hostnameVerifier) {
             this.hostnameVerifier = hostnameVerifier;
         }
@@ -145,5 +137,4 @@ public class SSLSocketFactoryAdapter extends SSLSocketFactory {
             return hostnameVerifier.verify(hostname, session);
         }
     }
-
 }

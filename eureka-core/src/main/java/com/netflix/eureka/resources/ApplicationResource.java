@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.eureka.resources;
 
 import javax.ws.rs.Consumes;
@@ -25,7 +24,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.EurekaAccept;
@@ -47,20 +45,21 @@ import org.slf4j.LoggerFactory;
  * {@link com.netflix.discovery.shared.Application}.
  *
  * @author Karthik Ranganathan, Greg Kim
- *
  */
-@Produces({"application/xml", "application/json"})
+@Produces({ "application/xml", "application/json" })
 public class ApplicationResource {
+
     private static final Logger logger = LoggerFactory.getLogger(ApplicationResource.class);
 
     private final String appName;
+
     private final EurekaServerConfig serverConfig;
+
     private final PeerAwareInstanceRegistry registry;
+
     private final ResponseCache responseCache;
 
-    ApplicationResource(String appName,
-                        EurekaServerConfig serverConfig,
-                        PeerAwareInstanceRegistry registry) {
+    ApplicationResource(String appName, EurekaServerConfig serverConfig, PeerAwareInstanceRegistry registry) {
         this.appName = appName.toUpperCase();
         this.serverConfig = serverConfig;
         this.registry = registry;
@@ -68,7 +67,7 @@ public class ApplicationResource {
     }
 
     public String getAppName() {
-        return appName;
+        return retrieveName();
     }
 
     /**
@@ -83,32 +82,19 @@ public class ApplicationResource {
      *         application.
      */
     @GET
-    public Response getApplication(@PathParam("version") String version,
-                                   @HeaderParam("Accept") final String acceptHeader,
-                                   @HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept) {
+    public Response getApplication(@PathParam("version") String version, @HeaderParam("Accept") final String acceptHeader, @HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept) {
         if (!registry.shouldAllowAccess(false)) {
             return Response.status(Status.FORBIDDEN).build();
         }
-
         EurekaMonitors.GET_APPLICATION.increment();
-
         CurrentRequestVersion.set(Version.toEnum(version));
         KeyType keyType = Key.KeyType.JSON;
         if (acceptHeader == null || !acceptHeader.contains("json")) {
             keyType = Key.KeyType.XML;
         }
-
-        Key cacheKey = new Key(
-                Key.EntityType.Application,
-                appName,
-                keyType,
-                CurrentRequestVersion.get(),
-                EurekaAccept.fromString(eurekaAccept)
-        );
-
+        Key cacheKey = new Key(Key.EntityType.Application, appName, keyType, CurrentRequestVersion.get(), EurekaAccept.fromString(eurekaAccept));
         String payLoad = responseCache.get(cacheKey);
         CurrentRequestVersion.remove();
-
         if (payLoad != null) {
             logger.debug("Found: {}", appName);
             return Response.ok(payLoad).build();
@@ -141,9 +127,8 @@ public class ApplicationResource {
      *            replicated from other nodes.
      */
     @POST
-    @Consumes({"application/json", "application/xml"})
-    public Response addInstance(InstanceInfo info,
-                                @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
+    @Consumes({ "application/json", "application/xml" })
+    public Response addInstance(InstanceInfo info, @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
         logger.debug("Registering instance {} (replication={})", info.getId(), isReplication);
         // validate that the instanceinfo contains all the necessary required fields
         if (isBlank(info.getId())) {
@@ -161,7 +146,6 @@ public class ApplicationResource {
         } else if (info.getDataCenterInfo().getName() == null) {
             return Response.status(400).entity("Missing dataCenterInfo Name").build();
         }
-
         // handle cases where clients may be registering with bad DataCenterInfo with missing data
         DataCenterInfo dataCenterInfo = info.getDataCenterInfo();
         if (dataCenterInfo instanceof UniqueIdentifier) {
@@ -182,9 +166,9 @@ public class ApplicationResource {
                 }
             }
         }
-
         registry.register(info, "true".equals(isReplication));
-        return Response.status(204).build();  // 204 to be backwards compatible
+        // 204 to be backwards compatible
+        return Response.status(204).build();
     }
 
     /**
@@ -193,10 +177,14 @@ public class ApplicationResource {
      * @return the application name of a particular application.
      */
     String getName() {
-        return appName;
+        return retrieveName();
     }
 
     private boolean isBlank(String str) {
         return str == null || str.isEmpty();
+    }
+
+    private String retrieveName() {
+        return appName;
     }
 }

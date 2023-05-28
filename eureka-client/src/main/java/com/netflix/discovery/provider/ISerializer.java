@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.discovery.provider;
 
 import javax.ws.rs.core.MediaType;
@@ -25,7 +24,6 @@ import java.io.OutputStream;
  * A contract for dispatching to a custom serialization/de-serialization mechanism from jersey.
  *
  * @author Karthik Ranganathan
- *
  */
 public interface ISerializer {
 

@@ -1,7 +1,6 @@
 package com.netflix.eureka.transport;
 
 import com.netflix.eureka.EurekaServerConfig;
-
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseContext;
@@ -22,7 +21,6 @@ public class Jersey2DynamicGZIPContentEncodingFilter implements ClientRequestFil
         if (!requestContext.getHeaders().containsKey(HttpHeaders.ACCEPT_ENCODING)) {
             requestContext.getHeaders().add(HttpHeaders.ACCEPT_ENCODING, "gzip");
         }
-
         if (hasEntity(requestContext) && isCompressionEnabled()) {
             Object contentEncoding = requestContext.getHeaders().getFirst(HttpHeaders.CONTENT_ENCODING);
             if (!"gzip".equals(contentEncoding)) {
@@ -46,5 +44,4 @@ public class Jersey2DynamicGZIPContentEncodingFilter implements ClientRequestFil
     private boolean isCompressionEnabled() {
         return config.shouldEnableReplicatedRequestCompression();
     }
-
 }

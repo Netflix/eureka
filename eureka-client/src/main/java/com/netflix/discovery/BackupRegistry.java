@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.discovery;
 
 import com.google.inject.ImplementedBy;
@@ -30,7 +29,6 @@ import com.netflix.discovery.shared.Applications;
  * </p>
  *
  * @author Karthik Ranganathan
- *
  */
 @ImplementedBy(NotImplementedRegistryImpl.class)
 public interface BackupRegistry {

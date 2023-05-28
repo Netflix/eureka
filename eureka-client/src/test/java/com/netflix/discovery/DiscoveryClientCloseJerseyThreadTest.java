@@ -2,13 +2,13 @@ package com.netflix.discovery;
 
 import java.util.Set;
 import org.junit.Test;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
 public class DiscoveryClientCloseJerseyThreadTest extends AbstractDiscoveryClientTester {
 
     private static final String JERSEY_THREAD_NAME = "Eureka-JerseyClient-Conn-Cleaner";
+
     private static final String APACHE_THREAD_NAME = "Apache-HttpClient-Conn-Cleaner";
 
     @Test

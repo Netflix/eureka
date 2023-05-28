@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.resolver;
 
 import java.net.URL;
@@ -27,14 +26,17 @@ import java.util.List;
 public class DefaultEndpoint implements EurekaEndpoint {
 
     protected final String networkAddress;
+
     protected final int port;
+
     protected final boolean isSecure;
+
     protected final String relativeUri;
+
     protected final String serviceUrl;
 
     public DefaultEndpoint(String serviceUrl) {
         this.serviceUrl = serviceUrl;
-
         try {
             URL url = new URL(serviceUrl);
             this.networkAddress = url.getHost();
@@ -51,15 +53,10 @@ public class DefaultEndpoint implements EurekaEndpoint {
         this.port = port;
         this.isSecure = isSecure;
         this.relativeUri = relativeUri;
-
-        StringBuilder sb = new StringBuilder()
-                .append(isSecure ? "https" : "http")
-                .append("://")
-                .append(networkAddress);
-		if (port >= 0) {
-			sb.append(':')
-				.append(port);
-		}
+        StringBuilder sb = new StringBuilder().append(isSecure ? "https" : "http").append("://").append(networkAddress);
+        if (port >= 0) {
+            sb.append(':').append(port);
+        }
         if (relativeUri != null) {
             if (!relativeUri.startsWith("/")) {
                 sb.append('/');
@@ -77,12 +74,12 @@ public class DefaultEndpoint implements EurekaEndpoint {
     @Deprecated
     @Override
     public String getHostName() {
-        return networkAddress;
+        return GetNetworkAddress();
     }
 
     @Override
     public String getNetworkAddress() {
-        return networkAddress;
+        return GetNetworkAddress();
     }
 
     @Override
@@ -100,8 +97,7 @@ public class DefaultEndpoint implements EurekaEndpoint {
         return relativeUri;
     }
 
-    public static List<EurekaEndpoint> createForServerList(
-            List<String> hostNames, int port, boolean isSecure, String relativeUri) {
+    public static List<EurekaEndpoint> createForServerList(List<String> hostNames, int port, boolean isSecure, String relativeUri) {
         if (hostNames.isEmpty()) {
             return Collections.emptyList();
         }
@@ -114,17 +110,21 @@ public class DefaultEndpoint implements EurekaEndpoint {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof DefaultEndpoint)) return false;
-
+        if (this == o)
+            return true;
+        if (!(o instanceof DefaultEndpoint))
+            return false;
         DefaultEndpoint that = (DefaultEndpoint) o;
-
-        if (isSecure != that.isSecure) return false;
-        if (port != that.port) return false;
-        if (networkAddress != null ? !networkAddress.equals(that.networkAddress) : that.networkAddress != null) return false;
-        if (relativeUri != null ? !relativeUri.equals(that.relativeUri) : that.relativeUri != null) return false;
-        if (serviceUrl != null ? !serviceUrl.equals(that.serviceUrl) : that.serviceUrl != null) return false;
-
+        if (isSecure != that.isSecure)
+            return false;
+        if (port != that.port)
+            return false;
+        if (networkAddress != null ? !networkAddress.equals(that.networkAddress) : that.networkAddress != null)
+            return false;
+        if (relativeUri != null ? !relativeUri.equals(that.relativeUri) : that.relativeUri != null)
+            return false;
+        if (serviceUrl != null ? !serviceUrl.equals(that.serviceUrl) : that.serviceUrl != null)
+            return false;
         return true;
     }
 
@@ -146,5 +146,9 @@ public class DefaultEndpoint implements EurekaEndpoint {
     @Override
     public String toString() {
         return "DefaultEndpoint{ serviceUrl='" + serviceUrl + '}';
+    }
+
+    private String GetNetworkAddress() {
+        return networkAddress;
     }
 }

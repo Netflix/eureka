@@ -3,7 +3,6 @@ package com.netflix.appinfo;
 import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.junit.Before;
 import org.junit.Test;
-
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.amiId;
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.instanceId;
 import static com.netflix.appinfo.AmazonInfo.MetaDataKey.localIpv4;
@@ -26,7 +25,6 @@ public class RefreshableAmazonInfoProviderTest {
     @Test
     public void testAmazonInfoNoUpdateIfEqual() {
         AmazonInfo oldInfo = (AmazonInfo) instanceInfo.getDataCenterInfo();
-
         AmazonInfo newInfo = copyAmazonInfo(instanceInfo);
         assertThat(RefreshableAmazonInfoProvider.shouldUpdate(newInfo, oldInfo), is(false));
     }
@@ -34,7 +32,6 @@ public class RefreshableAmazonInfoProviderTest {
     @Test
     public void testAmazonInfoNoUpdateIfEmpty() {
         AmazonInfo oldInfo = (AmazonInfo) instanceInfo.getDataCenterInfo();
-
         AmazonInfo newInfo = new AmazonInfo();
         assertThat(RefreshableAmazonInfoProvider.shouldUpdate(newInfo, oldInfo), is(false));
     }
@@ -42,13 +39,11 @@ public class RefreshableAmazonInfoProviderTest {
     @Test
     public void testAmazonInfoNoUpdateIfNoInstanceId() {
         AmazonInfo oldInfo = (AmazonInfo) instanceInfo.getDataCenterInfo();
-
         AmazonInfo newInfo = copyAmazonInfo(instanceInfo);
         newInfo.getMetadata().remove(instanceId.getName());
         assertThat(newInfo.getId(), is(nullValue()));
         assertThat(newInfo.get(instanceId), is(nullValue()));
         assertThat(CloudInstanceConfig.shouldUpdate(newInfo, oldInfo), is(false));
-
         newInfo.getMetadata().put(instanceId.getName(), "");
         assertThat(newInfo.getId(), is(""));
         assertThat(newInfo.get(instanceId), is(""));
@@ -58,12 +53,10 @@ public class RefreshableAmazonInfoProviderTest {
     @Test
     public void testAmazonInfoNoUpdateIfNoLocalIpv4() {
         AmazonInfo oldInfo = (AmazonInfo) instanceInfo.getDataCenterInfo();
-
         AmazonInfo newInfo = copyAmazonInfo(instanceInfo);
         newInfo.getMetadata().remove(localIpv4.getName());
         assertThat(newInfo.get(localIpv4), is(nullValue()));
         assertThat(CloudInstanceConfig.shouldUpdate(newInfo, oldInfo), is(false));
-
         newInfo.getMetadata().put(localIpv4.getName(), "");
         assertThat(newInfo.get(localIpv4), is(""));
         assertThat(RefreshableAmazonInfoProvider.shouldUpdate(newInfo, oldInfo), is(false));
@@ -72,12 +65,10 @@ public class RefreshableAmazonInfoProviderTest {
     @Test
     public void testAmazonInfoUpdatePositiveCase() {
         AmazonInfo oldInfo = (AmazonInfo) instanceInfo.getDataCenterInfo();
-
         AmazonInfo newInfo = copyAmazonInfo(instanceInfo);
         newInfo.getMetadata().remove(amiId.getName());
         assertThat(newInfo.getMetadata().size(), is(oldInfo.getMetadata().size() - 1));
         assertThat(RefreshableAmazonInfoProvider.shouldUpdate(newInfo, oldInfo), is(true));
-
         String newKey = "someNewKey";
         newInfo.getMetadata().put(newKey, "bar");
         assertThat(newInfo.getMetadata().size(), is(oldInfo.getMetadata().size()));

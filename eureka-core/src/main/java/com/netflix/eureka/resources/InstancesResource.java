@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.eureka.resources;
 
 import javax.inject.Inject;
@@ -24,7 +23,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import java.util.List;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.eureka.EurekaServerContext;
 import com.netflix.eureka.EurekaServerContextHolder;
@@ -37,13 +35,12 @@ import org.slf4j.LoggerFactory;
  * A <em>jersey</em> resource that gets information about a particular instance.
  *
  * @author Karthik Ranganathan, Greg Kim
- *
  */
-@Produces({"application/xml", "application/json"})
+@Produces({ "application/xml", "application/json" })
 @Path("/{version}/instances")
 public class InstancesResource {
-    private static final Logger logger = LoggerFactory
-            .getLogger(InstancesResource.class);
+
+    private static final Logger logger = LoggerFactory.getLogger(InstancesResource.class);
 
     private final PeerAwareInstanceRegistry registry;
 
@@ -58,8 +55,7 @@ public class InstancesResource {
 
     @GET
     @Path("{id}")
-    public Response getById(@PathParam("version") String version,
-                            @PathParam("id") String id) {
+    public Response getById(@PathParam("version") String version, @PathParam("id") String id) {
         CurrentRequestVersion.set(Version.toEnum(version));
         List<InstanceInfo> list = registry.getInstancesById(id);
         CurrentRequestVersion.remove();

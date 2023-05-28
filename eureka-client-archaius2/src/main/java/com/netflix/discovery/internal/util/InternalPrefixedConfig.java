@@ -1,7 +1,6 @@
 package com.netflix.discovery.internal.util;
 
 import com.netflix.archaius.api.Config;
-
 import java.util.Iterator;
 
 /**
@@ -11,7 +10,9 @@ import java.util.Iterator;
  * @author David Liu
  */
 public final class InternalPrefixedConfig {
+
     private final Config config;
+
     private final String namespace;
 
     public InternalPrefixedConfig(Config config, String... namespaces) {
@@ -19,12 +20,9 @@ public final class InternalPrefixedConfig {
         String tempNamespace = "";
         for (String namespace : namespaces) {
             if (namespace != null && !namespace.isEmpty()) {
-                tempNamespace += namespace.endsWith(".")
-                        ? namespace
-                        : namespace + ".";
+                tempNamespace += namespace.endsWith(".") ? namespace : namespace + ".";
             }
         }
-
         this.namespace = tempNamespace;
     }
 
@@ -56,6 +54,7 @@ public final class InternalPrefixedConfig {
         final String prefixRegex = "^" + namespace;
         final Iterator<String> internalIterator = config.getKeys(namespace);
         return new Iterator<String>() {
+
             @Override
             public boolean hasNext() {
                 return internalIterator.hasNext();

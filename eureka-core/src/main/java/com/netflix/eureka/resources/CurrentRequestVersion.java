@@ -13,9 +13,7 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.eureka.resources;
-
 
 import com.netflix.eureka.Version;
 
@@ -32,8 +30,7 @@ import com.netflix.eureka.Version;
  */
 public final class CurrentRequestVersion {
 
-    private static final ThreadLocal<Version> CURRENT_REQ_VERSION =
-            new ThreadLocal<>();
+    private static final ThreadLocal<Version> CURRENT_REQ_VERSION = new ThreadLocal<>();
 
     private CurrentRequestVersion() {
     }
@@ -62,5 +59,4 @@ public final class CurrentRequestVersion {
     public static void remove() {
         CURRENT_REQ_VERSION.remove();
     }
-
 }

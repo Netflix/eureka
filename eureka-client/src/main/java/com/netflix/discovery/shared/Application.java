@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.discovery.shared;
 
 import javax.annotation.Nullable;
@@ -28,7 +27,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -48,20 +46,17 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
  * application.
  *
  * @author Karthik Ranganathan
- *
  */
 @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("application")
 @JsonRootName("application")
 public class Application {
-    
+
     private static Random shuffleRandom = new Random();
 
     @Override
     public String toString() {
-        return "Application [name=" + name + ", isDirty=" + isDirty
-                + ", instances=" + instances + ", shuffledInstances="
-                + shuffledInstances + ", instancesMap=" + instancesMap + "]";
+        return "Application [name=" + name + ", isDirty=" + isDirty + ", instances=" + instances + ", shuffledInstances=" + shuffledInstances + ", instancesMap=" + instancesMap + "]";
     }
 
     private String name;
@@ -88,9 +83,7 @@ public class Application {
     }
 
     @JsonCreator
-    public Application(
-            @JsonProperty("name") String name,
-            @JsonProperty("instance") List<InstanceInfo> instances) {
+    public Application(@JsonProperty("name") String name, @JsonProperty("instance") List<InstanceInfo> instances) {
         this(name);
         for (InstanceInfo instanceInfo : instances) {
             addInstance(instanceInfo);
@@ -148,10 +141,9 @@ public class Application {
     @JsonIgnore
     public List<InstanceInfo> getInstancesAsIsFromEureka() {
         synchronized (instances) {
-           return new ArrayList<InstanceInfo>(this.instances);
+            return new ArrayList<InstanceInfo>(this.instances);
         }
     }
-
 
     /**
      * Get the instance info that matches the given id.
@@ -202,22 +194,16 @@ public class Application {
         _shuffleAndStoreInstances(filterUpInstances, false, null, null, null);
     }
 
-    public void shuffleAndStoreInstances(Map<String, Applications> remoteRegionsRegistry,
-                                         EurekaClientConfig clientConfig, InstanceRegionChecker instanceRegionChecker) {
-        _shuffleAndStoreInstances(clientConfig.shouldFilterOnlyUpInstances(), true, remoteRegionsRegistry, clientConfig,
-                instanceRegionChecker);
+    public void shuffleAndStoreInstances(Map<String, Applications> remoteRegionsRegistry, EurekaClientConfig clientConfig, InstanceRegionChecker instanceRegionChecker) {
+        _shuffleAndStoreInstances(clientConfig.shouldFilterOnlyUpInstances(), true, remoteRegionsRegistry, clientConfig, instanceRegionChecker);
     }
 
-    private void _shuffleAndStoreInstances(boolean filterUpInstances, boolean indexByRemoteRegions,
-                                           @Nullable Map<String, Applications> remoteRegionsRegistry,
-                                           @Nullable EurekaClientConfig clientConfig,
-                                           @Nullable InstanceRegionChecker instanceRegionChecker) {
+    private void _shuffleAndStoreInstances(boolean filterUpInstances, boolean indexByRemoteRegions, @Nullable Map<String, Applications> remoteRegionsRegistry, @Nullable EurekaClientConfig clientConfig, @Nullable InstanceRegionChecker instanceRegionChecker) {
         List<InstanceInfo> instanceInfoList;
         synchronized (instances) {
             instanceInfoList = new ArrayList<InstanceInfo>(instances);
         }
-        boolean remoteIndexingActive = indexByRemoteRegions && null != instanceRegionChecker && null != clientConfig
-                && null != remoteRegionsRegistry;
+        boolean remoteIndexingActive = indexByRemoteRegions && null != instanceRegionChecker && null != clientConfig && null != remoteRegionsRegistry;
         if (remoteIndexingActive || filterUpInstances) {
             Iterator<InstanceInfo> it = instanceInfoList.iterator();
             while (it.hasNext()) {
@@ -232,21 +218,17 @@ public class Application {
                             appsForRemoteRegion = new Applications();
                             remoteRegionsRegistry.put(instanceRegion, appsForRemoteRegion);
                         }
-
-                        Application remoteApp =
-                                appsForRemoteRegion.getRegisteredApplications(instanceInfo.getAppName());
+                        Application remoteApp = appsForRemoteRegion.getRegisteredApplications(instanceInfo.getAppName());
                         if (null == remoteApp) {
                             remoteApp = new Application(instanceInfo.getAppName());
                             appsForRemoteRegion.addApplication(remoteApp);
                         }
-
                         remoteApp.addInstance(instanceInfo);
                         this.removeInstance(instanceInfo, false);
                         it.remove();
                     }
                 }
             }
-
         }
         Collections.shuffle(instanceInfoList, shuffleRandom);
         this.shuffledInstances.set(instanceInfoList);

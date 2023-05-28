@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.eureka.lease;
 
 import com.netflix.eureka.registry.AbstractInstanceRegistry;
@@ -33,17 +32,23 @@ import com.netflix.eureka.registry.AbstractInstanceRegistry;
 public class Lease<T> {
 
     enum Action {
+
         Register, Cancel, Renew
-    };
+    }
 
     public static final int DEFAULT_DURATION_IN_SECS = 90;
 
     private T holder;
+
     private long evictionTimestamp;
+
     private long registrationTimestamp;
+
     private long serviceUpTimestamp;
+
     // Make it volatile so that the expiration task would see this quicker
     private volatile long lastUpdateTimestamp;
+
     private long duration;
 
     public Lease(T r, int durationInSecs) {
@@ -51,7 +56,6 @@ public class Lease<T> {
         registrationTimestamp = System.currentTimeMillis();
         lastUpdateTimestamp = registrationTimestamp;
         duration = (durationInSecs * 1000);
-
     }
 
     /**
@@ -61,7 +65,6 @@ public class Lease<T> {
      */
     public void renew() {
         lastUpdateTimestamp = System.currentTimeMillis() + duration;
-
     }
 
     /**
@@ -154,5 +157,4 @@ public class Lease<T> {
     public T getHolder() {
         return holder;
     }
-
 }

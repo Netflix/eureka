@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
@@ -65,7 +64,7 @@ public final class ApplicationFunctions {
         }
         Application merged = copyOf(first);
         for (InstanceInfo instance : second.getInstances()) {
-            switch (instance.getActionType()) {
+            switch(instance.getActionType()) {
                 case ADDED:
                 case MODIFIED:
                     merged.addInstance(instance);
@@ -82,7 +81,6 @@ public final class ApplicationFunctions {
         Set<String> secondNames = applicationNames(second);
         Set<String> allNames = new HashSet<>(firstNames);
         allNames.addAll(secondNames);
-
         Applications merged = new Applications();
         for (String appName : allNames) {
             if (firstNames.contains(appName)) {
@@ -106,7 +104,7 @@ public final class ApplicationFunctions {
 
     public static int countInstances(Applications applications) {
         int count = 0;
-        for(Application application: applications.getRegisteredApplications()) {
+        for (Application application : applications.getRegisteredApplications()) {
             count += application.getInstances().size();
         }
         return count;

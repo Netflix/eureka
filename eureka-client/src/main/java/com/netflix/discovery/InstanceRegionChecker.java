@@ -2,7 +2,6 @@ package com.netflix.discovery;
 
 import javax.annotation.Nullable;
 import java.util.Map;
-
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
@@ -13,9 +12,11 @@ import org.slf4j.LoggerFactory;
  * @author Nitesh Kant
  */
 public class InstanceRegionChecker {
+
     private static Logger logger = LoggerFactory.getLogger(InstanceRegionChecker.class);
 
     private final AzToRegionMapper azToRegionMapper;
+
     private final String localRegion;
 
     InstanceRegionChecker(AzToRegionMapper azToRegionMapper, String localRegion) {
@@ -26,9 +27,7 @@ public class InstanceRegionChecker {
     @Nullable
     public String getInstanceRegion(InstanceInfo instanceInfo) {
         if (instanceInfo.getDataCenterInfo() == null || instanceInfo.getDataCenterInfo().getName() == null) {
-            logger.warn("Cannot get region for instance id:{}, app:{} as dataCenterInfo is null. Returning local:{} by default",
-                    instanceInfo.getId(), instanceInfo.getAppName(), localRegion);
-
+            logger.warn("Cannot get region for instance id:{}, app:{} as dataCenterInfo is null. Returning local:{} by default", instanceInfo.getId(), instanceInfo.getAppName(), localRegion);
             return localRegion;
         }
         if (DataCenterInfo.Name.Amazon.equals(instanceInfo.getDataCenterInfo().getName())) {
@@ -39,12 +38,12 @@ public class InstanceRegionChecker {
                 return azToRegionMapper.getRegionForAvailabilityZone(availabilityZone);
             }
         }
-
         return null;
     }
 
     public boolean isLocalRegion(@Nullable String instanceRegion) {
-        return null == instanceRegion || instanceRegion.equals(localRegion); // no region == local
+        // no region == local
+        return null == instanceRegion || instanceRegion.equals(localRegion);
     }
 
     public String getLocalRegion() {

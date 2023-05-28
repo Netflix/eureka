@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.eureka.resources;
 
 import javax.ws.rs.DELETE;
@@ -34,7 +33,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.eureka.EurekaServerConfig;
@@ -47,18 +45,19 @@ import org.slf4j.LoggerFactory;
  * A <em>jersey</em> resource that handles operations for a particular instance.
  *
  * @author Karthik Ranganathan, Greg Kim
- *
  */
-@Produces({"application/xml", "application/json"})
+@Produces({ "application/xml", "application/json" })
 public class InstanceResource {
-    private static final Logger logger = LoggerFactory
-            .getLogger(InstanceResource.class);
+
+    private static final Logger logger = LoggerFactory.getLogger(InstanceResource.class);
 
     private final PeerAwareInstanceRegistry registry;
-    private final EurekaServerConfig serverConfig;
-    private final String id;
-    private final ApplicationResource app;
 
+    private final EurekaServerConfig serverConfig;
+
+    private final String id;
+
+    private final ApplicationResource app;
 
     InstanceResource(ApplicationResource app, String id, EurekaServerConfig serverConfig, PeerAwareInstanceRegistry registry) {
         this.app = app;
@@ -76,8 +75,7 @@ public class InstanceResource {
      */
     @GET
     public Response getInstanceInfo() {
-        InstanceInfo appInfo = registry
-                .getInstanceByAppAndId(app.getName(), id);
+        InstanceInfo appInfo = registry.getInstanceByAppAndId(app.getName(), id);
         if (appInfo != null) {
             logger.debug("Found: {} - {}", app.getName(), id);
             return Response.ok(appInfo).build();
@@ -103,14 +101,9 @@ public class InstanceResource {
      *         failure.
      */
     @PUT
-    public Response renewLease(
-            @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication,
-            @QueryParam("overriddenstatus") String overriddenStatus,
-            @QueryParam("status") String status,
-            @QueryParam("lastDirtyTimestamp") String lastDirtyTimestamp) {
+    public Response renewLease(@HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication, @QueryParam("overriddenstatus") String overriddenStatus, @QueryParam("status") String status, @QueryParam("lastDirtyTimestamp") String lastDirtyTimestamp) {
         boolean isFromReplicaNode = "true".equals(isReplication);
         boolean isSuccess = registry.renew(app.getName(), id, isFromReplicaNode);
-
         // Not found in the registry, immediately ask for a register
         if (!isSuccess) {
             logger.warn("Not Found (Renew): {} - {}", app.getName(), id);
@@ -122,10 +115,7 @@ public class InstanceResource {
         if (lastDirtyTimestamp != null && serverConfig.shouldSyncWhenTimestampDiffers()) {
             response = this.validateDirtyTimestamp(Long.valueOf(lastDirtyTimestamp), isFromReplicaNode);
             // Store the overridden status since the validation found out the node that replicates wins
-            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()
-                    && (overriddenStatus != null)
-                    && !(InstanceStatus.UNKNOWN.name().equals(overriddenStatus))
-                    && isFromReplicaNode) {
+            if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode() && (overriddenStatus != null) && !(InstanceStatus.UNKNOWN.name().equals(overriddenStatus)) && isFromReplicaNode) {
                 registry.storeOverriddenStatusIfRequired(app.getAppName(), id, InstanceStatus.valueOf(overriddenStatus));
             }
         } else {
@@ -157,19 +147,13 @@ public class InstanceResource {
      */
     @PUT
     @Path("status")
-    public Response statusUpdate(
-            @QueryParam("value") String newStatus,
-            @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication,
-            @QueryParam("lastDirtyTimestamp") String lastDirtyTimestamp) {
+    public Response statusUpdate(@QueryParam("value") String newStatus, @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication, @QueryParam("lastDirtyTimestamp") String lastDirtyTimestamp) {
         try {
             if (registry.getInstanceByAppAndId(app.getName(), id) == null) {
                 logger.warn("Instance not found: {}/{}", app.getName(), id);
                 return Response.status(Status.NOT_FOUND).build();
             }
-            boolean isSuccess = registry.statusUpdate(app.getName(), id,
-                    InstanceStatus.valueOf(newStatus), lastDirtyTimestamp,
-                    "true".equals(isReplication));
-
+            boolean isSuccess = registry.statusUpdate(app.getName(), id, InstanceStatus.valueOf(newStatus), lastDirtyTimestamp, "true".equals(isReplication));
             if (isSuccess) {
                 logger.info("Status updated: {} - {} - {}", app.getName(), id, newStatus);
                 return Response.ok().build();
@@ -178,8 +162,7 @@ public class InstanceResource {
                 return Response.serverError().build();
             }
         } catch (Throwable e) {
-            logger.error("Error updating instance {} for status {}", id,
-                    newStatus);
+            logger.error("Error updating instance {} for status {}", id, newStatus);
             return Response.serverError().build();
         }
     }
@@ -198,20 +181,14 @@ public class InstanceResource {
      */
     @DELETE
     @Path("status")
-    public Response deleteStatusUpdate(
-            @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication,
-            @QueryParam("value") String newStatusValue,
-            @QueryParam("lastDirtyTimestamp") String lastDirtyTimestamp) {
+    public Response deleteStatusUpdate(@HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication, @QueryParam("value") String newStatusValue, @QueryParam("lastDirtyTimestamp") String lastDirtyTimestamp) {
         try {
             if (registry.getInstanceByAppAndId(app.getName(), id) == null) {
                 logger.warn("Instance not found: {}/{}", app.getName(), id);
                 return Response.status(Status.NOT_FOUND).build();
             }
-
             InstanceStatus newStatus = newStatusValue == null ? InstanceStatus.UNKNOWN : InstanceStatus.valueOf(newStatusValue);
-            boolean isSuccess = registry.deleteStatusOverride(app.getName(), id,
-                    newStatus, lastDirtyTimestamp, "true".equals(isReplication));
-
+            boolean isSuccess = registry.deleteStatusOverride(app.getName(), id, newStatus, lastDirtyTimestamp, "true".equals(isReplication));
             if (isSuccess) {
                 logger.info("Status override removed: {} - {}", app.getName(), id);
                 return Response.ok().build();
@@ -262,7 +239,6 @@ public class InstanceResource {
             logger.error("Error updating metadata for instance {}", id, e);
             return Response.serverError().build();
         }
-
     }
 
     /**
@@ -275,12 +251,9 @@ public class InstanceResource {
      *         failure.
      */
     @DELETE
-    public Response cancelLease(
-            @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
+    public Response cancelLease(@HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
         try {
-            boolean isSuccess = registry.cancel(app.getName(), id,
-                "true".equals(isReplication));
-
+            boolean isSuccess = registry.cancel(app.getName(), id, "true".equals(isReplication));
             if (isSuccess) {
                 logger.debug("Found (Cancel): {} - {}", app.getName(), id);
                 return Response.ok().build();
@@ -292,37 +265,25 @@ public class InstanceResource {
             logger.error("Error (cancel): {} - {}", app.getName(), id, e);
             return Response.serverError().build();
         }
-
     }
 
-    private Response validateDirtyTimestamp(Long lastDirtyTimestamp,
-                                            boolean isReplication) {
+    private Response validateDirtyTimestamp(Long lastDirtyTimestamp, boolean isReplication) {
         InstanceInfo appInfo = registry.getInstanceByAppAndId(app.getName(), id, false);
-        if (appInfo != null) {
-            if ((lastDirtyTimestamp != null) && (!lastDirtyTimestamp.equals(appInfo.getLastDirtyTimestamp()))) {
-                Object[] args = {id, appInfo.getLastDirtyTimestamp(), lastDirtyTimestamp, isReplication};
-
-                if (lastDirtyTimestamp > appInfo.getLastDirtyTimestamp()) {
-                    logger.debug(
-                            "Time to sync, since the last dirty timestamp differs -"
-                                    + " ReplicationInstance id : {},Registry : {} Incoming: {} Replication: {}",
-                            args);
-                    return Response.status(Status.NOT_FOUND).build();
-                } else if (appInfo.getLastDirtyTimestamp() > lastDirtyTimestamp) {
-                    // In the case of replication, send the current instance info in the registry for the
-                    // replicating node to sync itself with this one.
-                    if (isReplication) {
-                        logger.debug(
-                                "Time to sync, since the last dirty timestamp differs -"
-                                        + " ReplicationInstance id : {},Registry : {} Incoming: {} Replication: {}",
-                                args);
-                        return Response.status(Status.CONFLICT).entity(appInfo).build();
-                    } else {
-                        return Response.ok().build();
-                    }
+        if (appInfo != null && (lastDirtyTimestamp != null) && (!lastDirtyTimestamp.equals(appInfo.getLastDirtyTimestamp()))) {
+            Object[] args = { id, appInfo.getLastDirtyTimestamp(), lastDirtyTimestamp, isReplication };
+            if (lastDirtyTimestamp > appInfo.getLastDirtyTimestamp()) {
+                logger.debug("Time to sync, since the last dirty timestamp differs -" + " ReplicationInstance id : {},Registry : {} Incoming: {} Replication: {}", args);
+                return Response.status(Status.NOT_FOUND).build();
+            } else if (appInfo.getLastDirtyTimestamp() > lastDirtyTimestamp) {
+                // In the case of replication, send the current instance info in the registry for the
+                // replicating node to sync itself with this one.
+                if (isReplication) {
+                    logger.debug("Time to sync, since the last dirty timestamp differs -" + " ReplicationInstance id : {},Registry : {} Incoming: {} Replication: {}", args);
+                    return Response.status(Status.CONFLICT).entity(appInfo).build();
+                } else {
+                    return Response.ok().build();
                 }
             }
-
         }
         return Response.ok().build();
     }

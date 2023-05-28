@@ -13,13 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.resolver;
 
 import java.net.URL;
-
 import org.junit.Test;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -31,22 +28,10 @@ public class StaticClusterResolverTest {
 
     @Test
     public void testClusterResolverFromURL() throws Exception {
-        verifyEqual(
-                StaticClusterResolver.fromURL("regionA", new URL("http://eureka.test:8080/eureka/v2/apps")),
-                new DefaultEndpoint("eureka.test", 8080, false, "/eureka/v2/apps")
-        );
-        verifyEqual(
-                StaticClusterResolver.fromURL("regionA", new URL("https://eureka.test:8081/eureka/v2/apps")),
-                new DefaultEndpoint("eureka.test", 8081, true, "/eureka/v2/apps")
-        );
-        verifyEqual(
-                StaticClusterResolver.fromURL("regionA", new URL("http://eureka.test/eureka/v2/apps")),
-                new DefaultEndpoint("eureka.test", 80, false, "/eureka/v2/apps")
-        );
-        verifyEqual(
-                StaticClusterResolver.fromURL("regionA", new URL("https://eureka.test/eureka/v2/apps")),
-                new DefaultEndpoint("eureka.test", 443, true, "/eureka/v2/apps")
-        );
+        verifyEqual(StaticClusterResolver.fromURL("regionA", new URL("http://eureka.test:8080/eureka/v2/apps")), new DefaultEndpoint("eureka.test", 8080, false, "/eureka/v2/apps"));
+        verifyEqual(StaticClusterResolver.fromURL("regionA", new URL("https://eureka.test:8081/eureka/v2/apps")), new DefaultEndpoint("eureka.test", 8081, true, "/eureka/v2/apps"));
+        verifyEqual(StaticClusterResolver.fromURL("regionA", new URL("http://eureka.test/eureka/v2/apps")), new DefaultEndpoint("eureka.test", 80, false, "/eureka/v2/apps"));
+        verifyEqual(StaticClusterResolver.fromURL("regionA", new URL("https://eureka.test/eureka/v2/apps")), new DefaultEndpoint("eureka.test", 443, true, "/eureka/v2/apps"));
     }
 
     private static void verifyEqual(ClusterResolver<EurekaEndpoint> actual, EurekaEndpoint expected) {

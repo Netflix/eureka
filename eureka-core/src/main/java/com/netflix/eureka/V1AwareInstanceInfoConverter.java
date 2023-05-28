@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.eureka;
 
 import com.netflix.appinfo.InstanceInfo;
@@ -26,7 +25,6 @@ import com.netflix.eureka.resources.CurrentRequestVersion;
  * {@link InstanceStatus#OUT_OF_SERVICE}.
  *
  * @author Karthik Ranganathan, Greg Kim
- *
  */
 public class V1AwareInstanceInfoConverter extends InstanceInfoConverter {
 
@@ -35,7 +33,7 @@ public class V1AwareInstanceInfoConverter extends InstanceInfoConverter {
         Version version = CurrentRequestVersion.get();
         if (version == null || version == Version.V1) {
             InstanceStatus status = info.getStatus();
-            switch (status) {
+            switch(status) {
                 case DOWN:
                 case STARTING:
                 case UP:

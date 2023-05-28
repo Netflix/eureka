@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.transport;
 
 import javax.ws.rs.core.HttpHeaders;
@@ -28,9 +27,13 @@ import java.util.Map;
  * @author Tomasz Bak
  */
 public class EurekaHttpResponse<T> {
+
     private final int statusCode;
+
     private final T entity;
+
     private final Map<String, String> headers;
+
     private final URI location;
 
     protected EurekaHttpResponse(int statusCode, T entity) {
@@ -44,14 +47,12 @@ public class EurekaHttpResponse<T> {
         this.statusCode = builder.statusCode;
         this.entity = builder.entity;
         this.headers = builder.headers;
-
         if (headers != null) {
             String locationValue = headers.get(HttpHeaders.LOCATION);
             try {
                 this.location = locationValue == null ? null : new URI(locationValue);
             } catch (URISyntaxException e) {
-                throw new TransportException("Invalid Location header value in response; cannot complete the request (location="
-                        + locationValue + ')', e);
+                throw new TransportException("Invalid Location header value in response; cannot complete the request (location=" + locationValue + ')', e);
             }
         } else {
             this.location = null;
@@ -93,7 +94,9 @@ public class EurekaHttpResponse<T> {
     public static class EurekaHttpResponseBuilder<T> {
 
         private final int statusCode;
+
         private T entity;
+
         private Map<String, String> headers;
 
         private EurekaHttpResponseBuilder(int statusCode) {

@@ -3,7 +3,6 @@ package com.netflix.discovery;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-
 import com.google.common.base.Supplier;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
@@ -24,13 +23,14 @@ import com.netflix.appinfo.InstanceInfo;
  * &#64;UpStatus   Observable<Boolean>
  *
  * @author elandau
- *
  */
 @Deprecated
 @Singleton
 public class InternalEurekaStatusModule extends AbstractModule {
+
     @Singleton
     public static class UpStatusProvider implements Provider<Supplier<Boolean>> {
+
         @Inject
         private Provider<EurekaUpStatusResolver> upStatus;
 
@@ -38,6 +38,7 @@ public class InternalEurekaStatusModule extends AbstractModule {
         public Supplier<Boolean> get() {
             final EurekaUpStatusResolver resolver = upStatus.get();
             return new Supplier<Boolean>() {
+
                 @Override
                 public Boolean get() {
                     return resolver.getStatus().equals(InstanceInfo.InstanceStatus.UP);
@@ -48,6 +49,7 @@ public class InternalEurekaStatusModule extends AbstractModule {
 
     @Singleton
     public static class DownStatusProvider implements Provider<Supplier<Boolean>> {
+
         @Inject
         private Provider<EurekaUpStatusResolver> upStatus;
 
@@ -55,6 +57,7 @@ public class InternalEurekaStatusModule extends AbstractModule {
         public Supplier<Boolean> get() {
             final EurekaUpStatusResolver resolver = upStatus.get();
             return new Supplier<Boolean>() {
+
                 @Override
                 public Boolean get() {
                     return !resolver.getStatus().equals(InstanceInfo.InstanceStatus.UP);
@@ -66,11 +69,8 @@ public class InternalEurekaStatusModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(new TypeLiteral<Supplier<Boolean>>() {
-        })
-                .toProvider(UpStatusProvider.class);
-
+        }).toProvider(UpStatusProvider.class);
         bind(new TypeLiteral<Supplier<Boolean>>() {
-        })
-                .toProvider(DownStatusProvider.class);
+        }).toProvider(DownStatusProvider.class);
     }
 }

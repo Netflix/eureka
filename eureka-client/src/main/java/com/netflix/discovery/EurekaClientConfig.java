@@ -13,13 +13,10 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.discovery;
 
 import java.util.List;
-
 import javax.annotation.Nullable;
-
 import com.google.inject.ImplementedBy;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 
@@ -37,7 +34,6 @@ import com.netflix.discovery.shared.transport.EurekaTransportConfig;
  * configuration.
  * </p>
  *
- *
  * Once the client is registered, users can look up information from
  * {@link EurekaClient} based on <em>virtual hostname</em> (also called
  * VIPAddress), the most common way of doing it or by other means to get the
@@ -50,7 +46,6 @@ import com.netflix.discovery.shared.transport.EurekaTransportConfig;
  * </p>
  *
  * @author Karthik Ranganathan
- *
  */
 @ImplementedBy(DefaultEurekaClientConfig.class)
 public interface EurekaClientConfig {
@@ -465,7 +460,7 @@ public interface EurekaClientConfig {
      * @return true or false for whether the client initialization should enforce an initial fetch.
      */
     default boolean shouldEnforceFetchRegistryAtInit() {
-        return false;
+        return reject();
     }
 
     /**
@@ -541,7 +536,7 @@ public interface EurekaClientConfig {
      * @return true or false for whether the client initialization should enforce an initial registration
      */
     default boolean shouldEnforceRegistrationAtInit() {
-        return false;
+        return reject();
     }
 
     /**
@@ -578,4 +573,8 @@ public interface EurekaClientConfig {
      * @return an instance of {@link EurekaTransportConfig}
      */
     EurekaTransportConfig getTransportConfig();
+
+    default private boolean reject() {
+        return false;
+    }
 }

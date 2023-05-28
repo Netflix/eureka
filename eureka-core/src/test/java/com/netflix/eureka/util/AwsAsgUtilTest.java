@@ -16,9 +16,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
 import java.util.UUID;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
@@ -28,18 +26,20 @@ import static org.mockito.Mockito.spy;
 public class AwsAsgUtilTest {
 
     private ApplicationInfoManager applicationInfoManager;
+
     private PeerAwareInstanceRegistry registry;
+
     private DiscoveryClient client;
+
     private AwsAsgUtil awsAsgUtil;
+
     private InstanceInfo instanceInfo;
 
     @Before
     public void setUp() throws Exception {
         ConfigurationManager.getConfigInstance().setProperty("eureka.awsAccessId", "fakeId");
         ConfigurationManager.getConfigInstance().setProperty("eureka.awsSecretKey", "fakeKey");
-
         AmazonInfo dataCenterInfo = mock(AmazonInfo.class);
-
         EurekaServerConfig serverConfig = new DefaultEurekaServerConfig();
         InstanceInfo.Builder builder = InstanceInfo.Builder.newBuilder();
         builder.setIPAddr("10.10.101.00");
@@ -48,13 +48,11 @@ public class AwsAsgUtilTest {
         builder.setLeaseInfo(LeaseInfo.Builder.newBuilder().build());
         builder.setDataCenterInfo(dataCenterInfo);
         instanceInfo = builder.build();
-
         applicationInfoManager = new ApplicationInfoManager(new MyDataCenterInstanceConfig(), instanceInfo);
         DefaultEurekaClientConfig clientConfig = new DefaultEurekaClientConfig();
         // setup config in advance, used in initialize converter
         client = mock(DiscoveryClient.class);
         registry = mock(PeerAwareInstanceRegistry.class);
-
         awsAsgUtil = spy(new AwsAsgUtil(serverConfig, clientConfig, registry));
     }
 

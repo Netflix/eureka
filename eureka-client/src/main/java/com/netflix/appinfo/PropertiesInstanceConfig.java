@@ -18,13 +18,11 @@ package com.netflix.appinfo;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.internal.util.Archaius1Utils;
 import org.apache.commons.configuration.Configuration;
-
 import static com.netflix.appinfo.PropertyBasedInstanceConfigConstants.*;
 
 /**
@@ -46,12 +44,13 @@ import static com.netflix.appinfo.PropertyBasedInstanceConfigConstants.*;
  * </p>
  *
  * @author Karthik Ranganathan
- *
  */
 public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig implements EurekaInstanceConfig {
 
     protected final String namespace;
+
     protected final DynamicPropertyFactory configInstance;
+
     private String appGrpNameFromEnv;
 
     public PropertiesInstanceConfig() {
@@ -60,6 +59,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
 
     public PropertiesInstanceConfig(String namespace) {
         this(namespace, new DataCenterInfo() {
+
             @Override
             public Name getName() {
                 return Name.MyOwn;
@@ -69,14 +69,8 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
 
     public PropertiesInstanceConfig(String namespace, DataCenterInfo info) {
         super(info);
-
-        this.namespace = namespace.endsWith(".")
-                ? namespace
-                : namespace + ".";
-
-        appGrpNameFromEnv = ConfigurationManager.getConfigInstance()
-                .getString(FALLBACK_APP_GROUP_KEY, Values.UNKNOWN_APPLICATION);
-
+        this.namespace = namespace.endsWith(".") ? namespace : namespace + ".";
+        appGrpNameFromEnv = ConfigurationManager.getConfigInstance().getString(FALLBACK_APP_GROUP_KEY, Values.UNKNOWN_APPLICATION);
         this.configInstance = Archaius1Utils.initConfig(CommonConstants.CONFIG_FILE_NAME);
     }
 
@@ -87,8 +81,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
      */
     @Override
     public boolean isInstanceEnabledOnit() {
-        return configInstance.getBooleanProperty(namespace + TRAFFIC_ENABLED_ON_INIT_KEY,
-                super.isInstanceEnabledOnit()).get();
+        return configInstance.getBooleanProperty(namespace + TRAFFIC_ENABLED_ON_INIT_KEY, super.isInstanceEnabledOnit()).get();
     }
 
     /*
@@ -128,8 +121,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
      */
     @Override
     public boolean getSecurePortEnabled() {
-        return configInstance.getBooleanProperty(namespace + SECURE_PORT_ENABLED_KEY,
-                super.getSecurePortEnabled()).get();
+        return configInstance.getBooleanProperty(namespace + SECURE_PORT_ENABLED_KEY, super.getSecurePortEnabled()).get();
     }
 
     /*
@@ -141,8 +133,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
      */
     @Override
     public int getLeaseRenewalIntervalInSeconds() {
-        return configInstance.getIntProperty(namespace + LEASE_RENEWAL_INTERVAL_KEY,
-                super.getLeaseRenewalIntervalInSeconds()).get();
+        return configInstance.getIntProperty(namespace + LEASE_RENEWAL_INTERVAL_KEY, super.getLeaseRenewalIntervalInSeconds()).get();
     }
 
     /*
@@ -153,8 +144,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
      */
     @Override
     public int getLeaseExpirationDurationInSeconds() {
-        return configInstance.getIntProperty(namespace + LEASE_EXPIRATION_DURATION_KEY,
-                super.getLeaseExpirationDurationInSeconds()).get();
+        return configInstance.getIntProperty(namespace + LEASE_EXPIRATION_DURATION_KEY, super.getLeaseExpirationDurationInSeconds()).get();
     }
 
     /*
@@ -165,8 +155,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
     @Override
     public String getVirtualHostName() {
         if (this.isNonSecurePortEnabled()) {
-            return configInstance.getStringProperty(namespace + VIRTUAL_HOSTNAME_KEY,
-                    super.getVirtualHostName()).get();
+            return configInstance.getStringProperty(namespace + VIRTUAL_HOSTNAME_KEY, super.getVirtualHostName()).get();
         } else {
             return null;
         }
@@ -181,8 +170,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
     @Override
     public String getSecureVirtualHostName() {
         if (this.getSecurePortEnabled()) {
-            return configInstance.getStringProperty(namespace + SECURE_VIRTUAL_HOSTNAME_KEY,
-                    super.getSecureVirtualHostName()).get();
+            return configInstance.getStringProperty(namespace + SECURE_VIRTUAL_HOSTNAME_KEY, super.getSecureVirtualHostName()).get();
         } else {
             return null;
         }
@@ -213,9 +201,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
         String metadataNamespace = namespace + INSTANCE_METADATA_PREFIX + ".";
         Map<String, String> metadataMap = new LinkedHashMap<>();
         Configuration config = (Configuration) configInstance.getBackingConfigurationSource();
-        String subsetPrefix = metadataNamespace.charAt(metadataNamespace.length() - 1) == '.'
-                ? metadataNamespace.substring(0, metadataNamespace.length() - 1)
-                : metadataNamespace;
+        String subsetPrefix = metadataNamespace.charAt(metadataNamespace.length() - 1) == '.' ? metadataNamespace.substring(0, metadataNamespace.length() - 1) : metadataNamespace;
         for (Iterator<String> iter = config.subset(subsetPrefix).getKeys(); iter.hasNext(); ) {
             String key = iter.next();
             String value = config.getString(subsetPrefix + "." + key);
@@ -244,48 +230,39 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
         return super.getIpAddress();
     }
 
-
     @Override
     public String getStatusPageUrlPath() {
-        return configInstance.getStringProperty(namespace + STATUS_PAGE_URL_PATH_KEY,
-                Values.DEFAULT_STATUSPAGE_URLPATH).get();
+        return configInstance.getStringProperty(namespace + STATUS_PAGE_URL_PATH_KEY, Values.DEFAULT_STATUSPAGE_URLPATH).get();
     }
 
     @Override
     public String getStatusPageUrl() {
-        return configInstance.getStringProperty(namespace + STATUS_PAGE_URL_KEY, null)
-                .get();
+        return configInstance.getStringProperty(namespace + STATUS_PAGE_URL_KEY, null).get();
     }
-
 
     @Override
     public String getHomePageUrlPath() {
-        return configInstance.getStringProperty(namespace + HOME_PAGE_URL_PATH_KEY,
-                Values.DEFAULT_HOMEPAGE_URLPATH).get();
+        return configInstance.getStringProperty(namespace + HOME_PAGE_URL_PATH_KEY, Values.DEFAULT_HOMEPAGE_URLPATH).get();
     }
 
     @Override
     public String getHomePageUrl() {
-        return configInstance.getStringProperty(namespace + HOME_PAGE_URL_KEY, null)
-                .get();
+        return configInstance.getStringProperty(namespace + HOME_PAGE_URL_KEY, null).get();
     }
 
     @Override
     public String getHealthCheckUrlPath() {
-        return configInstance.getStringProperty(namespace + HEALTHCHECK_URL_PATH_KEY,
-                Values.DEFAULT_HEALTHCHECK_URLPATH).get();
+        return configInstance.getStringProperty(namespace + HEALTHCHECK_URL_PATH_KEY, Values.DEFAULT_HEALTHCHECK_URLPATH).get();
     }
 
     @Override
     public String getHealthCheckUrl() {
-        return configInstance.getStringProperty(namespace + HEALTHCHECK_URL_KEY, null)
-                .get();
+        return configInstance.getStringProperty(namespace + HEALTHCHECK_URL_KEY, null).get();
     }
 
     @Override
     public String getSecureHealthCheckUrl() {
-        return configInstance.getStringProperty(namespace + SECURE_HEALTHCHECK_URL_KEY,
-                null).get();
+        return configInstance.getStringProperty(namespace + SECURE_HEALTHCHECK_URL_KEY, null).get();
     }
 
     @Override

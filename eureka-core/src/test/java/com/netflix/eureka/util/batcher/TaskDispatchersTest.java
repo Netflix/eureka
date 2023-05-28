@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.eureka.util.batcher;
 
 import java.util.Collections;
@@ -22,11 +21,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
 import com.netflix.eureka.util.batcher.TaskProcessor.ProcessingResult;
 import org.junit.After;
 import org.junit.Test;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -38,10 +35,13 @@ import static org.junit.Assert.fail;
 public class TaskDispatchersTest {
 
     private static final long SERVER_UNAVAILABLE_SLEEP_TIME_MS = 1000;
+
     private static final long RETRY_SLEEP_TIME_MS = 100;
+
     private static final long MAX_BATCHING_DELAY_MS = 10;
 
     private static final int MAX_BUFFER_SIZE = 1000000;
+
     private static final int WORK_LOAD_SIZE = 2;
 
     private final RecordingProcessor processor = new RecordingProcessor();
@@ -57,16 +57,7 @@ public class TaskDispatchersTest {
 
     @Test
     public void testSingleTaskDispatcher() throws Exception {
-        dispatcher = TaskDispatchers.createNonBatchingTaskDispatcher(
-                "TEST",
-                MAX_BUFFER_SIZE,
-                1,
-                MAX_BATCHING_DELAY_MS,
-                SERVER_UNAVAILABLE_SLEEP_TIME_MS,
-                RETRY_SLEEP_TIME_MS,
-                processor
-        );
-
+        dispatcher = TaskDispatchers.createNonBatchingTaskDispatcher("TEST", MAX_BUFFER_SIZE, 1, MAX_BATCHING_DELAY_MS, SERVER_UNAVAILABLE_SLEEP_TIME_MS, RETRY_SLEEP_TIME_MS, processor);
         dispatcher.process(1, ProcessingResult.Success, System.currentTimeMillis() + 60 * 1000);
         ProcessingResult result = processor.completedTasks.poll(5, TimeUnit.SECONDS);
         assertThat(result, is(equalTo(ProcessingResult.Success)));
@@ -74,20 +65,9 @@ public class TaskDispatchersTest {
 
     @Test
     public void testBatchingDispatcher() throws Exception {
-        dispatcher = TaskDispatchers.createBatchingTaskDispatcher(
-                "TEST",
-                MAX_BUFFER_SIZE,
-                WORK_LOAD_SIZE,
-                1,
-                MAX_BATCHING_DELAY_MS,
-                SERVER_UNAVAILABLE_SLEEP_TIME_MS,
-                RETRY_SLEEP_TIME_MS,
-                processor
-        );
-
+        dispatcher = TaskDispatchers.createBatchingTaskDispatcher("TEST", MAX_BUFFER_SIZE, WORK_LOAD_SIZE, 1, MAX_BATCHING_DELAY_MS, SERVER_UNAVAILABLE_SLEEP_TIME_MS, RETRY_SLEEP_TIME_MS, processor);
         dispatcher.process(1, ProcessingResult.Success, System.currentTimeMillis() + 60 * 1000);
         dispatcher.process(2, ProcessingResult.Success, System.currentTimeMillis() + 60 * 1000);
-
         processor.expectSuccesses(2);
     }
 
@@ -95,18 +75,7 @@ public class TaskDispatchersTest {
     public void testTasksAreDistributedAcrossAllWorkerThreads() throws Exception {
         int threadCount = 3;
         CountingTaskProcessor countingProcessor = new CountingTaskProcessor();
-
-        TaskDispatcher<Integer, Boolean> dispatcher = TaskDispatchers.createBatchingTaskDispatcher(
-                "TEST",
-                MAX_BUFFER_SIZE,
-                WORK_LOAD_SIZE,
-                threadCount,
-                MAX_BATCHING_DELAY_MS,
-                SERVER_UNAVAILABLE_SLEEP_TIME_MS,
-                RETRY_SLEEP_TIME_MS,
-                countingProcessor
-        );
-
+        TaskDispatcher<Integer, Boolean> dispatcher = TaskDispatchers.createBatchingTaskDispatcher("TEST", MAX_BUFFER_SIZE, WORK_LOAD_SIZE, threadCount, MAX_BATCHING_DELAY_MS, SERVER_UNAVAILABLE_SLEEP_TIME_MS, RETRY_SLEEP_TIME_MS, countingProcessor);
         try {
             int loops = 1000;
             while (true) {
@@ -150,7 +119,6 @@ public class TaskDispatchersTest {
             } else {
                 threadHits.put(currentThread, tasks.size() + current);
             }
-
             completionGuard.release(tasks.size());
             return ProcessingResult.Success;
         }

@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package com.netflix.appinfo;
 
 import com.fasterxml.jackson.annotation.JsonRootName;
@@ -26,13 +25,16 @@ import com.netflix.discovery.converters.jackson.DataCenterTypeInfoResolver;
  * A simple interface for indicating which <em>datacenter</em> a particular instance belongs.
  *
  * @author Karthik Ranganathan
- *
  */
 @JsonRootName("dataCenterInfo")
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = As.PROPERTY, property = "@class")
 @JsonTypeIdResolver(DataCenterTypeInfoResolver.class)
 public interface DataCenterInfo {
-    enum Name {Netflix, Amazon, MyOwn}
+
+    enum Name {
+
+        Netflix, Amazon, MyOwn
+    }
 
     Name getName();
 }

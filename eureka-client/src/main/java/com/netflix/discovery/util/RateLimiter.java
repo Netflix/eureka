@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.util;
 
 import java.util.concurrent.TimeUnit;
@@ -38,6 +37,7 @@ public class RateLimiter {
     private final long rateToMsConversion;
 
     private final AtomicInteger consumedTokens = new AtomicInteger();
+
     private final AtomicLong lastRefillTime = new AtomicLong(0);
 
     @Deprecated
@@ -46,7 +46,7 @@ public class RateLimiter {
     }
 
     public RateLimiter(TimeUnit averageRateUnit) {
-        switch (averageRateUnit) {
+        switch(averageRateUnit) {
             case SECONDS:
                 rateToMsConversion = 1000;
                 break;
@@ -63,10 +63,10 @@ public class RateLimiter {
     }
 
     public boolean acquire(int burstSize, long averageRate, long currentTimeMillis) {
-        if (burstSize <= 0 || averageRate <= 0) { // Instead of throwing exception, we just let all the traffic go
+        if (burstSize <= 0 || averageRate <= 0) {
+            // Instead of throwing exception, we just let all the traffic go
             return true;
         }
-
         refillToken(burstSize, averageRate, currentTimeMillis);
         return consumeToken(burstSize);
     }
@@ -74,16 +74,14 @@ public class RateLimiter {
     private void refillToken(int burstSize, long averageRate, long currentTimeMillis) {
         long refillTime = lastRefillTime.get();
         long timeDelta = currentTimeMillis - refillTime;
-
         long newTokens = timeDelta * averageRate / rateToMsConversion;
         if (newTokens > 0) {
-            long newRefillTime = refillTime == 0
-                    ? currentTimeMillis
-                    : refillTime + newTokens * rateToMsConversion / averageRate;
+            long newRefillTime = refillTime == 0 ? currentTimeMillis : refillTime + newTokens * rateToMsConversion / averageRate;
             if (lastRefillTime.compareAndSet(refillTime, newRefillTime)) {
                 while (true) {
                     int currentLevel = consumedTokens.get();
-                    int adjustedLevel = Math.min(currentLevel, burstSize); // In case burstSize decreased
+                    // In case burstSize decreased
+                    int adjustedLevel = Math.min(currentLevel, burstSize);
                     int newLevel = (int) Math.max(0, adjustedLevel - newTokens);
                     if (consumedTokens.compareAndSet(currentLevel, newLevel)) {
                         return;

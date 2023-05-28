@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 
@@ -15,11 +14,17 @@ import com.fasterxml.jackson.core.JsonToken;
  * allocating any new objects on the heap.
  */
 public class EnumLookup<T extends Enum<T>> {
+
     private final int[] sortedHashes;
+
     private final char[][] sortedNames;
+
     private final Map<String, T> stringLookup;
+
     private final T[] sortedValues;
+
     private final int minLength;
+
     private final int maxLength;
 
     EnumLookup(Class<T> enumType) {
@@ -30,9 +35,7 @@ public class EnumLookup<T extends Enum<T>> {
     EnumLookup(Class<T> enumType, Function<T, char[]> namer) {
         this.sortedValues = (T[]) Array.newInstance(enumType, enumType.getEnumConstants().length);
         System.arraycopy(enumType.getEnumConstants(), 0, sortedValues, 0, sortedValues.length);
-        Arrays.sort(sortedValues,
-                (o1, o2) -> Integer.compare(Arrays.hashCode(namer.apply(o1)), Arrays.hashCode(namer.apply(o2))));
-
+        Arrays.sort(sortedValues, (o1, o2) -> Integer.compare(Arrays.hashCode(namer.apply(o1)), Arrays.hashCode(namer.apply(o2))));
         this.sortedHashes = new int[sortedValues.length];
         this.sortedNames = new char[sortedValues.length][];
         int i = 0;
@@ -68,8 +71,8 @@ public class EnumLookup<T extends Enum<T>> {
     }
 
     public T find(char[] a, int offset, int length, T defaultValue) {
-        if (length < this.minLength || length > this.maxLength) return defaultValue;
-        
+        if (length < this.minLength || length > this.maxLength)
+            return defaultValue;
         int hash = hashCode(a, offset, length);
         int index = Arrays.binarySearch(sortedHashes, hash);
         if (index >= 0) {

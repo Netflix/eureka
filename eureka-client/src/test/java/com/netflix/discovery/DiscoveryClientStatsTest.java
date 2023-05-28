@@ -21,5 +21,4 @@ public class DiscoveryClientStatsTest extends AbstractDiscoveryClientTester {
         DiscoveryClient clientImpl = (DiscoveryClient) client;
         Assert.assertTrue(clientImpl.getStats().initSucceeded());
     }
-
 }

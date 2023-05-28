@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.shared.resolver;
 
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +31,7 @@ public class StaticClusterResolver<T extends EurekaEndpoint> implements ClusterR
     private static final Logger logger = LoggerFactory.getLogger(StaticClusterResolver.class);
 
     private final List<T> eurekaEndpoints;
+
     private final String region;
 
     @SafeVarargs
@@ -60,10 +59,6 @@ public class StaticClusterResolver<T extends EurekaEndpoint> implements ClusterR
         boolean isSecure = "https".equalsIgnoreCase(serviceUrl.getProtocol());
         int defaultPort = isSecure ? 443 : 80;
         int port = serviceUrl.getPort() == -1 ? defaultPort : serviceUrl.getPort();
-
-        return new StaticClusterResolver<EurekaEndpoint>(
-                regionName,
-                new DefaultEndpoint(serviceUrl.getHost(), port, isSecure, serviceUrl.getPath())
-        );
+        return new StaticClusterResolver<EurekaEndpoint>(regionName, new DefaultEndpoint(serviceUrl.getHost(), port, isSecure, serviceUrl.getPath()));
     }
 }

@@ -19,7 +19,6 @@ public class EurekaIdentityHeaderFilter extends ClientFilter {
         if (authInfo != null) {
             cr.getHeaders().putSingle(AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY, authInfo.getName());
             cr.getHeaders().putSingle(AbstractEurekaIdentity.AUTH_VERSION_HEADER_KEY, authInfo.getVersion());
-
             if (authInfo.getId() != null) {
                 cr.getHeaders().putSingle(AbstractEurekaIdentity.AUTH_ID_HEADER_KEY, authInfo.getId());
             }

@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.junit.resource.DiscoveryClientResource;
 import com.netflix.discovery.shared.Applications;
@@ -21,7 +20,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-
 import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEurekaHttpResponse;
 import static com.netflix.discovery.util.EurekaEntityFunctions.toApplications;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -40,14 +38,12 @@ import static org.mockito.Mockito.when;
 public class DiscoveryClientEventBusTest {
 
     private static final EurekaHttpClient requestHandler = mock(EurekaHttpClient.class);
+
     private static SimpleEurekaHttpServer eurekaHttpServer;
 
     @Rule
-    public DiscoveryClientResource discoveryClientResource = DiscoveryClientResource.newBuilder()
-            .withRegistration(false)  // we don't need the registration thread for status change
-            .withRegistryFetch(true)
-            .connectWith(eurekaHttpServer)
-            .build();
+    public DiscoveryClientResource discoveryClientResource = DiscoveryClientResource.newBuilder().withRegistration(// we don't need the registration thread for status change
+    false).withRegistryFetch(true).connectWith(eurekaHttpServer).build();
 
     /**
      * Share server stub by all tests.
@@ -69,9 +65,7 @@ public class DiscoveryClientEventBusTest {
         reset(requestHandler);
         when(requestHandler.register(any(InstanceInfo.class))).thenReturn(EurekaHttpResponse.status(204));
         when(requestHandler.cancel(anyString(), anyString())).thenReturn(EurekaHttpResponse.status(200));
-        when(requestHandler.getDelta()).thenReturn(
-                anEurekaHttpResponse(200, new Applications()).type(MediaType.APPLICATION_JSON_TYPE).build()
-        );
+        when(requestHandler.getDelta()).thenReturn(anEurekaHttpResponse(200, new Applications()).type(MediaType.APPLICATION_JSON_TYPE).build());
     }
 
     @Test
@@ -80,19 +74,17 @@ public class DiscoveryClientEventBusTest {
         final List<StatusChangeEvent> receivedEvents = new ArrayList<>();
         EventBus eventBus = discoveryClientResource.getEventBus();
         eventBus.registerSubscriber(new Object() {
+
             @Subscribe
             public void consume(StatusChangeEvent event) {
                 receivedEvents.add(event);
                 eventLatch.countDown();
             }
         });
-
         Applications initialApps = toApplications(discoveryClientResource.getMyInstanceInfo());
-        when(requestHandler.getApplications()).thenReturn(
-                anEurekaHttpResponse(200, initialApps).type(MediaType.APPLICATION_JSON_TYPE).build()
-        );
-        discoveryClientResource.getClient(); // Activates the client
-
+        when(requestHandler.getApplications()).thenReturn(anEurekaHttpResponse(200, initialApps).type(MediaType.APPLICATION_JSON_TYPE).build());
+        // Activates the client
+        discoveryClientResource.getClient();
         assertThat(eventLatch.await(10, TimeUnit.SECONDS), is(true));
         assertThat(receivedEvents.size(), is(equalTo(1)));
         assertThat(receivedEvents.get(0), is(notNullValue()));
@@ -101,20 +93,14 @@ public class DiscoveryClientEventBusTest {
     @Test
     public void testCacheRefreshEvent() throws Exception {
         InstanceInfoGenerator instanceGen = InstanceInfoGenerator.newBuilder(2, "testApp").build();
-
         // Initial full fetch
         Applications initialApps = instanceGen.takeDelta(1);
-        when(requestHandler.getApplications()).thenReturn(
-                anEurekaHttpResponse(200, initialApps).type(MediaType.APPLICATION_JSON_TYPE).build()
-        );
-        discoveryClientResource.getClient(); // Activates the client
-
+        when(requestHandler.getApplications()).thenReturn(anEurekaHttpResponse(200, initialApps).type(MediaType.APPLICATION_JSON_TYPE).build());
+        // Activates the client
+        discoveryClientResource.getClient();
         // Delta update
         Applications delta = instanceGen.takeDelta(1);
-        when(requestHandler.getDelta()).thenReturn(
-                anEurekaHttpResponse(200, delta).type(MediaType.APPLICATION_JSON_TYPE).build()
-        );
-
+        when(requestHandler.getDelta()).thenReturn(anEurekaHttpResponse(200, delta).type(MediaType.APPLICATION_JSON_TYPE).build());
         assertThat(discoveryClientResource.awaitCacheUpdate(10, TimeUnit.SECONDS), is(true));
     }
 }

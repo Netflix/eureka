@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import com.netflix.eureka.util.batcher.TaskProcessor.ProcessingResult;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.annotations.Monitor;
@@ -17,7 +16,6 @@ import com.netflix.servo.monitor.StatsTimer;
 import com.netflix.servo.stats.StatsConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import static com.netflix.eureka.Names.METRIC_REPLICATION_PREFIX;
 
 /**
@@ -34,12 +32,12 @@ class TaskExecutors<ID, T> {
     private static final Map<String, TaskExecutorMetrics> registeredMonitors = new HashMap<>();
 
     private final AtomicBoolean isShutdown;
+
     private final List<Thread> workerThreads;
 
     TaskExecutors(WorkerRunnableFactory<ID, T> workerRunnableFactory, int workerCount, AtomicBoolean isShutdown) {
         this.isShutdown = isShutdown;
         this.workerThreads = new ArrayList<>();
-
         ThreadGroup threadGroup = new ThreadGroup("eurekaTaskExecutors");
         for (int i = 0; i < workerCount; i++) {
             WorkerRunnable<ID, T> runnable = workerRunnableFactory.create(i);
@@ -59,20 +57,14 @@ class TaskExecutors<ID, T> {
         }
     }
 
-    static <ID, T> TaskExecutors<ID, T> singleItemExecutors(final String name,
-                                                            int workerCount,
-                                                            final TaskProcessor<T> processor,
-                                                            final AcceptorExecutor<ID, T> acceptorExecutor) {
+    static <ID, T> TaskExecutors<ID, T> singleItemExecutors(final String name, int workerCount, final TaskProcessor<T> processor, final AcceptorExecutor<ID, T> acceptorExecutor) {
         final AtomicBoolean isShutdown = new AtomicBoolean();
         final TaskExecutorMetrics metrics = new TaskExecutorMetrics(name);
         registeredMonitors.put(name, metrics);
         return new TaskExecutors<>(idx -> new SingleTaskWorkerRunnable<>("TaskNonBatchingWorker-" + name + '-' + idx, isShutdown, metrics, processor, acceptorExecutor), workerCount, isShutdown);
     }
 
-    static <ID, T> TaskExecutors<ID, T> batchExecutors(final String name,
-                                                       int workerCount,
-                                                       final TaskProcessor<T> processor,
-                                                       final AcceptorExecutor<ID, T> acceptorExecutor) {
+    static <ID, T> TaskExecutors<ID, T> batchExecutors(final String name, int workerCount, final TaskProcessor<T> processor, final AcceptorExecutor<ID, T> acceptorExecutor) {
         final AtomicBoolean isShutdown = new AtomicBoolean();
         final TaskExecutorMetrics metrics = new TaskExecutorMetrics(name);
         registeredMonitors.put(name, metrics);
@@ -96,15 +88,10 @@ class TaskExecutors<ID, T> {
         final StatsTimer taskWaitingTimeForProcessing;
 
         TaskExecutorMetrics(String id) {
-            final double[] percentiles = {50.0, 95.0, 99.0, 99.5};
-            final StatsConfig statsConfig = new StatsConfig.Builder()
-                    .withSampleSize(1000)
-                    .withPercentiles(percentiles)
-                    .withPublishStdDev(true)
-                    .build();
+            final double[] percentiles = { 50.0, 95.0, 99.0, 99.5 };
+            final StatsConfig statsConfig = new StatsConfig.Builder().withSampleSize(1000).withPercentiles(percentiles).withPublishStdDev(true).build();
             final MonitorConfig config = MonitorConfig.builder(METRIC_REPLICATION_PREFIX + "executionTime").build();
             taskWaitingTimeForProcessing = new StatsTimer(config, statsConfig);
-
             try {
                 Monitors.registerObject(id, this);
             } catch (Throwable e) {
@@ -113,7 +100,7 @@ class TaskExecutors<ID, T> {
         }
 
         void registerTaskResult(ProcessingResult result, int count) {
-            switch (result) {
+            switch(result) {
                 case Success:
                     numberOfSuccessfulExecutions += count;
                     break;
@@ -142,21 +129,23 @@ class TaskExecutors<ID, T> {
     }
 
     interface WorkerRunnableFactory<ID, T> {
+
         WorkerRunnable<ID, T> create(int idx);
     }
 
     abstract static class WorkerRunnable<ID, T> implements Runnable {
+
         final String workerName;
+
         final AtomicBoolean isShutdown;
+
         final TaskExecutorMetrics metrics;
+
         final TaskProcessor<T> processor;
+
         final AcceptorExecutor<ID, T> taskDispatcher;
 
-        WorkerRunnable(String workerName,
-                       AtomicBoolean isShutdown,
-                       TaskExecutorMetrics metrics,
-                       TaskProcessor<T> processor,
-                       AcceptorExecutor<ID, T> taskDispatcher) {
+        WorkerRunnable(String workerName, AtomicBoolean isShutdown, TaskExecutorMetrics metrics, TaskProcessor<T> processor, AcceptorExecutor<ID, T> taskDispatcher) {
             this.workerName = workerName;
             this.isShutdown = isShutdown;
             this.metrics = metrics;
@@ -171,11 +160,7 @@ class TaskExecutors<ID, T> {
 
     static class BatchWorkerRunnable<ID, T> extends WorkerRunnable<ID, T> {
 
-        BatchWorkerRunnable(String workerName,
-                            AtomicBoolean isShutdown,
-                            TaskExecutorMetrics metrics,
-                            TaskProcessor<T> processor,
-                            AcceptorExecutor<ID, T> acceptorExecutor) {
+        BatchWorkerRunnable(String workerName, AtomicBoolean isShutdown, TaskExecutorMetrics metrics, TaskProcessor<T> processor, AcceptorExecutor<ID, T> acceptorExecutor) {
             super(workerName, isShutdown, metrics, processor, acceptorExecutor);
         }
 
@@ -185,10 +170,9 @@ class TaskExecutors<ID, T> {
                 while (!isShutdown.get()) {
                     List<TaskHolder<ID, T>> holders = getWork();
                     metrics.registerExpiryTimes(holders);
-
                     List<T> tasks = getTasksOf(holders);
                     ProcessingResult result = processor.process(tasks);
-                    switch (result) {
+                    switch(result) {
                         case Success:
                             break;
                         case Congestion:
@@ -228,11 +212,7 @@ class TaskExecutors<ID, T> {
 
     static class SingleTaskWorkerRunnable<ID, T> extends WorkerRunnable<ID, T> {
 
-        SingleTaskWorkerRunnable(String workerName,
-                                 AtomicBoolean isShutdown,
-                                 TaskExecutorMetrics metrics,
-                                 TaskProcessor<T> processor,
-                                 AcceptorExecutor<ID, T> acceptorExecutor) {
+        SingleTaskWorkerRunnable(String workerName, AtomicBoolean isShutdown, TaskExecutorMetrics metrics, TaskProcessor<T> processor, AcceptorExecutor<ID, T> acceptorExecutor) {
             super(workerName, isShutdown, metrics, processor, acceptorExecutor);
         }
 
@@ -250,7 +230,7 @@ class TaskExecutors<ID, T> {
                     metrics.registerExpiryTime(taskHolder);
                     if (taskHolder != null) {
                         ProcessingResult result = processor.process(taskHolder.getTask());
-                        switch (result) {
+                        switch(result) {
                             case Success:
                                 break;
                             case Congestion:

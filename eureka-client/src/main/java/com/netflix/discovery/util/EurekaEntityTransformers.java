@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.discovery.util;
 
 import com.netflix.appinfo.InstanceInfo;
@@ -37,7 +36,7 @@ public class EurekaEntityTransformers {
     }
 
     public static Transformer<InstanceInfo> actionTypeSetter(ActionType actionType) {
-        switch (actionType) {
+        switch(actionType) {
             case ADDED:
                 return ADD_ACTION_SETTER_TRANSFORMER;
             case MODIFIED:
@@ -49,6 +48,7 @@ public class EurekaEntityTransformers {
     }
 
     private static final Transformer<Object> IDENTITY_TRANSFORMER = new Transformer<Object>() {
+
         @Override
         public Object apply(Object value) {
             return value;
@@ -56,6 +56,7 @@ public class EurekaEntityTransformers {
     };
 
     private static final Transformer<InstanceInfo> ADD_ACTION_SETTER_TRANSFORMER = new Transformer<InstanceInfo>() {
+
         @Override
         public InstanceInfo apply(InstanceInfo instance) {
             InstanceInfo copy = new InstanceInfo(instance);
@@ -65,6 +66,7 @@ public class EurekaEntityTransformers {
     };
 
     private static final Transformer<InstanceInfo> MODIFIED_ACTION_SETTER_TRANSFORMER = new Transformer<InstanceInfo>() {
+
         @Override
         public InstanceInfo apply(InstanceInfo instance) {
             InstanceInfo copy = new InstanceInfo(instance);
@@ -74,6 +76,7 @@ public class EurekaEntityTransformers {
     };
 
     private static final Transformer<InstanceInfo> DELETED_ACTION_SETTER_TRANSFORMER = new Transformer<InstanceInfo>() {
+
         @Override
         public InstanceInfo apply(InstanceInfo instance) {
             InstanceInfo copy = new InstanceInfo(instance);

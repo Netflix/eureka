@@ -26,7 +26,7 @@ public interface ResponseCache {
      * @param key the key for which the cached information needs to be obtained.
      * @return payload which contains information about the applications.
      */
-     String get(Key key);
+    String get(Key key);
 
     /**
      * Get the compressed information about the applications.

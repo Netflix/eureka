@@ -8,7 +8,6 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.LookupService;
 import com.netflix.discovery.shared.Pair;
 import com.netflix.eureka.lease.LeaseManager;
-
 import java.util.List;
 import java.util.Map;
 
@@ -26,11 +25,9 @@ public interface InstanceRegistry extends LeaseManager<InstanceInfo>, LookupServ
 
     void storeOverriddenStatusIfRequired(String appName, String id, InstanceStatus overriddenStatus);
 
-    boolean statusUpdate(String appName, String id, InstanceStatus newStatus,
-                         String lastDirtyTimestamp, boolean isReplication);
+    boolean statusUpdate(String appName, String id, InstanceStatus newStatus, String lastDirtyTimestamp, boolean isReplication);
 
-    boolean deleteStatusOverride(String appName, String id, InstanceStatus newStatus,
-                                 String lastDirtyTimestamp, boolean isReplication);
+    boolean deleteStatusOverride(String appName, String id, InstanceStatus newStatus, String lastDirtyTimestamp, boolean isReplication);
 
     Map<String, InstanceStatus> overriddenInstanceStatusesSnapshot();
 
@@ -93,5 +90,4 @@ public interface InstanceRegistry extends LeaseManager<InstanceInfo>, LookupServ
     boolean isLeaseExpirationEnabled();
 
     boolean isSelfPreservationModeEnabled();
-
 }

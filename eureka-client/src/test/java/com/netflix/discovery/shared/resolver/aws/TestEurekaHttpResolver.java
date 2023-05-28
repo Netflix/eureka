@@ -10,6 +10,7 @@ import com.netflix.discovery.shared.transport.EurekaTransportConfig;
  * @author David Liu
  */
 public class TestEurekaHttpResolver extends EurekaHttpResolver {
+
     public TestEurekaHttpResolver(EurekaClientConfig clientConfig, EurekaTransportConfig transportConfig, EurekaHttpClientFactory clientFactory, String vipAddress) {
         super(clientConfig, transportConfig, clientFactory, vipAddress);
     }

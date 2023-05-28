@@ -6,5 +6,6 @@ package com.netflix.appinfo;
  * @author rthomas@atlassian.com
  */
 public interface UniqueIdentifier {
+
     String getId();
 }

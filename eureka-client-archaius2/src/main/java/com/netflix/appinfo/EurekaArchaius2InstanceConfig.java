@@ -2,10 +2,8 @@ package com.netflix.appinfo;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import com.google.common.collect.Sets;
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
@@ -13,36 +11,39 @@ import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.internal.util.InternalPrefixedConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import static com.netflix.appinfo.PropertyBasedInstanceConfigConstants.*;
 
 @Singleton
 @ConfigurationSource(CommonConstants.CONFIG_FILE_NAME)
 public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
+
     private static final Logger logger = LoggerFactory.getLogger(EurekaArchaius2InstanceConfig.class);
 
     protected String namespace;
 
     private final Config configInstance;
+
     private final InternalPrefixedConfig prefixedConfig;
+
     private final DataCenterInfo dcInfo;
 
     private final String defaultAppGroup;
-    
+
     @Inject
     public EurekaArchaius2InstanceConfig(Config configInstance) {
         this(configInstance, CommonConstants.DEFAULT_CONFIG_NAMESPACE);
     }
-    
+
     public EurekaArchaius2InstanceConfig(Config configInstance, String namespace) {
         this(configInstance, namespace, new DataCenterInfo() {
+
             @Override
             public Name getName() {
                 return Name.MyOwn;
             }
         });
     }
-    
+
     public EurekaArchaius2InstanceConfig(Config configInstance, String namespace, DataCenterInfo dcInfo) {
         this.defaultAppGroup = configInstance.getString(FALLBACK_APP_GROUP_KEY, Values.UNKNOWN_APPLICATION);
         this.namespace = namespace;
@@ -104,16 +105,12 @@ public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
 
     @Override
     public String getVirtualHostName() {
-        return this.isNonSecurePortEnabled()
-            ? prefixedConfig.getString(VIRTUAL_HOSTNAME_KEY, super.getVirtualHostName())
-            : null;
+        return this.isNonSecurePortEnabled() ? prefixedConfig.getString(VIRTUAL_HOSTNAME_KEY, super.getVirtualHostName()) : null;
     }
 
     @Override
     public String getSecureVirtualHostName() {
-        return this.getSecurePortEnabled()
-            ? prefixedConfig.getString(SECURE_VIRTUAL_HOSTNAME_KEY, super.getSecureVirtualHostName())
-            : null;
+        return this.getSecurePortEnabled() ? prefixedConfig.getString(SECURE_VIRTUAL_HOSTNAME_KEY, super.getSecureVirtualHostName()) : null;
     }
 
     @Override

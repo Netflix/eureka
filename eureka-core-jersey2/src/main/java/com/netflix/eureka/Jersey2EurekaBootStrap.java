@@ -13,21 +13,14 @@ import com.netflix.eureka.resources.ServerCodecs;
  * @author Matt Nelson
  */
 public class Jersey2EurekaBootStrap extends EurekaBootStrap {
-    
+
     public Jersey2EurekaBootStrap(DiscoveryClient discoveryClient) {
         super(discoveryClient);
     }
 
-    @Override    
+    @Override
     protected PeerEurekaNodes getPeerEurekaNodes(PeerAwareInstanceRegistry registry, EurekaServerConfig eurekaServerConfig, EurekaClientConfig eurekaClientConfig, ServerCodecs serverCodecs, ApplicationInfoManager applicationInfoManager) {
-        PeerEurekaNodes peerEurekaNodes = new Jersey2PeerEurekaNodes(
-                registry,
-                eurekaServerConfig,
-                eurekaClientConfig,
-                serverCodecs,
-                applicationInfoManager
-        );
-        
+        PeerEurekaNodes peerEurekaNodes = new Jersey2PeerEurekaNodes(registry, eurekaServerConfig, eurekaClientConfig, serverCodecs, applicationInfoManager);
         return peerEurekaNodes;
     }
 }
