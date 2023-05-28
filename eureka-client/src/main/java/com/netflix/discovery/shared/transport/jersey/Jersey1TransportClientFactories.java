@@ -32,13 +32,12 @@ public class Jersey1TransportClientFactories implements TransportClientFactories
 
             @Override
             public EurekaHttpClient newClient(EurekaEndpoint serviceUrl) {
-                return metricsFactory.newClient(serviceUrl);
+                return generateClientMetrics(serviceUrl);
             }
 
             @Override
             public void shutdown() {
-                metricsFactory.shutdown();
-                jerseyFactory.shutdown();
+                Metrics();
             }
         };
     }
@@ -55,14 +54,22 @@ public class Jersey1TransportClientFactories implements TransportClientFactories
 
             @Override
             public EurekaHttpClient newClient(EurekaEndpoint serviceUrl) {
-                return metricsFactory.newClient(serviceUrl);
+                return generateClientMetrics(serviceUrl);
             }
 
             @Override
             public void shutdown() {
-                metricsFactory.shutdown();
-                jerseyFactory.shutdown();
+                Metrics();
             }
         };
+    }
+
+    private EurekaHttpClient generateClientMetrics(EurekaEndpoint serviceUrl) {
+        return metricsFactory.newClient(serviceUrl);
+    }
+
+    private void Metrics() {
+        metricsFactory.shutdown();
+        jerseyFactory.shutdown();
     }
 }

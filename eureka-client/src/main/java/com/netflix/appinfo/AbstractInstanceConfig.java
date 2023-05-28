@@ -171,8 +171,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
      */
     @Override
     public String getASGName() {
-        // TODO Auto-generated method stub
-        return null;
+        return generateNullMethod();
     }
 
     /*
@@ -192,8 +191,7 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
      */
     @Override
     public Map<String, String> getMetadataMap() {
-        // TODO Auto-generated method stub
-        return null;
+        return generateNullMethod();
     }
 
     /*
@@ -231,5 +229,15 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
             pair = new Pair<String, String>("", "");
         }
         return pair;
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see com.netflix.appinfo.InstanceConfig#getASGName()
+     */
+    private String generateNullMethod() {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

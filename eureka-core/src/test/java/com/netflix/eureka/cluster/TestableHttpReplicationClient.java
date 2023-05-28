@@ -115,37 +115,37 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
 
     @Override
     public EurekaHttpResponse<Applications> getApplications(String... regions) {
-        throw new IllegalStateException("method not supported");
+        return notSupportedMethod(regions);
     }
 
     @Override
     public EurekaHttpResponse<Applications> getDelta(String... regions) {
-        throw new IllegalStateException("method not supported");
+        return notSupportedMethod(regions);
     }
 
     @Override
     public EurekaHttpResponse<Applications> getVip(String vipAddress, String... regions) {
-        throw new IllegalStateException("method not supported");
+        return unsupportedMethod(vipAddress, regions);
     }
 
     @Override
     public EurekaHttpResponse<Applications> getSecureVip(String secureVipAddress, String... regions) {
-        throw new IllegalStateException("method not supported");
+        return unsupportedMethod(secureVipAddress, regions);
     }
 
     @Override
     public EurekaHttpResponse<Application> getApplication(String appName) {
-        throw new IllegalStateException("method not supported");
+        return UnsupportedOperationException(appName);
     }
 
     @Override
     public EurekaHttpResponse<InstanceInfo> getInstance(String id) {
-        throw new IllegalStateException("method not supported");
+        return UnsupportedOperationException(id);
     }
 
     @Override
     public EurekaHttpResponse<InstanceInfo> getInstance(String appName, String id) {
-        throw new IllegalStateException("method not supported");
+        return unsupportedMethod(appName, id);
     }
 
     @Override
@@ -206,5 +206,17 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
         public Object getData() {
             return data;
         }
+    }
+
+    private EurekaHttpResponse<Applications> notSupportedMethod(String... regions) {
+        throw new IllegalStateException("method not supported");
+    }
+
+    private EurekaHttpResponse<Applications> unsupportedMethod(String vipAddress, String... regions) {
+        throw new IllegalStateException("method not supported");
+    }
+
+    private EurekaHttpResponse<Application> UnsupportedOperationException(String appName) {
+        throw new IllegalStateException("method not supported");
     }
 }

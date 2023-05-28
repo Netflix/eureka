@@ -14,13 +14,12 @@ public class TaskDispatchers {
 
             @Override
             public void process(ID id, T task, long expiryTime) {
-                acceptorExecutor.process(id, task, expiryTime);
+                processWithExpiry(id, task, expiryTime);
             }
 
             @Override
             public void shutdown() {
-                acceptorExecutor.shutdown();
-                taskExecutor.shutdown();
+                accepTask();
             }
         };
     }
@@ -32,14 +31,22 @@ public class TaskDispatchers {
 
             @Override
             public void process(ID id, T task, long expiryTime) {
-                acceptorExecutor.process(id, task, expiryTime);
+                processWithExpiry(id, task, expiryTime);
             }
 
             @Override
             public void shutdown() {
-                acceptorExecutor.shutdown();
-                taskExecutor.shutdown();
+                accepTask();
             }
         };
+    }
+
+    private void processWithExpiry(ID id, T task, long expiryTime) {
+        acceptorExecutor.process(id, task, expiryTime);
+    }
+
+    private void accepTask() {
+        acceptorExecutor.shutdown();
+        taskExecutor.shutdown();
     }
 }

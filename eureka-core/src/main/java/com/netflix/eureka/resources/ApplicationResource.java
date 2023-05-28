@@ -67,7 +67,7 @@ public class ApplicationResource {
     }
 
     public String getAppName() {
-        return appName;
+        return retrieveName();
     }
 
     /**
@@ -177,10 +177,14 @@ public class ApplicationResource {
      * @return the application name of a particular application.
      */
     String getName() {
-        return appName;
+        return retrieveName();
     }
 
     private boolean isBlank(String str) {
         return str == null || str.isEmpty();
+    }
+
+    private String retrieveName() {
+        return appName;
     }
 }

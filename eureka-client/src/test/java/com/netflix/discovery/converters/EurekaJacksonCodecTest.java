@@ -59,14 +59,7 @@ public class EurekaJacksonCodecTest {
 
     @Test
     public void testInstanceInfoJacksonEncodeDecode() throws Exception {
-        // Encode
-        ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
-        codec.writeTo(INSTANCE_INFO_1_A1, captureStream);
-        byte[] encoded = captureStream.toByteArray();
-        // Decode
-        InputStream source = new ByteArrayInputStream(encoded);
-        InstanceInfo decoded = codec.readValue(InstanceInfo.class, source);
-        assertTrue(EurekaEntityComparators.equal(decoded, INSTANCE_INFO_1_A1));
+        encodeAndDecodeInstanceInfo();
     }
 
     @Test
@@ -191,11 +184,15 @@ public class EurekaJacksonCodecTest {
 
     @Test
     public void testJacksonWrite() throws Exception {
+        encodeAndDecodeInstanceInfo();
+    }
+
+    private void encodeAndDecodeInstanceInfo() throws Exception {
         // Encode
         ByteArrayOutputStream captureStream = new ByteArrayOutputStream();
         codec.writeTo(INSTANCE_INFO_1_A1, captureStream);
         byte[] encoded = captureStream.toByteArray();
-        // Decode value
+        // Decode
         InputStream source = new ByteArrayInputStream(encoded);
         InstanceInfo decoded = codec.readValue(InstanceInfo.class, source);
         assertTrue(EurekaEntityComparators.equal(decoded, INSTANCE_INFO_1_A1));

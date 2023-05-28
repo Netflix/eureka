@@ -55,7 +55,7 @@ public class DiscoveryClientRedirectTest {
 
         @Override
         public Integer call() throws Exception {
-            return redirectServerMockRule.getHttpPort();
+            return getRedirectServerPort();
         }
     }).withInstanceInfo(myInstanceInfo).build();
 
@@ -64,7 +64,7 @@ public class DiscoveryClientRedirectTest {
 
         @Override
         public Integer call() throws Exception {
-            return redirectServerMockRule.getHttpPort();
+            return getRedirectServerPort();
         }
     }).withInstanceInfo(myInstanceInfo).build();
 
@@ -101,8 +101,7 @@ public class DiscoveryClientRedirectTest {
 
             @Override
             public Boolean call() throws Exception {
-                List<Application> applicationList = client.getApplications().getRegisteredApplications();
-                return !applicationList.isEmpty() && applicationList.get(0).getInstances().size() == 2;
+                return checkApplicationInstances();
             }
         }, 1, TimeUnit.MINUTES);
         redirectServerMockClient.verify(request().withMethod("GET").withPath("/eureka/v2/apps/"), exactly(1));
@@ -132,8 +131,7 @@ public class DiscoveryClientRedirectTest {
 
             @Override
             public Boolean call() throws Exception {
-                List<Application> applicationList = client.getApplications().getRegisteredApplications();
-                return !applicationList.isEmpty() && applicationList.get(0).getInstances().size() == 2;
+                return checkApplicationInstances();
             }
         }, 1, TimeUnit.MINUTES);
         redirectServerMockClient.verify(request().withMethod("GET").withPath("/eureka/v2/apps/"), exactly(1));
@@ -157,5 +155,14 @@ public class DiscoveryClientRedirectTest {
             }
             Thread.sleep(100);
         }
+    }
+
+    private Integer getRedirectServerPort() throws Exception {
+        return redirectServerMockRule.getHttpPort();
+    }
+
+    private Boolean checkApplicationInstances() throws Exception {
+        List<Application> applicationList = client.getApplications().getRegisteredApplications();
+        return !applicationList.isEmpty() && applicationList.get(0).getInstances().size() == 2;
     }
 }

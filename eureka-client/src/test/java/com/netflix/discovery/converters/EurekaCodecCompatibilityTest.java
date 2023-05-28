@@ -103,9 +103,7 @@ public class EurekaCodecCompatibilityTest {
 
             @Override
             public void call(EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws IOException {
-                String encodedString = encodingCodec.encode(instanceInfo);
-                InstanceInfo decodedValue = decodingCodec.decode(encodedString, InstanceInfo.class);
-                assertThat(EurekaEntityComparators.equalMini(instanceInfo, decodedValue), is(true));
+                encodeDecodeTest(encodingCodec, decodingCodec);
             }
         };
         verifyForPair(codingAction, InstanceInfo.class, new CodecWrappers.JacksonJson(), new CodecWrappers.JacksonJsonMini());
@@ -119,9 +117,7 @@ public class EurekaCodecCompatibilityTest {
 
             @Override
             public void call(EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws IOException {
-                String encodedString = encodingCodec.encode(instanceInfo);
-                InstanceInfo decodedValue = decodingCodec.decode(encodedString, InstanceInfo.class);
-                assertThat(EurekaEntityComparators.equalMini(instanceInfo, decodedValue), is(true));
+                encodeDecodeTest(encodingCodec, decodingCodec);
             }
         };
         verifyForPair(codingAction, InstanceInfo.class, new CodecWrappers.JacksonJson(), new CodecWrappers.JacksonJsonMini());
@@ -134,9 +130,7 @@ public class EurekaCodecCompatibilityTest {
 
             @Override
             public void call(EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws IOException {
-                String encodedString = encodingCodec.encode(instanceInfo);
-                InstanceInfo decodedValue = decodingCodec.decode(encodedString, InstanceInfo.class);
-                assertThat(EurekaEntityComparators.equalMini(instanceInfo, decodedValue), is(true));
+                encodeDecodeTest(encodingCodec, decodingCodec);
             }
         };
         verifyForPair(codingAction, InstanceInfo.class, new CodecWrappers.JacksonJsonMini(), new CodecWrappers.JacksonJsonMini());
@@ -317,5 +311,11 @@ public class EurekaCodecCompatibilityTest {
         } catch (Exception ex) {
             throw new Exception("Encoding failure for codec pair " + pair, ex);
         }
+    }
+
+    private void encodeDecodeTest(EncoderWrapper encodingCodec, DecoderWrapper decodingCodec) throws IOException {
+        String encodedString = encodingCodec.encode(instanceInfo);
+        InstanceInfo decodedValue = decodingCodec.decode(encodedString, InstanceInfo.class);
+        assertThat(EurekaEntityComparators.equalMini(instanceInfo, decodedValue), is(true));
     }
 }

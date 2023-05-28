@@ -116,16 +116,12 @@ public final class EurekaHttpClients {
 
             @Override
             public String getRegion() {
-                return clientConfig.getRegion();
+                return getRegionFromConfig();
             }
 
             @Override
             public List<AwsEndpoint> getClusterEndpoints() {
-                List<AwsEndpoint> result = localResolver.getClusterEndpoints();
-                if (result.isEmpty()) {
-                    result = remoteResolver.getClusterEndpoints();
-                }
-                return result;
+                return getEndpointsFromCluster();
             }
         };
         List<AwsEndpoint> initialValue = compositeResolver.getClusterEndpoints();
@@ -161,16 +157,12 @@ public final class EurekaHttpClients {
 
             @Override
             public String getRegion() {
-                return clientConfig.getRegion();
+                return getRegionFromConfig();
             }
 
             @Override
             public List<AwsEndpoint> getClusterEndpoints() {
-                List<AwsEndpoint> result = localResolver.getClusterEndpoints();
-                if (result.isEmpty()) {
-                    result = remoteResolver.getClusterEndpoints();
-                }
-                return result;
+                return getEndpointsFromCluster();
             }
         };
         return new AsyncResolver<>(EurekaClientNames.QUERY, new ZoneAffinityClusterResolver(compositeResolver, myZone, true, randomizer), transportConfig.getAsyncExecutorThreadPoolSize(), transportConfig.getAsyncResolverRefreshIntervalMs(), transportConfig.getAsyncResolverWarmUpTimeoutMs());
@@ -204,5 +196,17 @@ public final class EurekaHttpClients {
         if ("true".equals(clientConfig.getExperimental("clientTransportFailFastOnInit"))) {
             throw new RuntimeException(msg);
         }
+    }
+
+    private String getRegionFromConfig() {
+        return clientConfig.getRegion();
+    }
+
+    private List<AwsEndpoint> getEndpointsFromCluster() {
+        List<AwsEndpoint> result = localResolver.getClusterEndpoints();
+        if (result.isEmpty()) {
+            result = remoteResolver.getClusterEndpoints();
+        }
+        return result;
     }
 }

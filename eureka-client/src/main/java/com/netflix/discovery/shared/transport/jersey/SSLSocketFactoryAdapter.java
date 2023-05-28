@@ -66,12 +66,12 @@ public class SSLSocketFactoryAdapter extends SSLSocketFactory {
 
         @Override
         public String[] getDefaultCipherSuites() {
-            throw new UnsupportedOperationException();
+            return notImplementedException();
         }
 
         @Override
         public String[] getSupportedCipherSuites() {
-            throw new UnsupportedOperationException();
+            return notImplementedException();
         }
 
         @Override
@@ -91,6 +91,10 @@ public class SSLSocketFactoryAdapter extends SSLSocketFactory {
 
         @Override
         public Socket createSocket(InetAddress address, int port, InetAddress localAddress, int localPort) throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        private String[] notImplementedException() {
             throw new UnsupportedOperationException();
         }
     }

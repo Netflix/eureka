@@ -138,18 +138,11 @@ public class AbstractTester {
     }
 
     private static Application createRemoteApps() {
-        Application myapp = new Application(REMOTE_REGION_APP_NAME);
-        InstanceInfo instanceInfo = createRemoteInstance(REMOTE_REGION_INSTANCE_1_HOSTNAME);
-        //instanceInfo.setActionType(InstanceInfo.ActionType.MODIFIED);
-        myapp.addInstance(instanceInfo);
-        return myapp;
+        return createRemoteAppInstance();
     }
 
     private static Application createRemoteAppsDelta() {
-        Application myapp = new Application(REMOTE_REGION_APP_NAME);
-        InstanceInfo instanceInfo = createRemoteInstance(REMOTE_REGION_INSTANCE_1_HOSTNAME);
-        myapp.addInstance(instanceInfo);
-        return myapp;
+        return createRemoteAppInstance();
     }
 
     protected static InstanceInfo createRemoteInstance(String instanceHostName) {
@@ -287,5 +280,13 @@ public class AbstractTester {
             result.add(SingleEvent.Builder.newBuilder().withIntervalTimeInMs(intervalTimeInSecs * 1000).withAction(action).build());
         }
         return result;
+    }
+
+    private static Application createRemoteAppInstance() {
+        Application myapp = new Application(REMOTE_REGION_APP_NAME);
+        InstanceInfo instanceInfo = createRemoteInstance(REMOTE_REGION_INSTANCE_1_HOSTNAME);
+        //instanceInfo.setActionType(InstanceInfo.ActionType.MODIFIED);
+        myapp.addInstance(instanceInfo);
+        return myapp;
     }
 }

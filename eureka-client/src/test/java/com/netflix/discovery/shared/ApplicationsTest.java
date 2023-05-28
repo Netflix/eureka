@@ -53,7 +53,7 @@ public class ApplicationsTest {
         DataCenterInfo myDCI = new DataCenterInfo() {
 
             public DataCenterInfo.Name getName() {
-                return DataCenterInfo.Name.MyOwn;
+                return getDataCenterName();
             }
         };
         InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder().setAppName("test").setVIPAddress("test.testname:1").setDataCenterInfo(myDCI).setHostName("test.hostname").build();
@@ -82,7 +82,7 @@ public class ApplicationsTest {
         DataCenterInfo myDCI = new DataCenterInfo() {
 
             public DataCenterInfo.Name getName() {
-                return DataCenterInfo.Name.MyOwn;
+                return getDataCenterName();
             }
         };
         InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder().setAppName("test").setVIPAddress("test.testname:1").setSecureVIPAddress("securetest.testname:7102").setDataCenterInfo(myDCI).setHostName("test.hostname").build();
@@ -145,7 +145,7 @@ public class ApplicationsTest {
         DataCenterInfo myDCI = new DataCenterInfo() {
 
             public DataCenterInfo.Name getName() {
-                return DataCenterInfo.Name.MyOwn;
+                return getDataCenterName();
             }
         };
         InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder().setInstanceId("test.id").setAppName("test").setHostName("test.hostname").setStatus(InstanceStatus.UP).setIPAddr("test.testip:1").setPort(8080).setSecurePort(443).setDataCenterInfo(myDCI).build();
@@ -167,7 +167,7 @@ public class ApplicationsTest {
         DataCenterInfo myDCI = new DataCenterInfo() {
 
             public DataCenterInfo.Name getName() {
-                return DataCenterInfo.Name.MyOwn;
+                return getDataCenterName();
             }
         };
         InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder().setAppName("test").setVIPAddress("test.testname:1").setSecureVIPAddress("securetest.testname:7102").setDataCenterInfo(myDCI).setHostName("test.hostname").build();
@@ -186,7 +186,7 @@ public class ApplicationsTest {
         DataCenterInfo myDCI = new DataCenterInfo() {
 
             public DataCenterInfo.Name getName() {
-                return DataCenterInfo.Name.MyOwn;
+                return getDataCenterName();
             }
         };
         InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder().setAppName("test").setVIPAddress("test.testname:1").setSecureVIPAddress("securetest.testname:7102").setDataCenterInfo(myDCI).setHostName("test.hostname").build();
@@ -211,7 +211,7 @@ public class ApplicationsTest {
         DataCenterInfo myDCI = new DataCenterInfo() {
 
             public DataCenterInfo.Name getName() {
-                return DataCenterInfo.Name.MyOwn;
+                return getDataCenterName();
             }
         };
         InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder().setAppName("test").setVIPAddress("test.testname:1").setSecureVIPAddress("securetest.testname:7102").setDataCenterInfo(myDCI).setHostName("test.hostname").setStatus(InstanceStatus.UP).build();
@@ -231,7 +231,7 @@ public class ApplicationsTest {
         DataCenterInfo myDCI = new DataCenterInfo() {
 
             public DataCenterInfo.Name getName() {
-                return DataCenterInfo.Name.MyOwn;
+                return getDataCenterName();
             }
         };
         InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder().setAppName("test").setVIPAddress("test.testname:1").setSecureVIPAddress("securetest.testname:7102").setDataCenterInfo(myDCI).setHostName("test.hostname").setStatus(InstanceStatus.UP).build();
@@ -251,7 +251,7 @@ public class ApplicationsTest {
         DataCenterInfo myDCI = new DataCenterInfo() {
 
             public DataCenterInfo.Name getName() {
-                return DataCenterInfo.Name.MyOwn;
+                return getDataCenterName();
             }
         };
         InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder().setAppName("test").setVIPAddress("test.testname:1").setSecureVIPAddress("securetest.testname:7102").setDataCenterInfo(myDCI).setHostName("test.hostname").setStatus(InstanceStatus.UP).build();
@@ -271,7 +271,7 @@ public class ApplicationsTest {
         DataCenterInfo myDCI = new DataCenterInfo() {
 
             public DataCenterInfo.Name getName() {
-                return DataCenterInfo.Name.MyOwn;
+                return getDataCenterName();
             }
         };
         InstanceInfo instanceInfo = InstanceInfo.Builder.newBuilder().setAppName("test").setVIPAddress("test.testname:1").setSecureVIPAddress("securetest.testname:7102").setDataCenterInfo(myDCI).setHostName("test.hostname").setStatus(InstanceStatus.DOWN).build();
@@ -283,5 +283,9 @@ public class ApplicationsTest {
         assertNotNull(applications.getRegisteredApplications("TestApp").getByInstanceId("test.hostname"));
         assertTrue(applications.getInstancesBySecureVirtualHostName("securetest.testname:7102").isEmpty());
         assertTrue(applications.getInstancesBySecureVirtualHostName("test.testname:1").isEmpty());
+    }
+
+    private DataCenterInfo.Name getDataCenterName() {
+        return DataCenterInfo.Name.MyOwn;
     }
 }

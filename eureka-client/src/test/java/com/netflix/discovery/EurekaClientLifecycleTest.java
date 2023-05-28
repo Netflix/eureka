@@ -174,11 +174,15 @@ public class EurekaClientLifecycleTest {
 
         @Override
         public int getInstanceInfoReplicationIntervalSeconds() {
-            return 1;
+            return one();
         }
 
         @Override
         public int getRegistryFetchIntervalSeconds() {
+            return one();
+        }
+
+        private int one() {
             return 1;
         }
     }

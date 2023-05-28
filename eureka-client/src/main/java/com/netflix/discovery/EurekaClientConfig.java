@@ -460,7 +460,7 @@ public interface EurekaClientConfig {
      * @return true or false for whether the client initialization should enforce an initial fetch.
      */
     default boolean shouldEnforceFetchRegistryAtInit() {
-        return false;
+        return reject();
     }
 
     /**
@@ -536,7 +536,7 @@ public interface EurekaClientConfig {
      * @return true or false for whether the client initialization should enforce an initial registration
      */
     default boolean shouldEnforceRegistrationAtInit() {
-        return false;
+        return reject();
     }
 
     /**
@@ -573,4 +573,8 @@ public interface EurekaClientConfig {
      * @return an instance of {@link EurekaTransportConfig}
      */
     EurekaTransportConfig getTransportConfig();
+
+    default private boolean reject() {
+        return false;
+    }
 }

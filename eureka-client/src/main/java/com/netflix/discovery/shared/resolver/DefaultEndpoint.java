@@ -74,12 +74,12 @@ public class DefaultEndpoint implements EurekaEndpoint {
     @Deprecated
     @Override
     public String getHostName() {
-        return networkAddress;
+        return GetNetworkAddress();
     }
 
     @Override
     public String getNetworkAddress() {
-        return networkAddress;
+        return GetNetworkAddress();
     }
 
     @Override
@@ -146,5 +146,9 @@ public class DefaultEndpoint implements EurekaEndpoint {
     @Override
     public String toString() {
         return "DefaultEndpoint{ serviceUrl='" + serviceUrl + '}';
+    }
+
+    private String GetNetworkAddress() {
+        return networkAddress;
     }
 }

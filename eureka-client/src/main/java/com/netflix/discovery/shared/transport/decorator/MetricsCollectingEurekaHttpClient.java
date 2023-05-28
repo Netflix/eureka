@@ -99,8 +99,7 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
 
             @Override
             public void shutdown() {
-                shutdownMetrics(metricsByRequestType);
-                exceptionMetrics.shutdown();
+                Request();
             }
         };
     }
@@ -117,8 +116,7 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
 
             @Override
             public void shutdown() {
-                shutdownMetrics(metricsByRequestType);
-                exceptionMetrics.shutdown();
+                Request();
             }
         };
     }
@@ -198,5 +196,10 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
             }
             return result;
         }
+    }
+
+    private void Request() {
+        shutdownMetrics(metricsByRequestType);
+        exceptionMetrics.shutdown();
     }
 }

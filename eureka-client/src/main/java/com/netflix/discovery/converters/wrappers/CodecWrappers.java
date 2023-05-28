@@ -47,16 +47,7 @@ public final class CodecWrappers {
     }
 
     public static synchronized CodecWrapper getCodec(String name) {
-        if (name == null) {
-            return null;
-        }
-        if (!CODECS.containsKey(name)) {
-            CodecWrapper wrapper = create(name);
-            if (wrapper != null) {
-                CODECS.put(wrapper.codecName(), wrapper);
-            }
-        }
-        return CODECS.get(name);
+        return retrieveCodecByName(name);
     }
 
     public static <T extends EncoderWrapper> EncoderWrapper getEncoder(Class<T> clazz) {
@@ -64,16 +55,7 @@ public final class CodecWrappers {
     }
 
     public static synchronized EncoderWrapper getEncoder(String name) {
-        if (name == null) {
-            return null;
-        }
-        if (!CODECS.containsKey(name)) {
-            CodecWrapper wrapper = create(name);
-            if (wrapper != null) {
-                CODECS.put(wrapper.codecName(), wrapper);
-            }
-        }
-        return CODECS.get(name);
+        return retrieveCodecByName(name);
     }
 
     public static <T extends DecoderWrapper> DecoderWrapper getDecoder(Class<T> clazz) {
@@ -97,16 +79,7 @@ public final class CodecWrappers {
     }
 
     public static synchronized DecoderWrapper getDecoder(String name) {
-        if (name == null) {
-            return null;
-        }
-        if (!CODECS.containsKey(name)) {
-            CodecWrapper wrapper = create(name);
-            if (wrapper != null) {
-                CODECS.put(wrapper.codecName(), wrapper);
-            }
-        }
-        return CODECS.get(name);
+        return retrieveCodecByName(name);
     }
 
     private static CodecWrapper create(String name) {
@@ -378,5 +351,18 @@ public final class CodecWrappers {
         public <T> T decode(InputStream inputStream, Class<T> type) throws IOException {
             return (T) codec.fromXML(inputStream, type);
         }
+    }
+
+    static synchronized private CodecWrapper retrieveCodecByName(String name) {
+        if (name == null) {
+            return null;
+        }
+        if (!CODECS.containsKey(name)) {
+            CodecWrapper wrapper = create(name);
+            if (wrapper != null) {
+                CODECS.put(wrapper.codecName(), wrapper);
+            }
+        }
+        return CODECS.get(name);
     }
 }

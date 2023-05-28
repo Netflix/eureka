@@ -17,7 +17,7 @@ public class EurekaUtilsTest {
 
             @Override
             public Name getName() {
-                return Name.MyOwn;
+                return getMyOwnName();
             }
         }).build();
         Assert.assertFalse(EurekaUtils.isInEc2(instanceInfo1));
@@ -31,7 +31,7 @@ public class EurekaUtilsTest {
 
             @Override
             public Name getName() {
-                return Name.MyOwn;
+                return getMyOwnName();
             }
         }).build();
         Assert.assertFalse(EurekaUtils.isInVpc(instanceInfo1));
@@ -40,5 +40,9 @@ public class EurekaUtilsTest {
         InstanceInfo instanceInfo3 = InstanceInfoGenerator.takeOne();
         ((AmazonInfo) instanceInfo3.getDataCenterInfo()).getMetadata().put(AmazonInfo.MetaDataKey.vpcId.getName(), "vpc-123456");
         Assert.assertTrue(EurekaUtils.isInVpc(instanceInfo3));
+    }
+
+    private Name getMyOwnName() {
+        return Name.MyOwn;
     }
 }
