@@ -267,44 +267,40 @@ class AcceptorExecutor<ID, T> {
         }
 
         void assignSingleItemWork() {
-            if (!processingOrder.isEmpty()) {
-                if (singleItemWorkRequests.tryAcquire(1)) {
-                    long now = System.currentTimeMillis();
-                    while (!processingOrder.isEmpty()) {
-                        ID id = processingOrder.poll();
-                        TaskHolder<ID, T> holder = pendingTasks.remove(id);
-                        if (holder.getExpiryTime() > now) {
-                            singleItemWorkQueue.add(holder);
-                            return;
-                        }
-                        expiredTasks++;
+            if (!processingOrder.isEmpty() && singleItemWorkRequests.tryAcquire(1)) {
+                long now = System.currentTimeMillis();
+                while (!processingOrder.isEmpty()) {
+                    ID id = processingOrder.poll();
+                    TaskHolder<ID, T> holder = pendingTasks.remove(id);
+                    if (holder.getExpiryTime() > now) {
+                        singleItemWorkQueue.add(holder);
+                        return;
                     }
-                    singleItemWorkRequests.release();
+                    expiredTasks++;
                 }
+                singleItemWorkRequests.release();
             }
         }
 
         void assignBatchWork() {
-            if (hasEnoughTasksForNextBatch()) {
-                if (batchWorkRequests.tryAcquire(1)) {
-                    long now = System.currentTimeMillis();
-                    int len = Math.min(maxBatchingSize, processingOrder.size());
-                    List<TaskHolder<ID, T>> holders = new ArrayList<>(len);
-                    while (holders.size() < len && !processingOrder.isEmpty()) {
-                        ID id = processingOrder.poll();
-                        TaskHolder<ID, T> holder = pendingTasks.remove(id);
-                        if (holder.getExpiryTime() > now) {
-                            holders.add(holder);
-                        } else {
-                            expiredTasks++;
-                        }
-                    }
-                    if (holders.isEmpty()) {
-                        batchWorkRequests.release();
+            if (hasEnoughTasksForNextBatch() && batchWorkRequests.tryAcquire(1)) {
+                long now = System.currentTimeMillis();
+                int len = Math.min(maxBatchingSize, processingOrder.size());
+                List<TaskHolder<ID, T>> holders = new ArrayList<>(len);
+                while (holders.size() < len && !processingOrder.isEmpty()) {
+                    ID id = processingOrder.poll();
+                    TaskHolder<ID, T> holder = pendingTasks.remove(id);
+                    if (holder.getExpiryTime() > now) {
+                        holders.add(holder);
                     } else {
-                        batchSizeMetric.record(holders.size(), TimeUnit.MILLISECONDS);
-                        batchWorkQueue.add(holders);
+                        expiredTasks++;
                     }
+                }
+                if (holders.isEmpty()) {
+                    batchWorkRequests.release();
+                } else {
+                    batchSizeMetric.record(holders.size(), TimeUnit.MILLISECONDS);
+                    batchWorkQueue.add(holders);
                 }
             }
         }

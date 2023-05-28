@@ -56,13 +56,11 @@ public class ServerRequestAuthFilter implements Filter {
     }
 
     protected void logAuth(ServletRequest request) {
-        if (serverConfig.shouldLogIdentityHeaders()) {
-            if (request instanceof HttpServletRequest) {
-                HttpServletRequest httpRequest = (HttpServletRequest) request;
-                String clientName = getHeader(httpRequest, AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY);
-                String clientVersion = getHeader(httpRequest, AbstractEurekaIdentity.AUTH_VERSION_HEADER_KEY);
-                DynamicCounter.increment(MonitorConfig.builder(NAME_PREFIX + clientName + "-" + clientVersion).build());
-            }
+        if (serverConfig.shouldLogIdentityHeaders() && request instanceof HttpServletRequest) {
+            HttpServletRequest httpRequest = (HttpServletRequest) request;
+            String clientName = getHeader(httpRequest, AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY);
+            String clientVersion = getHeader(httpRequest, AbstractEurekaIdentity.AUTH_VERSION_HEADER_KEY);
+            DynamicCounter.increment(MonitorConfig.builder(NAME_PREFIX + clientName + "-" + clientVersion).build());
         }
     }
 

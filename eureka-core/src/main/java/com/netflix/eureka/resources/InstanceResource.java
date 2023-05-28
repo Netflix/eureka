@@ -269,21 +269,19 @@ public class InstanceResource {
 
     private Response validateDirtyTimestamp(Long lastDirtyTimestamp, boolean isReplication) {
         InstanceInfo appInfo = registry.getInstanceByAppAndId(app.getName(), id, false);
-        if (appInfo != null) {
-            if ((lastDirtyTimestamp != null) && (!lastDirtyTimestamp.equals(appInfo.getLastDirtyTimestamp()))) {
-                Object[] args = { id, appInfo.getLastDirtyTimestamp(), lastDirtyTimestamp, isReplication };
-                if (lastDirtyTimestamp > appInfo.getLastDirtyTimestamp()) {
+        if (appInfo != null && (lastDirtyTimestamp != null) && (!lastDirtyTimestamp.equals(appInfo.getLastDirtyTimestamp()))) {
+            Object[] args = { id, appInfo.getLastDirtyTimestamp(), lastDirtyTimestamp, isReplication };
+            if (lastDirtyTimestamp > appInfo.getLastDirtyTimestamp()) {
+                logger.debug("Time to sync, since the last dirty timestamp differs -" + " ReplicationInstance id : {},Registry : {} Incoming: {} Replication: {}", args);
+                return Response.status(Status.NOT_FOUND).build();
+            } else if (appInfo.getLastDirtyTimestamp() > lastDirtyTimestamp) {
+                // In the case of replication, send the current instance info in the registry for the
+                // replicating node to sync itself with this one.
+                if (isReplication) {
                     logger.debug("Time to sync, since the last dirty timestamp differs -" + " ReplicationInstance id : {},Registry : {} Incoming: {} Replication: {}", args);
-                    return Response.status(Status.NOT_FOUND).build();
-                } else if (appInfo.getLastDirtyTimestamp() > lastDirtyTimestamp) {
-                    // In the case of replication, send the current instance info in the registry for the
-                    // replicating node to sync itself with this one.
-                    if (isReplication) {
-                        logger.debug("Time to sync, since the last dirty timestamp differs -" + " ReplicationInstance id : {},Registry : {} Incoming: {} Replication: {}", args);
-                        return Response.status(Status.CONFLICT).entity(appInfo).build();
-                    } else {
-                        return Response.ok().build();
-                    }
+                    return Response.status(Status.CONFLICT).entity(appInfo).build();
+                } else {
+                    return Response.ok().build();
                 }
             }
         }

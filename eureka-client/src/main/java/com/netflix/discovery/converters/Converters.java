@@ -468,15 +468,13 @@ public final class Converters {
                             }
                         };
                     }
-                } else if (NODE_METADATA.equals(reader.getNodeName())) {
-                    if (info.getName() == Name.Amazon) {
-                        Map<String, String> metadataMap = (Map<String, String>) context.convertAnother(info, Map.class);
-                        Map<String, String> metadataMapInter = new HashMap<>(metadataMap.size());
-                        for (Map.Entry<String, String> entry : metadataMap.entrySet()) {
-                            metadataMapInter.put(StringCache.intern(entry.getKey()), StringCache.intern(entry.getValue()));
-                        }
-                        ((AmazonInfo) info).setMetadata(metadataMapInter);
+                } else if (NODE_METADATA.equals(reader.getNodeName()) && info.getName() == Name.Amazon) {
+                    Map<String, String> metadataMap = (Map<String, String>) context.convertAnother(info, Map.class);
+                    Map<String, String> metadataMapInter = new HashMap<>(metadataMap.size());
+                    for (Map.Entry<String, String> entry : metadataMap.entrySet()) {
+                        metadataMapInter.put(StringCache.intern(entry.getKey()), StringCache.intern(entry.getValue()));
                     }
+                    ((AmazonInfo) info).setMetadata(metadataMapInter);
                 }
                 reader.moveUp();
             }

@@ -111,10 +111,8 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
     @Override
     public List<T> getClusterEndpoints() {
         long delay = refreshIntervalMs;
-        if (warmedUp.compareAndSet(false, true)) {
-            if (!doWarmUp()) {
-                delay = 0;
-            }
+        if (warmedUp.compareAndSet(false, true) && !doWarmUp()) {
+            delay = 0;
         }
         if (scheduled.compareAndSet(false, true)) {
             scheduleTask(delay);

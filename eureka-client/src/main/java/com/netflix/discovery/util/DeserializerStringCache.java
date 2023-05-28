@@ -352,16 +352,14 @@ public class DeserializerStringCache implements Function<String, String> {
             public boolean equals(Object other) {
                 if (other instanceof CharBuffer) {
                     CharBuffer otherBuffer = (CharBuffer) other;
-                    if (otherBuffer.length() == length) {
-                        if (otherBuffer.variant() == variant) {
-                            OfInt otherText = otherBuffer.chars();
-                            for (int i = offset; i < length; i++) {
-                                if (source[i] != otherText.nextInt()) {
-                                    return false;
-                                }
+                    if (otherBuffer.length() == length && otherBuffer.variant() == variant) {
+                        OfInt otherText = otherBuffer.chars();
+                        for (int i = offset; i < length; i++) {
+                            if (source[i] != otherText.nextInt()) {
+                                return false;
                             }
-                            return true;
                         }
+                        return true;
                     }
                 }
                 return false;
