@@ -40,7 +40,7 @@ dependencies {
     testImplementation "org.mockito:mockito-core:${mockitoVersion}"
     testImplementation "org.mock-server:mockserver-netty:${mockserverVersion}"
     testImplementation "com.github.tomakehurst:wiremock-jre8:2.25.1"
-    testImplementation "org.assertj:assertj-core:3.11.1"
+    testImplementation "org.assertj:assertj-core:3.24.2"
     testImplementation "jakarta.servlet:jakarta.servlet-api:5.0.0"
     testRuntimeOnly 'org.slf4j:slf4j-simple:2.0.0-beta1'
 }
