@@ -23,5 +23,6 @@ dependencies {
     testImplementation "org.mock-server:mockserver-netty:${mockserverVersion}"
     testImplementation "com.jcraft:jzlib:1.1.3" // netty dependency
     testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.assertj:assertj-core:3.24.2"
     testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.10'
 }

@@ -19,12 +19,14 @@ import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
 import com.netflix.eureka.cluster.protocol.ReplicationList;
 import com.netflix.eureka.cluster.protocol.ReplicationListResponse;
 import com.netflix.eureka.resources.ASGResource.ASGStatus;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.NonRepeatableRequestException;
 
 import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEurekaHttpResponse;
 
 /**
  * This stub implementation is primarily useful for batch updates, and complex failure scenarios.
- * Using mock would results in too convoluted code.
+ * Using mock would result in too convoluted code.
  *
  * @author Tomasz Bak
  */
@@ -34,7 +36,7 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
     private InstanceInfo instanceInfoFromPeer;
     private int networkFailuresRepeatCount;
     private int readtimeOutRepeatCount;
-
+    private boolean nullMessageException;
 
     private int batchStatusCode;
 
@@ -43,7 +45,7 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
     private final AtomicInteger readTimeOutCounter = new AtomicInteger();
 
     private long processingDelayMs;
-    
+
 
     private final BlockingQueue<HandledRequest> handledRequests = new LinkedBlockingQueue<>();
 
@@ -73,6 +75,10 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
 
     public HandledRequest nextHandledRequest(long timeout, TimeUnit timeUnit) throws InterruptedException {
         return handledRequests.poll(timeout, timeUnit);
+    }
+
+    public void withEmptyMessageException() {
+        this.nullMessageException = true;
     }
 
     @Override
@@ -149,13 +155,17 @@ public class TestableHttpReplicationClient implements HttpReplicationClient {
 
     @Override
     public EurekaHttpResponse<ReplicationListResponse> submitBatchUpdates(ReplicationList replicationList) {
-    	
+
+        if(nullMessageException) {
+            throw new RuntimeException(new ClientProtocolException(new NonRepeatableRequestException()));
+        }
+
         if (readTimeOutCounter.get() < readtimeOutRepeatCount) {
             readTimeOutCounter.incrementAndGet();
             throw new RuntimeException(new SocketTimeoutException("Read timed out"));
         }
-    	
-    	
+
+
         if (networkFailureCounter.get() < networkFailuresRepeatCount) {
             networkFailureCounter.incrementAndGet();
             throw new RuntimeException(new IOException("simulated network failure"));
