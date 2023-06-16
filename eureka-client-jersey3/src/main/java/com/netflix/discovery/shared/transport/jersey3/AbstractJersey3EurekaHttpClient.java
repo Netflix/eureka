@@ -79,6 +79,10 @@ public abstract class AbstractJersey3EurekaHttpClient implements EurekaHttpClien
         }
         this.userName = localUserName;
         this.password = localPassword;
+        if (userName != null) {
+            HttpAuthenticationFeature basicAuth = HttpAuthenticationFeature.basic(userName, password);
+            this.jerseyClient.register(basicAuth);
+        }
     }
 
     @Override
