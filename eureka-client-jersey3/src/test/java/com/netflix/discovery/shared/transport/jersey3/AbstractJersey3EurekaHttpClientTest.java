@@ -45,9 +45,6 @@ public class AbstractJersey3EurekaHttpClientTest extends EurekaHttpClientCompati
     @Override
     protected EurekaHttpClient getEurekaHttpClient(URI serviceURI) {
         Jersey3ApplicationClientFactoryBuilder factoryBuilder = Jersey3ApplicationClientFactory.newBuilder();
-        if (serviceURI.getUserInfo() != null) {
-            factoryBuilder.withFeature(HttpAuthenticationFeature.basicBuilder().build());
-        }
         TransportClientFactory clientFactory = factoryBuilder.build();
         jerseyHttpClient = (AbstractJersey3EurekaHttpClient) clientFactory.newClient(new DefaultEndpoint(serviceURI.toString()));
         return jerseyHttpClient;

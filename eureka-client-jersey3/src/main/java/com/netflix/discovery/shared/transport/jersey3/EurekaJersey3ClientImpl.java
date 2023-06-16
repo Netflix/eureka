@@ -54,10 +54,9 @@ public class EurekaJersey3ClientImpl implements EurekaJersey3Client {
 
     private static final String PROTOCOL = "https";
     private static final String PROTOCOL_SCHEME = "SSL";
-    private static final int HTTPS_PORT = 443;
     private static final String KEYSTORE_TYPE = "JKS";
 
-    private final Client apacheHttpClient;
+    private final Client jerseyClient;
     
     private final ConnectionCleanerTask connectionCleanerTask;
 
@@ -91,7 +90,7 @@ public class EurekaJersey3ClientImpl implements EurekaJersey3Client {
             jerseyClientConfig.connectorProvider(new ApacheConnectorProvider());
             jerseyClientConfig.property(ClientProperties.CONNECT_TIMEOUT, connectionTimeout);
             jerseyClientConfig.property(ClientProperties.READ_TIMEOUT, readTimeout);
-            apacheHttpClient = ClientBuilder.newClient(jerseyClientConfig);
+            jerseyClient = ClientBuilder.newClient(jerseyClientConfig);
             connectionCleanerTask = new ConnectionCleanerTask(connectionIdleTimeout); 
             eurekaConnCleaner.scheduleWithFixedDelay(
                     connectionCleanerTask, HTTP_CONNECTION_CLEANER_INTERVAL_MS,
@@ -104,7 +103,7 @@ public class EurekaJersey3ClientImpl implements EurekaJersey3Client {
 
     @Override
     public Client getClient() {
-        return apacheHttpClient;
+        return jerseyClient;
     }
 
     /**
@@ -117,8 +116,8 @@ public class EurekaJersey3ClientImpl implements EurekaJersey3Client {
             eurekaConnCleaner.execute(connectionCleanerTask);
             eurekaConnCleaner.shutdown();
         }
-        if (apacheHttpClient != null) {
-            apacheHttpClient.close();
+        if (jerseyClient != null) {
+            jerseyClient.close();
         }
     }
 
@@ -344,7 +343,7 @@ public class EurekaJersey3ClientImpl implements EurekaJersey3Client {
         public void run() {
             Stopwatch start = executionTimeStats.start();
             try {
-                HttpClientConnectionManager cm = (HttpClientConnectionManager) apacheHttpClient
+                HttpClientConnectionManager cm = (HttpClientConnectionManager) jerseyClient
                         .getConfiguration()
                         .getProperty(ApacheClientProperties.CONNECTION_MANAGER);
                 cm.closeIdleConnections(connectionIdleTimeout, TimeUnit.SECONDS);
