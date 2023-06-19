@@ -30,7 +30,7 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradlewrapper-${{ hashFiles('gradle/wrapper/*') }}
       - name: Build
-        run: ./gradlew build snapshot -Prelease.version=2.0.0-SNAPSHOT
+        run: ./gradlew build snapshot -Prelease.version=2.0.1-SNAPSHOT
         env:
           NETFLIX_OSS_SIGNING_KEY: ${{ secrets.ORG_SIGNING_KEY }}
           NETFLIX_OSS_SIGNING_PASSWORD: ${{ secrets.ORG_SIGNING_PASSWORD }}
