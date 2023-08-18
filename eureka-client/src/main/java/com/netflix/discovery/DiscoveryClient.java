@@ -1115,7 +1115,7 @@ public class DiscoveryClient implements EurekaClient {
         if (logger.isDebugEnabled()) {
             int totInstances = 0;
             for (Application application : getApplications().getRegisteredApplications()) {
-                totInstances += application.getInstancesAsIsFromEureka().size();
+                totInstances += application.size();
             }
             logger.debug("The total number of all instances in the client now is {}", totInstances);
         }
@@ -1219,7 +1219,7 @@ public class DiscoveryClient implements EurekaClient {
                          * We find all instance list from application(The status of instance status is not only the status is UP but also other status)
                          * if instance list is empty, we remove the application.
                          */
-                        if (existingApp.getInstancesAsIsFromEureka().isEmpty()) {
+                        if (existingApp.size() == 0) {
                             applications.removeApplication(existingApp);
                         }
                     }
