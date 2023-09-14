@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -63,6 +64,13 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
         availabilityZone("availability-zone", "placement/"),
         publicHostname("public-hostname"),
         publicIpv4("public-ipv4"),
+        macs("macs", "network/interfaces/"), // macs declared above public-ipv4s so will be found before publicIpv4s (where it is needed)
+        publicIpv4s("public-ipv4s", "network/interfaces/macs/") {
+            @Override
+            public URL getURL(String prepend, String mac) throws MalformedURLException {
+                return new URL(AWS_METADATA_URL + this.path + mac + "/" + this.name);
+            }
+        },
         ipv6("ipv6"),
         spotTerminationTime("termination-time", "spot/"),
         spotInstanceAction("instance-action", "spot/"),
@@ -200,10 +208,27 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
                 int numOfRetries = config.getNumRetries();
                 while (numOfRetries-- > 0) {
                     try {
+                        if (key == MetaDataKey.publicIpv4s) {
+                            // macs should be read before publicIpv4s due to declaration order
+                            String[] macs = result.metadata.get(MetaDataKey.macs.getName()).split("\n");
+                            for (String mac : macs) {
+                                URL url = key.getURL(null, mac);
+                                String publicIpv4s = AmazonInfoUtils.readEc2MetadataUrl(key, url, config.getConnectTimeout(), config.getReadTimeout());
+
+                                if (publicIpv4s != null) {
+                                    // only support registering the first found public IPv4 address
+                                    result.metadata.put(key.getName(), publicIpv4s.split("\n")[0]);
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+
                         String mac = null;
                         if (key == MetaDataKey.vpcId) {
                             mac = result.metadata.get(MetaDataKey.mac.getName());  // mac should be read before vpcId due to declaration order
                         }
+
                         URL url = key.getURL(null, mac);
                         String value = AmazonInfoUtils.readEc2MetadataUrl(key, url, config.getConnectTimeout(), config.getReadTimeout());
                         if (value != null) {
