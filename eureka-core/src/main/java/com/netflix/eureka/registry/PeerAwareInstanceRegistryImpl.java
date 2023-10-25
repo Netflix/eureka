@@ -635,7 +635,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                 numberOfReplicationsLastMin.increment();
             }
             // If it is a replication already, do not replicate again as this will create a poison replication
-            if (peerEurekaNodes == Collections.EMPTY_LIST || isReplication) {
+            if (peerEurekaNodes.getPeerEurekaNodes() == Collections.EMPTY_LIST || isReplication) {
                 return;
             }
 
