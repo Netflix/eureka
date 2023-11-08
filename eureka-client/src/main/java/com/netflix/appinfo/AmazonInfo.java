@@ -22,11 +22,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -64,7 +64,26 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
         availabilityZone("availability-zone", "placement/"),
         publicHostname("public-hostname"),
         publicIpv4("public-ipv4"),
-        macs("macs", "network/interfaces/"), // macs declared above public-ipv4s so will be found before publicIpv4s (where it is needed)
+        // macs declared above public-ipv4s so will be found before publicIpv4s (where it is needed)
+        macs("macs", "network/interfaces/") {
+            @Override
+            public String read(InputStream inputStream) throws IOException {
+                BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+                String toReturn;
+                try {
+                    toReturn = br.lines().collect(Collectors.joining("\n"));
+                } finally {
+                    br.close();
+                }
+
+                return toReturn;
+            }
+        },
+        // Because we stop reading the body returned by IMDS after the first newline,
+        // publicIPv4s will only contain the first IPv4 address returned in the body of the
+        // URL for a given MAC, despite IMDS being able to return multiple addresses under
+        // that key (separated by \n). The first IPv4 address is always the one attached to
+        // the interface and is the only address that should be registered for this instance.
         publicIpv4s("public-ipv4s", "network/interfaces/macs/") {
             @Override
             public URL getURL(String prepend, String mac) throws MalformedURLException {
@@ -216,8 +235,7 @@ public class AmazonInfo implements DataCenterInfo, UniqueIdentifier {
                                 String publicIpv4s = AmazonInfoUtils.readEc2MetadataUrl(key, url, config.getConnectTimeout(), config.getReadTimeout());
 
                                 if (publicIpv4s != null) {
-                                    // only support registering the first found public IPv4 address
-                                    result.metadata.put(key.getName(), publicIpv4s.split("\n")[0]);
+                                    result.metadata.put(key.getName(), publicIpv4s);
                                     break;
                                 }
                             }
