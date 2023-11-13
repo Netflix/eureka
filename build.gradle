@@ -52,7 +52,7 @@ allprojects {
         // test deps
         jetty_version = '7.2.0.v20101020'
         junit_version = '4.11'
-        mockitoVersion = '1.10.19'
+        mockitoVersion = '3.4.0'
         mockserverVersion = '3.9.2'
     }
 }

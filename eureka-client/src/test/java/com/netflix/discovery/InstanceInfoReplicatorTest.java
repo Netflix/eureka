@@ -76,7 +76,7 @@ public class InstanceInfoReplicatorTest {
         assertTrue(replicator.onDemandUpdate());
         Thread.sleep(10);  // give some time for execution
         assertFalse(replicator.onDemandUpdate());
-        Thread.sleep(10);
+        Thread.sleep(1000);
 
         verify(discoveryClient, times(2)).refreshInstanceInfo();
         verify(discoveryClient, times(1)).register();

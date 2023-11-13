@@ -89,7 +89,6 @@ public class GzipEncodingEnforcingFilterTest {
     @Test
     public void testForceGzipOtherHeader() throws Exception {
         noneGzipRequest();
-        when(request.getHeader("Test")).thenReturn("ok");
         when(request.getHeaders("Test")).thenReturn(new Enumeration() {
             private int c = 0;
 
