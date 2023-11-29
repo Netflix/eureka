@@ -57,7 +57,7 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
         this.currentSessionDurationMs = randomizeSessionDuration(sessionDurationMs);
         PolledMeter.using(Spectator.globalRegistry())
             .withName(METRIC_TRANSPORT_PREFIX + "currentSessionDuration")
-            .monitorValue(getCurrentSessionDuration());
+            .monitorValue(this, SessionedEurekaHttpClient::getCurrentSessionDuration);
     }
 
     @Override

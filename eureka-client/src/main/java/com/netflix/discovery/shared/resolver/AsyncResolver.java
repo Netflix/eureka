@@ -2,7 +2,7 @@ package com.netflix.discovery.shared.resolver;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.discovery.TimedSupervisorTask;
-import com.netflix.spectator.api.CompositeRegistry;
+import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.Spectator;
 import com.netflix.spectator.api.patterns.PolledMeter;
 import org.slf4j.Logger;
@@ -107,10 +107,10 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
         this.refreshIntervalMs = refreshIntervalMs;
         this.warmUpTimeoutMs = warmUpTimeoutMs;
 
-        final CompositeRegistry registry = Spectator.globalRegistry();
+        final Registry registry = Spectator.globalRegistry();
         PolledMeter.using(registry)
             .withName(METRIC_RESOLVER_PREFIX + "lastLoadTimestamp")
-            .monitorValue(getLastLoadTimestamp());
+            .monitorValue(this, AsyncResolver::getLastLoadTimestamp);
 
         this.executorService = Executors.newScheduledThreadPool(1,
                 new ThreadFactoryBuilder()
@@ -140,7 +140,7 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
         this.resultsRef = new AtomicReference<>(initialValue);
         PolledMeter.using(registry)
             .withName(METRIC_RESOLVER_PREFIX + "endpointsSize")
-            .monitorValue(getEndpointsSize());
+            .monitorValue(this, AsyncResolver::getEndpointsSize);
     }
 
     @Override

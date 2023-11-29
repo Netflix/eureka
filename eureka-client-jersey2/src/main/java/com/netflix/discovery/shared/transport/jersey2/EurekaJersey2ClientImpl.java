@@ -3,7 +3,6 @@ package com.netflix.discovery.shared.transport.jersey2;
 import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
 
 import com.netflix.discovery.util.ServoUtil;
-import com.netflix.spectator.api.CompositeRegistry;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.Spectator;
 import com.netflix.spectator.api.Timer;
@@ -329,7 +328,7 @@ public class EurekaJersey2ClientImpl implements EurekaJersey2Client {
 
         private ConnectionCleanerTask(int connectionIdleTimeout) {
             this.connectionIdleTimeout = connectionIdleTimeout;
-            final CompositeRegistry registry = Spectator.globalRegistry();
+            final com.netflix.spectator.api.Registry registry = Spectator.globalRegistry();
             executionTimeStats = registry.timer("Eureka-Connection-Cleaner-Time");
             cleanupFailed = registry.counter("Eureka-Connection-Cleaner-Failure");
         }

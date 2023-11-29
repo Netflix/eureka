@@ -21,8 +21,9 @@ import static com.netflix.discovery.EurekaClientNames.METRIC_REGISTRY_PREFIX;
 import static com.netflix.spectator.api.Spectator.globalRegistry;
 
 import com.netflix.discovery.util.ServoUtil;
-import com.netflix.spectator.api.CompositeRegistry;
 import com.netflix.spectator.api.Counter;
+import com.netflix.spectator.api.Registry;
+import com.netflix.spectator.api.Spectator;
 import com.netflix.spectator.api.Timer;
 import com.netflix.spectator.api.patterns.PolledMeter;
 import java.util.ArrayList;
@@ -179,7 +180,10 @@ public class DiscoveryClient implements EurekaClient {
 
     private InstanceInfoReplicator instanceInfoReplicator;
 
-    private volatile int registrySize = 0;
+    private final AtomicInteger registrySize = PolledMeter
+        .using(Spectator.globalRegistry())
+        .withName(METRIC_REGISTRY_PREFIX + "localRegistrySize")
+        .monitorValue(new AtomicInteger());
     private volatile long lastSuccessfulRegistryFetchTimestamp = -1;
     private volatile long lastSuccessfulHeartbeatTimestamp = -1;
     private final ThresholdLevelsMetric heartbeatStalenessMonitor;
@@ -363,10 +367,10 @@ public class DiscoveryClient implements EurekaClient {
         } else {
             this.registryStalenessMonitor = ThresholdLevelsMetric.NO_OP_METRIC;
         }
-        final CompositeRegistry registry = globalRegistry();
+        final Registry registry = globalRegistry();
         PolledMeter.using(registry)
             .withName(METRIC_REGISTRY_PREFIX + "lastSuccessfulRegistryFetchTimePeriod")
-            .monitorValue(getLastSuccessfulRegistryFetchTimePeriodInternal());
+            .monitorValue(this, DiscoveryClient::getLastSuccessfulRegistryFetchTimePeriodInternal);
 
         if (config.shouldRegisterWithEureka()) {
             this.heartbeatStalenessMonitor = new ThresholdLevelsMetric(this, METRIC_REGISTRATION_PREFIX + "lastHeartbeatSec_", new long[]{15L, 30L, 60L, 120L, 240L, 480L});
@@ -375,7 +379,7 @@ public class DiscoveryClient implements EurekaClient {
         }
         PolledMeter.using(registry)
             .withName(METRIC_REGISTRATION_PREFIX + "lastSuccessfulHeartbeatTimePeriod")
-            .monitorValue(getLastSuccessfulHeartbeatTimePeriodInternal());
+            .monitorValue(this, DiscoveryClient::getLastSuccessfulHeartbeatTimePeriodInternal);
 
         logger.info("Initializing Eureka in region {}", clientConfig.getRegion());
 
@@ -394,10 +398,7 @@ public class DiscoveryClient implements EurekaClient {
 
             initTimestampMs = System.currentTimeMillis();
             initRegistrySize = this.getApplications().size();
-            registrySize = initRegistrySize;
-            PolledMeter.using(registry)
-                .withName(METRIC_REGISTRY_PREFIX + "localRegistrySize")
-                .monitorValue(registrySize);
+            registrySize.set(initRegistrySize);
             logger.info("Discovery Client initialized at timestamp {} with initial instances count: {}",
                     initTimestampMs, initRegistrySize);
 
@@ -493,7 +494,7 @@ public class DiscoveryClient implements EurekaClient {
 
         initTimestampMs = System.currentTimeMillis();
         initRegistrySize = this.getApplications().size();
-        registrySize = initRegistrySize;
+        registrySize.set(initRegistrySize);
         logger.info("Discovery Client initialized at timestamp {} with initial instances count: {}",
                 initTimestampMs, initRegistrySize);
     }
@@ -1528,7 +1529,7 @@ public class DiscoveryClient implements EurekaClient {
 
             boolean success = fetchRegistry(remoteRegionsModified);
             if (success) {
-                registrySize = localRegionApps.get().size();
+                registrySize.set(localRegionApps.get().size());
                 lastSuccessfulRegistryFetchTimestamp = System.currentTimeMillis();
             }
 
@@ -1781,7 +1782,7 @@ public class DiscoveryClient implements EurekaClient {
         }
 
         public int localRegistrySize() {
-            return registrySize;
+            return registrySize.get();
         }
 
         public long lastSuccessfulRegistryFetchTimestampMs() {

@@ -1,8 +1,8 @@
 package com.netflix.discovery.shared;
 
 import com.netflix.discovery.util.ServoUtil;
-import com.netflix.spectator.api.CompositeRegistry;
 import com.netflix.spectator.api.Counter;
+import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.Spectator;
 import com.netflix.spectator.api.Timer;
 import com.netflix.spectator.api.patterns.PolledMeter;
@@ -76,7 +76,7 @@ public class NamedConnectionPool extends ConnPoolByRoute {
 
     void initMonitors(String name) {
         Preconditions.checkNotNull(name);
-        final CompositeRegistry registry = Spectator.globalRegistry();
+        final Registry registry = Spectator.globalRegistry();
         freeEntryCounter = registry.counter(name + "_Reuse");
         createEntryCounter = registry.counter(name + "_CreateNew");
         requestCounter = registry.counter(name + "_Request");
@@ -85,7 +85,7 @@ public class NamedConnectionPool extends ConnPoolByRoute {
         requestTimer = registry.timer(name + "_RequestConnectionTimer");
         creationTimer = registry.timer(name + "_CreateConnectionTimer");
         PolledMeter.using(registry).withName("connectionCount")
-            .monitorValue(this.getConnectionsInPool());
+            .monitorValue(this, NamedConnectionPool::getConnectionsInPool);
         this.name = name;
     }
 

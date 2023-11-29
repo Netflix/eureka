@@ -1,7 +1,7 @@
 package com.netflix.discovery;
 
-import com.netflix.spectator.api.CompositeRegistry;
 import com.netflix.spectator.api.Counter;
+import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.Spectator;
 import com.netflix.spectator.api.patterns.PolledMeter;
 import java.util.TimerTask;
@@ -51,7 +51,7 @@ public class TimedSupervisorTask extends TimerTask {
         this.maxDelay = timeoutMillis * expBackOffBound;
 
         // Initialize the counters and register.
-        final CompositeRegistry registry = Spectator.globalRegistry();
+        final Registry registry = Spectator.globalRegistry();
         successCounter = registry.counter("success");
         timeoutCounter = registry.counter("timeouts");
         rejectedCounter = registry.counter("rejectedExecutions");

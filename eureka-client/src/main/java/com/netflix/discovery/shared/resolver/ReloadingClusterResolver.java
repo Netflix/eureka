@@ -75,7 +75,7 @@ public class ReloadingClusterResolver<T extends EurekaEndpoint> implements Clust
         }
         PolledMeter.using(Spectator.globalRegistry())
             .withName(METRIC_RESOLVER_PREFIX + "lastReloadTimestamp")
-            .monitorValue(getLastReloadTimestamp());
+            .monitorValue(this, ReloadingClusterResolver::getLastReloadTimestamp);
     }
 
     @Override

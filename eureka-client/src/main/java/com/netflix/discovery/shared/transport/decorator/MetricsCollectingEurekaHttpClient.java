@@ -17,8 +17,8 @@
 package com.netflix.discovery.shared.transport.decorator;
 
 import com.netflix.discovery.util.ServoUtil;
-import com.netflix.spectator.api.CompositeRegistry;
 import com.netflix.spectator.api.Counter;
+import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.Spectator;
 import com.netflix.spectator.api.Timer;
 import java.util.EnumMap;
@@ -168,7 +168,7 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
         EurekaHttpClientRequestMetrics(String resourceName) {
             this.countersByStatus = createStatusCounters(resourceName);
 
-            final CompositeRegistry registry = Spectator.globalRegistry();
+            final Registry registry = Spectator.globalRegistry();
             latencyTimer = registry.timer(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "latency",
                             "id", resourceName,
                             "class", MetricsCollectingEurekaHttpClient.class.getSimpleName());

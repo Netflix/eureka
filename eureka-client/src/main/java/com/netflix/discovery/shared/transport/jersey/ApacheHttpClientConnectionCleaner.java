@@ -16,8 +16,8 @@
 
 package com.netflix.discovery.shared.transport.jersey;
 
-import com.netflix.spectator.api.CompositeRegistry;
 import com.netflix.spectator.api.Counter;
+import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.Spectator;
 import com.netflix.spectator.api.Timer;
 import java.util.concurrent.Executors;
@@ -72,9 +72,9 @@ public class ApacheHttpClientConnectionCleaner {
                 TimeUnit.MILLISECONDS
         );
 
-      final CompositeRegistry registry = Spectator.globalRegistry();
+      final Registry registry = Spectator.globalRegistry();
       executionTimeStats = registry.timer("Eureka-Connection-Cleaner-Time");
-        cleanupFailed = registry.counter("Eureka-Connection-Cleaner-Failure");
+      cleanupFailed = registry.counter("Eureka-Connection-Cleaner-Failure");
     }
 
     public void shutdown() {
