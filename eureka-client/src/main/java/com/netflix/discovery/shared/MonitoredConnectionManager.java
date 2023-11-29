@@ -2,7 +2,6 @@ package com.netflix.discovery.shared;
 
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.http.conn.ClientConnectionRequest;
 import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.conn.scheme.SchemeRegistry;
@@ -54,7 +53,6 @@ public class MonitoredConnectionManager extends ThreadSafeClientConnManager {
         return new NamedConnectionPool(connOperator, connPerRoute, 20, connTTL, connTTLTimeUnit);
     }
 
-    @VisibleForTesting
     ConnPoolByRoute getConnectionPool() {
         return this.pool;
     }

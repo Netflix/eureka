@@ -1,12 +1,12 @@
 package com.netflix.appinfo;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
-import com.google.common.collect.Sets;
 import com.netflix.archaius.api.Config;
 import com.netflix.archaius.api.annotations.ConfigurationSource;
 import com.netflix.discovery.CommonConstants;
@@ -125,7 +125,8 @@ public class EurekaArchaius2InstanceConfig extends AbstractInstanceConfig {
     public Map<String, String> getMetadataMap() {
         Map<String, String> meta = new HashMap<>();
         InternalPrefixedConfig metadataConfig = new InternalPrefixedConfig(configInstance, namespace, INSTANCE_METADATA_PREFIX);
-        for (String key : Sets.newHashSet(metadataConfig.getKeys())) {
+        for (Iterator<String> it = metadataConfig.getKeys(); it.hasNext(); ) {
+            String key = it.next();
             String value = metadataConfig.getString(key, null);
             // only add the metadata if the value is present
             if (value != null && !value.isEmpty()) {

@@ -28,5 +28,6 @@ dependencies {
     testImplementation 'org.eclipse.jetty:jetty-server:11.0.11'
     testImplementation 'org.eclipse.jetty:jetty-servlet:11.0.11'
     testImplementation 'org.slf4j:slf4j-simple:2.0.0-beta1'
+    testImplementation 'com.google.guava:guava:33.0.0-jre'
 
 }

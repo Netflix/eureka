@@ -16,6 +16,9 @@
 
 package com.netflix.eureka.util;
 
+import static com.netflix.discovery.util.SpectatorUtil.monitoredValue;
+
+import com.netflix.discovery.util.SpectatorUtil;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.netflix.appinfo.AmazonInfo;
@@ -23,9 +26,6 @@ import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.DataCenterInfo.Name;
-import com.netflix.servo.DefaultMonitorRegistry;
-import com.netflix.servo.annotations.DataSourceType;
-import com.netflix.servo.monitor.Monitors;
 
 /**
  * The enum that encapsulates all statistics monitored by Eureka.
@@ -85,13 +85,13 @@ public enum EurekaMonitors {
         } else {
             myZoneCounterName = "dcmaster." + name;
         }
+        counter = SpectatorUtil.monitoredLong("count", name, EurekaMonitors.class);
+        myZoneCounter = SpectatorUtil.monitoredLong("count-minus-replication", name, EurekaMonitors.class);
     }
 
-    @com.netflix.servo.annotations.Monitor(name = "count", type = DataSourceType.COUNTER)
-    private final AtomicLong counter = new AtomicLong();
+    private final AtomicLong counter;
 
-    @com.netflix.servo.annotations.Monitor(name = "count-minus-replication", type = DataSourceType.COUNTER)
-    private final AtomicLong myZoneCounter = new AtomicLong();
+    private final AtomicLong myZoneCounter;
 
     /**
      * Increment the counter for the given statistic.
@@ -169,17 +169,11 @@ public enum EurekaMonitors {
      * Register all statistics with <tt>Servo</tt>.
      */
     public static void registerAllStats() {
-        for (EurekaMonitors c : EurekaMonitors.values()) {
-            Monitors.registerObject(c.getName(), c);
-        }
     }
 
     /**
      * Unregister all statistics from <tt>Servo</tt>.
      */
     public static void shutdown() {
-        for (EurekaMonitors c : EurekaMonitors.values()) {
-            DefaultMonitorRegistry.getInstance().unregister(Monitors.newObjectMonitor(c.getName(), c));
-        }
     }
 }

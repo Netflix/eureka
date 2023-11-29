@@ -1,10 +1,8 @@
 package com.netflix.discovery.shared.resolver;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.discovery.TimedSupervisorTask;
-import com.netflix.servo.annotations.DataSourceType;
-import com.netflix.servo.annotations.Monitor;
-import com.netflix.servo.monitor.Monitors;
+import com.netflix.discovery.util.SpectatorUtil;
+import java.util.concurrent.ThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,19 +105,29 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
         this.refreshIntervalMs = refreshIntervalMs;
         this.warmUpTimeoutMs = warmUpTimeoutMs;
 
-        this.executorService = Executors.newScheduledThreadPool(1,
-                new ThreadFactoryBuilder()
-                        .setNameFormat("AsyncResolver-" + name + "-%d")
-                        .setDaemon(true)
-                        .build());
+        SpectatorUtil.monitoredValue(METRIC_RESOLVER_PREFIX + "lastLoadTimestamp",
+            this, AsyncResolver::getLastLoadTimestamp);
+
+        this.executorService = Executors.newScheduledThreadPool(1, new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread thread = new Thread(r, "AsyncResolver-" + name + "-%d");
+                thread.setDaemon(true);
+                return thread;
+            }
+        });
 
         this.threadPoolExecutor = new ThreadPoolExecutor(
-                1, executorThreadPoolSize, 0, TimeUnit.SECONDS,
-                new SynchronousQueue<Runnable>(),  // use direct handoff
-                new ThreadFactoryBuilder()
-                        .setNameFormat("AsyncResolver-" + name + "-executor-%d")
-                        .setDaemon(true)
-                        .build()
+            1, executorThreadPoolSize, 0, TimeUnit.SECONDS,
+            new SynchronousQueue<Runnable>(),  // use direct handoff
+            new ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable r) {
+                    Thread thread = new Thread(r, "AsyncResolver-" + name + "-executor-%d");
+                    thread.setDaemon(true);
+                    return thread;
+                }
+            }
         );
 
         this.backgroundTask = new TimedSupervisorTask(
@@ -133,14 +141,12 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
         );
 
         this.resultsRef = new AtomicReference<>(initialValue);
-        Monitors.registerObject(name, this);
+        SpectatorUtil.monitoredValue(METRIC_RESOLVER_PREFIX + "endpointsSize",
+            this, AsyncResolver::getEndpointsSize);
     }
 
     @Override
     public void shutdown() {
-        if(Monitors.isObjectRegistered(name, this)) {
-            Monitors.unregisterObject(name, this);
-        }
         executorService.shutdownNow();
         threadPoolExecutor.shutdownNow();
         backgroundTask.cancel();
@@ -188,14 +194,10 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
                 backgroundTask, delay, TimeUnit.MILLISECONDS);
     }
 
-    @Monitor(name = METRIC_RESOLVER_PREFIX + "lastLoadTimestamp",
-            description = "How much time has passed from last successful async load", type = DataSourceType.GAUGE)
     public long getLastLoadTimestamp() {
         return lastLoadTimestamp < 0 ? 0 : System.currentTimeMillis() - lastLoadTimestamp;
     }
 
-    @Monitor(name = METRIC_RESOLVER_PREFIX + "endpointsSize",
-            description = "How many records are the in the endpoints ref", type = DataSourceType.GAUGE)
     public long getEndpointsSize() {
         return resultsRef.get().size();  // return directly from the ref and not the method so as to not trigger warming
     }

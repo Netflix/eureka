@@ -6,13 +6,15 @@ configurations.all {
 }
 
 dependencies {
-    api "com.netflix.netflix-commons:netflix-eventbus:0.3.0"
+    implementation "com.netflix.netflix-commons:netflix-eventbus:0.3.0"
     api 'com.thoughtworks.xstream:xstream:1.4.19'
     api "com.netflix.archaius:archaius-core:${archaiusVersion}"
     api 'jakarta.ws.rs:jakarta.ws.rs-api:3.0.0'
     api 'jakarta.inject:jakarta.inject-api:2.0.1'
     api 'jakarta.annotation:jakarta.annotation-api:2.1.0'
-    api "com.netflix.servo:servo-core:${servoVersion}"
+    api "com.netflix.spectator:spectator-api:${spectatorVersion}"
+    api "org.slf4j:slf4j-api:${slf4jVersion}"
+    implementation "javax.annotation:javax.annotation-api:1.2"
     // compile "com.sun.jersey:jersey-core:${jerseyVersion}"
     // compile "com.sun.jersey:jersey-client:${jerseyVersion}"
     // compile "com.sun.jersey.contribs:jersey-apache-client4:${jerseyVersion}"
