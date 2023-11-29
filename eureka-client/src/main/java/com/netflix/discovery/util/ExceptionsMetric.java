@@ -16,13 +16,9 @@
 
 package com.netflix.discovery.util;
 
-import java.util.Map;
+import com.netflix.spectator.api.Counter;
+import com.netflix.spectator.api.Spectator;
 import java.util.concurrent.ConcurrentHashMap;
-
-import com.netflix.servo.DefaultMonitorRegistry;
-import com.netflix.servo.monitor.BasicCounter;
-import com.netflix.servo.monitor.Counter;
-import com.netflix.servo.monitor.MonitorConfig;
 
 /**
  * Counters for exceptions.
@@ -44,20 +40,17 @@ public class ExceptionsMetric {
     }
 
     public void shutdown() {
-        ServoUtil.unregister(exceptionCounters.values());
+
     }
 
     private Counter getOrCreateCounter(String exceptionName) {
         Counter counter = exceptionCounters.get(exceptionName);
-        if (counter == null) {
-            counter = new BasicCounter(MonitorConfig.builder(name).withTag("id", exceptionName).build());
-            if (exceptionCounters.putIfAbsent(exceptionName, counter) == null) {
-                DefaultMonitorRegistry.getInstance().register(counter);
-            } else {
-                counter = exceptionCounters.get(exceptionName);
-            }
+        if (counter != null) {
+            return counter;
         }
-        return counter;
+        return exceptionCounters.computeIfAbsent(exceptionName, s ->
+            Spectator.globalRegistry().counter(
+                name, "id", exceptionName));
     }
 
     private static String extractName(Throwable ex) {

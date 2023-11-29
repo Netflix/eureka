@@ -16,12 +16,11 @@
 
 package com.netflix.discovery.shared.resolver;
 
+import com.netflix.spectator.api.Spectator;
+import com.netflix.spectator.api.patterns.PolledMeter;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.servo.annotations.DataSourceType;
-import com.netflix.servo.annotations.Monitor;
-import com.netflix.servo.monitor.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,12 +73,9 @@ public class ReloadingClusterResolver<T extends EurekaEndpoint> implements Clust
             logger.info("Initiated with delegate resolver of type {}; next reload in {}[sec]. Loaded endpoints={}",
                     delegateRef.get().getClass(), currentReloadIntervalMs / 1000, clusterEndpoints);
         }
-
-        try {
-            Monitors.registerObject(this);
-        } catch (Throwable e) {
-            logger.warn("Cannot register metrics", e);
-        }
+        PolledMeter.using(Spectator.globalRegistry())
+            .withName(METRIC_RESOLVER_PREFIX + "lastReloadTimestamp")
+            .monitorValue(getLastReloadTimestamp());
     }
 
     @Override
@@ -133,8 +129,6 @@ public class ReloadingClusterResolver<T extends EurekaEndpoint> implements Clust
         return newDelegate;
     }
 
-    @Monitor(name = METRIC_RESOLVER_PREFIX + "lastReloadTimestamp",
-            description = "How much time has passed from last successful cluster configuration resolve", type = DataSourceType.GAUGE)
     public long getLastReloadTimestamp() {
         return lastReloadTimestamp < 0 ? 0 : System.currentTimeMillis() - lastReloadTimestamp;
     }
