@@ -16,18 +16,16 @@
 
 package com.netflix.discovery.shared.transport.jersey;
 
+import com.netflix.spectator.api.Counter;
+import com.netflix.spectator.api.Registry;
+import com.netflix.spectator.api.Spectator;
+import com.netflix.spectator.api.Timer;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.netflix.servo.monitor.BasicCounter;
-import com.netflix.servo.monitor.BasicTimer;
-import com.netflix.servo.monitor.Counter;
-import com.netflix.servo.monitor.MonitorConfig;
-import com.netflix.servo.monitor.Monitors;
-import com.netflix.servo.monitor.Stopwatch;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +55,7 @@ public class ApacheHttpClientConnectionCleaner {
 
     private final ApacheHttpClient4 apacheHttpClient;
 
-    private final BasicTimer executionTimeStats;
+    private final Timer executionTimeStats;
     private final Counter cleanupFailed;
 
     public ApacheHttpClientConnectionCleaner(ApacheHttpClient4 apacheHttpClient, final long connectionIdleTimeout) {
@@ -74,35 +72,26 @@ public class ApacheHttpClientConnectionCleaner {
                 TimeUnit.MILLISECONDS
         );
 
-        MonitorConfig.Builder monitorConfigBuilder = MonitorConfig.builder("Eureka-Connection-Cleaner-Time");
-        executionTimeStats = new BasicTimer(monitorConfigBuilder.build());
-        cleanupFailed = new BasicCounter(MonitorConfig.builder("Eureka-Connection-Cleaner-Failure").build());
-        try {
-            Monitors.registerObject(this);
-        } catch (Exception e) {
-            logger.error("Unable to register with servo.", e);
-        }
+      final Registry registry = Spectator.globalRegistry();
+      executionTimeStats = registry.timer("Eureka-Connection-Cleaner-Time");
+      cleanupFailed = registry.counter("Eureka-Connection-Cleaner-Failure");
     }
 
     public void shutdown() {
         cleanIdle(0);
         eurekaConnCleaner.shutdown();
-        Monitors.unregisterObject(this);
     }
 
     public void cleanIdle(long delayMs) {
-        Stopwatch start = executionTimeStats.start();
-        try {
-            apacheHttpClient.getClientHandler().getHttpClient()
+        executionTimeStats.recordRunnable(() -> {
+            try {
+                apacheHttpClient.getClientHandler().getHttpClient()
                     .getConnectionManager()
                     .closeIdleConnections(delayMs, TimeUnit.SECONDS);
-        } catch (Throwable e) {
-            logger.error("Cannot clean connections", e);
-            cleanupFailed.increment();
-        } finally {
-            if (null != start) {
-                start.stop();
+            } catch (Throwable e) {
+                logger.error("Cannot clean connections", e);
+                cleanupFailed.increment();
             }
-        }
+        });
     }
 }

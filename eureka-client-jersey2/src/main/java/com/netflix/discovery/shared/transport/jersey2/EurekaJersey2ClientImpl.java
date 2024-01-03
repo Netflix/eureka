@@ -2,6 +2,10 @@ package com.netflix.discovery.shared.transport.jersey2;
 
 import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
 
+import com.netflix.discovery.util.ServoUtil;
+import com.netflix.spectator.api.Counter;
+import com.netflix.spectator.api.Spectator;
+import com.netflix.spectator.api.Timer;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.KeyStore;
@@ -36,12 +40,6 @@ import com.netflix.discovery.converters.wrappers.CodecWrappers;
 import com.netflix.discovery.converters.wrappers.DecoderWrapper;
 import com.netflix.discovery.converters.wrappers.EncoderWrapper;
 import com.netflix.discovery.provider.DiscoveryJerseyProvider;
-import com.netflix.servo.monitor.BasicCounter;
-import com.netflix.servo.monitor.BasicTimer;
-import com.netflix.servo.monitor.Counter;
-import com.netflix.servo.monitor.MonitorConfig;
-import com.netflix.servo.monitor.Monitors;
-import com.netflix.servo.monitor.Stopwatch;
 
 /**
  * @author Tomasz Bak
@@ -325,24 +323,19 @@ public class EurekaJersey2ClientImpl implements EurekaJersey2Client {
     private class ConnectionCleanerTask implements Runnable {
 
         private final int connectionIdleTimeout;
-        private final BasicTimer executionTimeStats;
+        private final Timer executionTimeStats;
         private final Counter cleanupFailed;
 
         private ConnectionCleanerTask(int connectionIdleTimeout) {
             this.connectionIdleTimeout = connectionIdleTimeout;
-            MonitorConfig.Builder monitorConfigBuilder = MonitorConfig.builder("Eureka-Connection-Cleaner-Time");
-            executionTimeStats = new BasicTimer(monitorConfigBuilder.build());
-            cleanupFailed = new BasicCounter(MonitorConfig.builder("Eureka-Connection-Cleaner-Failure").build());
-            try {
-                Monitors.registerObject(this);
-            } catch (Exception e) {
-                s_logger.error("Unable to register with servo.", e);
-            }
+            final com.netflix.spectator.api.Registry registry = Spectator.globalRegistry();
+            executionTimeStats = registry.timer("Eureka-Connection-Cleaner-Time");
+            cleanupFailed = registry.counter("Eureka-Connection-Cleaner-Failure");
         }
 
         @Override
         public void run() {
-            Stopwatch start = executionTimeStats.start();
+            long monotonicTime = ServoUtil.time(executionTimeStats);
             try {
                 HttpClientConnectionManager cm = (HttpClientConnectionManager) apacheHttpClient
                         .getConfiguration()
@@ -352,11 +345,8 @@ public class EurekaJersey2ClientImpl implements EurekaJersey2Client {
                 s_logger.error("Cannot clean connections", e);
                 cleanupFailed.increment();
             } finally {
-                if (null != start) {
-                    start.stop();
-                }
+                ServoUtil.record(executionTimeStats, monotonicTime);
             }
-
         }
     }
 }

@@ -16,6 +16,8 @@
 
 package com.netflix.discovery.shared.transport.decorator;
 
+import com.netflix.spectator.api.Spectator;
+import com.netflix.spectator.api.patterns.PolledMeter;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -23,9 +25,6 @@ import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.TransportUtils;
-import com.netflix.servo.annotations.DataSourceType;
-import com.netflix.servo.annotations.Monitor;
-import com.netflix.servo.monitor.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +55,9 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
         this.clientFactory = clientFactory;
         this.sessionDurationMs = sessionDurationMs;
         this.currentSessionDurationMs = randomizeSessionDuration(sessionDurationMs);
-        Monitors.registerObject(name, this);
+        PolledMeter.using(Spectator.globalRegistry())
+            .withName(METRIC_TRANSPORT_PREFIX + "currentSessionDuration")
+            .monitorValue(this, SessionedEurekaHttpClient::getCurrentSessionDuration);
     }
 
     @Override
@@ -79,9 +80,6 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
 
     @Override
     public void shutdown() {
-        if(Monitors.isObjectRegistered(name, this)) {
-            Monitors.unregisterObject(name, this);
-        }
         TransportUtils.shutdown(eurekaHttpClientRef.getAndSet(null));
     }
 
@@ -93,8 +91,6 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
         return sessionDurationMs + delta;
     }
 
-    @Monitor(name = METRIC_TRANSPORT_PREFIX + "currentSessionDuration",
-            description = "Duration of the current session", type = DataSourceType.GAUGE)
     public long getCurrentSessionDuration() {
         return lastReconnectTimeStamp < 0 ? 0 : System.currentTimeMillis() - lastReconnectTimeStamp;
     }
