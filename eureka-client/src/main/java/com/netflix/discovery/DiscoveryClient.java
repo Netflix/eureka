@@ -18,14 +18,7 @@ package com.netflix.discovery;
 
 import static com.netflix.discovery.EurekaClientNames.METRIC_REGISTRATION_PREFIX;
 import static com.netflix.discovery.EurekaClientNames.METRIC_REGISTRY_PREFIX;
-import static com.netflix.spectator.api.Spectator.globalRegistry;
 
-import com.netflix.discovery.util.ServoUtil;
-import com.netflix.spectator.api.Counter;
-import com.netflix.spectator.api.Registry;
-import com.netflix.spectator.api.Spectator;
-import com.netflix.spectator.api.Timer;
-import com.netflix.spectator.api.patterns.PolledMeter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -90,6 +83,10 @@ import com.netflix.discovery.shared.transport.jersey.Jersey1DiscoveryClientOptio
 import com.netflix.discovery.shared.transport.jersey.Jersey1TransportClientFactories;
 import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
 import com.netflix.discovery.util.ThresholdLevelsMetric;
+import com.netflix.servo.annotations.DataSourceType;
+import com.netflix.servo.monitor.Counter;
+import com.netflix.servo.monitor.Monitors;
+import com.netflix.servo.monitor.Stopwatch;
 
 /**
  * The class that is instrumental for interactions with <tt>Eureka Server</tt>.
@@ -133,10 +130,11 @@ public class DiscoveryClient implements EurekaClient {
 
     // Timers
     private static final String PREFIX = "DiscoveryClient_";
-    private final Counter RECONCILE_HASH_CODES_MISMATCH = globalRegistry().counter(PREFIX + "ReconcileHashCodeMismatch");
-    private final Timer FETCH_REGISTRY_TIMER = globalRegistry().timer(PREFIX + "FetchRegistry");
-    private final Counter REREGISTER_COUNTER = globalRegistry().counter(PREFIX
-        + "Reregister");
+    private final Counter RECONCILE_HASH_CODES_MISMATCH = Monitors.newCounter(PREFIX + "ReconcileHashCodeMismatch");
+    private final com.netflix.servo.monitor.Timer FETCH_REGISTRY_TIMER = Monitors
+            .newTimer(PREFIX + "FetchRegistry");
+    private final Counter REREGISTER_COUNTER = Monitors.newCounter(PREFIX
+            + "Reregister");
 
     // instance variables
     /**
@@ -180,10 +178,7 @@ public class DiscoveryClient implements EurekaClient {
 
     private InstanceInfoReplicator instanceInfoReplicator;
 
-    private final AtomicInteger registrySize = PolledMeter
-        .using(Spectator.globalRegistry())
-        .withName(METRIC_REGISTRY_PREFIX + "localRegistrySize")
-        .monitorValue(new AtomicInteger());
+    private volatile int registrySize = 0;
     private volatile long lastSuccessfulRegistryFetchTimestamp = -1;
     private volatile long lastSuccessfulHeartbeatTimestamp = -1;
     private final ThresholdLevelsMetric heartbeatStalenessMonitor;
@@ -367,19 +362,12 @@ public class DiscoveryClient implements EurekaClient {
         } else {
             this.registryStalenessMonitor = ThresholdLevelsMetric.NO_OP_METRIC;
         }
-        final Registry registry = globalRegistry();
-        PolledMeter.using(registry)
-            .withName(METRIC_REGISTRY_PREFIX + "lastSuccessfulRegistryFetchTimePeriod")
-            .monitorValue(this, DiscoveryClient::getLastSuccessfulRegistryFetchTimePeriodInternal);
 
         if (config.shouldRegisterWithEureka()) {
             this.heartbeatStalenessMonitor = new ThresholdLevelsMetric(this, METRIC_REGISTRATION_PREFIX + "lastHeartbeatSec_", new long[]{15L, 30L, 60L, 120L, 240L, 480L});
         } else {
             this.heartbeatStalenessMonitor = ThresholdLevelsMetric.NO_OP_METRIC;
         }
-        PolledMeter.using(registry)
-            .withName(METRIC_REGISTRATION_PREFIX + "lastSuccessfulHeartbeatTimePeriod")
-            .monitorValue(this, DiscoveryClient::getLastSuccessfulHeartbeatTimePeriodInternal);
 
         logger.info("Initializing Eureka in region {}", clientConfig.getRegion());
 
@@ -398,7 +386,7 @@ public class DiscoveryClient implements EurekaClient {
 
             initTimestampMs = System.currentTimeMillis();
             initRegistrySize = this.getApplications().size();
-            registrySize.set(initRegistrySize);
+            registrySize = initRegistrySize;
             logger.info("Discovery Client initialized at timestamp {} with initial instances count: {}",
                     initTimestampMs, initRegistrySize);
 
@@ -487,6 +475,12 @@ public class DiscoveryClient implements EurekaClient {
         // finally, init the schedule tasks (e.g. cluster resolvers, heartbeat, instanceInfo replicator, fetch
         initScheduledTasks();
 
+        try {
+            Monitors.registerObject(this);
+        } catch (Throwable e) {
+            logger.warn("Cannot register timers", e);
+        }
+
         // This is a bit of hack to allow for existing code using DiscoveryManager.getInstance()
         // to work with DI'd DiscoveryClient
         DiscoveryManager.getInstance().setDiscoveryClient(this);
@@ -494,7 +488,7 @@ public class DiscoveryClient implements EurekaClient {
 
         initTimestampMs = System.currentTimeMillis();
         initRegistrySize = this.getApplications().size();
-        registrySize.set(initRegistrySize);
+        registrySize = initRegistrySize;
         logger.info("Discovery Client initialized at timestamp {} with initial instances count: {}",
                 initTimestampMs, initRegistrySize);
     }
@@ -958,6 +952,11 @@ public class DiscoveryClient implements EurekaClient {
                 eurekaTransport.shutdown();
             }
 
+            heartbeatStalenessMonitor.shutdown();
+            registryStalenessMonitor.shutdown();
+
+            Monitors.unregisterObject(this);
+
             logger.info("Completed shut down of DiscoveryClient");
         }
     }
@@ -991,7 +990,7 @@ public class DiscoveryClient implements EurekaClient {
      * @return true if the registry was fetched
      */
     private boolean fetchRegistry(boolean forceFullRegistryFetch) {
-        long monotonicTime = ServoUtil.time(FETCH_REGISTRY_TIMER);
+        Stopwatch tracer = FETCH_REGISTRY_TIMER.start();
 
         try {
             // If the delta is disabled or if it is the first time, get all
@@ -1023,7 +1022,9 @@ public class DiscoveryClient implements EurekaClient {
                     appPathIdentifier, clientConfig.getRegistryFetchIntervalSeconds(), e.getMessage(), ExceptionUtils.getStackTrace(e));
             return false;
         } finally {
-            ServoUtil.record(FETCH_REGISTRY_TIMER, monotonicTime);
+            if (tracer != null) {
+                tracer.stop();
+            }
         }
 
         // Notify about cache refresh before updating the instance remote status
@@ -1529,7 +1530,7 @@ public class DiscoveryClient implements EurekaClient {
 
             boolean success = fetchRegistry(remoteRegionsModified);
             if (success) {
-                registrySize.set(localRegionApps.get().size());
+                registrySize = localRegionApps.get().size();
                 lastSuccessfulRegistryFetchTimestamp = System.currentTimeMillis();
             }
 
@@ -1729,6 +1730,8 @@ public class DiscoveryClient implements EurekaClient {
                 : System.currentTimeMillis() - lastSuccessfulRegistryFetchTimestamp;
     }
 
+    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRATION_PREFIX + "lastSuccessfulHeartbeatTimePeriod",
+            description = "How much time has passed from last successful heartbeat", type = DataSourceType.GAUGE)
     private long getLastSuccessfulHeartbeatTimePeriodInternal() {
         final long delay = (!clientConfig.shouldRegisterWithEureka() || isShutdown.get())
             ? 0
@@ -1739,6 +1742,8 @@ public class DiscoveryClient implements EurekaClient {
     }
 
     // for metrics only
+    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "lastSuccessfulRegistryFetchTimePeriod",
+            description = "How much time has passed from last successful local registry update", type = DataSourceType.GAUGE)
     private long getLastSuccessfulRegistryFetchTimePeriodInternal() {
         final long delay = (!clientConfig.shouldFetchRegistry() || isShutdown.get())
             ? 0
@@ -1747,6 +1752,13 @@ public class DiscoveryClient implements EurekaClient {
         registryStalenessMonitor.update(computeStalenessMonitorDelay(delay));
         return delay;
     }
+
+    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "localRegistrySize",
+            description = "Count of instances in the local registry", type = DataSourceType.GAUGE)
+    public int localRegistrySize() {
+        return registrySize;
+    }
+
 
     private long computeStalenessMonitorDelay(long delay) {
         if (delay < 0) {
@@ -1782,7 +1794,7 @@ public class DiscoveryClient implements EurekaClient {
         }
 
         public int localRegistrySize() {
-            return registrySize.get();
+            return registrySize;
         }
 
         public long lastSuccessfulRegistryFetchTimestampMs() {

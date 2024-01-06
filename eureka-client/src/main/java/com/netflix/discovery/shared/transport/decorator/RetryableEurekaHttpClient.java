@@ -16,8 +16,6 @@
 
 package com.netflix.discovery.shared.transport.decorator;
 
-import com.netflix.spectator.api.Spectator;
-import com.netflix.spectator.api.patterns.PolledMeter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -33,6 +31,9 @@ import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.TransportException;
 import com.netflix.discovery.shared.transport.TransportUtils;
+import com.netflix.servo.annotations.DataSourceType;
+import com.netflix.servo.annotations.Monitor;
+import com.netflix.servo.monitor.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,9 +69,7 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
 
     private final AtomicReference<EurekaHttpClient> delegate = new AtomicReference<>();
 
-    private final Set<EurekaEndpoint> quarantineSet = PolledMeter.using(Spectator.globalRegistry())
-        .withName(METRIC_TRANSPORT_PREFIX + "quarantineSize")
-        .monitorSize(new ConcurrentSkipListSet<>());
+    private final Set<EurekaEndpoint> quarantineSet = new ConcurrentSkipListSet<>();
 
     public RetryableEurekaHttpClient(String name,
                                      EurekaTransportConfig transportConfig,
@@ -84,11 +83,15 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
         this.clientFactory = clientFactory;
         this.serverStatusEvaluator = serverStatusEvaluator;
         this.numberOfRetries = numberOfRetries;
+        Monitors.registerObject(name, this);
     }
 
     @Override
     public void shutdown() {
         TransportUtils.shutdown(delegate.get());
+        if(Monitors.isObjectRegistered(name, this)) {
+            Monitors.unregisterObject(name, this);
+        }
     }
 
     @Override
@@ -181,5 +184,11 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
         }
 
         return candidateHosts;
+    }
+
+    @Monitor(name = METRIC_TRANSPORT_PREFIX + "quarantineSize",
+            description = "number of servers quarantined", type = DataSourceType.GAUGE)
+    public long getQuarantineSetSize() {
+        return quarantineSet.size();
     }
 }

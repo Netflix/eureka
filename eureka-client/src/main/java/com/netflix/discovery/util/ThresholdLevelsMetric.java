@@ -16,9 +16,11 @@
 
 package com.netflix.discovery.util;
 
-import com.netflix.spectator.api.Spectator;
-import com.netflix.spectator.api.patterns.PolledMeter;
-import java.util.concurrent.atomic.AtomicLong;
+import com.netflix.servo.DefaultMonitorRegistry;
+import com.netflix.servo.monitor.LongGauge;
+import com.netflix.servo.monitor.MonitorConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A collection of gauges that represent different threshold levels over which measurement is mapped to.
@@ -30,27 +32,28 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ThresholdLevelsMetric {
 
-    public static final ThresholdLevelsMetric NO_OP_METRIC = new ThresholdLevelsMetric() {
-        @Override
-        public void update(long delayMs) {
-        }
-    };
+    public static final ThresholdLevelsMetric NO_OP_METRIC = new NoOpThresholdLevelMetric();
+
+    private static final Logger logger = LoggerFactory.getLogger(ThresholdLevelsMetric.class);
 
     private final long[] levels;
-    private final AtomicLong[] gauges;
-
-    public ThresholdLevelsMetric() {
-        levels = null;
-        gauges = null;
-    }
+    private final LongGauge[] gauges;
 
     public ThresholdLevelsMetric(Object owner, String prefix, long[] levels) {
         this.levels = levels;
-        this.gauges = new AtomicLong[levels.length];
+        this.gauges = new LongGauge[levels.length];
         for (int i = 0; i < levels.length; i++) {
             String name = prefix + String.format("%05d", levels[i]);
-            gauges[i] = PolledMeter.using(Spectator.globalRegistry()).withName(name)
-                .withTag("class", owner.getClass().getName()).monitorValue(new AtomicLong());
+            MonitorConfig config = new MonitorConfig.Builder(name)
+                    .withTag("class", owner.getClass().getName())
+                    .build();
+            gauges[i] = new LongGauge(config);
+
+            try {
+                DefaultMonitorRegistry.getInstance().register(gauges[i]);
+            } catch (Throwable e) {
+                logger.warn("Cannot register metric {}", name, e);
+            }
         }
     }
 
@@ -74,6 +77,28 @@ public class ThresholdLevelsMetric {
             } else {
                 gauges[i].set(0L);
             }
+        }
+    }
+
+    public void shutdown() {
+        for (LongGauge gauge : gauges) {
+            try {
+                DefaultMonitorRegistry.getInstance().unregister(gauge);
+            } catch (Throwable ignore) {
+            }
+        }
+    }
+
+    public static class NoOpThresholdLevelMetric extends ThresholdLevelsMetric {
+
+        public NoOpThresholdLevelMetric() {
+            super(null, null, new long[]{});
+        }
+
+        public void update(long delayMs) {
+        }
+
+        public void shutdown() {
         }
     }
 }

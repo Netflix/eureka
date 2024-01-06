@@ -1,7 +1,6 @@
 apply plugin: 'nebula.test-jar'
 
 def archaius2Version = '2.1.7'
-def slf4jVersion = '1.7.36'
 
 sourceSets {
     test {
@@ -15,8 +14,6 @@ dependencies {
     // archaius2
     compile "com.netflix.archaius:archaius2-core:${archaius2Version}"
     compile "com.netflix.archaius:archaius2-api:${archaius2Version}"
-    compile "org.slf4j:slf4j-api:${slf4jVersion}"
-    compile "com.netflix.spectator:spectator-api:${spectatorVersion}"
 
     testCompile project(':eureka-test-utils')
 
