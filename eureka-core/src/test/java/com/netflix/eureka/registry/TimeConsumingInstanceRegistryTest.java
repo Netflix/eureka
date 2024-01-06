@@ -9,9 +9,7 @@ import com.netflix.eureka.test.async.executor.AsyncResult;
 import com.netflix.eureka.test.async.executor.AsyncSequentialExecutor;
 import com.netflix.eureka.test.async.executor.SequentialEvents;
 import com.netflix.eureka.test.async.executor.SingleEvent;
-import javax.inject.Inject;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -69,7 +67,6 @@ public class TimeConsumingInstanceRegistryTest extends AbstractTester {
      * Note that there is a thread retrieving and printing out registry status for debugging purpose.
      */
     @Test
-    @Ignore("NumOfRenewsPerMinThreshold should be updated to 256")
     public void testLeaseExpirationAndUpdateRenewalThreshold() throws InterruptedException {
         final int registeredInstanceCount = 50;
         final int leaseDurationInSecs = 30;

@@ -7,7 +7,6 @@ import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -48,7 +47,6 @@ public class UnexpectedContentTypeTest {
     }
 
     @Test
-    @Ignore("failing in main branch")
     public void testSendHeartBeatReceivesUnexpectedHtmlResponse() {
         long lastDirtyTimestamp = System.currentTimeMillis();
         String uuid = UUID.randomUUID().toString();

@@ -16,23 +16,54 @@
 
 package com.netflix.discovery.util;
 
-import com.netflix.spectator.api.Timer;
-import java.util.concurrent.TimeUnit;
-import javax.annotation.Nonnull;
+import java.util.Collection;
+
+import com.netflix.servo.DefaultMonitorRegistry;
+import com.netflix.servo.monitor.Monitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @author Tomasz Bak
+ */
 public final class ServoUtil {
 
-  private ServoUtil() {
-  }
+    private static final Logger logger = LoggerFactory.getLogger(ServoUtil.class);
 
-  public static long time(@Nonnull Timer timer) {
-    return timer.clock().monotonicTime();
-  }
+    private ServoUtil() {
+    }
 
-  public static void record(@Nonnull Timer timer, long startTime) {
-    timer.record(time(timer) - startTime, TimeUnit.NANOSECONDS);
-  }
+    public static <T> boolean register(Monitor<T> monitor) {
+        try {
+            DefaultMonitorRegistry.getInstance().register(monitor);
+        } catch (Exception e) {
+            logger.warn("Cannot register monitor {}", monitor.getConfig().getName());
+            if (logger.isDebugEnabled()) {
+                logger.debug(e.getMessage(), e);
+            }
+            return false;
+        }
+        return true;
+    }
 
+    public static <T> void unregister(Monitor<T> monitor) {
+        if (monitor != null) {
+            try {
+                DefaultMonitorRegistry.getInstance().unregister(monitor);
+            } catch (Exception ignore) {
+            }
+        }
+    }
+
+    public static void unregister(Monitor... monitors) {
+        for (Monitor monitor : monitors) {
+            unregister(monitor);
+        }
+    }
+
+    public static <M extends Monitor> void unregister(Collection<M> monitors) {
+        for (M monitor : monitors) {
+            unregister(monitor);
+        }
+    }
 }
