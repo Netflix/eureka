@@ -20,5 +20,5 @@ dependencies {
     testCompile "junit:junit:${junit_version}"
     testCompile "org.mock-server:mockserver-netty:${mockserverVersion}"
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
-    testRuntime 'org.slf4j:slf4j-simple:1.7.10'
+    testRuntime "org.slf4j:slf4j-simple:${slf4jVersion}"
 }
