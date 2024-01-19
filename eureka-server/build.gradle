@@ -9,7 +9,7 @@ dependencies {
     implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.3'
 
     runtimeOnly 'xerces:xercesImpl:2.12.0'
-    runtimeOnly 'org.codehaus.jettison:jettison:1.2'
+    runtimeOnly "org.codehaus.jettison:jettison:${jettisonVersion}"
 
     providedCompile "jakarta.servlet:jakarta.servlet-api:$servletVersion"
 
