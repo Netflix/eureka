@@ -16,6 +16,8 @@
 
 package com.netflix.discovery.converters;
 
+import com.netflix.spectator.api.Counter;
+import com.netflix.spectator.api.Spectator;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -35,8 +37,6 @@ import com.netflix.appinfo.LeaseInfo;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.util.StringCache;
-import com.netflix.servo.monitor.Counter;
-import com.netflix.servo.monitor.Monitors;
 import com.thoughtworks.xstream.converters.Converter;
 import com.thoughtworks.xstream.converters.MarshallingContext;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
@@ -73,7 +73,7 @@ public final class Converters {
 
     private static final Logger logger = LoggerFactory.getLogger(Converters.class);
 
-    private static final Counter UNMARSHALL_ERROR_COUNTER = Monitors.newCounter(UNMARSHAL_ERROR);
+    private static final Counter UNMARSHALL_ERROR_COUNTER = Spectator.globalRegistry().counter(UNMARSHAL_ERROR);
 
     /**
      * Serialize/deserialize {@link Applications} object types.

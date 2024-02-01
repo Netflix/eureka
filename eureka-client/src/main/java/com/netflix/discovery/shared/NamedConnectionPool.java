@@ -1,14 +1,11 @@
 package com.netflix.discovery.shared;
 
+import com.netflix.discovery.util.SpectatorUtil;
+import com.netflix.spectator.api.Counter;
+import com.netflix.spectator.api.Timer;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.base.Preconditions;
-import com.netflix.servo.annotations.DataSourceType;
-import com.netflix.servo.annotations.Monitor;
-import com.netflix.servo.monitor.Counter;
-import com.netflix.servo.monitor.Monitors;
-import com.netflix.servo.monitor.Stopwatch;
-import com.netflix.servo.monitor.Timer;
 import org.apache.http.conn.ClientConnectionOperator;
 import org.apache.http.conn.ConnectionPoolTimeoutException;
 import org.apache.http.conn.params.ConnPerRoute;
@@ -75,16 +72,16 @@ public class NamedConnectionPool extends ConnPoolByRoute {
     }
 
     void initMonitors(String name) {
-        Preconditions.checkNotNull(name);
-        freeEntryCounter = Monitors.newCounter(name + "_Reuse");
-        createEntryCounter = Monitors.newCounter(name + "_CreateNew");
-        requestCounter = Monitors.newCounter(name + "_Request");
-        releaseCounter = Monitors.newCounter(name + "_Release");
-        deleteCounter = Monitors.newCounter(name + "_Delete");
-        requestTimer = Monitors.newTimer(name + "_RequestConnectionTimer", TimeUnit.MILLISECONDS);
-        creationTimer = Monitors.newTimer(name + "_CreateConnectionTimer", TimeUnit.MILLISECONDS);
+        Objects.requireNonNull(name);
+        freeEntryCounter = SpectatorUtil.counter(name + "_Reuse", name, NamedConnectionPool.class);
+        createEntryCounter = SpectatorUtil.counter(name + "_CreateNew", name, NamedConnectionPool.class);
+        requestCounter = SpectatorUtil.counter(name + "_Request", name, NamedConnectionPool.class);
+        releaseCounter = SpectatorUtil.counter(name + "_Release", name, NamedConnectionPool.class);
+        deleteCounter = SpectatorUtil.counter(name + "_Delete", name, NamedConnectionPool.class);
+        requestTimer = SpectatorUtil.timer(name + "_RequestConnectionTimer", name, NamedConnectionPool.class);
+        creationTimer = SpectatorUtil.timer(name + "_CreateConnectionTimer", name, NamedConnectionPool.class);
+        SpectatorUtil.monitoredValue("connectionCount", name, this, NamedConnectionPool::getConnectionsInPool);
         this.name = name;
-        Monitors.registerObject(name, this);
     }
 
     @Override
@@ -106,11 +103,11 @@ public class NamedConnectionPool extends ConnPoolByRoute {
     protected BasicPoolEntry createEntry(RouteSpecificPool rospl,
                                          ClientConnectionOperator op) {
         createEntryCounter.increment();
-        Stopwatch stopWatch = creationTimer.start();
+        long monotonicTime = SpectatorUtil.time(creationTimer);
         try {
             return super.createEntry(rospl, op);
         } finally {
-            stopWatch.stop();
+            SpectatorUtil.record(creationTimer, monotonicTime);
         }
     }
 
@@ -118,11 +115,11 @@ public class NamedConnectionPool extends ConnPoolByRoute {
     protected BasicPoolEntry getEntryBlocking(HttpRoute route, Object state,
                                               long timeout, TimeUnit tunit, WaitingThreadAborter aborter)
             throws ConnectionPoolTimeoutException, InterruptedException {
-        Stopwatch stopWatch = requestTimer.start();
+        long monotonicTime = SpectatorUtil.time(requestTimer);
         try {
             return super.getEntryBlocking(route, state, timeout, tunit, aborter);
         } finally {
-            stopWatch.stop();
+            SpectatorUtil.record(requestTimer, monotonicTime);
         }
     }
 
@@ -140,35 +137,27 @@ public class NamedConnectionPool extends ConnPoolByRoute {
     }
 
     public final long getFreeEntryCount() {
-        return freeEntryCounter.getValue().longValue();
+        return freeEntryCounter.count();
     }
 
     public final long getCreatedEntryCount() {
-        return createEntryCounter.getValue().longValue();
+        return createEntryCounter.count();
     }
 
     public final long getRequestsCount() {
-        return requestCounter.getValue().longValue();
+        return requestCounter.count();
     }
 
     public final long getReleaseCount() {
-        return releaseCounter.getValue().longValue();
+        return releaseCounter.count();
     }
 
     public final long getDeleteCount() {
-        return deleteCounter.getValue().longValue();
-    }
-
-    @Monitor(name = "connectionCount", type = DataSourceType.GAUGE)
-    public int getConnectionCount() {
-        return this.getConnectionsInPool();
+        return deleteCounter.count();
     }
 
     @Override
     public void shutdown() {
         super.shutdown();
-        if(Monitors.isObjectRegistered(name, this)) {
-            Monitors.unregisterObject(name, this);
-        }
     }
 }

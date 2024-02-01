@@ -2,7 +2,6 @@ package com.netflix.eureka.registry;
 
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.discovery.DefaultEurekaClientConfig;
-import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.eureka.AbstractTester;
 import com.netflix.eureka.DefaultEurekaServerConfig;
 import com.netflix.eureka.EurekaServerConfig;

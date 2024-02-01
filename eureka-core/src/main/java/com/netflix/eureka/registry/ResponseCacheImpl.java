@@ -16,6 +16,8 @@
 
 package com.netflix.eureka.registry;
 
+import com.netflix.discovery.util.SpectatorUtil;
+import com.netflix.spectator.api.Timer;
 import jakarta.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -31,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPOutputStream;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -49,11 +50,6 @@ import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.Version;
 import com.netflix.eureka.resources.CurrentRequestVersion;
 import com.netflix.eureka.resources.ServerCodecs;
-import com.netflix.servo.annotations.DataSourceType;
-import com.netflix.servo.annotations.Monitor;
-import com.netflix.servo.monitor.Monitors;
-import com.netflix.servo.monitor.Stopwatch;
-import com.netflix.servo.monitor.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,13 +85,13 @@ public class ResponseCacheImpl implements ResponseCache {
     private final AtomicLong versionDelta = new AtomicLong(0);
     private final AtomicLong versionDeltaWithRegions = new AtomicLong(0);
 
-    private final Timer serializeAllAppsTimer = Monitors.newTimer("serialize-all");
-    private final Timer serializeDeltaAppsTimer = Monitors.newTimer("serialize-all-delta");
-    private final Timer serializeAllAppsWithRemoteRegionTimer = Monitors.newTimer("serialize-all_remote_region");
-    private final Timer serializeDeltaAppsWithRemoteRegionTimer = Monitors.newTimer("serialize-all-delta_remote_region");
-    private final Timer serializeOneApptimer = Monitors.newTimer("serialize-one");
-    private final Timer serializeViptimer = Monitors.newTimer("serialize-one-vip");
-    private final Timer compressPayloadTimer = Monitors.newTimer("compress-payload");
+    private final Timer serializeAllAppsTimer = SpectatorUtil.timer("serialize-all", ResponseCacheImpl.class);
+    private final Timer serializeDeltaAppsTimer = SpectatorUtil.timer("serialize-all-delta", ResponseCacheImpl.class);
+    private final Timer serializeAllAppsWithRemoteRegionTimer = SpectatorUtil.timer("serialize-all_remote_region", ResponseCacheImpl.class);
+    private final Timer serializeDeltaAppsWithRemoteRegionTimer = SpectatorUtil.timer("serialize-all-delta_remote_region", ResponseCacheImpl.class);
+    private final Timer serializeOneApptimer = SpectatorUtil.timer("serialize-one", ResponseCacheImpl.class);
+    private final Timer serializeViptimer = SpectatorUtil.timer("serialize-one-vip", ResponseCacheImpl.class);
+    private final Timer compressPayloadTimer = SpectatorUtil.timer("compress-payload", ResponseCacheImpl.class);
 
     /**
      * This map holds mapping of keys without regions to a list of keys with region (provided by clients)
@@ -117,12 +113,10 @@ public class ResponseCacheImpl implements ResponseCache {
     private final LoadingCache<Key, Value> readWriteCacheMap;
     private final boolean shouldUseReadOnlyResponseCache;
     private final AbstractInstanceRegistry registry;
-    private final EurekaServerConfig serverConfig;
     private final ServerCodecs serverCodecs;
 
     ResponseCacheImpl(EurekaServerConfig serverConfig, ServerCodecs serverCodecs, AbstractInstanceRegistry registry) {
-        this.serverConfig = serverConfig;
-        this.serverCodecs = serverCodecs;
+      this.serverCodecs = serverCodecs;
         this.shouldUseReadOnlyResponseCache = serverConfig.shouldUseReadOnlyResponseCache();
         this.registry = registry;
 
@@ -158,12 +152,7 @@ public class ResponseCacheImpl implements ResponseCache {
                             + responseCacheUpdateIntervalMs),
                     responseCacheUpdateIntervalMs);
         }
-
-        try {
-            Monitors.registerObject(this);
-        } catch (Throwable e) {
-            logger.warn("Cannot register the JMX monitor for the InstanceRegistry", e);
-        }
+        SpectatorUtil.monitoredValue("responseCacheSize", this, ResponseCacheImpl::getCurrentSize);
     }
 
     private TimerTask getCacheUpdateTask() {
@@ -209,7 +198,6 @@ public class ResponseCacheImpl implements ResponseCache {
         return get(key, shouldUseReadOnlyResponseCache);
     }
 
-    @VisibleForTesting
     String get(final Key key, boolean useReadOnlyCache) {
         Value payload = getValue(key, useReadOnlyCache);
         if (payload == null || payload.getPayload().equals(EMPTY_PAYLOAD)) {
@@ -239,7 +227,6 @@ public class ResponseCacheImpl implements ResponseCache {
     @Override
     public void stop() {
         timer.cancel();
-        Monitors.unregisterObject(this);
     }
 
     /**
@@ -340,7 +327,6 @@ public class ResponseCacheImpl implements ResponseCache {
      *
      * @return int value representing the number of items in response cache.
      */
-    @Monitor(name = "responseCacheSize", type = DataSourceType.GAUGE)
     public int getCurrentSize() {
         return readWriteCacheMap.asMap().size();
     }
@@ -348,7 +334,6 @@ public class ResponseCacheImpl implements ResponseCache {
     /**
      * Get the payload in both compressed and uncompressed form.
      */
-    @VisibleForTesting
     Value getValue(final Key key, boolean useReadOnlyCache) {
         Value payload = null;
         try {
@@ -408,7 +393,8 @@ public class ResponseCacheImpl implements ResponseCache {
      * Generate pay load for the given key.
      */
     private Value generatePayload(Key key) {
-        Stopwatch tracer = null;
+        long startTime = SpectatorUtil.time();
+        Timer timer = null;
         try {
             String payload;
             switch (key.getEntityType()) {
@@ -417,33 +403,33 @@ public class ResponseCacheImpl implements ResponseCache {
 
                     if (ALL_APPS.equals(key.getName())) {
                         if (isRemoteRegionRequested) {
-                            tracer = serializeAllAppsWithRemoteRegionTimer.start();
+                            timer = serializeAllAppsWithRemoteRegionTimer;
                             payload = getPayLoad(key, registry.getApplicationsFromMultipleRegions(key.getRegions()));
                         } else {
-                            tracer = serializeAllAppsTimer.start();
+                            timer = serializeAllAppsTimer;
                             payload = getPayLoad(key, registry.getApplications());
                         }
                     } else if (ALL_APPS_DELTA.equals(key.getName())) {
                         if (isRemoteRegionRequested) {
-                            tracer = serializeDeltaAppsWithRemoteRegionTimer.start();
+                            timer = serializeDeltaAppsWithRemoteRegionTimer;
                             versionDeltaWithRegions.incrementAndGet();
                             versionDeltaWithRegionsLegacy.incrementAndGet();
                             payload = getPayLoad(key,
                                     registry.getApplicationDeltasFromMultipleRegions(key.getRegions()));
                         } else {
-                            tracer = serializeDeltaAppsTimer.start();
+                            timer = serializeDeltaAppsTimer;
                             versionDelta.incrementAndGet();
                             versionDeltaLegacy.incrementAndGet();
                             payload = getPayLoad(key, registry.getApplicationDeltas());
                         }
                     } else {
-                        tracer = serializeOneApptimer.start();
+                        timer = serializeOneApptimer;
                         payload = getPayLoad(key, registry.getApplication(key.getName()));
                     }
                     break;
                 case VIP:
                 case SVIP:
-                    tracer = serializeViptimer.start();
+                    timer = serializeViptimer;
                     payload = getPayLoad(key, getApplicationsForVip(key, registry));
                     break;
                 default:
@@ -453,8 +439,8 @@ public class ResponseCacheImpl implements ResponseCache {
             }
             return new Value(payload);
         } finally {
-            if (tracer != null) {
-                tracer.stop();
+            if (timer != null) {
+                SpectatorUtil.record(timer, startTime);
             }
         }
     }
@@ -510,7 +496,7 @@ public class ResponseCacheImpl implements ResponseCache {
         public Value(String payload) {
             this.payload = payload;
             if (!EMPTY_PAYLOAD.equals(payload)) {
-                Stopwatch tracer = compressPayloadTimer.start();
+                final long time = SpectatorUtil.time(compressPayloadTimer);
                 try {
                     ByteArrayOutputStream bos = new ByteArrayOutputStream();
                     GZIPOutputStream out = new GZIPOutputStream(bos);
@@ -524,9 +510,7 @@ public class ResponseCacheImpl implements ResponseCache {
                 } catch (IOException e) {
                     gzipped = null;
                 } finally {
-                    if (tracer != null) {
-                        tracer.stop();
-                    }
+                    SpectatorUtil.record(compressPayloadTimer, time);
                 }
             } else {
                 gzipped = null;

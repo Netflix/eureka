@@ -16,9 +16,13 @@
 
 package com.netflix.discovery.shared.transport.decorator;
 
+import com.netflix.discovery.util.SpectatorUtil;
+import com.netflix.spectator.api.BasicTag;
+import com.netflix.spectator.api.Counter;
+import com.netflix.spectator.api.Timer;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import com.netflix.discovery.EurekaClientNames;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
@@ -28,13 +32,6 @@ import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.decorator.MetricsCollectingEurekaHttpClient.EurekaHttpClientRequestMetrics.Status;
 import com.netflix.discovery.util.ExceptionsMetric;
-import com.netflix.discovery.util.ServoUtil;
-import com.netflix.servo.monitor.BasicCounter;
-import com.netflix.servo.monitor.BasicTimer;
-import com.netflix.servo.monitor.Counter;
-import com.netflix.servo.monitor.MonitorConfig;
-import com.netflix.servo.monitor.Stopwatch;
-import com.netflix.servo.monitor.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +65,7 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
     @Override
     protected <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor) {
         EurekaHttpClientRequestMetrics requestMetrics = metricsByRequestType.get(requestExecutor.getRequestType());
-        Stopwatch stopwatch = requestMetrics.latencyTimer.start();
+        long monotonicTime = SpectatorUtil.time(requestMetrics.latencyTimer);
         try {
             EurekaHttpResponse<R> httpResponse = requestExecutor.execute(delegate);
             requestMetrics.countersByStatus.get(mappedStatus(httpResponse)).increment();
@@ -78,14 +75,13 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
             exceptionsMetric.count(e);
             throw e;
         } finally {
-            stopwatch.stop();
+            SpectatorUtil.record(requestMetrics.latencyTimer, monotonicTime);
         }
     }
 
     @Override
     public void shutdown() {
         if (shutdownMetrics) {
-            shutdownMetrics(metricsByRequestType);
             exceptionsMetric.shutdown();
         }
     }
@@ -106,7 +102,6 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
 
             @Override
             public void shutdown() {
-                shutdownMetrics(metricsByRequestType);
                 exceptionMetrics.shutdown();
             }
         };
@@ -128,7 +123,6 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
 
             @Override
             public void shutdown() {
-                shutdownMetrics(metricsByRequestType);
                 exceptionMetrics.shutdown();
             }
         };
@@ -144,12 +138,6 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
             logger.warn("Metrics initialization failure", e);
         }
         return result;
-    }
-
-    private static void shutdownMetrics(Map<RequestType, EurekaHttpClientRequestMetrics> metricsByRequestType) {
-        for (EurekaHttpClientRequestMetrics metrics : metricsByRequestType.values()) {
-            metrics.shutdown();
-        }
     }
 
     private static Status mappedStatus(EurekaHttpResponse<?> httpResponse) {
@@ -180,41 +168,25 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
         EurekaHttpClientRequestMetrics(String resourceName) {
             this.countersByStatus = createStatusCounters(resourceName);
 
-            latencyTimer = new BasicTimer(
-                    MonitorConfig.builder(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "latency")
-                            .withTag("id", resourceName)
-                            .withTag("class", MetricsCollectingEurekaHttpClient.class.getSimpleName())
-                            .build(),
-                    TimeUnit.MILLISECONDS
-            );
-            ServoUtil.register(latencyTimer);
+            latencyTimer = SpectatorUtil.timer(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "latency",
+                resourceName,
+                MetricsCollectingEurekaHttpClient.class);
 
-            this.connectionErrors = new BasicCounter(
-                    MonitorConfig.builder(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "connectionErrors")
-                            .withTag("id", resourceName)
-                            .withTag("class", MetricsCollectingEurekaHttpClient.class.getSimpleName())
-                            .build()
-            );
-            ServoUtil.register(connectionErrors);
-        }
-
-        void shutdown() {
-            ServoUtil.unregister(latencyTimer, connectionErrors);
-            ServoUtil.unregister(countersByStatus.values());
+            this.connectionErrors = SpectatorUtil.counter(
+                EurekaClientNames.METRIC_TRANSPORT_PREFIX + "connectionErrors",
+                resourceName,
+                MetricsCollectingEurekaHttpClient.class);
         }
 
         private static Map<Status, Counter> createStatusCounters(String resourceName) {
             Map<Status, Counter> result = new EnumMap<>(Status.class);
 
             for (Status status : Status.values()) {
-                BasicCounter counter = new BasicCounter(
-                        MonitorConfig.builder(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "request")
-                                .withTag("id", resourceName)
-                                .withTag("class", MetricsCollectingEurekaHttpClient.class.getSimpleName())
-                                .withTag("status", status.name())
-                                .build()
-                );
-                ServoUtil.register(counter);
+                Counter counter = SpectatorUtil.counter(
+                        EurekaClientNames.METRIC_TRANSPORT_PREFIX + "request",
+                    resourceName,
+                    MetricsCollectingEurekaHttpClient.class,
+                    Collections.singletonList(new BasicTag("status", status.name())));
 
                 result.put(status, counter);
             }

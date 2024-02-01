@@ -1,5 +1,6 @@
 package com.netflix.eureka;
 
+import com.netflix.spectator.api.Spectator;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.servlet.Filter;
@@ -11,10 +12,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 
-import com.google.common.base.Strings;
 import com.netflix.appinfo.AbstractEurekaIdentity;
-import com.netflix.servo.monitor.DynamicCounter;
-import com.netflix.servo.monitor.MonitorConfig;
 
 /**
  * An auth filter for client requests. For now, it only logs supported client identification data from header info
@@ -65,13 +63,13 @@ public class ServerRequestAuthFilter implements Filter {
                 String clientName = getHeader(httpRequest, AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY);
                 String clientVersion = getHeader(httpRequest, AbstractEurekaIdentity.AUTH_VERSION_HEADER_KEY);
 
-                DynamicCounter.increment(MonitorConfig.builder(NAME_PREFIX + clientName + "-" + clientVersion).build());
+                Spectator.globalRegistry().counter(NAME_PREFIX + clientName + "-" + clientVersion).increment();
             }
         }
     }
 
     protected String getHeader(HttpServletRequest request, String headerKey) {
         String value = request.getHeader(headerKey);
-        return Strings.isNullOrEmpty(value) ? UNKNOWN : value;
+        return value == null || value.isEmpty() ? UNKNOWN : value;
     }
 }

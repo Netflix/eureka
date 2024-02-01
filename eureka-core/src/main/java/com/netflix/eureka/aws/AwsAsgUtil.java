@@ -16,6 +16,13 @@
 
 package com.netflix.eureka.aws;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.netflix.discovery.util.SpectatorUtil;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -49,13 +56,6 @@ import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
 import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleResult;
 import com.amazonaws.services.securitytoken.model.Credentials;
-import com.google.common.base.Strings;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
@@ -66,9 +66,6 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.registry.InstanceRegistry;
-import com.netflix.servo.annotations.DataSourceType;
-import com.netflix.servo.monitor.Monitors;
-import com.netflix.servo.monitor.Stopwatch;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,7 +102,7 @@ public class AwsAsgUtil implements AsgClient {
 
     // Cache for the AWS ASG information
     private final Timer timer = new Timer("Eureka-ASGCacheRefresh", true);
-    private final com.netflix.servo.monitor.Timer loadASGInfoTimer = Monitors.newTimer("Eureka-loadASGInfo");
+    private final com.netflix.spectator.api.Timer loadASGInfoTimer = SpectatorUtil.timer("Eureka-loadASGInfo", AwsAsgUtil.class);
 
     private final EurekaServerConfig serverConfig;
     private final EurekaClientConfig clientConfig;
@@ -141,15 +138,17 @@ public class AwsAsgUtil implements AsgClient {
 
         this.awsClient = getAmazonAutoScalingClient();
         this.awsClient.setEndpoint("autoscaling." + clientConfig.getRegion() + ".amazonaws.com");
-        this.timer.schedule(getASGUpdateTask(),
+      // Cache for the AWS ASG information
+      Timer timer = new Timer("Eureka-ASGCacheRefresh", true);
+      timer.schedule(getASGUpdateTask(),
                 serverConfig.getASGUpdateIntervalMs(),
                 serverConfig.getASGUpdateIntervalMs());
-
-        try {
-            Monitors.registerObject(this);
-        } catch (Throwable e) {
-            logger.warn("Cannot register the JMX monitor :", e);
-        }
+      SpectatorUtil.monitoredValue("numOfElementsinASGCache",
+          this, AwsAsgUtil::getNumberofElementsinASGCache);
+      SpectatorUtil.monitoredValue("numOfASGQueries",
+            this, AwsAsgUtil::getNumberofASGQueries);
+      SpectatorUtil.monitoredValue("numOfASGQueryFailures",
+            this, AwsAsgUtil::getNumberofASGQueryFailures);
     }
 
     /**
@@ -243,7 +242,7 @@ public class AwsAsgUtil implements AsgClient {
      * @return - The auto scaling group information.
      */
     private AutoScalingGroup retrieveAutoScalingGroup(String asgName) {
-        if (Strings.isNullOrEmpty(asgName)) {
+        if (asgName == null || asgName.isEmpty()) {
             logger.warn("null asgName specified, not attempting to retrieve AutoScalingGroup from AWS");
             return null;
         }
@@ -325,9 +324,9 @@ public class AwsAsgUtil implements AsgClient {
      */
     private Boolean isASGEnabledinAWS(String asgAccountid, String asgName) {
         try {
-            Stopwatch t = this.loadASGInfoTimer.start();
+            final long t = SpectatorUtil.time(loadASGInfoTimer);
             boolean returnValue = !isAddToLoadBalancerSuspended(asgAccountid, asgName);
-            t.stop();
+            SpectatorUtil.record(loadASGInfoTimer, t);
             return returnValue;
         } catch (Throwable e) {
             logger.error("Could not get ASG information from AWS: ", e);
@@ -341,8 +340,6 @@ public class AwsAsgUtil implements AsgClient {
      * @return the long value representing the number of elements in the ASG
      *         cache.
      */
-    @com.netflix.servo.annotations.Monitor(name = "numOfElementsinASGCache",
-            description = "Number of elements in the ASG Cache", type = DataSourceType.GAUGE)
     public long getNumberofElementsinASGCache() {
         return asgCache.size();
     }
@@ -353,8 +350,6 @@ public class AwsAsgUtil implements AsgClient {
      * @return the long value representing the number of ASG queries done in the
      *         period.
      */
-    @com.netflix.servo.annotations.Monitor(name = "numOfASGQueries",
-            description = "Number of queries made to AWS to retrieve ASG information", type = DataSourceType.COUNTER)
     public long getNumberofASGQueries() {
         return asgCache.stats().loadCount();
     }
@@ -365,9 +360,6 @@ public class AwsAsgUtil implements AsgClient {
      * @return the long value representing the number of ASG queries that failed
      *         because of some reason.
      */
-    @com.netflix.servo.annotations.Monitor(name = "numOfASGQueryFailures",
-            description = "Number of queries made to AWS to retrieve ASG information and that failed",
-            type = DataSourceType.COUNTER)
     public long getNumberofASGQueryFailures() {
         return asgCache.stats().loadExceptionCount();
     }

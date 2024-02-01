@@ -16,6 +16,8 @@
 
 package com.netflix.eureka.registry;
 
+import com.netflix.discovery.util.SpectatorUtil;
+import com.netflix.spectator.api.Spectator;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,7 +38,6 @@ import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
-import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.eureka.registry.rule.DownOrStartingRule;
 import com.netflix.eureka.registry.rule.FirstMatchWinsCompositeRule;
 import com.netflix.eureka.registry.rule.InstanceStatusOverrideRule;
@@ -52,10 +53,6 @@ import com.netflix.eureka.resources.ASGResource.ASGStatus;
 import com.netflix.eureka.resources.ServerCodecs;
 import com.netflix.eureka.transport.EurekaServerHttpClientFactory;
 import com.netflix.eureka.util.MeasuredRate;
-import com.netflix.servo.DefaultMonitorRegistry;
-import com.netflix.servo.annotations.DataSourceType;
-import com.netflix.servo.monitor.Monitors;
-import com.netflix.servo.monitor.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,10 +102,10 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     public enum Action {
         Heartbeat, Register, Cancel, StatusUpdate, DeleteStatusOverride;
 
-        private com.netflix.servo.monitor.Timer timer = Monitors.newTimer(this.name());
+        private final com.netflix.spectator.api.Timer timer = Spectator.globalRegistry().timer(this.name());
 
-        public com.netflix.servo.monitor.Timer getTimer() {
-            return this.timer;
+        public com.netflix.spectator.api.Timer getTimer() {
+            return timer;
         }
     }
 
@@ -125,7 +122,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
 
     private final InstanceStatusOverrideRule instanceStatusOverrideRule;
 
-    private Timer timer = new Timer(
+    private final Timer timer = new Timer(
             "ReplicaAwareInstanceRegistry - RenewalThresholdUpdater", true);
 
     @Inject
@@ -133,7 +130,8 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             EurekaServerConfig serverConfig,
             EurekaClientConfig clientConfig,
             ServerCodecs serverCodecs,
-            EurekaClient eurekaClient, EurekaServerHttpClientFactory eurekaServerHttpClientFactory
+            EurekaClient eurekaClient,
+            EurekaServerHttpClientFactory eurekaServerHttpClientFactory
     ) {
         super(serverConfig, clientConfig, serverCodecs, eurekaServerHttpClientFactory);
         this.eurekaClient = eurekaClient;
@@ -142,6 +140,18 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         // then we check the status of a potentially existing lease.
         this.instanceStatusOverrideRule = new FirstMatchWinsCompositeRule(new DownOrStartingRule(),
                 new OverrideExistsRule(overriddenInstanceStatusMap), new LeaseExistsRule());
+        SpectatorUtil.monitoredValue(METRIC_REGISTRY_PREFIX + "shouldAllowAccess",
+            this, PeerAwareInstanceRegistryImpl::shouldAllowAccessMetric);
+        SpectatorUtil.monitoredValue(METRIC_REGISTRY_PREFIX + "isLeaseExpirationEnabled",
+            this, PeerAwareInstanceRegistryImpl::isLeaseExpirationEnabledMetric);
+        SpectatorUtil.monitoredValue(METRIC_REGISTRY_PREFIX + "isSelfPreservationModeEnabled",
+            this, PeerAwareInstanceRegistryImpl::isSelfPreservationModeEnabledMetric);
+        SpectatorUtil.monitoredValue("numOfReplicationsInLastMin",
+            this, PeerAwareInstanceRegistryImpl::getNumOfReplicationsInLastMin);
+        SpectatorUtil.monitoredValue("isBelowRenewThreshold",
+            this, PeerAwareInstanceRegistryImpl::isBelowRenewThresold);
+        SpectatorUtil.monitoredValue("localRegistrySize",
+            this, PeerAwareInstanceRegistryImpl::getLocalRegistrySize);
     }
 
     @Override
@@ -156,12 +166,6 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         initializedResponseCache();
         scheduleRenewalThresholdUpdateTask();
         initRemoteRegionRegistry();
-
-        try {
-            Monitors.registerObject(this);
-        } catch (Throwable e) {
-            logger.warn("Cannot register the JMX monitor for the InstanceRegistry :", e);
-        }
     }
 
     /**
@@ -169,11 +173,6 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      */
     @Override
     public void shutdown() {
-        try {
-            DefaultMonitorRegistry.getInstance().unregister(Monitors.newObjectMonitor(this));
-        } catch (Throwable t) {
-            logger.error("Cannot shutdown monitor registry", t);
-        }
         try {
             peerEurekaNodes.shutdown();
         } catch (Throwable t) {
@@ -357,8 +356,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         return shouldAllowAccess(true);
     }
 
-    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "shouldAllowAccess", type = DataSourceType.GAUGE)
-    public int shouldAllowAccessMetric() {
+    public double shouldAllowAccessMetric() {
         return shouldAllowAccess() ? 1 : 0;
     }
 
@@ -488,8 +486,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         return numberOfRenewsPerMinThreshold > 0 && getNumOfRenewsInLastMin() > numberOfRenewsPerMinThreshold;
     }
 
-    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "isLeaseExpirationEnabled", type = DataSourceType.GAUGE)
-    public int isLeaseExpirationEnabledMetric() {
+    public double isLeaseExpirationEnabledMetric() {
         return isLeaseExpirationEnabled() ? 1 : 0;
     }
 
@@ -514,8 +511,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         return serverConfig.shouldEnableSelfPreservation();
     }
 
-    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "isSelfPreservationModeEnabled", type = DataSourceType.GAUGE)
-    public int isSelfPreservationModeEnabledMetric() {
+    public double isSelfPreservationModeEnabledMetric() {
         return isSelfPreservationModeEnabled() ? 1 : 0;
     }
 
@@ -575,9 +571,6 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      *
      * @return a long value representing the number of <em>renewals</em> in the last minute.
      */
-    @com.netflix.servo.annotations.Monitor(name = "numOfReplicationsInLastMin",
-            description = "Number of total replications received in the last minute",
-            type = com.netflix.servo.annotations.DataSourceType.GAUGE)
     public long getNumOfReplicationsInLastMin() {
         return numberOfReplicationsLastMin.getCount();
     }
@@ -587,8 +580,6 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      *
      * @return 0 if the renewals are greater than threshold, 1 otherwise.
      */
-    @com.netflix.servo.annotations.Monitor(name = "isBelowRenewThreshold", description = "0 = false, 1 = true",
-            type = com.netflix.servo.annotations.DataSourceType.GAUGE)
     @Override
     public int isBelowRenewThresold() {
         if ((getNumOfRenewsInLastMin() <= numberOfRenewsPerMinThreshold)
@@ -631,7 +622,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     private void replicateToPeers(Action action, String appName, String id,
                                   InstanceInfo info /* optional */,
                                   InstanceStatus newStatus /* optional */, boolean isReplication) {
-        Stopwatch tracer = action.getTimer().start();
+        final long time = SpectatorUtil.time(action.getTimer());
         try {
             if (isReplication) {
                 numberOfReplicationsLastMin.increment();
@@ -649,7 +640,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                 replicateInstanceActionsToPeers(action, appName, id, info, newStatus, node);
             }
         } finally {
-            tracer.stop();
+            SpectatorUtil.record(action.getTimer(), time);
         }
     }
 
@@ -709,8 +700,6 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     }
 
     @Override
-    @com.netflix.servo.annotations.Monitor(name = "localRegistrySize",
-            description = "Current registry size", type = DataSourceType.GAUGE)
     public long getLocalRegistrySize() {
         return super.getLocalRegistrySize();
     }

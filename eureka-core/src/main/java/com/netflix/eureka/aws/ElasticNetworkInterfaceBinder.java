@@ -8,7 +8,6 @@ import com.amazonaws.services.ec2.model.*;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.net.InetAddresses;
 import com.netflix.appinfo.AmazonInfo;
@@ -18,7 +17,8 @@ import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
-import com.netflix.servo.monitor.Monitors;
+import java.util.ArrayList;
+import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,11 +74,6 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
         this.clientConfig = clientConfig;
         this.registry = registry;
         this.applicationInfoManager = applicationInfoManager;
-        try {
-            Monitors.registerObject(this);
-        } catch (Throwable e) {
-            logger.warn("Cannot register the JMX monitor for the InstanceRegistry", e);
-        }
     }
 
     @PostConstruct
@@ -171,8 +166,8 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
         DescribeNetworkInterfacesResult result = ec2Service
                 .describeNetworkInterfaces(new DescribeNetworkInterfacesRequest()
                                 .withFilters(new Filter("private-ip-address", ips))
-                                .withFilters(new Filter("status", Lists.newArrayList("available")))
-                                .withFilters(new Filter("subnet-id", Lists.newArrayList(subnetId)))
+                                .withFilters(new Filter("status", Collections.singletonList("available")))
+                                .withFilters(new Filter("subnet-id", Collections.singletonList(subnetId)))
                 );
 
         if (result.getNetworkInterfaces().isEmpty()) {
@@ -231,7 +226,7 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
         if (candidates == null || candidates.size() == 0) {
             throw new RuntimeException("Could not get any ips from the pool for zone :" + myZone);
         }
-        List<String> ips = Lists.newArrayList();
+        List<String> ips = new ArrayList<>();
 
         for(String candidate : candidates) {
             String host = new URL(candidate).getHost();

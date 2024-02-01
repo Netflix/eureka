@@ -8,12 +8,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import com.google.common.base.Preconditions;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.EurekaInstanceConfig;
@@ -338,8 +338,8 @@ public class DiscoveryClientResource extends ExternalResource {
         }
 
         public DiscoveryClientRuleBuilder basicAuthentication(String userName, String password) {
-            Preconditions.checkNotNull(userName, "HTTP basic authentication user name is null");
-            Preconditions.checkNotNull(password, "HTTP basic authentication password is null");
+            Objects.requireNonNull(userName, "HTTP basic authentication user name is null");
+            Objects.requireNonNull(password, "HTTP basic authentication password is null");
             this.userName = userName;
             this.password = password;
             return this;

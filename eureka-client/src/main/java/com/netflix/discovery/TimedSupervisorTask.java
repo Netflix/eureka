@@ -1,5 +1,7 @@
 package com.netflix.discovery;
 
+import com.netflix.discovery.util.SpectatorUtil;
+import com.netflix.spectator.api.Counter;
 import java.util.TimerTask;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
@@ -9,10 +11,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.netflix.servo.monitor.Counter;
-import com.netflix.servo.monitor.LongGauge;
-import com.netflix.servo.monitor.MonitorConfig;
-import com.netflix.servo.monitor.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +27,7 @@ public class TimedSupervisorTask extends TimerTask {
     private final Counter timeoutCounter;
     private final Counter rejectedCounter;
     private final Counter throwableCounter;
-    private final LongGauge threadPoolLevelGauge;
+    private final AtomicLong threadPoolLevelGauge;
 
     private final String name;
     private final ScheduledExecutorService scheduler;
@@ -51,12 +49,11 @@ public class TimedSupervisorTask extends TimerTask {
         this.maxDelay = timeoutMillis * expBackOffBound;
 
         // Initialize the counters and register.
-        successCounter = Monitors.newCounter("success");
-        timeoutCounter = Monitors.newCounter("timeouts");
-        rejectedCounter = Monitors.newCounter("rejectedExecutions");
-        throwableCounter = Monitors.newCounter("throwables");
-        threadPoolLevelGauge = new LongGauge(MonitorConfig.builder("threadPoolUsed").build());
-        Monitors.registerObject(name, this);
+        successCounter = SpectatorUtil.counter("success", name, TimedSupervisorTask.class);
+        timeoutCounter = SpectatorUtil.counter("timeouts", name, TimedSupervisorTask.class);
+        rejectedCounter = SpectatorUtil.counter("rejectedExecutions", name, TimedSupervisorTask.class);
+        throwableCounter = SpectatorUtil.counter("throwables", name, TimedSupervisorTask.class);
+        threadPoolLevelGauge = SpectatorUtil.monitoredLong("threadPoolUsed", name, TimedSupervisorTask.class);
     }
 
     @Override
@@ -106,7 +103,6 @@ public class TimedSupervisorTask extends TimerTask {
 
     @Override
     public boolean cancel() {
-        Monitors.unregisterObject(name, this);
         return super.cancel();
     }
 }

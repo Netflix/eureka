@@ -3,5 +3,6 @@ dependencies {
     api project(':eureka-core-jersey3')
     api "junit:junit:${junit_version}"
     api "org.mockito:mockito-core:${mockitoVersion}"
+    api "com.netflix.netflix-commons:netflix-eventbus:0.3.0"
     testRuntimeOnly 'org.slf4j:slf4j-simple:2.0.0-beta1'
 }

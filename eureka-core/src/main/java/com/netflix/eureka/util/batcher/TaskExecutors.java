@@ -1,5 +1,8 @@
 package com.netflix.eureka.util.batcher;
 
+import com.netflix.discovery.util.SpectatorUtil;
+import com.netflix.spectator.api.Spectator;
+import com.netflix.spectator.api.histogram.PercentileTimer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -9,12 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka.util.batcher.TaskProcessor.ProcessingResult;
-import com.netflix.servo.annotations.DataSourceType;
-import com.netflix.servo.annotations.Monitor;
-import com.netflix.servo.monitor.MonitorConfig;
-import com.netflix.servo.monitor.Monitors;
-import com.netflix.servo.monitor.StatsTimer;
-import com.netflix.servo.stats.StatsConfig;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +53,6 @@ class TaskExecutors<ID, T> {
             for (Thread workerThread : workerThreads) {
                 workerThread.interrupt();
             }
-            registeredMonitors.forEach(Monitors::unregisterObject);
         }
     }
 
@@ -81,50 +78,41 @@ class TaskExecutors<ID, T> {
 
     static class TaskExecutorMetrics {
 
-        @Monitor(name = METRIC_REPLICATION_PREFIX + "numberOfSuccessfulExecutions", description = "Number of successful task executions", type = DataSourceType.COUNTER)
-        volatile long numberOfSuccessfulExecutions;
+        final AtomicLong numberOfSuccessfulExecutions;
 
-        @Monitor(name = METRIC_REPLICATION_PREFIX + "numberOfTransientErrors", description = "Number of transient task execution errors", type = DataSourceType.COUNTER)
-        volatile long numberOfTransientError;
+        final AtomicLong numberOfTransientError;
 
-        @Monitor(name = METRIC_REPLICATION_PREFIX + "numberOfPermanentErrors", description = "Number of permanent task execution errors", type = DataSourceType.COUNTER)
-        volatile long numberOfPermanentError;
+        final AtomicLong numberOfPermanentError;
 
-        @Monitor(name = METRIC_REPLICATION_PREFIX + "numberOfCongestionIssues", description = "Number of congestion issues during task execution", type = DataSourceType.COUNTER)
-        volatile long numberOfCongestionIssues;
+        final AtomicLong numberOfCongestionIssues;
 
-        final StatsTimer taskWaitingTimeForProcessing;
+        final PercentileTimer taskWaitingTimeForProcessing;
 
         TaskExecutorMetrics(String id) {
-            final double[] percentiles = {50.0, 95.0, 99.0, 99.5};
-            final StatsConfig statsConfig = new StatsConfig.Builder()
-                    .withSampleSize(1000)
-                    .withPercentiles(percentiles)
-                    .withPublishStdDev(true)
-                    .build();
-            final MonitorConfig config = MonitorConfig.builder(METRIC_REPLICATION_PREFIX + "executionTime").build();
-            taskWaitingTimeForProcessing = new StatsTimer(config, statsConfig);
-
-            try {
-                Monitors.registerObject(id, this);
-            } catch (Throwable e) {
-                logger.warn("Cannot register servo monitor for this object", e);
-            }
+            numberOfSuccessfulExecutions = SpectatorUtil.monitoredLong(METRIC_REPLICATION_PREFIX + "numberOfSuccessfulExecutions", id, TaskExecutors.class);
+            numberOfTransientError = SpectatorUtil.monitoredLong(METRIC_REPLICATION_PREFIX + "numberOfTransientErrors", id, TaskExecutors.class);
+            numberOfPermanentError = SpectatorUtil.monitoredLong(METRIC_REPLICATION_PREFIX + "numberOfPermanentErrors", id, TaskExecutors.class);
+            numberOfCongestionIssues = SpectatorUtil.monitoredLong(METRIC_REPLICATION_PREFIX + "numberOfCongestionIssues", id, TaskExecutors.class);
+            taskWaitingTimeForProcessing = PercentileTimer
+                .builder(Spectator.globalRegistry())
+                .withName(METRIC_REPLICATION_PREFIX + "executionTime")
+                .withTags(SpectatorUtil.tags(id, TaskExecutorMetrics.class))
+                .build();
         }
 
         void registerTaskResult(ProcessingResult result, int count) {
             switch (result) {
                 case Success:
-                    numberOfSuccessfulExecutions += count;
+                    numberOfSuccessfulExecutions.addAndGet(count);
                     break;
                 case TransientError:
-                    numberOfTransientError += count;
+                    numberOfTransientError.addAndGet(count);
                     break;
                 case PermanentError:
-                    numberOfPermanentError += count;
+                    numberOfPermanentError.addAndGet(count);
                     break;
                 case Congestion:
-                    numberOfCongestionIssues += count;
+                    numberOfCongestionIssues.addAndGet(count);
                     break;
             }
         }

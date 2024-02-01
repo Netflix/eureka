@@ -16,7 +16,8 @@
 
 package com.netflix.eureka.registry;
 
-import com.netflix.discovery.shared.transport.EurekaHttpClient;
+import com.google.common.cache.CacheBuilder;
+import com.netflix.discovery.util.SpectatorUtil;
 import com.netflix.eureka.transport.EurekaServerHttpClientFactory;
 import jakarta.annotation.Nullable;
 import java.net.MalformedURLException;
@@ -43,7 +44,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.google.common.cache.CacheBuilder;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
@@ -57,7 +57,6 @@ import com.netflix.eureka.lease.Lease;
 import com.netflix.eureka.registry.rule.InstanceStatusOverrideRule;
 import com.netflix.eureka.resources.ServerCodecs;
 import com.netflix.eureka.util.MeasuredRate;
-import com.netflix.servo.annotations.DataSourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,8 +81,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     private final ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>> registry
             = new ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>>();
     protected Map<String, RemoteRegionRegistry> regionNameVSRemoteRegistry = new HashMap<String, RemoteRegionRegistry>();
-    protected final ConcurrentMap<String, InstanceStatus> overriddenInstanceStatusMap = CacheBuilder
-            .newBuilder().initialCapacity(500)
+    protected final ConcurrentMap<String, InstanceStatus> overriddenInstanceStatusMap = CacheBuilder.newBuilder()
+            .initialCapacity(500)
             .expireAfterAccess(1, TimeUnit.HOURS)
             .<String, InstanceStatus>build().asMap();
 
@@ -129,6 +128,13 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         this.deltaRetentionTimer.schedule(getDeltaRetentionTask(),
                 serverConfig.getDeltaRetentionTimerIntervalInMs(),
                 serverConfig.getDeltaRetentionTimerIntervalInMs());
+
+        SpectatorUtil.monitoredValue("numOfRenewsInLastMin",
+            this, AbstractInstanceRegistry::getNumOfRenewsInLastMin);
+        SpectatorUtil.monitoredValue("numOfRenewsPerMinThreshold",
+            this, AbstractInstanceRegistry::getNumOfRenewsPerMinThreshold);
+        SpectatorUtil.monitoredValue("numOfElementsinInstanceCache",
+            this, AbstractInstanceRegistry::getNumberofElementsininstanceCache);
     }
 
     @Override
@@ -1141,8 +1147,6 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      *
      * @return servo data
      */
-    @com.netflix.servo.annotations.Monitor(name = "numOfRenewsInLastMin",
-            description = "Number of total heartbeats received in the last minute", type = DataSourceType.GAUGE)
     @Override
     public long getNumOfRenewsInLastMin() {
         return renewsLastMin.getCount();
@@ -1155,7 +1159,6 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      * @return the integer representing the threshold for the renewals per
      *         minute.
      */
-    @com.netflix.servo.annotations.Monitor(name = "numOfRenewsPerMinThreshold", type = DataSourceType.GAUGE)
     @Override
     public int getNumOfRenewsPerMinThreshold() {
         return numberOfRenewsPerMinThreshold;
@@ -1236,7 +1239,6 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         responseCache.stop();
     }
 
-    @com.netflix.servo.annotations.Monitor(name = "numOfElementsinInstanceCache", description = "Number of overrides in the instance Cache", type = DataSourceType.GAUGE)
     public long getNumberofElementsininstanceCache() {
         return overriddenInstanceStatusMap.size();
     }

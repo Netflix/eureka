@@ -2,15 +2,11 @@ package com.netflix.discovery;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.google.common.base.Supplier;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,13 +27,7 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
      * any availability zone mapping, we will use these defaults. OTOH, if the remote region has any mapping defaults
      * will not be used.
      */
-    private final Multimap<String, String> defaultRegionVsAzMap =
-            Multimaps.newListMultimap(new HashMap<String, Collection<String>>(), new Supplier<List<String>>() {
-                @Override
-                public List<String> get() {
-                    return new ArrayList<String>();
-                }
-            });
+    private final ConcurrentHashMap<String, List<String>> defaultRegionVsAzMap = new ConcurrentHashMap<>();
 
     private final Map<String, String> availabilityZoneVsRegion = new ConcurrentHashMap<String, String>();
     private String[] regionsToFetch;
@@ -128,20 +118,28 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
     }
 
     private void populateDefaultAZToRegionMap() {
-        defaultRegionVsAzMap.put("us-east-1", "us-east-1a");
-        defaultRegionVsAzMap.put("us-east-1", "us-east-1c");
-        defaultRegionVsAzMap.put("us-east-1", "us-east-1d");
-        defaultRegionVsAzMap.put("us-east-1", "us-east-1e");
+        final ArrayList<String> east = new ArrayList<>();
+        east.add("us-east-1a");
+        east.add("us-east-1c");
+        east.add("us-east-1d");
+        east.add("us-east-1e");
+        defaultRegionVsAzMap.put("us-east-1", east);
 
-        defaultRegionVsAzMap.put("us-west-1", "us-west-1a");
-        defaultRegionVsAzMap.put("us-west-1", "us-west-1c");
+        final ArrayList<String> west1 = new ArrayList<>();
+        west1.add("us-west-1a");
+        west1.add("us-west-1c");
+        defaultRegionVsAzMap.put("us-west-1", west1);
 
-        defaultRegionVsAzMap.put("us-west-2", "us-west-2a");
-        defaultRegionVsAzMap.put("us-west-2", "us-west-2b");
-        defaultRegionVsAzMap.put("us-west-2", "us-west-2c");
+        final ArrayList<String> west2 = new ArrayList<>();
+        defaultRegionVsAzMap.put("us-west-2", west2);
+        west2.add("us-west-2a");
+        west2.add("us-west-2b");
+        west2.add("us-west-2c");
 
-        defaultRegionVsAzMap.put("eu-west-1", "eu-west-1a");
-        defaultRegionVsAzMap.put("eu-west-1", "eu-west-1b");
-        defaultRegionVsAzMap.put("eu-west-1", "eu-west-1c");
+        final ArrayList<String> euwest1 = new ArrayList<>();
+        euwest1.add("eu-west-1a");
+        euwest1.add("eu-west-1b");
+        euwest1.add("eu-west-1c");
+        defaultRegionVsAzMap.put("eu-west-1", euwest1);
     }
 }

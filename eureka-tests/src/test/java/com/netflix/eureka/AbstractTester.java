@@ -1,16 +1,10 @@
 package com.netflix.eureka;
 
-import com.netflix.discovery.Jersey3DiscoveryClientOptionalArgs;
-import com.netflix.discovery.shared.resolver.DefaultEndpoint;
-import com.netflix.discovery.shared.resolver.EurekaEndpoint;
-import com.netflix.discovery.shared.resolver.StaticClusterResolver;
-import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.jersey3.Jersey3TransportClientFactories;
 import com.netflix.eureka.transport.EurekaServerHttpClientFactory;
 import com.netflix.eureka.transport.Jersey3EurekaServerHttpClientFactory;
 import jakarta.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
