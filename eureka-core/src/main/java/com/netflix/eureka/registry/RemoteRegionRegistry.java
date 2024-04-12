@@ -117,7 +117,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
                 .withMaxTotalConnections(serverConfig.getRemoteRegionTotalConnections())
                 .withConnectionIdleTimeout(serverConfig.getRemoteRegionConnectionIdleTimeoutSeconds());
 
-        if (remoteRegionURL.getProtocol().equals("http")) {
+        if ("http".equals(remoteRegionURL.getProtocol())) {
             clientBuilder.withClientName("Discovery-RemoteRegionClient-" + regionName);
         } else if ("true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
             clientBuilder.withClientName("Discovery-RemoteRegionSystemSecureClient-" + regionName)

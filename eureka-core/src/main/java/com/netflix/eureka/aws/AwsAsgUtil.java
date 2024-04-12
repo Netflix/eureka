@@ -205,7 +205,7 @@ public class AwsAsgUtil implements AsgClient {
      */
     private boolean isAddToLoadBalancerSuspended(String asgAccountId, String asgName) {
         AutoScalingGroup asg;
-        if(asgAccountId == null || asgAccountId.equals(accountId)) {
+        if(asgAccountId == null || accountId.equals(asgAccountId)) {
             asg = retrieveAutoScalingGroup(asgName);
         } else {
             asg = retrieveAutoScalingGroupCrossAccount(asgAccountId, asgName);
@@ -263,7 +263,7 @@ public class AwsAsgUtil implements AsgClient {
     private Credentials initializeStsSession(String asgAccount) {
         AWSSecurityTokenService sts = new AWSSecurityTokenServiceClient(new InstanceProfileCredentialsProvider());
         String region = clientConfig.getRegion();
-        if (!region.equals("us-east-1")) {
+        if (!"us-east-1".equals(region)) {
             sts.setEndpoint("sts." + region + ".amazonaws.com");
         }
 
@@ -301,7 +301,7 @@ public class AwsAsgUtil implements AsgClient {
         );
 
         String region = clientConfig.getRegion();
-        if (!region.equals("us-east-1")) {
+        if (!"us-east-1".equals(region)) {
             autoScalingClient.setEndpoint("autoscaling." + region + ".amazonaws.com");
         }
 
