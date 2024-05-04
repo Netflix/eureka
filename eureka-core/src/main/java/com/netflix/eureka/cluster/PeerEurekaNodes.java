@@ -169,7 +169,7 @@ public class PeerEurekaNodes {
         List<PeerEurekaNode> newNodeList = new ArrayList<>(peerEurekaNodes);
 
         if (!toShutdown.isEmpty()) {
-            logger.info("Removing no longer available peer nodes {}", toShutdown);
+            logger.info("Removing no longer available peer nodes {}", sanitizeUrl(toShutdown));
             int i = 0;
             while (i < newNodeList.size()) {
                 PeerEurekaNode eurekaNode = newNodeList.get(i);
@@ -184,7 +184,7 @@ public class PeerEurekaNodes {
 
         // Add new peers
         if (!toAdd.isEmpty()) {
-            logger.info("Adding new peer nodes {}", toAdd);
+            logger.info("Adding new peer nodes {}", sanitizeUrl(toAdd));
             for (String peerUrl : toAdd) {
                 newNodeList.add(createPeerEurekaNode(peerUrl));
             }
@@ -192,6 +192,22 @@ public class PeerEurekaNodes {
 
         this.peerEurekaNodes = newNodeList;
         this.peerEurekaNodeUrls = new HashSet<>(newPeerUrls);
+    }
+
+    /**
+     * Replaces the password part in an URL containing basic authorization credentials with 'PASSWORD'.
+    **/
+    private String sanitizeUrl(String url) {
+        URI uri = new URI(url);
+        String userInfo = uri.getUserInfo();
+        if (userInfo != null && userInfo.contains(":")) {
+            String[] userInfoParts = userInfo.split(":");
+            if (userInfoParts.length == 2) {
+                String sanitizedUserInfo = userInfoParts[0] + ":PASSWORD";
+                return url.replace(userInfo, sanitizedUserInfo);
+            }
+        }
+        return url;
     }
 
     protected PeerEurekaNode createPeerEurekaNode(String peerEurekaNodeUrl) {
