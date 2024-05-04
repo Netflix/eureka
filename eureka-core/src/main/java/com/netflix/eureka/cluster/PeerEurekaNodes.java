@@ -71,27 +71,21 @@ public class PeerEurekaNodes {
 
     public void start() {
         taskExecutor = Executors.newSingleThreadScheduledExecutor(
-                new ThreadFactory() {
-                    @Override
-                    public Thread newThread(Runnable r) {
-                        Thread thread = new Thread(r, "Eureka-PeerNodesUpdater");
-                        thread.setDaemon(true);
-                        return thread;
-                    }
+                r -> {
+                    Thread thread = new Thread(r, "Eureka-PeerNodesUpdater");
+                    thread.setDaemon(true);
+                    return thread;
                 }
         );
         try {
             updatePeerEurekaNodes(resolvePeerUrls());
-            Runnable peersUpdateTask = new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        updatePeerEurekaNodes(resolvePeerUrls());
-                    } catch (Throwable e) {
-                        logger.error("Cannot update the replica Nodes", e);
-                    }
-
+            Runnable peersUpdateTask = () -> {
+                try {
+                    updatePeerEurekaNodes(resolvePeerUrls());
+                } catch (Throwable e) {
+                    logger.error("Cannot update the replica Nodes", e);
                 }
+
             };
             taskExecutor.scheduleWithFixedDelay(
                     peersUpdateTask,
@@ -154,7 +148,7 @@ public class PeerEurekaNodes {
         }
 
         Set<String> toShutdown = new HashSet<>(peerEurekaNodeUrls);
-        toShutdown.removeAll(newPeerUrls);
+        newPeerUrls.forEach(toShutdown::remove);
         Set<String> toAdd = new HashSet<>(newPeerUrls);
         toAdd.removeAll(peerEurekaNodeUrls);
 
