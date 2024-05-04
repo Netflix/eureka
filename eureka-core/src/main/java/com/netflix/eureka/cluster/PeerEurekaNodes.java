@@ -107,9 +107,7 @@ public class PeerEurekaNodes {
         this.peerEurekaNodes = Collections.emptyList();
         this.peerEurekaNodeUrls = Collections.emptySet();
 
-        for (PeerEurekaNode node : toRemove) {
-            node.shutDown();
-        }
+        toRemove.forEach(PeerEurekaNode::shutDown);
     }
 
     /**
@@ -149,7 +147,7 @@ public class PeerEurekaNodes {
         Set<String> toShutdown = new HashSet<>(peerEurekaNodeUrls);
         newPeerUrls.forEach(toShutdown::remove);
         Set<String> toAdd = new HashSet<>(newPeerUrls);
-        toAdd.removeAll(peerEurekaNodeUrls);
+        peerEurekaNodeUrls.forEach(toAdd::remove);
 
         if (toShutdown.isEmpty() && toAdd.isEmpty()) { // No change
             return;
@@ -181,9 +179,7 @@ public class PeerEurekaNodes {
                     "Adding new peer nodes {}",
                     toAdd.stream().map(this::removePasswordFromPeerUrl).collect(Collectors.toSet())
             );
-            for (String peerUrl : toAdd) {
-                newNodeList.add(createPeerEurekaNode(peerUrl));
-            }
+            toAdd.stream().map(this::createPeerEurekaNode).forEach(newNodeList::add);
         }
 
         this.peerEurekaNodes = newNodeList;
