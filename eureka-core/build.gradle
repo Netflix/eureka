@@ -10,7 +10,8 @@ dependencies {
     api "com.amazonaws:aws-java-sdk-route53:${awsVersion}"
     api "jakarta.servlet:jakarta.servlet-api:${servletVersion}"
     api 'jakarta.inject:jakarta.inject-api:2.0.1'
-    api 'com.thoughtworks.xstream:xstream:1.4.19'
+    api 'com.thoughtworks.xstream:xstream:1.4.20'
+    implementation 'com.google.guava:guava:33.0.0-jre'
 
     // These dependencies are marked 'compileOnly' in the client, but we need them always on the server
     api "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${jacksonVersion}"

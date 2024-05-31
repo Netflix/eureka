@@ -15,6 +15,7 @@
  */
 package com.netflix.eureka.registry;
 
+import com.netflix.discovery.util.SpectatorUtil;
 import com.netflix.eureka.transport.EurekaServerHttpClientFactory;
 import jakarta.inject.Inject;
 
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -32,7 +34,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.discovery.EurekaClientConfig;
@@ -46,9 +47,6 @@ import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.resources.ServerCodecs;
-import com.netflix.servo.annotations.DataSourceType;
-import com.netflix.servo.monitor.Monitors;
-import com.netflix.servo.monitor.Stopwatch;
 //import com.sun.jersey.api.client.ClientResponse;
 //import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
 //import com.sun.jersey.client.apache4.ApacheHttpClient4;
@@ -74,7 +72,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
 
 //    private final ApacheHttpClient4 discoveryApacheClient;
 //    private final EurekaJerseyClient discoveryJerseyClient;
-    private final com.netflix.servo.monitor.Timer fetchRegistryTimer;
+    private final com.netflix.spectator.api.Timer fetchRegistryTimer;
     private final URL remoteRegionURL;
 
     private final ScheduledExecutorService scheduler;
@@ -88,8 +86,10 @@ public class RemoteRegionRegistry implements LookupService<String> {
     private volatile boolean readyForServingData;
     private final EurekaHttpClient eurekaHttpClient;
     private long timeOfLastSuccessfulRemoteFetch = System.currentTimeMillis();
-    private long deltaSuccesses = 0;
-    private long deltaMismatches = 0;
+    private final AtomicLong deltaSuccesses = SpectatorUtil.monitoredLong(METRIC_REGISTRY_PREFIX + "remoteDeltaSuccesses",
+        RemoteRegionRegistry.class);
+    private final AtomicLong deltaMismatches = SpectatorUtil.monitoredLong(METRIC_REGISTRY_PREFIX + "remoteDeltaMismatches",
+        RemoteRegionRegistry.class);
 
     @Inject
     public RemoteRegionRegistry(EurekaServerConfig serverConfig,
@@ -100,7 +100,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
                                 URL remoteRegionURL) {
         this.serverConfig = serverConfig;
         this.remoteRegionURL = remoteRegionURL;
-        this.fetchRegistryTimer = Monitors.newTimer(this.remoteRegionURL.toString() + "_FetchRegistry");
+        this.fetchRegistryTimer = SpectatorUtil.timer(this.remoteRegionURL.toString() + "_FetchRegistry", RemoteRegionRegistry.class);
 
         /* FIXME: 2.0
         EurekaJerseyClientBuilder clientBuilder = new EurekaJerseyClientBuilder()
@@ -190,10 +190,14 @@ public class RemoteRegionRegistry implements LookupService<String> {
                 1, serverConfig.getRemoteRegionFetchThreadPoolSize(), 0, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());  // use direct handoff
 
         scheduler = Executors.newScheduledThreadPool(1,
-                new ThreadFactoryBuilder()
-                        .setNameFormat("Eureka-RemoteRegionCacheRefresher_" + regionName + "-%d")
-                        .setDaemon(true)
-                        .build());
+            new ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable r) {
+                    Thread thread = new Thread(r, "Eureka-RemoteRegionCacheRefresher_" + regionName + "-%d");
+                    thread.setDaemon(true);
+                    return thread;
+                }
+        });
 
         scheduler.schedule(
                 new TimedSupervisorTask(
@@ -207,11 +211,8 @@ public class RemoteRegionRegistry implements LookupService<String> {
                 ),
                 serverConfig.getRemoteRegionRegistryFetchInterval(), TimeUnit.SECONDS);
 
-        try {
-            Monitors.registerObject(this);
-        } catch (Throwable e) {
-            logger.warn("Cannot register the JMX monitor for the RemoteRegionRegistry :", e);
-        }
+        SpectatorUtil.monitoredValue(METRIC_REGISTRY_PREFIX + "secondsSinceLastSuccessfulRemoteFetch",
+            this, RemoteRegionRegistry::getTimeOfLastSuccessfulRemoteFetch);
     }
 
     /**
@@ -228,7 +229,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
      */
     private boolean fetchRegistry() {
         boolean success;
-        Stopwatch tracer = fetchRegistryTimer.start();
+        final long time = SpectatorUtil.time(fetchRegistryTimer);
 
         try {
             // If the delta is disabled or if it is the first time, get all applications
@@ -247,9 +248,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
             logger.error("Unable to fetch registry information from the remote registry {}", this.remoteRegionURL, e);
             return false;
         } finally {
-            if (tracer != null) {
-                tracer.stop();
-            }
+            SpectatorUtil.record(fetchRegistryTimer, time);
         }
 
         if (success) {
@@ -291,10 +290,10 @@ public class RemoteRegionRegistry implements LookupService<String> {
 
             // There is a diff in number of instances for some reason
             if (!reconcileHashCode.equals(delta.getAppsHashCode())) {
-                deltaMismatches++;
+                deltaMismatches.incrementAndGet();
                 return reconcileAndLogDifference(delta, reconcileHashCode);
             } else {
-                deltaSuccesses++;
+                deltaSuccesses.incrementAndGet();
             }
         }
 
@@ -521,18 +520,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
         return enabled != null && "true".equalsIgnoreCase(enabled);
     }*/
 
-    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "secondsSinceLastSuccessfulRemoteFetch", type = DataSourceType.GAUGE)
     public long getTimeOfLastSuccessfulRemoteFetch() {
         return (System.currentTimeMillis() - timeOfLastSuccessfulRemoteFetch) / 1000;
-    }
-
-    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "remoteDeltaSuccesses", type = DataSourceType.COUNTER)
-    public long getRemoteFetchSuccesses() {
-        return deltaSuccesses;
-    }
-
-    @com.netflix.servo.annotations.Monitor(name = METRIC_REGISTRY_PREFIX + "remoteDeltaMismatches", type = DataSourceType.COUNTER)
-    public long getRemoteFetchMismatches() {
-        return deltaMismatches;
     }
 }

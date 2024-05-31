@@ -40,7 +40,6 @@ import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.eureka.EurekaServerConfig;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
-import com.netflix.servo.monitor.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,11 +92,6 @@ public class EIPManager implements AwsBinder {
         this.clientConfig = clientConfig;
         this.registry = registry;
         this.applicationInfoManager = applicationInfoManager;
-        try {
-            Monitors.registerObject(this);
-        } catch (Throwable e) {
-            logger.warn("Cannot register the JMX monitor for the InstanceRegistry", e);
-        }
     }
 
     @PostConstruct

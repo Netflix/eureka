@@ -1,8 +1,8 @@
 package com.netflix.discovery;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.util.RateLimiter;
+import java.util.concurrent.ThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,10 +44,14 @@ class InstanceInfoReplicator implements Runnable {
         this.discoveryClient = discoveryClient;
         this.instanceInfo = instanceInfo;
         this.scheduler = Executors.newScheduledThreadPool(1,
-                new ThreadFactoryBuilder()
-                        .setNameFormat("DiscoveryClient-InstanceInfoReplicator-%d")
-                        .setDaemon(true)
-                        .build());
+            new ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable r) {
+                    Thread thread = new Thread(r, "DiscoveryClient-InstanceInfoReplicator-%d");
+                    thread.setDaemon(true);
+                    return thread;
+                }
+        });
 
         this.scheduledPeriodicRef = new AtomicReference<Future>();
 

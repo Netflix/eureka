@@ -1,5 +1,8 @@
 package com.netflix.eureka.util.batcher;
 
+import com.netflix.discovery.util.SpectatorUtil;
+import com.netflix.spectator.api.Spectator;
+import com.netflix.spectator.api.histogram.PercentileDistributionSummary;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
@@ -15,13 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.eureka.util.batcher.TaskProcessor.ProcessingResult;
-import com.netflix.servo.annotations.DataSourceType;
-import com.netflix.servo.annotations.Monitor;
-import com.netflix.servo.monitor.MonitorConfig;
-import com.netflix.servo.monitor.Monitors;
-import com.netflix.servo.monitor.StatsTimer;
-import com.netflix.servo.monitor.Timer;
-import com.netflix.servo.stats.StatsConfig;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,22 +69,17 @@ class AcceptorExecutor<ID, T> {
     /*
      * Metrics
      */
-    @Monitor(name = METRIC_REPLICATION_PREFIX + "acceptedTasks", description = "Number of accepted tasks", type = DataSourceType.COUNTER)
-    volatile long acceptedTasks;
+    AtomicLong acceptedTasks = SpectatorUtil.monitoredLong(METRIC_REPLICATION_PREFIX + "acceptedTasks", AcceptorExecutor.class);
 
-    @Monitor(name = METRIC_REPLICATION_PREFIX + "replayedTasks", description = "Number of replayedTasks tasks", type = DataSourceType.COUNTER)
-    volatile long replayedTasks;
+    AtomicLong replayedTasks = SpectatorUtil.monitoredLong(METRIC_REPLICATION_PREFIX + "replayedTasks", AcceptorExecutor.class);
 
-    @Monitor(name = METRIC_REPLICATION_PREFIX + "expiredTasks", description = "Number of expired tasks", type = DataSourceType.COUNTER)
-    volatile long expiredTasks;
+    AtomicLong expiredTasks = SpectatorUtil.monitoredLong(METRIC_REPLICATION_PREFIX + "expiredTasks", AcceptorExecutor.class);
 
-    @Monitor(name = METRIC_REPLICATION_PREFIX + "overriddenTasks", description = "Number of overridden tasks", type = DataSourceType.COUNTER)
-    volatile long overriddenTasks;
+    AtomicLong overriddenTasks = SpectatorUtil.monitoredLong(METRIC_REPLICATION_PREFIX + "overriddenTasks", AcceptorExecutor.class);
 
-    @Monitor(name = METRIC_REPLICATION_PREFIX + "queueOverflows", description = "Number of queue overflows", type = DataSourceType.COUNTER)
-    volatile long queueOverflows;
+    AtomicLong queueOverflows = SpectatorUtil.monitoredLong(METRIC_REPLICATION_PREFIX + "queueOverflows", AcceptorExecutor.class);
 
-    private final Timer batchSizeMetric;
+    private final PercentileDistributionSummary batchSizeMetric;
 
     AcceptorExecutor(String id,
                      int maxBufferSize,
@@ -105,36 +97,39 @@ class AcceptorExecutor<ID, T> {
         this.acceptorThread = new Thread(threadGroup, new AcceptorRunner(), "TaskAcceptor-" + id);
         this.acceptorThread.setDaemon(true);
         this.acceptorThread.start();
-
-        final double[] percentiles = {50.0, 95.0, 99.0, 99.5};
-        final StatsConfig statsConfig = new StatsConfig.Builder()
-                .withSampleSize(1000)
-                .withPercentiles(percentiles)
-                .withPublishStdDev(true)
-                .build();
-        final MonitorConfig config = MonitorConfig.builder(METRIC_REPLICATION_PREFIX + "batchSize").build();
-        this.batchSizeMetric = new StatsTimer(config, statsConfig);
-        try {
-            Monitors.registerObject(id, this);
-        } catch (Throwable e) {
-            logger.warn("Cannot register servo monitor for this object", e);
-        }
+        
+        this.batchSizeMetric = PercentileDistributionSummary.builder(Spectator.globalRegistry())
+            .withName(METRIC_REPLICATION_PREFIX + "batchSize")
+            .withTags(SpectatorUtil.tags(getClass()))
+            .build();
+        SpectatorUtil.monitoredValue(METRIC_REPLICATION_PREFIX + "reprocessQueueSize",
+            this, AcceptorExecutor::getReprocessQueueSize);
+        SpectatorUtil.monitoredValue(METRIC_REPLICATION_PREFIX + "acceptorQueueSize",
+            this, AcceptorExecutor::getAcceptorQueueSize);
+        SpectatorUtil.monitoredValue(METRIC_REPLICATION_PREFIX + "reprocessQueueSize",
+            this, AcceptorExecutor::getReprocessQueueSize);
+        SpectatorUtil.monitoredValue(METRIC_REPLICATION_PREFIX + "queueSize",
+            this, AcceptorExecutor::getQueueSize);
+        SpectatorUtil.monitoredValue(METRIC_REPLICATION_PREFIX + "pendingJobRequests",
+            this, AcceptorExecutor::getPendingJobRequests);
+        SpectatorUtil.monitoredValue(METRIC_REPLICATION_PREFIX + "availableJobs",
+            this, AcceptorExecutor::workerTaskQueueSize);
     }
 
     void process(ID id, T task, long expiryTime) {
         acceptorQueue.add(new TaskHolder<ID, T>(id, task, expiryTime));
-        acceptedTasks++;
+        acceptedTasks.incrementAndGet();
     }
 
     void reprocess(List<TaskHolder<ID, T>> holders, ProcessingResult processingResult) {
         reprocessQueue.addAll(holders);
-        replayedTasks += holders.size();
+        replayedTasks.addAndGet(holders.size());
         trafficShaper.registerFailure(processingResult);
     }
 
     void reprocess(TaskHolder<ID, T> taskHolder, ProcessingResult processingResult) {
         reprocessQueue.add(taskHolder);
-        replayedTasks++;
+        replayedTasks.incrementAndGet();
         trafficShaper.registerFailure(processingResult);
     }
 
@@ -150,32 +145,26 @@ class AcceptorExecutor<ID, T> {
 
     void shutdown() {
         if (isShutdown.compareAndSet(false, true)) {
-            Monitors.unregisterObject(id, this);
             acceptorThread.interrupt();
         }
     }
 
-    @Monitor(name = METRIC_REPLICATION_PREFIX + "acceptorQueueSize", description = "Number of tasks waiting in the acceptor queue", type = DataSourceType.GAUGE)
     public long getAcceptorQueueSize() {
         return acceptorQueue.size();
     }
 
-    @Monitor(name = METRIC_REPLICATION_PREFIX + "reprocessQueueSize", description = "Number of tasks waiting in the reprocess queue", type = DataSourceType.GAUGE)
     public long getReprocessQueueSize() {
         return reprocessQueue.size();
     }
 
-    @Monitor(name = METRIC_REPLICATION_PREFIX + "queueSize", description = "Task queue size", type = DataSourceType.GAUGE)
     public long getQueueSize() {
         return pendingTasks.size();
     }
 
-    @Monitor(name = METRIC_REPLICATION_PREFIX + "pendingJobRequests", description = "Number of worker threads awaiting job assignment", type = DataSourceType.GAUGE)
     public long getPendingJobRequests() {
         return singleItemWorkRequests.availablePermits() + batchWorkRequests.availablePermits();
     }
 
-    @Monitor(name = METRIC_REPLICATION_PREFIX + "availableJobs", description = "Number of jobs ready to be taken by the workers", type = DataSourceType.GAUGE)
     public long workerTaskQueueSize() {
         return singleItemWorkQueue.size() + batchWorkQueue.size();
     }
@@ -247,16 +236,16 @@ class AcceptorExecutor<ID, T> {
                 TaskHolder<ID, T> taskHolder = reprocessQueue.pollLast();
                 ID id = taskHolder.getId();
                 if (taskHolder.getExpiryTime() <= now) {
-                    expiredTasks++;
+                    expiredTasks.incrementAndGet();
                 } else if (pendingTasks.containsKey(id)) {
-                    overriddenTasks++;
+                    overriddenTasks.incrementAndGet();
                 } else {
                     pendingTasks.put(id, taskHolder);
                     processingOrder.addFirst(id);
                 }
             }
             if (isFull()) {
-                queueOverflows += reprocessQueue.size();
+                queueOverflows.addAndGet(reprocessQueue.size());
                 reprocessQueue.clear();
             }
         }
@@ -264,13 +253,13 @@ class AcceptorExecutor<ID, T> {
         private void appendTaskHolder(TaskHolder<ID, T> taskHolder) {
             if (isFull()) {
                 pendingTasks.remove(processingOrder.poll());
-                queueOverflows++;
+                queueOverflows.incrementAndGet();
             }
             TaskHolder<ID, T> previousTask = pendingTasks.put(taskHolder.getId(), taskHolder);
             if (previousTask == null) {
                 processingOrder.add(taskHolder.getId());
             } else {
-                overriddenTasks++;
+                overriddenTasks.incrementAndGet();
             }
         }
 
@@ -285,7 +274,7 @@ class AcceptorExecutor<ID, T> {
                             singleItemWorkQueue.add(holder);
                             return;
                         }
-                        expiredTasks++;
+                        expiredTasks.incrementAndGet();
                     }
                     singleItemWorkRequests.release();
                 }
@@ -304,13 +293,13 @@ class AcceptorExecutor<ID, T> {
                         if (holder.getExpiryTime() > now) {
                             holders.add(holder);
                         } else {
-                            expiredTasks++;
+                            expiredTasks.incrementAndGet();
                         }
                     }
                     if (holders.isEmpty()) {
                         batchWorkRequests.release();
                     } else {
-                        batchSizeMetric.record(holders.size(), TimeUnit.MILLISECONDS);
+                        batchSizeMetric.record(holders.size());
                         batchWorkQueue.add(holders);
                     }
                 }
