@@ -13,6 +13,7 @@ import org.junit.Test;
 import static com.netflix.eureka.cluster.TestableInstanceReplicationTask.aReplicationTask;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * @author Tomasz Bak
@@ -81,7 +82,7 @@ public class ReplicationTaskProcessorTest {
         assertThat(status, is(ProcessingResult.Congestion));
         assertThat(task.getProcessingState(), is(ProcessingState.Pending));
     }
-    
+
     @Test
     public void testBatchableTaskNetworkReadTimeOutHandling() throws Exception {
         TestableInstanceReplicationTask task = aReplicationTask().build();
@@ -117,5 +118,14 @@ public class ReplicationTaskProcessorTest {
 
         assertThat(status, is(ProcessingResult.Success));
         assertThat(task.getProcessingState(), is(ProcessingState.Failed));
+    }
+
+    @Test
+    public void testHandlingNullMessagesWhileEvaluatingTimeout() {
+        assertThatCode(() -> {
+            replicationClient.withEmptyMessageException();
+            TestableInstanceReplicationTask task = aReplicationTask().build();
+            replicationTaskProcessor.process(Collections.singletonList(task));
+        }).doesNotThrowAnyException();
     }
 }
