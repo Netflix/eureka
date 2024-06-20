@@ -62,7 +62,7 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
 
     private final String name;
     private final EurekaTransportConfig transportConfig;
-    private final ClusterResolver clusterResolver;
+    private final ClusterResolver<EurekaEndpoint> clusterResolver;
     private final TransportClientFactory clientFactory;
     private final ServerStatusEvaluator serverStatusEvaluator;
     private final int numberOfRetries;
@@ -73,7 +73,7 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
 
     public RetryableEurekaHttpClient(String name,
                                      EurekaTransportConfig transportConfig,
-                                     ClusterResolver clusterResolver,
+                                     ClusterResolver<EurekaEndpoint> clusterResolver,
                                      TransportClientFactory clientFactory,
                                      ServerStatusEvaluator serverStatusEvaluator,
                                      int numberOfRetries) {
@@ -168,18 +168,16 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
         if (threshold > candidateHosts.size()) {
             threshold = candidateHosts.size();
         }
-        if (quarantineSet.isEmpty()) {
-            // no-op
-        } else if (quarantineSet.size() >= threshold) {
+
+        if (quarantineSet.size() >= threshold) {
             logger.debug("Clearing quarantined list of size {}", quarantineSet.size());
             quarantineSet.clear();
         } else {
             List<EurekaEndpoint> remainingHosts = new ArrayList<>(candidateHosts.size());
-            for (EurekaEndpoint endpoint : candidateHosts) {
-                if (!quarantineSet.contains(endpoint)) {
-                    remainingHosts.add(endpoint);
-                }
-            }
+            candidateHosts.forEach(e -> {
+                 if (!quarantineSet.contains(e))
+                     remainingHosts.add(e);
+            });
             candidateHosts = remainingHosts;
         }
 
