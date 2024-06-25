@@ -41,15 +41,25 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
      */
     @Deprecated
     public static final String DEFAULT_NAMESPACE = CommonConstants.DEFAULT_CONFIG_NAMESPACE;
-    
+
+    //租约有效期90s
     private static final int LEASE_EXPIRATION_DURATION_SECONDS = 90;
+    //重新续租间隔30s
     private static final int LEASE_RENEWAL_INTERVAL_SECONDS = 30;
+    //加密port
     private static final boolean SECURE_PORT_ENABLED = false;
+    //非加密port
     private static final boolean NON_SECURE_PORT_ENABLED = true;
+    //非加密端口号
     private static final int NON_SECURE_PORT = 80;
+    //加密端口号
     private static final int SECURE_PORT = 443;
+    //是否初始化时创建实例
     private static final boolean INSTANCE_ENABLED_ON_INIT = false;
+    //host信息map：ip -> hostname
     private static final Pair<String, String> hostInfo = getHostInfo();
+
+    //数据中心信息，netflix，amazon， myOwn, 暂时不知道作用
     private DataCenterInfo info = new DataCenterInfo() {
         @Override
         public Name getName() {

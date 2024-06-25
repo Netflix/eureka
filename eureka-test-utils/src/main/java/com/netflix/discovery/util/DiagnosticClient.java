@@ -20,6 +20,7 @@ public class DiagnosticClient {
         String discoveryURL = args[0];
         long startTime = System.currentTimeMillis();
         EurekaServerConfig serverConfig = new DefaultEurekaServerConfig("eureka.");
+        //不太懂这里是初始化了什么
         JerseyReplicationClient client = JerseyReplicationClient.createReplicationClient(
                 serverConfig,
                 new DefaultServerCodecs(serverConfig),

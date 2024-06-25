@@ -110,7 +110,10 @@ public class EurekaBootStrap implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent event) {
         try {
+            //设置了数据中心，环境 的字符属性，如果没有设置，则是默认
             initEurekaEnvironment();
+
+            //初始化eurekaServer上下文
             initEurekaServerContext();
 
             ServletContext sc = event.getServletContext();
@@ -155,8 +158,8 @@ public class EurekaBootStrap implements ServletContextListener {
         logger.info(eurekaServerConfig.getJsonCodecName());
         ServerCodecs serverCodecs = new DefaultServerCodecs(eurekaServerConfig);
 
+        //初始化ApplicationInfoManager 和 EurekaClient
         ApplicationInfoManager applicationInfoManager = null;
-
         if (eurekaClient == null) {
             EurekaInstanceConfig instanceConfig = isCloud(ConfigurationManager.getDeploymentContext())
                     ? new CloudInstanceConfig()
