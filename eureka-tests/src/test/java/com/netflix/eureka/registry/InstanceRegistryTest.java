@@ -316,4 +316,19 @@ public class InstanceRegistryTest extends AbstractTester {
         Assert.assertEquals(0, queue.size());
         Assert.assertEquals(Collections.emptyList(), new ArrayList<>(queue));
     }
+
+    @Test
+    public void testBlockingSpecificIpAddress() {
+        InstanceInfo blockedInstance = createLocalInstanceWithBlockingIpAddresses("10.10.101.1,192.168.0.1/32");
+        registry.register(blockedInstance, 10000000, false);
+        verifyInstanceNotRegistered(blockedInstance.getAppName(), blockedInstance.getId());
+    }
+
+    @Test
+    public void testBlockingIpAddressInSubnet() {
+        InstanceInfo blockedInstance = createLocalInstanceWithBlockingIpAddresses("10.10.101.0/24");
+        registry.register(blockedInstance, 10000000, false);
+        verifyInstanceNotRegistered(blockedInstance.getAppName(), blockedInstance.getId());
+    }
+
 }
