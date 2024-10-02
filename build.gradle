@@ -51,7 +51,8 @@ allprojects {
         jetty_version = '11.0.11'
         junit_version = '4.11'
         mockitoVersion = '4.6.1'
-        mockserverVersion = '3.9.2'
+        mockserverVersion = '3.9.17'
+        jaxbVersion = '2.3.1'
     }
 }
 
