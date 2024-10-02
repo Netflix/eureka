@@ -43,9 +43,9 @@ allprojects {
         spectatorVersion = '1.7.3'
         slf4jVersion = '1.7.36'
         archaiusVersion = '0.7.6'
-        jacksonVersion = '2.10.5'
-        jacksonDatabindVersion = '2.10.5.1'
-        woodstoxVersion = '5.2.1'
+        jacksonVersion = '2.13.5'
+        jacksonDatabindVersion = '2.13.5'
+        woodstoxVersion = '6.4.0'
 
         // test deps
         jetty_version = '11.0.11'
