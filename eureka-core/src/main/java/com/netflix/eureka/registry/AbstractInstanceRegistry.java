@@ -20,8 +20,10 @@ import com.google.common.cache.CacheBuilder;
 import com.netflix.discovery.util.SpectatorUtil;
 import com.netflix.eureka.transport.EurekaServerHttpClientFactory;
 import jakarta.annotation.Nullable;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.AbstractQueue;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -57,6 +59,7 @@ import com.netflix.eureka.lease.Lease;
 import com.netflix.eureka.registry.rule.InstanceStatusOverrideRule;
 import com.netflix.eureka.resources.ServerCodecs;
 import com.netflix.eureka.util.MeasuredRate;
+import org.apache.commons.net.util.SubnetUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -204,6 +207,10 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     public void register(InstanceInfo registrant, int leaseDuration, boolean isReplication) {
         read.lock();
         try {
+            if (isRegistrantDeniedByIpBlacklist(registrant)) {
+                return;
+            }
+
             Map<String, Lease<InstanceInfo>> gMap = registry.get(registrant.getAppName());
             REGISTER.increment(isReplication);
             if (gMap == null) {
@@ -279,6 +286,33 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         } finally {
             read.unlock();
         }
+    }
+
+    private boolean isRegistrantDeniedByIpBlacklist(InstanceInfo registrant) {
+        try {
+            Set<String> blockingIpAddresses = serverConfig.getBlockingIpAddresses();
+            if (blockingIpAddresses == null) {
+                return false;
+            }
+
+            InetAddress address = InetAddress.getByName(registrant.getIPAddr());
+            if (blockingIpAddresses.contains(address.getHostAddress())) {
+                return true;
+            }
+
+            for (String subnet: blockingIpAddresses) {
+                if (subnet.contains("/")) {
+                    SubnetUtils utils = new SubnetUtils(subnet);
+                    if (utils.getInfo().isInRange(registrant.getIPAddr())) {
+                        return true;
+                    }
+                }
+            }
+        } catch (UnknownHostException e) {
+            logger.error("Unable to determine whether this host is IP blocked for id {}", registrant.getId());
+        }
+
+        return false;
     }
 
     /**
