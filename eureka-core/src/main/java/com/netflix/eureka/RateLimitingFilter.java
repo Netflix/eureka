@@ -149,8 +149,7 @@ public class RateLimitingFilter implements Filter {
 
     private static Target getTarget(ServletRequest request) {
         Target target = Target.Other;
-        if (request instanceof HttpServletRequest) {
-            HttpServletRequest httpRequest = (HttpServletRequest) request;
+        if (request instanceof HttpServletRequest httpRequest) {
             String pathInfo = httpRequest.getRequestURI();
 
             if ("GET".equals(httpRequest.getMethod()) && pathInfo != null) {
