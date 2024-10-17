@@ -59,9 +59,7 @@ public class ServerRequestAuthFilter implements Filter {
 
     protected void logAuth(ServletRequest request) {
         if (serverConfig.shouldLogIdentityHeaders()) {
-            if (request instanceof HttpServletRequest) {
-                HttpServletRequest httpRequest = (HttpServletRequest) request;
-
+            if (request instanceof HttpServletRequest httpRequest) {
                 String clientName = getHeader(httpRequest, AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY);
                 String clientVersion = getHeader(httpRequest, AbstractEurekaIdentity.AUTH_VERSION_HEADER_KEY);
 
