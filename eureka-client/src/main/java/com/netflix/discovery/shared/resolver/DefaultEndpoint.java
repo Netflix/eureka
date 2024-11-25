@@ -145,6 +145,6 @@ public class DefaultEndpoint implements EurekaEndpoint {
 
     @Override
     public String toString() {
-        return "DefaultEndpoint{ serviceUrl='" + serviceUrl + '}';
+        return "DefaultEndpoint{ serviceUrl='" + serviceUrl + " '}";
     }
 }
