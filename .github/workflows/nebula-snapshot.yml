@@ -16,13 +16,13 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 8
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         id: gradle-cache
         with:
           path: |
             ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         id: gradle-wrapper-cache
         with:
           path: |
