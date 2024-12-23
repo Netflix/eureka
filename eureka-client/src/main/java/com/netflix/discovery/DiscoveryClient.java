@@ -106,6 +106,7 @@ import com.netflix.discovery.util.ThresholdLevelsMetric;
  *
  * @author Karthik Ranganathan, Greg Kim
  * @author Spencer Gibb
+ * @author Olga Maciaszek-Sharma
  *
  */
 @Singleton
@@ -149,6 +150,7 @@ public class DiscoveryClient implements EurekaClient {
     private final PreRegistrationHandler preRegistrationHandler;
     private final AtomicReference<Applications> localRegionApps = new AtomicReference<>();
     private final Lock fetchRegistryUpdateLock = new ReentrantLock();
+    private final ReentrantLock instanceStatusUpdateLock = new ReentrantLock();
     // monotonically increasing generation counter to ensure stale threads do not reset registry to an older version
     private final AtomicLong fetchRegistryGeneration;
     private final ApplicationInfoManager applicationInfoManager;
@@ -1381,15 +1383,26 @@ public class DiscoveryClient implements EurekaClient {
         applicationInfoManager.refreshLeaseInfoIfRequired();
 
         InstanceStatus status;
-        try {
-            status = getHealthCheckHandler().getStatus(instanceInfo.getStatus());
-        } catch (Exception e) {
-            logger.warn("Exception from healthcheckHandler.getStatus, setting status to DOWN", e);
-            status = InstanceStatus.DOWN;
-        }
+        if (instanceStatusUpdateLock.tryLock()) {
+            try {
+                try {
+                    status = getHealthCheckHandler().getStatus(instanceInfo.getStatus());
+                }
+                catch (Exception e) {
+                    logger.warn("Exception from healthcheckHandler.getStatus, setting status to DOWN", e);
+                    status = InstanceStatus.DOWN;
+                }
 
-        if (null != status) {
-            applicationInfoManager.setInstanceStatus(status);
+                if (null != status) {
+                    applicationInfoManager.setInstanceStatus(status);
+                }
+            }
+            finally {
+                instanceStatusUpdateLock.unlock();
+            }
+        }
+        else {
+            logger.warn("Cannot acquire update lock, aborting instance status refresh");
         }
     }
 
