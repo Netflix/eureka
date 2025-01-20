@@ -29,7 +29,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRootName;
 import com.netflix.appinfo.providers.Archaius1VipAddressResolver;
-import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.appinfo.providers.VipAddressResolver;
 import com.netflix.discovery.converters.Auto;
 import com.netflix.discovery.converters.EurekaJacksonCodec.InstanceInfoSerializer;
@@ -48,7 +47,7 @@ import org.slf4j.LoggerFactory;
  * serialized as specified by the <code>@Serializer</code>.
  * </p>
  *
- * @author Karthik Ranganathan, Greg Kim
+ * @author Karthik Ranganathan, Greg Kim, Olga Maciaszek-Sharma
  */
 @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("instance")
@@ -1171,6 +1170,21 @@ public class InstanceInfo {
             return prev;
         }
         return null;
+    }
+
+    /**
+     * Set the status for this instance only when the current status matches the expected status.
+     *
+     * @param expected status for this instance.
+     * @param status status to set for this instance.
+     * @return the prev status if a different status from the current was set, null otherwise
+     */
+    public synchronized InstanceStatus setStatus(InstanceStatus expected, InstanceStatus status) {
+        InstanceStatus prev = this.status;
+        if (expected == null || !expected.equals(prev)) {
+            throw new IllegalArgumentException("Instance status mismatch");
+        }
+        return setStatus(status);
     }
 
     /**

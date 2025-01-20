@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  *
- * @author Karthik Ranganathan, Greg Kim
+ * @author Karthik Ranganathan, Greg Kim, Olga Maciaszek-Sharma
  *
  */
 @Singleton
@@ -171,13 +171,29 @@ public class ApplicationInfoManager {
 
         InstanceStatus prev = instanceInfo.setStatus(next);
         if (prev != null) {
-            for (StatusChangeListener listener : listeners.values()) {
-                try {
-                    listener.notify(new StatusChangeEvent(prev, next));
-                } catch (Exception e) {
-                    logger.warn("failed to notify listener: {}", listener.getId(), e);
-                }
-            }
+            notifyListeners(prev, next);
+        }
+    }
+
+    /**
+     * Set the status of this instance only if the current status equals expected status
+     * in order to avoid concurrent modification.
+     * Application can use this to indicate whether it is ready to receive traffic.
+     * Setting the status here also notifies all registered listeners
+     * of a status change event.
+     *
+     * @param expectedStatus expected current Status of the instance
+     * @param updateStatus Status of the instance to be set
+     */
+    public synchronized void setInstanceStatus(InstanceStatus expectedStatus, InstanceStatus updateStatus) {
+        InstanceStatus next = instanceStatusMapper.map(updateStatus);
+        if (next == null) {
+            return;
+        }
+
+        InstanceStatus prev = instanceInfo.setStatus(expectedStatus, next);
+        if (prev != null) {
+            notifyListeners(prev, next);
         }
     }
 
@@ -258,6 +274,17 @@ public class ApplicationInfoManager {
                     .build();
             instanceInfo.setLeaseInfo(newLeaseInfo);
             instanceInfo.setIsDirty();
+        }
+    }
+
+    private void notifyListeners(InstanceStatus prev, InstanceStatus next) {
+        for (StatusChangeListener listener : listeners.values()) {
+            try {
+                listener.notify(new StatusChangeEvent(prev, next));
+            }
+            catch (Exception e) {
+                logger.warn("failed to notify listener: {}", listener.getId(), e);
+            }
         }
     }
 
