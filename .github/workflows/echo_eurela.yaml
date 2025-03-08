@@ -1,0 +1,17 @@
+name: Echo Eureka Message on PR
+
+on:
+  pull_request:
+    branches:
+      - main  # Or 'master', depending on your main branch
+
+jobs:
+  echo-message:
+    runs-on: ubuntu-latest  # You can change this to another runner if necessary
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Echo Eureka Message
+      run: echo "eureka is kool"
