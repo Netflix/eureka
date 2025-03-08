@@ -1,51 +1,29 @@
-name: "Publish candidate/release to NetflixOSS and Maven Central"
+name: Publish Release
+
 on:
   push:
-    tags:
-      - v*.*.*
-      - v*.*.*-rc.*
-  release:
-    types:
-      - published
+    branches:
+      - master  # Ensure this is the branch you want to trigger the action from
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  publish:
+    runs-on: ubuntu-latest  # Ensure the correct environment is used
+
     steps:
-      - uses: actions/checkout@v1
-      - name: Setup jdk 8
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
-      - uses: actions/cache@v1
-        id: gradle-cache
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle/dependency-locks/*.lockfile') }}
-          restore-keys: |
-            - ${{ runner.os }}-gradle-
-      - uses: actions/cache@v1
-        id: gradle-wrapper-cache
-        with:
-          path: ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradlewrapper-${{ hashFiles('gradle/wrapper/*') }}
-          restore-keys: |
-            - ${{ runner.os }}-gradlewrapper-
-      - name: Publish candidate
-        if: contains(github.ref, '-rc.')
-        run: ./gradlew --info --stacktrace -Prelease.useLastTag=true candidate
-        env:
-          NETFLIX_OSS_SIGNING_KEY: ${{ secrets.ORG_SIGNING_KEY }}
-          NETFLIX_OSS_SIGNING_PASSWORD: ${{ secrets.ORG_SIGNING_PASSWORD }}
-          NETFLIX_OSS_REPO_USERNAME: ${{ secrets.ORG_NETFLIXOSS_USERNAME }}
-          NETFLIX_OSS_REPO_PASSWORD: ${{ secrets.ORG_NETFLIXOSS_PASSWORD }}
-      - name: Publish release
-        if: (!contains(github.ref, '-rc.'))
-        run: ./gradlew --info -Prelease.useLastTag=true final
-        env:
-          NETFLIX_OSS_SONATYPE_USERNAME: ${{ secrets.ORG_SONATYPE_USERNAME }}
-          NETFLIX_OSS_SONATYPE_PASSWORD: ${{ secrets.ORG_SONATYPE_PASSWORD }}
-          NETFLIX_OSS_SIGNING_KEY: ${{ secrets.ORG_SIGNING_KEY }}
-          NETFLIX_OSS_SIGNING_PASSWORD: ${{ secrets.ORG_SIGNING_PASSWORD }}
-          NETFLIX_OSS_REPO_USERNAME: ${{ secrets.ORG_NETFLIXOSS_USERNAME }}
-          NETFLIX_OSS_REPO_PASSWORD: ${{ secrets.ORG_NETFLIXOSS_PASSWORD }}
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up JDK 11
+      uses: actions/setup-java@v1
+      with:
+        java-version: '11'  # Make sure JDK 11 is required for your build
+
+    - name: Build with Gradle
+      run: ./gradlew build # Make sure this command is correct for your project
+
+    - name: Publish release
+      uses: nebula-plugins/gradle-release-action@v1
+      with:
+        gradle-version: 7.0  # Ensure this version is correct for your project
+        release-name: 'release-${{ github.sha }}'  # Ensure this format is what you need
+        # Add any additional necessary parameters, like authentication tokens or repository info
