@@ -354,9 +354,10 @@ public class DiscoveryClient implements EurekaClient {
             // default size of 2 - 1 each for heartbeat and cacheRefresh
             scheduler = Executors.newScheduledThreadPool(2,
                 new ThreadFactory() {
+                    private final AtomicInteger threadNumber = new AtomicInteger(1);
                     @Override
                     public Thread newThread(Runnable r) {
-                        Thread thread = new Thread(r, "DiscoveryClient-%d");
+                        Thread thread = new Thread(r, "DiscoveryClient-" + threadNumber.getAndIncrement());
                         thread.setDaemon(true);
                         return thread;
                     }
@@ -366,9 +367,10 @@ public class DiscoveryClient implements EurekaClient {
                     1, clientConfig.getHeartbeatExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
                     new SynchronousQueue<Runnable>(),
                 new ThreadFactory() {
+                    private final AtomicInteger threadNumber = new AtomicInteger(1);
                     @Override
                     public Thread newThread(Runnable r) {
-                        Thread thread = new Thread(r, "DiscoveryClient-HeartbeatExecutor-%d");
+                        Thread thread = new Thread(r, "DiscoveryClient-HeartbeatExecutor-" + threadNumber.getAndIncrement());
                         thread.setDaemon(true);
                         return thread;
                     }
@@ -379,9 +381,10 @@ public class DiscoveryClient implements EurekaClient {
                     1, clientConfig.getCacheRefreshExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
                     new SynchronousQueue<Runnable>(),
                 new ThreadFactory() {
+                    private final AtomicInteger threadNumber = new AtomicInteger(1);
                     @Override
                     public Thread newThread(Runnable r) {
-                        Thread thread = new Thread(r, "DiscoveryClient-CacheRefreshExecutor-%d");
+                        Thread thread = new Thread(r, "DiscoveryClient-CacheRefreshExecutor-" + threadNumber.getAndIncrement());
                         thread.setDaemon(true);
                         return thread;
                     }
@@ -460,7 +463,7 @@ public class DiscoveryClient implements EurekaClient {
     private void scheduleServerEndpointTask(EurekaTransport eurekaTransport,
                                             AbstractDiscoveryClientOptionalArgs args) {
 
-            
+
         Collection<?> additionalFilters = args == null
                 ? Collections.emptyList()
                 : args.additionalFilters;

@@ -29,6 +29,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -191,9 +192,10 @@ public class RemoteRegionRegistry implements LookupService<String> {
 
         scheduler = Executors.newScheduledThreadPool(1,
             new ThreadFactory() {
+                private final AtomicInteger threadNumber = new AtomicInteger(1);
                 @Override
                 public Thread newThread(Runnable r) {
-                    Thread thread = new Thread(r, "Eureka-RemoteRegionCacheRefresher_" + regionName + "-%d");
+                    Thread thread = new Thread(r, "Eureka-RemoteRegionCacheRefresher_" + regionName + "-" + threadNumber.getAndIncrement());
                     thread.setDaemon(true);
                     return thread;
                 }
