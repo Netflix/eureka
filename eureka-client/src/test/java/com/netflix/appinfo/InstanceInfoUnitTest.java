@@ -4,7 +4,6 @@ import com.netflix.discovery.util.InstanceInfoGenerator;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Olga Maciaszek-Sharma
@@ -25,22 +24,20 @@ public class InstanceInfoUnitTest {
 	public void testInstanceStatusNotUpdatedWhenExpectedStatusNotMatched() {
 		InstanceInfo instanceInfo = InstanceInfoGenerator.takeOne();
 
-		assertThatExceptionOfType(IllegalArgumentException.class)
-				.isThrownBy(() ->
-						instanceInfo.setStatus(InstanceInfo.InstanceStatus.OUT_OF_SERVICE,
-								InstanceInfo.InstanceStatus.DOWN));
+		instanceInfo.setStatus(InstanceInfo.InstanceStatus.DOWN,
+				InstanceInfo.InstanceStatus.OUT_OF_SERVICE);
 
+		assertThat(instanceInfo.getStatus()).isEqualTo(InstanceInfo.InstanceStatus.UP);
 	}
 
 	@Test
 	public void testInstanceStatusNotUpdatedWhenExpectedStatusNull() {
 		InstanceInfo instanceInfo = InstanceInfoGenerator.takeOne();
 
-		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() ->
-				instanceInfo.setStatus(null,
-						InstanceInfo.InstanceStatus.OUT_OF_SERVICE)
-		);
+		instanceInfo.setStatus(null,
+				InstanceInfo.InstanceStatus.OUT_OF_SERVICE);
 
+		assertThat(instanceInfo.getStatus()).isEqualTo(InstanceInfo.InstanceStatus.UP);
 	}
 
 }

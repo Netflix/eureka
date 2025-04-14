@@ -1182,7 +1182,7 @@ public class InstanceInfo {
     public synchronized InstanceStatus setStatus(InstanceStatus expected, InstanceStatus status) {
         InstanceStatus prev = this.status;
         if (expected == null || !expected.equals(prev)) {
-            throw new IllegalArgumentException("Instance status mismatch");
+            return null;
         }
         return setStatus(status);
     }
