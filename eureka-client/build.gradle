@@ -7,7 +7,7 @@ configurations.all {
 
 dependencies {
     implementation "com.netflix.netflix-commons:netflix-eventbus:0.3.0"
-    api 'com.thoughtworks.xstream:xstream:1.4.20'
+    api 'com.thoughtworks.xstream:xstream:1.4.21'
     api "com.netflix.archaius:archaius-core:${archaiusVersion}"
     api 'jakarta.ws.rs:jakarta.ws.rs-api:3.0.0'
     api 'jakarta.inject:jakarta.inject-api:2.0.1'
