@@ -4,6 +4,9 @@ buildscript {
         maven {
             url "https://plugins.gradle.org/m2"
         }
+        maven {
+            url "https://artifactory.appodeal.com/appodeal-public"
+        }
     }
 
     dependencies {
@@ -13,7 +16,7 @@ buildscript {
 
 plugins {
     id 'nebula.netflixoss' version '9.1.0'
-    id 'org.gretty' version '2.1.0'
+    id 'org.gretty' version '3.1.5'
 }
 
 idea {
