@@ -58,6 +58,7 @@ import software.amazon.awssdk.services.sts.model.Credentials;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.net.URI;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
@@ -101,6 +102,7 @@ public class AwsAsgUtil implements AsgClient {
     private final InstanceRegistry registry;
     private final LoadingCache<CacheKey, Boolean> asgCache;
     private final AutoScalingClient awsClient;
+    private final boolean getStsEndpointFromAws;
 
     @Inject
     public AwsAsgUtil(EurekaServerConfig serverConfig,
@@ -133,6 +135,8 @@ public class AwsAsgUtil implements AsgClient {
         this.timer.schedule(getASGUpdateTask(),
                 serverConfig.getASGUpdateIntervalMs(),
                 serverConfig.getASGUpdateIntervalMs());
+
+        getStsEndpointFromAws = "regional".equalsIgnoreCase(System.getenv("AWS_STS_REGIONAL_ENDPOINTS"));
 
         try {
             Monitors.registerObject(this);
@@ -251,17 +255,16 @@ public class AwsAsgUtil implements AsgClient {
     }
 
     private Credentials initializeStsSession(String asgAccount) {
+        String region = clientConfig.getRegion();
         StsClientBuilder stsBuilder = StsClient.builder()
                 .credentialsProvider(InstanceProfileCredentialsProvider.create())
-                //copilot thinks this is unnecessary.  I'm not going to mess with it.
-                .region(Region.of(clientConfig.getRegion()));
+                .region(Region.of(region));
 
-        // OLD CODE did this.  This is not needed if env variable AWS_STS_REGIONAL_ENDPOINTS=regional is set
-//        String region = clientConfig.getRegion();
-//        if (!region.equals("us-east-1")) {
-//            stsBuilder
-//                    .endpointOverride(URI.create("https://sts." + region + ".amazonaws.com"));
-//        }
+        // This is not needed if env variable AWS_STS_REGIONAL_ENDPOINTS=regional is set && AWS_REGION is set
+        if (!region.equals("us-east-1") && !this.getStsEndpointFromAws) {
+            stsBuilder
+                    .endpointOverride(URI.create("https://sts." + region + ".amazonaws.com"));
+        }
 
         StsClient sts = stsBuilder.build();
 
@@ -300,15 +303,6 @@ public class AwsAsgUtil implements AsgClient {
                 .build();
 
         String region = clientConfig.getRegion();
-        //this code is not needed as long as AWS_STS_REGIONAL_ENDPOINTS=regional is set
-//        if (!region.equals("us-east-1")) {
-//            autoScalingClient = AutoScalingClient.builder()
-//                    .credentialsProvider(StaticCredentialsProvider.create(awsSessionCredentials))
-//                    .region(Region.of(region))
-//                    //TODO: FIPS ENDPOINT
-//                    .endpointOverride(URI.create("https://autoscaling." + region + ".amazonaws.com"))
-//                    .build();
-//        }
 
         DescribeAutoScalingGroupsRequest request = DescribeAutoScalingGroupsRequest.builder()
                 .autoScalingGroupNames(asgName)

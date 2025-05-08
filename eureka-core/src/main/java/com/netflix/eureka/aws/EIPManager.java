@@ -25,6 +25,7 @@ import java.util.TimerTask;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.InstanceProfileCredentialsProvider;
 import software.amazon.awssdk.services.ec2.Ec2Client;
+import software.amazon.awssdk.services.ec2.Ec2ClientBuilder;
 import software.amazon.awssdk.services.ec2.model.Address;
 import software.amazon.awssdk.services.ec2.model.AssociateAddressRequest;
 import software.amazon.awssdk.services.ec2.model.DescribeAddressesRequest;
@@ -241,22 +242,17 @@ public class EIPManager implements AwsBinder {
             // Only bind if the EIP is not already associated
             if (!isMyinstanceAssociatedWithEIP) {
 
-                AssociateAddressRequest associateAddressRequest = AssociateAddressRequest.builder()
-                        .instanceId(myInstanceId)
-                        .build();
+                final AssociateAddressRequest.Builder associateAddressRequestBuilder = AssociateAddressRequest.builder()
+                        .instanceId(myInstanceId);
 
                 String domain = selectedEIP.domain().toString();
                 if ("vpc".equals(domain)) {
-                    associateAddressRequest = associateAddressRequest.toBuilder()
-                            .allocationId(selectedEIP.allocationId())
-                            .build();
+                    associateAddressRequestBuilder.allocationId(selectedEIP.allocationId());
                 } else {
-                    associateAddressRequest = associateAddressRequest.toBuilder()
-                            .publicIp(publicIp)
-                            .build();
+                    associateAddressRequestBuilder.publicIp(publicIp);
                 }
 
-                ec2Service.associateAddress(associateAddressRequest);
+                ec2Service.associateAddress(associateAddressRequestBuilder.build());
                 logger.info("\n\n\nAssociated {} running in zone: {} to elastic IP: {}", myInstanceId, myZone, publicIp);
             }
             logger.info("My instance {} seems to be already associated with the EIP {}", myInstanceId, publicIp);
@@ -278,26 +274,21 @@ public class EIPManager implements AwsBinder {
 
             try {
                 Ec2Client ec2Service = getEC2Service();
-                DescribeAddressesRequest describeAddressRequest = DescribeAddressesRequest.builder()
+                final DescribeAddressesRequest describeAddressRequestBuilder = DescribeAddressesRequest.builder()
                         .publicIps(myPublicIP)
                         .build();
-                DescribeAddressesResponse result = ec2Service.describeAddresses(describeAddressRequest);
+                DescribeAddressesResponse result = ec2Service.describeAddresses(describeAddressRequestBuilder);
                 if (result.addresses() != null && !result.addresses().isEmpty()) {
                     Address eipAddress = result.addresses().get(0);
-                    DisassociateAddressRequest dissociateRequest = DisassociateAddressRequest.builder()
-                            .build();
+                    DisassociateAddressRequest.Builder dissociateRequest = DisassociateAddressRequest.builder();
                     String domain = eipAddress.domain().toString();
                     if ("vpc".equals(domain)) {
-                        dissociateRequest = dissociateRequest.toBuilder()
-                                .associationId(eipAddress.associationId())
-                                .build();
+                        dissociateRequest.associationId(eipAddress.associationId());
                     } else {
-                        dissociateRequest = dissociateRequest.toBuilder()
-                                .publicIp(eipAddress.publicIp())
-                                .build();
+                        dissociateRequest = dissociateRequest.publicIp(eipAddress.publicIp());
                     }
 
-                    ec2Service.disassociateAddress(dissociateRequest);
+                    ec2Service.disassociateAddress(dissociateRequest.build());
                     logger.info("Dissociated the EIP {} from this instance", myPublicIP);
                 }
             } catch (Throwable e) {
@@ -416,29 +407,16 @@ public class EIPManager implements AwsBinder {
         String awsAccessId = serverConfig.getAWSAccessId();
         String awsSecretKey = serverConfig.getAWSSecretKey();
 
-        Ec2Client ec2Service;
+        final Ec2ClientBuilder ec2ServiceBuilder = Ec2Client.builder()
+                .region(Region.of(clientConfig.getRegion().trim().toLowerCase()));
         if (awsAccessId != null && !awsAccessId.isEmpty() && awsSecretKey != null && !awsSecretKey.isEmpty()) {
             AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create(awsAccessId, awsSecretKey);
-            ec2Service = Ec2Client.builder()
-                    .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials))
-                    .region(Region.of(clientConfig.getRegion().trim().toLowerCase()))
-                    .build();
+            ec2ServiceBuilder.credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials));
         } else {
-            ec2Service = Ec2Client.builder()
-                    .credentialsProvider(InstanceProfileCredentialsProvider.create())
-                    .region(Region.of(clientConfig.getRegion().trim().toLowerCase()))
-                    .build();
+            ec2ServiceBuilder.credentialsProvider(InstanceProfileCredentialsProvider.create());
         }
 
-        String region = clientConfig.getRegion().trim().toLowerCase();
-        ec2Service = Ec2Client.builder()
-                .credentialsProvider(InstanceProfileCredentialsProvider.create())
-                .region(Region.of(region))
-                // endpoint overide should not be necessary with AWS_STS_REGIONAL_ENDPOINTS=regional set
-                // .endpointOverride(URI.create("https://ec2." + region + ".amazonaws.com"))
-                .build();
-
-        return ec2Service;
+        return ec2ServiceBuilder.build();
     }
 
     /**

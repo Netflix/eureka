@@ -292,22 +292,15 @@ public class ElasticNetworkInterfaceBinder implements AwsBinder {
         String awsAccessId = serverConfig.getAWSAccessId();
         String awsSecretKey = serverConfig.getAWSSecretKey();
 
-        Ec2ClientBuilder ec2ServiceBuilder;
+        final Ec2ClientBuilder ec2ServiceBuilder = Ec2Client.builder()
+                .region(Region.of(clientConfig.getRegion().trim().toLowerCase()));
         if (awsAccessId != null && !awsAccessId.isEmpty() && awsSecretKey != null && !awsSecretKey.isEmpty()) {
             AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create(awsAccessId, awsSecretKey);
-            ec2ServiceBuilder = Ec2Client.builder()
-                    .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials))
-                    .region(Region.of(clientConfig.getRegion().trim().toLowerCase()));
+            ec2ServiceBuilder.credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials));
         }
         else {
-            ec2ServiceBuilder = Ec2Client.builder()
-                    .credentialsProvider(InstanceProfileCredentialsProvider.create())
-                    .region(Region.of(clientConfig.getRegion().trim().toLowerCase()));
+            ec2ServiceBuilder.credentialsProvider(InstanceProfileCredentialsProvider.create());
         }
-
-        // String region = clientConfig.getRegion().trim().toLowerCase();
-        // ec2ServiceBuilder.endpointOverride(URI.create("https://ec2." + region + ".amazonaws.com"));
-
         return ec2ServiceBuilder.build();
     }
 

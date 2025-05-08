@@ -93,18 +93,18 @@ public class Route53Binder implements AwsBinder {
         try {
             doBind();
             timer.schedule(
-                    new TimerTask() {
-                        @Override
-                        public void run() {
-                            try {
-                                doBind();
-                            } catch (Throwable e) {
-                                logger.error("Could not bind to Route53", e);
-                            }
+                new TimerTask() {
+                    @Override
+                    public void run() {
+                        try {
+                            doBind();
+                        } catch (Throwable e) {
+                            logger.error("Could not bind to Route53", e);
                         }
-                    },
-                    serverConfig.getRoute53BindingRetryIntervalMs(),
-                    serverConfig.getRoute53BindingRetryIntervalMs());
+                    }
+                },
+                serverConfig.getRoute53BindingRetryIntervalMs(),
+                serverConfig.getRoute53BindingRetryIntervalMs());
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -303,16 +303,13 @@ public class Route53Binder implements AwsBinder {
         String awsAccessId = serverConfig.getAWSAccessId();
         String awsSecretKey = serverConfig.getAWSSecretKey();
 
-        Route53ClientBuilder route53ClientBuilder;
+        final Route53ClientBuilder route53ClientBuilder = Route53Client.builder()
+                .region(Region.of(clientConfig.getRegion().trim().toLowerCase()));
         if (awsAccessId != null && !awsAccessId.isEmpty() && awsSecretKey != null && !awsSecretKey.isEmpty()) {
             AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create(awsAccessId, awsSecretKey);
-            route53ClientBuilder = Route53Client.builder()
-                    .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials))
-                    .region(Region.of(clientConfig.getRegion().trim().toLowerCase()));
+            route53ClientBuilder.credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials));
         } else {
-            route53ClientBuilder = Route53Client.builder()
-                    .credentialsProvider(InstanceProfileCredentialsProvider.create())
-                    .region(Region.of(clientConfig.getRegion().trim().toLowerCase()));
+            route53ClientBuilder.credentialsProvider(InstanceProfileCredentialsProvider.create());
         }
 
         return route53ClientBuilder.build();
