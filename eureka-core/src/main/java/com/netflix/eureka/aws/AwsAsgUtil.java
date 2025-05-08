@@ -16,39 +16,6 @@
 
 package com.netflix.eureka.aws;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.BasicSessionCredentials;
-import com.amazonaws.auth.InstanceProfileCredentialsProvider;
-import com.amazonaws.services.autoscaling.AmazonAutoScaling;
-import com.amazonaws.services.autoscaling.AmazonAutoScalingClient;
-import com.amazonaws.services.autoscaling.model.AutoScalingGroup;
-import com.amazonaws.services.autoscaling.model.DescribeAutoScalingGroupsRequest;
-import com.amazonaws.services.autoscaling.model.DescribeAutoScalingGroupsResult;
-import com.amazonaws.services.autoscaling.model.SuspendedProcess;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
-import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
-import com.amazonaws.services.securitytoken.model.AssumeRoleResult;
-import com.amazonaws.services.securitytoken.model.Credentials;
 import com.google.common.base.Strings;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -69,9 +36,31 @@ import com.netflix.eureka.registry.InstanceRegistry;
 import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
+import software.amazon.awssdk.auth.credentials.InstanceProfileCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.autoscaling.AutoScalingClient;
+import software.amazon.awssdk.services.autoscaling.AutoScalingClientBuilder;
+import software.amazon.awssdk.services.autoscaling.model.AutoScalingGroup;
+import software.amazon.awssdk.services.autoscaling.model.DescribeAutoScalingGroupsRequest;
+import software.amazon.awssdk.services.autoscaling.model.DescribeAutoScalingGroupsResponse;
+import software.amazon.awssdk.services.autoscaling.model.SuspendedProcess;
+import software.amazon.awssdk.services.sts.StsClient;
+import software.amazon.awssdk.services.sts.StsClientBuilder;
+import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
+import software.amazon.awssdk.services.sts.model.AssumeRoleResponse;
+import software.amazon.awssdk.services.sts.model.Credentials;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * A utility class for querying and updating information about amazon
@@ -99,7 +88,7 @@ public class AwsAsgUtil implements AsgClient {
                     thread.setDaemon(true);
                     return thread;
                 }
-    });
+            });
 
     private ListeningExecutorService listeningCacheReloadExecutor = MoreExecutors.listeningDecorator(cacheReloadExecutor);
 
@@ -111,12 +100,12 @@ public class AwsAsgUtil implements AsgClient {
     private final EurekaClientConfig clientConfig;
     private final InstanceRegistry registry;
     private final LoadingCache<CacheKey, Boolean> asgCache;
-    private final AmazonAutoScaling awsClient;
+    private final AutoScalingClient awsClient;
 
     @Inject
     public AwsAsgUtil(EurekaServerConfig serverConfig,
-                      EurekaClientConfig clientConfig,
-                      InstanceRegistry registry) {
+                        EurekaClientConfig clientConfig,
+                        InstanceRegistry registry) {
         this.serverConfig = serverConfig;
         this.clientConfig = clientConfig;
         this.registry = registry;
@@ -140,7 +129,7 @@ public class AwsAsgUtil implements AsgClient {
                 });
 
         this.awsClient = getAmazonAutoScalingClient();
-        this.awsClient.setEndpoint("autoscaling." + clientConfig.getRegion() + ".amazonaws.com");
+
         this.timer.schedule(getASGUpdateTask(),
                 serverConfig.getASGUpdateIntervalMs(),
                 serverConfig.getASGUpdateIntervalMs());
@@ -171,8 +160,8 @@ public class AwsAsgUtil implements AsgClient {
                 // period, but no new values will be fetched while disabled.
 
                 logger.info(("'{}' is not cached at the moment and won't be fetched because querying AWS ASGs "
-                        + "has been disabled via the config, returning the fallback value."),
-                            cacheKey);
+                                + "has been disabled via the config, returning the fallback value."),
+                        cacheKey);
 
                 return true;
             }
@@ -226,14 +215,15 @@ public class AwsAsgUtil implements AsgClient {
      *         otherwise.
      */
     private boolean isAddToLoadBalancerSuspended(AutoScalingGroup asg) {
-        List<SuspendedProcess> suspendedProcesses = asg.getSuspendedProcesses();
+        List<SuspendedProcess> suspendedProcesses = asg.suspendedProcesses();
         for (SuspendedProcess process : suspendedProcesses) {
-            if (PROP_ADD_TO_LOAD_BALANCER.equals(process.getProcessName())) {
+            if (PROP_ADD_TO_LOAD_BALANCER.equals(process.processName())) {
                 return true;
             }
         }
         return false;
     }
+
 
     /**
      * Queries AWS to get the autoscaling information given the asgName.
@@ -248,11 +238,11 @@ public class AwsAsgUtil implements AsgClient {
             return null;
         }
         // You can pass one name or a list of names in the request
-        DescribeAutoScalingGroupsRequest request = new DescribeAutoScalingGroupsRequest()
-                .withAutoScalingGroupNames(asgName);
-        DescribeAutoScalingGroupsResult result = awsClient
-                .describeAutoScalingGroups(request);
-        List<AutoScalingGroup> asgs = result.getAutoScalingGroups();
+        DescribeAutoScalingGroupsRequest request = DescribeAutoScalingGroupsRequest.builder()
+                .autoScalingGroupNames(asgName)
+                .build();
+        DescribeAutoScalingGroupsResponse result = awsClient.describeAutoScalingGroups(request);
+        List<AutoScalingGroup> asgs = result.autoScalingGroups();
         if (asgs.isEmpty()) {
             return null;
         } else {
@@ -261,21 +251,31 @@ public class AwsAsgUtil implements AsgClient {
     }
 
     private Credentials initializeStsSession(String asgAccount) {
-        AWSSecurityTokenService sts = new AWSSecurityTokenServiceClient(new InstanceProfileCredentialsProvider());
-        String region = clientConfig.getRegion();
-        if (!region.equals("us-east-1")) {
-            sts.setEndpoint("sts." + region + ".amazonaws.com");
-        }
+        StsClientBuilder stsBuilder = StsClient.builder()
+                .credentialsProvider(InstanceProfileCredentialsProvider.create())
+                //copilot thinks this is unnecessary.  I'm not going to mess with it.
+                .region(Region.of(clientConfig.getRegion()));
+
+        // OLD CODE did this.  This is not needed if env variable AWS_STS_REGIONAL_ENDPOINTS=regional is set
+//        String region = clientConfig.getRegion();
+//        if (!region.equals("us-east-1")) {
+//            stsBuilder
+//                    .endpointOverride(URI.create("https://sts." + region + ".amazonaws.com"));
+//        }
+
+        StsClient sts = stsBuilder.build();
 
         String roleName = serverConfig.getListAutoScalingGroupsRoleName();
         String roleArn = "arn:aws:iam::" + asgAccount + ":role/" + roleName;
 
-        AssumeRoleResult assumeRoleResult = sts.assumeRole(new AssumeRoleRequest()
-                        .withRoleArn(roleArn)
-                        .withRoleSessionName("sts-session-" + asgAccount)
-        );
+        AssumeRoleRequest assumeRoleRequest = AssumeRoleRequest.builder()
+                .roleArn(roleArn)
+                .roleSessionName("sts-session-" + asgAccount)
+                .build();
 
-        return assumeRoleResult.getCredentials();
+        AssumeRoleResponse assumeRoleResponse = sts.assumeRole(assumeRoleRequest);
+
+        return assumeRoleResponse.credentials();
     }
 
     private AutoScalingGroup retrieveAutoScalingGroupCrossAccount(String asgAccount, String asgName) {
@@ -283,32 +283,38 @@ public class AwsAsgUtil implements AsgClient {
 
         Credentials credentials = stsCredentials.get(asgAccount);
 
-        if (credentials == null || credentials.getExpiration().getTime() < System.currentTimeMillis() + 1000) {
+        if (credentials == null || credentials.expiration().toEpochMilli() < System.currentTimeMillis() + 1000) {
             stsCredentials.put(asgAccount, initializeStsSession(asgAccount));
             credentials = stsCredentials.get(asgAccount);
         }
 
-        ClientConfiguration clientConfiguration = new ClientConfiguration()
-                .withConnectionTimeout(serverConfig.getASGQueryTimeoutMs());
-
-        AmazonAutoScaling autoScalingClient = new AmazonAutoScalingClient(
-                new BasicSessionCredentials(
-                        credentials.getAccessKeyId(),
-                        credentials.getSecretAccessKey(),
-                        credentials.getSessionToken()
-                ),
-                clientConfiguration
+        AwsSessionCredentials awsSessionCredentials = AwsSessionCredentials.create(
+                credentials.accessKeyId(),
+                credentials.secretAccessKey(),
+                credentials.sessionToken()
         );
 
-        String region = clientConfig.getRegion();
-        if (!region.equals("us-east-1")) {
-            autoScalingClient.setEndpoint("autoscaling." + region + ".amazonaws.com");
-        }
+        AutoScalingClient autoScalingClient = AutoScalingClient.builder()
+                .credentialsProvider(StaticCredentialsProvider.create(awsSessionCredentials))
+                .region(Region.of(clientConfig.getRegion()))
+                .build();
 
-        DescribeAutoScalingGroupsRequest request = new DescribeAutoScalingGroupsRequest()
-                .withAutoScalingGroupNames(asgName);
-        DescribeAutoScalingGroupsResult result = autoScalingClient.describeAutoScalingGroups(request);
-        List<AutoScalingGroup> asgs = result.getAutoScalingGroups();
+        String region = clientConfig.getRegion();
+        //this code is not needed as long as AWS_STS_REGIONAL_ENDPOINTS=regional is set
+//        if (!region.equals("us-east-1")) {
+//            autoScalingClient = AutoScalingClient.builder()
+//                    .credentialsProvider(StaticCredentialsProvider.create(awsSessionCredentials))
+//                    .region(Region.of(region))
+//                    //TODO: FIPS ENDPOINT
+//                    .endpointOverride(URI.create("https://autoscaling." + region + ".amazonaws.com"))
+//                    .build();
+//        }
+
+        DescribeAutoScalingGroupsRequest request = DescribeAutoScalingGroupsRequest.builder()
+                .autoScalingGroupNames(asgName)
+                .build();
+        DescribeAutoScalingGroupsResponse result = autoScalingClient.describeAutoScalingGroups(request);
+        List<AutoScalingGroup> asgs = result.autoScalingGroups();
         if (asgs.isEmpty()) {
             return null;
         } else {
@@ -475,22 +481,28 @@ public class AwsAsgUtil implements AsgClient {
         return localAccountId == null ? fallbackId : localAccountId;
     }
 
-    private AmazonAutoScaling getAmazonAutoScalingClient() {
-        String aWSAccessId = serverConfig.getAWSAccessId();
-        String aWSSecretKey = serverConfig.getAWSSecretKey();
-        ClientConfiguration clientConfiguration = new ClientConfiguration()
-                .withConnectionTimeout(serverConfig.getASGQueryTimeoutMs());
+    private AutoScalingClient getAmazonAutoScalingClient() {
+        String awsAccessId = serverConfig.getAWSAccessId();
+        String awsSecretKey = serverConfig.getAWSSecretKey();
+        Region region = Region.of(clientConfig.getRegion());
 
-        if (null != aWSAccessId && !"".equals(aWSAccessId) && null != aWSSecretKey && !"".equals(aWSSecretKey)) {
-            return new AmazonAutoScalingClient(
-                    new BasicAWSCredentials(aWSAccessId, aWSSecretKey),
-                    clientConfiguration);
+        AutoScalingClientBuilder builder = AutoScalingClient.builder()
+                .region(region)
+                .overrideConfiguration(
+                        ClientOverrideConfiguration.builder()
+                                .apiCallAttemptTimeout(Duration.ofMillis(serverConfig.getASGQueryTimeoutMs()))
+                                .build());
+
+        if (awsAccessId != null && !awsAccessId.isEmpty() && awsSecretKey != null && !awsSecretKey.isEmpty()) {
+            AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create(awsAccessId, awsSecretKey);
+            builder.credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials));
         } else {
-            return new AmazonAutoScalingClient(
-                    new InstanceProfileCredentialsProvider(),
-                    clientConfiguration);
+            builder.credentialsProvider(InstanceProfileCredentialsProvider.create());
         }
+
+        return builder.build();
     }
+
 
     private static String getAccountId() {
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();

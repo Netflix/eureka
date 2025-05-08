@@ -3,8 +3,8 @@ package com.netflix.eureka.test.async.executor;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.amazonaws.util.CollectionUtils;
 import com.google.common.base.Optional;
+import software.amazon.awssdk.utils.CollectionUtils;
 
 /**
  * Run a sequential events in asynchronous way.

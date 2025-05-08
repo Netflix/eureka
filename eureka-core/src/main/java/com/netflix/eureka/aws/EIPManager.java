@@ -22,15 +22,17 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.InstanceProfileCredentialsProvider;
-import com.amazonaws.services.ec2.AmazonEC2;
-import com.amazonaws.services.ec2.AmazonEC2Client;
-import com.amazonaws.services.ec2.model.Address;
-import com.amazonaws.services.ec2.model.AssociateAddressRequest;
-import com.amazonaws.services.ec2.model.DescribeAddressesRequest;
-import com.amazonaws.services.ec2.model.DescribeAddressesResult;
-import com.amazonaws.services.ec2.model.DisassociateAddressRequest;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.InstanceProfileCredentialsProvider;
+import software.amazon.awssdk.services.ec2.Ec2Client;
+import software.amazon.awssdk.services.ec2.model.Address;
+import software.amazon.awssdk.services.ec2.model.AssociateAddressRequest;
+import software.amazon.awssdk.services.ec2.model.DescribeAddressesRequest;
+import software.amazon.awssdk.services.ec2.model.DescribeAddressesResponse;
+import software.amazon.awssdk.services.ec2.model.DisassociateAddressRequest;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.AmazonInfo.MetaDataKey;
 import com.netflix.appinfo.ApplicationInfoManager;
@@ -197,7 +199,7 @@ public class EIPManager implements AwsBinder {
 
         Collection<String> candidateEIPs = getCandidateEIPs(myInstanceId, myZone);
 
-        AmazonEC2 ec2Service = getEC2Service();
+        Ec2Client ec2Service = getEC2Service();
         boolean isMyinstanceAssociatedWithEIP = false;
         Address selectedEIP = null;
 
@@ -206,21 +208,22 @@ public class EIPManager implements AwsBinder {
                 String associatedInstanceId;
 
                 // Check with AWS, if this EIP is already been used by another instance
-                DescribeAddressesRequest describeAddressRequest = new DescribeAddressesRequest().withPublicIps(eipEntry);
-                DescribeAddressesResult result = ec2Service.describeAddresses(describeAddressRequest);
-                if ((result.getAddresses() != null) && (!result.getAddresses().isEmpty())) {
-                    Address eipAddress = result.getAddresses().get(0);
-                    associatedInstanceId = eipAddress.getInstanceId();
+                DescribeAddressesRequest describeAddressRequest = DescribeAddressesRequest.builder()
+                        .publicIps(eipEntry)
+                        .build();
+                DescribeAddressesResponse result = ec2Service.describeAddresses(describeAddressRequest);
+                if (result.addresses() != null && !result.addresses().isEmpty()) {
+                    Address eipAddress = result.addresses().get(0);
+                    associatedInstanceId = eipAddress.instanceId();
                     // This EIP is not used by any other instance, hence mark it for selection if it is not
                     // already marked.
-                    if (((associatedInstanceId == null) || (associatedInstanceId.isEmpty()))) {
+                    if (associatedInstanceId == null || associatedInstanceId.isEmpty()) {
                         if (selectedEIP == null) {
                             selectedEIP = eipAddress;
                         }
-                    } else if (isMyinstanceAssociatedWithEIP = (associatedInstanceId.equals(myInstanceId))) {
+                    } else if (isMyinstanceAssociatedWithEIP = associatedInstanceId.equals(myInstanceId)) {
                         // This EIP is associated with an instance, check if this is the same as the current instance.
-                        // If it is the same, stop searching for an EIP as this instance is already associated with an
-                        // EIP
+                        // If it is the same, stop searching for an EIP as this instance is already associated with an EIP
                         selectedEIP = eipAddress;
                         break;
                     } else {
@@ -233,19 +236,24 @@ public class EIPManager implements AwsBinder {
                 logger.error("Failed to bind elastic IP: {} to {}", eipEntry, myInstanceId, t);
             }
         }
-        if (null != selectedEIP) {
-            String publicIp = selectedEIP.getPublicIp();
+        if (selectedEIP != null) {
+            String publicIp = selectedEIP.publicIp();
             // Only bind if the EIP is not already associated
             if (!isMyinstanceAssociatedWithEIP) {
 
-                AssociateAddressRequest associateAddressRequest = new AssociateAddressRequest()
-                        .withInstanceId(myInstanceId);
+                AssociateAddressRequest associateAddressRequest = AssociateAddressRequest.builder()
+                        .instanceId(myInstanceId)
+                        .build();
 
-                String domain = selectedEIP.getDomain();
+                String domain = selectedEIP.domain().toString();
                 if ("vpc".equals(domain)) {
-                    associateAddressRequest.setAllocationId(selectedEIP.getAllocationId());
+                    associateAddressRequest = associateAddressRequest.toBuilder()
+                            .allocationId(selectedEIP.allocationId())
+                            .build();
                 } else {
-                    associateAddressRequest.setPublicIp(publicIp);
+                    associateAddressRequest = associateAddressRequest.toBuilder()
+                            .publicIp(publicIp)
+                            .build();
                 }
 
                 ec2Service.associateAddress(associateAddressRequest);
@@ -257,34 +265,36 @@ public class EIPManager implements AwsBinder {
         }
     }
 
-    /**
-     * Unbind the EIP that this instance is associated with.
-     */
+
     public void unbindEIP() throws Exception {
         InstanceInfo myInfo = applicationInfoManager.getInfo();
         String myPublicIP = null;
-        if (myInfo != null
-                && myInfo.getDataCenterInfo().getName() == Name.Amazon) {
-            myPublicIP = ((AmazonInfo) myInfo.getDataCenterInfo())
-                    .get(MetaDataKey.publicIpv4);
+        if (myInfo != null && myInfo.getDataCenterInfo().getName() == Name.Amazon) {
+            myPublicIP = ((AmazonInfo) myInfo.getDataCenterInfo()).get(MetaDataKey.publicIpv4);
             if (myPublicIP == null) {
                 logger.info("Instance is not associated with an EIP. Will not try to unbind");
                 return;
             }
 
             try {
-                AmazonEC2 ec2Service = getEC2Service();
-                DescribeAddressesRequest describeAddressRequest = new DescribeAddressesRequest()
-                        .withPublicIps(myPublicIP);
-                DescribeAddressesResult result = ec2Service.describeAddresses(describeAddressRequest);
-                if ((result.getAddresses() != null) && (!result.getAddresses().isEmpty())) {
-                    Address eipAddress = result.getAddresses().get(0);
-                    DisassociateAddressRequest dissociateRequest = new DisassociateAddressRequest();
-                    String domain = eipAddress.getDomain();
+                Ec2Client ec2Service = getEC2Service();
+                DescribeAddressesRequest describeAddressRequest = DescribeAddressesRequest.builder()
+                        .publicIps(myPublicIP)
+                        .build();
+                DescribeAddressesResponse result = ec2Service.describeAddresses(describeAddressRequest);
+                if (result.addresses() != null && !result.addresses().isEmpty()) {
+                    Address eipAddress = result.addresses().get(0);
+                    DisassociateAddressRequest dissociateRequest = DisassociateAddressRequest.builder()
+                            .build();
+                    String domain = eipAddress.domain().toString();
                     if ("vpc".equals(domain)) {
-                        dissociateRequest.setAssociationId(eipAddress.getAssociationId());
+                        dissociateRequest = dissociateRequest.toBuilder()
+                                .associationId(eipAddress.associationId())
+                                .build();
                     } else {
-                        dissociateRequest.setPublicIp(eipAddress.getPublicIp());
+                        dissociateRequest = dissociateRequest.toBuilder()
+                                .publicIp(eipAddress.publicIp())
+                                .build();
                     }
 
                     ec2Service.disassociateAddress(dissociateRequest);
@@ -294,8 +304,8 @@ public class EIPManager implements AwsBinder {
                 throw new RuntimeException("Cannot dissociate address from this instance", e);
             }
         }
-
     }
+
 
     /**
      * Get the list of EIPs in the order of preference depending on instance zone.
@@ -313,8 +323,8 @@ public class EIPManager implements AwsBinder {
         }
 
         Collection<String> eipCandidates = clientConfig.shouldUseDnsForFetchingServiceUrls()
-                        ? getEIPsForZoneFromDNS(myZone)
-                        : getEIPsForZoneFromConfig(myZone);
+                ? getEIPsForZoneFromDNS(myZone)
+                : getEIPsForZoneFromConfig(myZone);
 
         if (eipCandidates == null || eipCandidates.size() == 0) {
             throw new RuntimeException("Could not get any elastic ips from the EIP pool for zone :" + myZone);
@@ -359,7 +369,7 @@ public class EIPManager implements AwsBinder {
                 String eip = eipStr.replaceAll("\\-", ".");
                 returnedUrls.add(eip);
             }
-            
+
             // Otherwise, if CNAME doesn't contain, do nothing.
             // Handle case where there are no cnames containing "ec2-". Reasons include:
             //  Systems without public addresses - purely attached to corp lan via AWS Direct Connect
@@ -402,21 +412,32 @@ public class EIPManager implements AwsBinder {
      *
      * @return the EC2 service object to call AWS APIs.
      */
-    private AmazonEC2 getEC2Service() {
-        String aWSAccessId = serverConfig.getAWSAccessId();
-        String aWSSecretKey = serverConfig.getAWSSecretKey();
+    private Ec2Client getEC2Service() {
+        String awsAccessId = serverConfig.getAWSAccessId();
+        String awsSecretKey = serverConfig.getAWSSecretKey();
 
-        AmazonEC2 ec2Service;
-        if (null != aWSAccessId && !"".equals(aWSAccessId)
-                && null != aWSSecretKey && !"".equals(aWSSecretKey)) {
-            ec2Service = new AmazonEC2Client(new BasicAWSCredentials(aWSAccessId, aWSSecretKey));
+        Ec2Client ec2Service;
+        if (awsAccessId != null && !awsAccessId.isEmpty() && awsSecretKey != null && !awsSecretKey.isEmpty()) {
+            AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create(awsAccessId, awsSecretKey);
+            ec2Service = Ec2Client.builder()
+                    .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials))
+                    .region(Region.of(clientConfig.getRegion().trim().toLowerCase()))
+                    .build();
         } else {
-            ec2Service = new AmazonEC2Client(new InstanceProfileCredentialsProvider());
+            ec2Service = Ec2Client.builder()
+                    .credentialsProvider(InstanceProfileCredentialsProvider.create())
+                    .region(Region.of(clientConfig.getRegion().trim().toLowerCase()))
+                    .build();
         }
 
-        String region = clientConfig.getRegion();
-        region = region.trim().toLowerCase();
-        ec2Service.setEndpoint("ec2." + region + ".amazonaws.com");
+        String region = clientConfig.getRegion().trim().toLowerCase();
+        ec2Service = Ec2Client.builder()
+                .credentialsProvider(InstanceProfileCredentialsProvider.create())
+                .region(Region.of(region))
+                // endpoint overide should not be necessary with AWS_STS_REGIONAL_ENDPOINTS=regional set
+                // .endpointOverride(URI.create("https://ec2." + region + ".amazonaws.com"))
+                .build();
+
         return ec2Service;
     }
 

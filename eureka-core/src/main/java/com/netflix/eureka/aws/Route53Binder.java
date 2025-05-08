@@ -1,15 +1,19 @@
 package com.netflix.eureka.aws;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.InstanceProfileCredentialsProvider;
-import com.amazonaws.services.route53.AmazonRoute53Client;
-import com.amazonaws.services.route53.model.*;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.InstanceProfileCredentialsProvider;
+import software.amazon.awssdk.services.route53.Route53Client;
+import software.amazon.awssdk.services.route53.model.*;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.route53.Route53ClientBuilder;
+
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.ApplicationInfoManager;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.eureka.EurekaServerConfig;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +24,6 @@ import javax.inject.Singleton;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -45,7 +48,8 @@ public class Route53Binder implements AwsBinder {
 
     private final Timer timer;
 
-    private final AmazonRoute53Client amazonRoute53Client;
+    private final Route53Client amazonRoute53Client;
+
 
     @Inject
     public Route53Binder(EurekaServerConfig serverConfig,
@@ -89,18 +93,18 @@ public class Route53Binder implements AwsBinder {
         try {
             doBind();
             timer.schedule(
-                new TimerTask() {
-                    @Override
-                    public void run() {
-                        try {
-                            doBind();
-                        } catch (Throwable e) {
-                            logger.error("Could not bind to Route53", e);
+                    new TimerTask() {
+                        @Override
+                        public void run() {
+                            try {
+                                doBind();
+                            } catch (Throwable e) {
+                                logger.error("Could not bind to Route53", e);
+                            }
                         }
-                    }
-                },
-                serverConfig.getRoute53BindingRetryIntervalMs(),
-                serverConfig.getRoute53BindingRetryIntervalMs());
+                    },
+                    serverConfig.getRoute53BindingRetryIntervalMs(),
+                    serverConfig.getRoute53BindingRetryIntervalMs());
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -109,17 +113,18 @@ public class Route53Binder implements AwsBinder {
     private void doBind() throws InterruptedException {
         List<ResourceRecordSetWithHostedZone> freeDomains = new ArrayList<>();
         List<String> domains = getDeclaredDomains();
-        for(String domain : domains) {
+        for (String domain : domains) {
             ResourceRecordSetWithHostedZone rrs = getResourceRecordSetWithHostedZone(domain);
 
             if (rrs != null) {
                 if (rrs.getResourceRecordSet() == null) {
-                    ResourceRecordSet resourceRecordSet = new ResourceRecordSet();
-                    resourceRecordSet.setName(domain);
-                    resourceRecordSet.setType(RRType.CNAME);
-                    resourceRecordSet.setTTL(serverConfig.getRoute53DomainTTL());
+                    ResourceRecordSet resourceRecordSet = ResourceRecordSet.builder()
+                            .name(domain)
+                            .type(RRType.CNAME)
+                            .ttl(serverConfig.getRoute53DomainTTL())
+                            .build();
                     freeDomains.add(new ResourceRecordSetWithHostedZone(rrs.getHostedZone(), resourceRecordSet));
-                } else if (NULL_DOMAIN.equals(rrs.getResourceRecordSet().getResourceRecords().get(0).getValue())) {
+                } else if (NULL_DOMAIN.equals(rrs.getResourceRecordSet().resourceRecords().get(0).value())) {
                     freeDomains.add(rrs);
                 }
                 // already registered
@@ -129,26 +134,31 @@ public class Route53Binder implements AwsBinder {
             }
         }
 
-        for(ResourceRecordSetWithHostedZone rrs : freeDomains) {
+        for (ResourceRecordSetWithHostedZone rrs : freeDomains) {
             if (createResourceRecordSet(rrs)) {
-                logger.info("Bind {} to {}" , registrationHostname, rrs.getResourceRecordSet().getName());
+                logger.info("Bind {} to {}", registrationHostname, rrs.getResourceRecordSet().name());
                 return;
             }
         }
 
         logger.warn("Unable to find free domain in {}", domains);
-
     }
 
+
     private boolean createResourceRecordSet(ResourceRecordSetWithHostedZone rrs) throws InterruptedException {
-        rrs.getResourceRecordSet().setResourceRecords(Arrays.asList(new ResourceRecord(registrationHostname)));
-        Change change = new Change(ChangeAction.UPSERT, rrs.getResourceRecordSet());
+        ResourceRecordSet resourceRecordSet = rrs.getResourceRecordSet().toBuilder()
+                .resourceRecords(ResourceRecord.builder().value(registrationHostname).build())
+                .build();
+        Change change = Change.builder()
+                .action(ChangeAction.UPSERT)
+                .resourceRecordSet(resourceRecordSet)
+                .build();
         if (executeChangeWithRetry(change, rrs.getHostedZone())) {
             Thread.sleep(1000);
             // check change not overwritten
-            ResourceRecordSet resourceRecordSet = getResourceRecordSet(rrs.getResourceRecordSet().getName(), rrs.getHostedZone());
-            if (resourceRecordSet != null) {
-                return resourceRecordSet.getResourceRecords().equals(rrs.getResourceRecordSet().getResourceRecords());
+            ResourceRecordSet updatedResourceRecordSet = getResourceRecordSet(rrs.getResourceRecordSet().name(), rrs.getHostedZone());
+            if (updatedResourceRecordSet != null) {
+                return updatedResourceRecordSet.resourceRecords().equals(resourceRecordSet.resourceRecords());
             }
         }
         return false;
@@ -203,16 +213,18 @@ public class Route53Binder implements AwsBinder {
         return false;
     }
     private void executeChange(Change change, HostedZone hostedZone) {
-            logger.info("Execute change {} ", change);
-            ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest();
-            changeResourceRecordSetsRequest.setHostedZoneId(hostedZone.getId());
-            ChangeBatch changeBatch = new ChangeBatch();
+        logger.info("Execute change {} ", change);
+        ChangeBatch changeBatch = ChangeBatch.builder()
+                .changes(change)
+                .build();
+        ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = ChangeResourceRecordSetsRequest.builder()
+                .hostedZoneId(hostedZone.id())
+                .changeBatch(changeBatch)
+                .build();
 
-            changeBatch.withChanges(change);
-            changeResourceRecordSetsRequest.setChangeBatch(changeBatch);
-
-            amazonRoute53Client.changeResourceRecordSets(changeResourceRecordSetsRequest);
+        amazonRoute53Client.changeResourceRecordSets(changeResourceRecordSetsRequest);
     }
+
 
     private ResourceRecordSetWithHostedZone getResourceRecordSetWithHostedZone(String domain) {
         HostedZone hostedZone = getHostedZone(domain);
@@ -223,14 +235,15 @@ public class Route53Binder implements AwsBinder {
     }
 
     private ResourceRecordSet getResourceRecordSet(String domain, HostedZone hostedZone) {
-        ListResourceRecordSetsRequest request = new ListResourceRecordSetsRequest();
-        request.setMaxItems(String.valueOf(Integer.MAX_VALUE));
-        request.setHostedZoneId(hostedZone.getId());
+        ListResourceRecordSetsRequest request = ListResourceRecordSetsRequest.builder()
+                .maxItems(String.valueOf(Integer.MAX_VALUE))
+                .hostedZoneId(hostedZone.id())
+                .build();
 
-        ListResourceRecordSetsResult listResourceRecordSetsResult = amazonRoute53Client.listResourceRecordSets(request);
+        ListResourceRecordSetsResponse listResourceRecordSetsResult = amazonRoute53Client.listResourceRecordSets(request);
 
-        for(ResourceRecordSet rrs : listResourceRecordSetsResult.getResourceRecordSets()) {
-            if (rrs.getName().equals(domain)) {
+        for (ResourceRecordSet rrs : listResourceRecordSetsResult.resourceRecordSets()) {
+            if (rrs.name().equals(domain)) {
                 return rrs;
             }
         }
@@ -239,11 +252,12 @@ public class Route53Binder implements AwsBinder {
     }
 
     private HostedZone getHostedZone(String domain) {
-        ListHostedZonesRequest listHostedZoneRequest = new ListHostedZonesRequest();
-        listHostedZoneRequest.setMaxItems(String.valueOf(Integer.MAX_VALUE));
-        ListHostedZonesResult listHostedZonesResult = amazonRoute53Client.listHostedZones(listHostedZoneRequest);
-        for(HostedZone hostedZone : listHostedZonesResult.getHostedZones()) {
-            if (domain.endsWith(hostedZone.getName())) {
+        ListHostedZonesRequest listHostedZoneRequest = ListHostedZonesRequest.builder()
+                .maxItems(String.valueOf(Integer.MAX_VALUE))
+                .build();
+        ListHostedZonesResponse listHostedZonesResult = amazonRoute53Client.listHostedZones(listHostedZoneRequest);
+        for (HostedZone hostedZone : listHostedZonesResult.hostedZones()) {
+            if (domain.endsWith(hostedZone.name())) {
                 return hostedZone;
             }
         }
@@ -253,10 +267,17 @@ public class Route53Binder implements AwsBinder {
     private void unbindFromDomain(String domain) throws InterruptedException {
         ResourceRecordSetWithHostedZone resourceRecordSetWithHostedZone = getResourceRecordSetWithHostedZone(domain);
         if (hasValue(resourceRecordSetWithHostedZone, registrationHostname)) {
-            resourceRecordSetWithHostedZone.getResourceRecordSet().getResourceRecords().get(0).setValue(NULL_DOMAIN);
-            executeChangeWithRetry(new Change(ChangeAction.UPSERT, resourceRecordSetWithHostedZone.getResourceRecordSet()), resourceRecordSetWithHostedZone.getHostedZone());
+            ResourceRecordSet updatedResourceRecordSet = resourceRecordSetWithHostedZone.getResourceRecordSet().toBuilder()
+                    .resourceRecords(ResourceRecord.builder().value(NULL_DOMAIN).build())
+                    .build();
+            Change change = Change.builder()
+                    .action(ChangeAction.UPSERT)
+                    .resourceRecordSet(updatedResourceRecordSet)
+                    .build();
+            executeChangeWithRetry(change, resourceRecordSetWithHostedZone.getHostedZone());
         }
     }
+
 
     private String extractDomain(String url) throws MalformedURLException {
         return new URL(url).getHost() + ".";
@@ -275,31 +296,33 @@ public class Route53Binder implements AwsBinder {
             }
         }
 
-        amazonRoute53Client.shutdown();
+        amazonRoute53Client.close();
     }
 
-    private AmazonRoute53Client getAmazonRoute53Client(EurekaServerConfig serverConfig) {
-        String aWSAccessId = serverConfig.getAWSAccessId();
-        String aWSSecretKey = serverConfig.getAWSSecretKey();
-        ClientConfiguration clientConfiguration = new ClientConfiguration()
-                .withConnectionTimeout(serverConfig.getASGQueryTimeoutMs());
+    private Route53Client getAmazonRoute53Client(EurekaServerConfig serverConfig) {
+        String awsAccessId = serverConfig.getAWSAccessId();
+        String awsSecretKey = serverConfig.getAWSSecretKey();
 
-        if (null != aWSAccessId && !"".equals(aWSAccessId)
-                && null != aWSSecretKey && !"".equals(aWSSecretKey)) {
-            return new AmazonRoute53Client(
-                    new BasicAWSCredentials(aWSAccessId, aWSSecretKey),
-                    clientConfiguration);
+        Route53ClientBuilder route53ClientBuilder;
+        if (awsAccessId != null && !awsAccessId.isEmpty() && awsSecretKey != null && !awsSecretKey.isEmpty()) {
+            AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create(awsAccessId, awsSecretKey);
+            route53ClientBuilder = Route53Client.builder()
+                    .credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials))
+                    .region(Region.of(clientConfig.getRegion().trim().toLowerCase()));
         } else {
-            return new AmazonRoute53Client(
-                    new InstanceProfileCredentialsProvider(),
-                    clientConfiguration);
+            route53ClientBuilder = Route53Client.builder()
+                    .credentialsProvider(InstanceProfileCredentialsProvider.create())
+                    .region(Region.of(clientConfig.getRegion().trim().toLowerCase()));
         }
+
+        return route53ClientBuilder.build();
     }
 
     private boolean hasValue(ResourceRecordSetWithHostedZone resourceRecordSetWithHostedZone, String ip) {
         if (resourceRecordSetWithHostedZone != null && resourceRecordSetWithHostedZone.getResourceRecordSet() != null) {
-            for (ResourceRecord rr : resourceRecordSetWithHostedZone.getResourceRecordSet().getResourceRecords()) {
-                if (ip.equals(rr.getValue())) {
+            ResourceRecordSet recordSet = resourceRecordSetWithHostedZone.getResourceRecordSet();
+            for (ResourceRecord rr : recordSet.resourceRecords()) {
+                if (ip.equals(rr.value())) {
                     return true;
                 }
             }

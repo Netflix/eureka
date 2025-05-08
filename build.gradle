@@ -4,6 +4,9 @@ buildscript {
         maven {
             url "https://plugins.gradle.org/m2"
         }
+        maven {
+            url "https://artifactory.appodeal.com/appodeal-public"
+        }
     }
 
     dependencies {
@@ -13,15 +16,8 @@ buildscript {
 
 plugins {
     id 'nebula.netflixoss' version '9.1.0'
-    id 'org.gretty' version '2.1.0'
+    id 'org.gretty' version '3.1.5'
 }
-
-idea {
-    project {
-        languageLevel = '1.8'
-    }
-}
-
 if (JavaVersion.current().isJava8Compatible()) {
     allprojects {
         tasks.withType(Javadoc) {
@@ -34,7 +30,7 @@ allprojects {
     ext {
         githubProjectName = 'eureka'
 
-        awsVersion = '1.11.277'
+        awsVersion = '2.31.37'
         servletVersion = '2.5'
         jerseyVersion = '1.19.1'
         jettisonVersion = '1.5.4'
