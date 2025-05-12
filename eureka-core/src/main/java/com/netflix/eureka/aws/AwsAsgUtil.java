@@ -89,7 +89,7 @@ public class AwsAsgUtil implements AsgClient {
                     thread.setDaemon(true);
                     return thread;
                 }
-            });
+    });
 
     private ListeningExecutorService listeningCacheReloadExecutor = MoreExecutors.listeningDecorator(cacheReloadExecutor);
 
@@ -106,8 +106,8 @@ public class AwsAsgUtil implements AsgClient {
 
     @Inject
     public AwsAsgUtil(EurekaServerConfig serverConfig,
-                        EurekaClientConfig clientConfig,
-                        InstanceRegistry registry) {
+                      EurekaClientConfig clientConfig,
+                      InstanceRegistry registry) {
         this.serverConfig = serverConfig;
         this.clientConfig = clientConfig;
         this.registry = registry;
@@ -164,7 +164,7 @@ public class AwsAsgUtil implements AsgClient {
                 // period, but no new values will be fetched while disabled.
 
                 logger.info(("'{}' is not cached at the moment and won't be fetched because querying AWS ASGs "
-                                + "has been disabled via the config, returning the fallback value."),
+                        + "has been disabled via the config, returning the fallback value."),
                         cacheKey);
 
                 return true;
@@ -243,8 +243,8 @@ public class AwsAsgUtil implements AsgClient {
         }
         // You can pass one name or a list of names in the request
         DescribeAutoScalingGroupsRequest request = DescribeAutoScalingGroupsRequest.builder()
-                .autoScalingGroupNames(asgName)
-                .build();
+        .autoScalingGroupNames(asgName)
+        .build();
         DescribeAutoScalingGroupsResponse result = awsClient.describeAutoScalingGroups(request);
         List<AutoScalingGroup> asgs = result.autoScalingGroups();
         if (asgs.isEmpty()) {
