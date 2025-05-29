@@ -47,7 +47,7 @@ public class DiscoveryClientDisableRegistryTest {
 
     @Test
     public void testDisableFetchRegistry() throws Exception {
-        Assert.assertFalse("Registry fetch disabled but eureka server recieved a registry fetch.",
+        Assert.assertFalse("Registry fetch disabled but eureka server received a registry fetch.",
                 mockLocalEurekaServer.isSentRegistry());
     }
 }
