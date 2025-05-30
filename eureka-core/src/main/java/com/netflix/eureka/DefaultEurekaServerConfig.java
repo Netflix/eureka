@@ -158,7 +158,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
 
     @Override
     public boolean isUseAwsSdkV2(){
-        return configInstance.getBooleanProperty(namespace + "useAwsSdkV2Key", false).get();
+        return configInstance.getBooleanProperty(namespace + "useAwsSdkV2", false).get();
     }
 
 
