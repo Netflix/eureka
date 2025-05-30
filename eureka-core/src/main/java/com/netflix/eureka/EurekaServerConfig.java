@@ -58,6 +58,29 @@ public interface EurekaServerConfig {
     String getAWSSecretKey();
 
     /**
+     * Defaults to false for back compatability.
+     * If set to true, the client will need to add the jars to their gradle:
+     *     api "com.amazonaws:aws-java-sdk-core:${awsV2Version}"
+     *     api "com.amazonaws:aws-java-sdk-ec2:${awsV2Version}"
+     *     api "com.amazonaws:aws-java-sdk-autoscaling:${awsV2Version}"
+     *     api "com.amazonaws:aws-java-sdk-sts:${awsV2Version}"
+     *     api "com.amazonaws:aws-java-sdk-route53:${awsV2Version}"
+     *     api "software.amazon.awssdk:ec2:${awsV2Version}"
+     *     api "software.amazon.awssdk:autoscaling:${awsV2Version}"
+     *     api "software.amazon.awssdk:auth:${awsV2Version}"
+     *     api "software.amazon.awssdk:route53:${awsV2Version}"
+     *     api "software.amazon.awssdk:sesv2:${awsV2Version}"
+     *     api "software.amazon.awssdk:sts:${awsV2Version}"
+     *
+     *     And exclude com.amazonaws
+     *
+     * @return
+     */
+    default boolean isUseAwsSdkV2() {
+        return false;
+    }
+
+    /**
      * Gets the number of times the server should try to bind to the candidate
      * EIP.
      *

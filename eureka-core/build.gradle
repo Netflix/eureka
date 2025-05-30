@@ -8,6 +8,12 @@ dependencies {
     api "com.amazonaws:aws-java-sdk-autoscaling:${awsVersion}"
     api "com.amazonaws:aws-java-sdk-sts:${awsVersion}"
     api "com.amazonaws:aws-java-sdk-route53:${awsVersion}"
+    api "software.amazon.awssdk:ec2:${awsV2Version}"
+    api "software.amazon.awssdk:autoscaling:${awsV2Version}"
+    api "software.amazon.awssdk:auth:${awsV2Version}"
+    api "software.amazon.awssdk:route53:${awsV2Version}"
+    api "software.amazon.awssdk:sesv2:${awsV2Version}"
+    api "software.amazon.awssdk:sts:${awsV2Version}"
     api "jakarta.servlet:jakarta.servlet-api:${servletVersion}"
     api 'jakarta.inject:jakarta.inject-api:2.0.1'
     api 'com.thoughtworks.xstream:xstream:1.4.21'
@@ -26,4 +32,5 @@ dependencies {
     testImplementation "org.mockito:mockito-core:${mockitoVersion}"
     testImplementation "org.assertj:assertj-core:3.24.2"
     testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.10'
+
 }

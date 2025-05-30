@@ -11,6 +11,8 @@ final class PropertyBasedClientConfigConstants {
     // NOTE: all keys are before any prefixes are applied
     static final String CLIENT_REGION_KEY = "region";
 
+    static final String CLIENT_USE_AWS_V2_KEY = "useAwsSdkV2";
+
     static final String REGISTRATION_ENABLED_KEY = "registration.enabled";
     static final String FETCH_REGISTRY_ENABLED_KEY = "shouldFetchRegistry";
     static final String SHOULD_ENFORCE_FETCH_REGISTRY_AT_INIT_KEY = "shouldEnforceFetchRegistryAtInit";
