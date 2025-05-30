@@ -259,10 +259,14 @@ public class AwsAsgUtilV2 implements AsgClient {
 
     private Credentials initializeStsSession(String asgAccount) {
         String region = clientConfig.getRegion();
+
         StsClientBuilder stsBuilder = StsClient.builder()
-                .credentialsProvider(InstanceProfileCredentialsProvider.create())
-                //setting the region based on config, letting jdk resolve endponit
-                .region(Region.of(region));
+                .credentialsProvider(InstanceProfileCredentialsProvider.create());
+
+        if(region != null && !region.isEmpty()) {
+            //setting the region based on config, letting jdk resolve endponit
+            stsBuilder.region(Region.of(region.toLowerCase().trim()));
+        }
 
 
         StsClient sts = stsBuilder.build();
@@ -298,12 +302,15 @@ public class AwsAsgUtilV2 implements AsgClient {
 
         AutoScalingClientBuilder autoScalingClientBuilder = AutoScalingClient.builder()
                 .credentialsProvider(StaticCredentialsProvider.create(awsSessionCredentials))
-                //setting region based on config, letting sdk resolve endpoint
-                .region(Region.of(clientConfig.getRegion()))
                 .overrideConfiguration(
                         ClientOverrideConfiguration.builder()
                                 .apiCallAttemptTimeout(Duration.ofMillis(serverConfig.getASGQueryTimeoutMs()))
                                 .build());
+        String region = clientConfig.getRegion();
+        if(region != null && !region.isEmpty()) {
+            //setting the region based on config, letting jdk resolve endpoint
+            autoScalingClientBuilder.region(Region.of(region.toLowerCase().trim()));
+        }
         AutoScalingClient autoScalingClient = autoScalingClientBuilder.build();
 
         DescribeAutoScalingGroupsRequest request = DescribeAutoScalingGroupsRequest.builder()
@@ -479,9 +486,13 @@ public class AwsAsgUtilV2 implements AsgClient {
                 .overrideConfiguration(
                         ClientOverrideConfiguration.builder()
                                 .apiCallAttemptTimeout(Duration.ofMillis(serverConfig.getASGQueryTimeoutMs()))
-                                .build())
-                        .region(Region.of(clientConfig.getRegion()));
+                                .build());
 
+        String region = clientConfig.getRegion();
+        if(region != null && !region.isEmpty()) {
+            //setting the region based on config, letting jdk resolve endpoint
+            builder.region(Region.of(region.toLowerCase().trim()));
+        }
         if (awsAccessId != null && !awsAccessId.isEmpty() && awsSecretKey != null && !awsSecretKey.isEmpty()) {
             AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create(awsAccessId, awsSecretKey);
             builder.credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials));

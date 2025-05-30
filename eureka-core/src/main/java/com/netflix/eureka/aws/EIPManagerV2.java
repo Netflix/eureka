@@ -400,9 +400,14 @@ public class EIPManagerV2 implements AwsBinder {
         String awsAccessId = serverConfig.getAWSAccessId();
         String awsSecretKey = serverConfig.getAWSSecretKey();
 
-        final Ec2ClientBuilder ec2ServiceBuilder = Ec2Client.builder()
-                //we set region based on configuration, but let the sdk determine the endpoints
-                .region(Region.of(clientConfig.getRegion().trim().toLowerCase()));
+        final Ec2ClientBuilder ec2ServiceBuilder = Ec2Client.builder();
+
+        String region = clientConfig.getRegion();
+        if(region != null && !region.isEmpty()) {
+            //setting the region based on config, letting jdk resolve endpoint
+            ec2ServiceBuilder.region(Region.of(region.toLowerCase().trim()));
+        }
+
         if (awsAccessId != null && !awsAccessId.isEmpty() && awsSecretKey != null && !awsSecretKey.isEmpty()) {
             AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create(awsAccessId, awsSecretKey);
             ec2ServiceBuilder.credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials));

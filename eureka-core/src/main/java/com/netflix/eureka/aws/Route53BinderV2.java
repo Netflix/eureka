@@ -312,11 +312,17 @@ public class Route53BinderV2 implements AwsBinder {
 
 
         final Route53ClientBuilder route53ClientBuilder = Route53Client.builder()
-                .region(Region.of(clientConfig.getRegion().trim().toLowerCase()))
                 .overrideConfiguration(
                         ClientOverrideConfiguration.builder()
                                 .apiCallAttemptTimeout(Duration.ofMillis(serverConfig.getASGQueryTimeoutMs()))
                                 .build());
+
+        String region = clientConfig.getRegion();
+        if(region != null && !region.isEmpty()) {
+            //setting the region based on config, letting jdk resolve endpoint
+            route53ClientBuilder.region(Region.of(region.toLowerCase().trim()));
+        }
+
         if (awsAccessId != null && !awsAccessId.isEmpty() && awsSecretKey != null && !awsSecretKey.isEmpty()) {
             AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create(awsAccessId, awsSecretKey);
             route53ClientBuilder.credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials));

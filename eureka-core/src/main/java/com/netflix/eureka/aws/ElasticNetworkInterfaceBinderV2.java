@@ -278,10 +278,14 @@ public class ElasticNetworkInterfaceBinderV2 implements AwsBinder {
         String awsAccessId = serverConfig.getAWSAccessId();
         String awsSecretKey = serverConfig.getAWSSecretKey();
 
-        String region = clientConfig.getRegion().trim().toLowerCase();
-        final Ec2ClientBuilder ec2ServiceBuilder = Ec2Client.builder()
-                //we set the region based on config and let the SDK determine the endpoint for the service.
-                .region(Region.of(region));
+        final Ec2ClientBuilder ec2ServiceBuilder = Ec2Client.builder();
+
+        String region = clientConfig.getRegion();
+        if(region != null && !region.isEmpty()) {
+            //setting the region based on config, letting jdk resolve endpoint
+            ec2ServiceBuilder.region(Region.of(region.toLowerCase().trim()));
+        }
+
         if (awsAccessId != null && !awsAccessId.isEmpty() && awsSecretKey != null && !awsSecretKey.isEmpty()) {
             AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create(awsAccessId, awsSecretKey);
             ec2ServiceBuilder.credentialsProvider(StaticCredentialsProvider.create(awsBasicCredentials));
