@@ -21,10 +21,9 @@ public class AwsBinderDelegate implements AwsBinder {
                              PeerAwareInstanceRegistry registry,
                              ApplicationInfoManager applicationInfoManager) {
         AwsBindingStrategy bindingStrategy = serverConfig.getBindingStrategy();
-        boolean useAwsSdkV2 = serverConfig.isUseAwsSdkV2();
         switch (bindingStrategy) {
             case ROUTE53:
-                delegate =new Route53Binder(serverConfig, clientConfig, applicationInfoManager);
+                delegate = new Route53Binder(serverConfig, clientConfig, applicationInfoManager);
                 break;
             case EIP:
                 delegate = new EIPManager(serverConfig, clientConfig, registry, applicationInfoManager);
