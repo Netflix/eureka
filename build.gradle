@@ -12,7 +12,7 @@ buildscript {
 }
 
 plugins {
-    id 'com.netflix.nebula.netflixoss' version '11.1.1'
+    id 'com.netflix.nebula.netflixoss' version '11.6.0'
     id 'org.gretty' version '4.0.3'
 }
 
