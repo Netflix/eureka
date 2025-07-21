@@ -59,7 +59,6 @@ import jakarta.ws.rs.core.Response.Status;
 
 import com.netflix.discovery.shared.resolver.EndpointRandomizer;
 import com.netflix.discovery.shared.resolver.ResolverUtils;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -812,8 +811,8 @@ public class DiscoveryClient implements EurekaClient {
             logger.info(PREFIX + "{} - was unable to refresh its cache! This periodic background refresh will be retried in {} seconds. status = {}",
                     appPathIdentifier, clientConfig.getRegistryFetchIntervalSeconds(), response.getStatusCode());
         } catch (Throwable th) {
-            logger.info(PREFIX + "{} - was unable to refresh its cache! This periodic background refresh will be retried in {} seconds. status = {} stacktrace = {}",
-                    appPathIdentifier, clientConfig.getRegistryFetchIntervalSeconds(), th.getMessage(), ExceptionUtils.getStackTrace(th));
+            logger.info(String.format(PREFIX + "%s - was unable to refresh its cache! This periodic background refresh will be retried in %d seconds. status = %s",
+                    appPathIdentifier, clientConfig.getRegistryFetchIntervalSeconds(), th.getMessage()), th);
         }
         return null;
     }
@@ -965,8 +964,8 @@ public class DiscoveryClient implements EurekaClient {
             applications.setAppsHashCode(applications.getReconcileHashCode());
             logTotalInstances();
         } catch (Throwable e) {
-            logger.info(PREFIX + "{} - was unable to refresh its cache! This periodic background refresh will be retried in {} seconds. status = {} stacktrace = {}",
-                    appPathIdentifier, clientConfig.getRegistryFetchIntervalSeconds(), e.getMessage(), ExceptionUtils.getStackTrace(e));
+            logger.info(String.format(PREFIX + "%s - was unable to refresh its cache! This periodic background refresh will be retried in %d seconds. status = %s",
+                    appPathIdentifier, clientConfig.getRegistryFetchIntervalSeconds(), e.getMessage()), e);
             return false;
         } finally {
             SpectatorUtil.record(FETCH_REGISTRY_TIMER, monotonicTime);
