@@ -37,7 +37,7 @@ allprojects {
         awsVersion = '1.11.277'
         servletVersion = '5.0.0'
         jettisonVersion = '1.5.4'
-        apacheHttpClientVersion = '4.5.3'
+        apacheHttpClientVersion = '4.5.14'
         commonsConfigurationVersion = '1.10'
         jsr305Version = '3.0.2'
         spectatorVersion = '1.7.3'
