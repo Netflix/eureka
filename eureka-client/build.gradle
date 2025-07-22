@@ -18,7 +18,6 @@ dependencies {
     // compile "com.sun.jersey:jersey-core:${jerseyVersion}"
     // compile "com.sun.jersey:jersey-client:${jerseyVersion}"
     // compile "com.sun.jersey.contribs:jersey-apache-client4:${jerseyVersion}"
-    api "org.apache.httpcomponents:httpclient:${apacheHttpClientVersion}"
     api "com.google.code.findbugs:jsr305:${jsr305Version}"
     api "commons-configuration:commons-configuration:${commonsConfigurationVersion}"
 
