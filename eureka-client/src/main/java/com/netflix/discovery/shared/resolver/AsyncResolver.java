@@ -15,6 +15,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.netflix.discovery.EurekaClientNames.METRIC_RESOLVER_PREFIX;
@@ -109,9 +110,10 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
             this, AsyncResolver::getLastLoadTimestamp);
 
         this.executorService = Executors.newScheduledThreadPool(1, new ThreadFactory() {
+            private final AtomicInteger threadNumber = new AtomicInteger(1);
             @Override
             public Thread newThread(Runnable r) {
-                Thread thread = new Thread(r, "AsyncResolver-" + name + "-%d");
+                Thread thread = new Thread(r, "AsyncResolver-" + name + "-" + threadNumber.getAndIncrement());
                 thread.setDaemon(true);
                 return thread;
             }
@@ -121,9 +123,10 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
             1, executorThreadPoolSize, 0, TimeUnit.SECONDS,
             new SynchronousQueue<Runnable>(),  // use direct handoff
             new ThreadFactory() {
+                private final AtomicInteger threadNumber = new AtomicInteger(1);
                 @Override
                 public Thread newThread(Runnable r) {
-                    Thread thread = new Thread(r, "AsyncResolver-" + name + "-executor-%d");
+                    Thread thread = new Thread(r, "AsyncResolver-" + name + "-executor-" + threadNumber.getAndIncrement());
                     thread.setDaemon(true);
                     return thread;
                 }
