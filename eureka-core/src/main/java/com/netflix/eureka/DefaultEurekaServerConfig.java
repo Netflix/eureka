@@ -707,4 +707,17 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     public int getInitialCapacityOfResponseCache() {
         return configInstance.getIntProperty(namespace + "initialCapacityOfResponseCache", 1000).get();
     }
+
+    @Nullable
+    @Override
+    public Set<String> getBlockingIpAddresses() {
+        DynamicStringProperty blockingIpAddresses = configInstance.getStringProperty(namespace + "blockingIpAddresses", null);
+        if (null == blockingIpAddresses || null == blockingIpAddresses.get()) {
+            return null;
+        } else {
+            String blockingIpAddressesStr = blockingIpAddresses.get();
+            String[] whitelistEntries = blockingIpAddressesStr.split(",");
+            return new HashSet<String>(Arrays.asList(whitelistEntries));
+        }
+    }
 }
