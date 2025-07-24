@@ -18,6 +18,7 @@ package com.netflix.eureka;
 
 import com.netflix.discovery.AbstractDiscoveryClientOptionalArgs;
 import com.netflix.discovery.shared.transport.jersey.TransportClientFactories;
+import com.netflix.eureka.aws.AwsBinderDelegateV2;
 import com.netflix.eureka.transport.EurekaServerHttpClientFactory;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
@@ -186,7 +187,11 @@ public abstract class EurekaBootStrap implements ServletContextListener {
                     eurekaClient,
                     eurekaServerHttpClientFactory
             );
-            awsBinder = new AwsBinderDelegate(eurekaServerConfig, eurekaClient.getEurekaClientConfig(), registry, applicationInfoManager);
+            if(eurekaServerConfig.isUseAwsSdkV2()) {
+                awsBinder = new AwsBinderDelegateV2(eurekaServerConfig, eurekaClient.getEurekaClientConfig(), registry, applicationInfoManager);
+            }else{
+                awsBinder = new AwsBinderDelegate(eurekaServerConfig, eurekaClient.getEurekaClientConfig(), registry, applicationInfoManager);
+            }
             awsBinder.start();
         } else {
             registry = new PeerAwareInstanceRegistryImpl(

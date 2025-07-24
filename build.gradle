@@ -31,10 +31,10 @@ if (JavaVersion.current().isJava8Compatible()) {
 }
 
 allprojects {
-    ext {
+ext {
         githubProjectName = 'eureka'
-
         awsVersion = '1.11.277'
+        awsV2Version = '2.31.37'
         servletVersion = '5.0.0'
         jettisonVersion = '1.5.4'
         apacheHttpClientVersion = '4.5.3'
