@@ -1255,16 +1255,31 @@ public class DiscoveryClient implements EurekaClient {
                     if (existingApp == null) {
                         applications.addApplication(app);
                     }
-                    logger.debug("Added instance {} to the existing apps in region {}", instance.getId(), instanceRegion);
                     applications.getRegisteredApplications(instance.getAppName()).addInstance(instance);
+                    logger.debug("Added instance {} to the existing apps in region {}", instance.getId(), instanceRegion);
                 } else if (ActionType.MODIFIED.equals(instance.getActionType())) {
                     Application existingApp = applications.getRegisteredApplications(instance.getAppName());
                     if (existingApp == null) {
                         applications.addApplication(app);
-                    }
-                    logger.debug("Modified instance {} to the existing apps ", instance.getId());
+                    } else {
+                        InstanceInfo existingInstance = existingApp.getByInstanceId(instance.getId());
+                        if (existingInstance != null) {
+                            existingInstance.setStatus(instance.getStatus());
 
-                    applications.getRegisteredApplications(instance.getAppName()).addInstance(instance);
+                            // To prevents NullPointerException or any unnecessary map merges
+                            if (instance.getMetadata() != null && !instance.getMetadata().isEmpty()) {
+                                existingInstance.getMetadata().putAll(instance.getMetadata());
+                            }
+                        } else {
+                            existingApp.addInstance(instance);
+                        }
+                    }
+                    logger.debug("Modified instance {} in the existing apps", instance.getId());
+
+
+
+
+//                    applications.getRegisteredApplications(instance.getAppName()).addInstance(instance);
 
                 } else if (ActionType.DELETED.equals(instance.getActionType())) {
                     Application existingApp = applications.getRegisteredApplications(instance.getAppName());
