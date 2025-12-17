@@ -1,29 +1,27 @@
-apply plugin: 'nebula.test-jar'
-
 configurations.all {
     // jersey2
     exclude group: 'org.glassfish.jersey'
 }
 
 dependencies {
-    compile "com.netflix.netflix-commons:netflix-eventbus:0.3.0"
-    compile 'com.thoughtworks.xstream:xstream:1.4.19'
-    compile "com.netflix.archaius:archaius-core:${archaiusVersion}"
-    compile 'javax.ws.rs:jsr311-api:1.1.1'
-    compile "com.netflix.servo:servo-core:${servoVersion}"
-    compile "com.sun.jersey:jersey-core:${jerseyVersion}"
-    compile "com.sun.jersey:jersey-client:${jerseyVersion}"
-    compile "com.sun.jersey.contribs:jersey-apache-client4:${jerseyVersion}"
-    compile "org.apache.httpcomponents:httpclient:${apacheHttpClientVersion}"
-    compile "com.google.code.findbugs:jsr305:${jsr305Version}"
-    compile "commons-configuration:commons-configuration:${commonsConfigurationVersion}"
-    compile "com.google.inject:guice:${guiceVersion}"
+    api "com.netflix.netflix-commons:netflix-eventbus:0.3.0"
+    api 'com.thoughtworks.xstream:xstream:1.4.19'
+    api "com.netflix.archaius:archaius-core:${archaiusVersion}"
+    api 'javax.ws.rs:jsr311-api:1.1.1'
+    api "com.netflix.servo:servo-core:${servoVersion}"
+    api "com.sun.jersey:jersey-core:${jerseyVersion}"
+    api "com.sun.jersey:jersey-client:${jerseyVersion}"
+    api "com.sun.jersey.contribs:jersey-apache-client4:${jerseyVersion}"
+    api "org.apache.httpcomponents:httpclient:${apacheHttpClientVersion}"
+    api "com.google.code.findbugs:jsr305:${jsr305Version}"
+    api "commons-configuration:commons-configuration:${commonsConfigurationVersion}"
+    api "com.google.inject:guice:${guiceVersion}"
 
-    compile "com.github.vlsi.compactmap:compactmap:2.0"
+    api "com.github.vlsi.compactmap:compactmap:2.0"
 
-    compile "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
-    compile "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
-    compile "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
+    api "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+    api "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+    api "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
 
     // Eureka client uses JSON encoding by default
     compileOnly "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${jacksonVersion}"
@@ -32,13 +30,13 @@ dependencies {
 
     runtimeOnly "org.codehaus.jettison:jettison:${jettisonVersion}"
 
-    testCompile project(':eureka-test-utils')
-    testCompile "junit:junit:${junit_version}"
-    testCompile 'org.mortbay.jetty:jetty:6.1H.22'
-    testCompile "org.mockito:mockito-inline:${mockitoVersion}"
-    testCompile "org.mock-server:mockserver-netty:${mockserverVersion}"
-    testCompile "com.netflix.governator:governator:${governatorVersion}"
-    testCompile "com.github.tomakehurst:wiremock-jre8:2.25.1"
-    testCompile "org.assertj:assertj-core:3.11.1"
-    testCompile "javax.servlet:javax.servlet-api:4.0.1"
+    testImplementation project(':eureka-test-utils')
+    testImplementation "junit:junit:${junit_version}"
+    testImplementation 'org.mortbay.jetty:jetty:6.1H.22'
+    testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+    testImplementation "org.mock-server:mockserver-netty:${mockserverVersion}"
+    testImplementation "com.netflix.governator:governator:${governatorVersion}"
+    testImplementation "com.github.tomakehurst:wiremock-jre8:2.25.1"
+    testImplementation "org.assertj:assertj-core:3.11.1"
+    testImplementation "javax.servlet:javax.servlet-api:4.0.1"
 }
