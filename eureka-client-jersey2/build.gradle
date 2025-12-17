@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-apply plugin: 'nebula.test-jar'
-
 configurations.all {
     // jersey1
     exclude group: 'com.sun.jersey'
@@ -24,18 +22,18 @@ configurations.all {
 }
 
 dependencies {
-    compile project(':eureka-client')
-    compile 'org.glassfish.jersey.core:jersey-client:2.23.1'
-    compile 'org.glassfish.jersey.connectors:jersey-apache-connector:2.23.1'
+    api project(':eureka-client')
+    api 'org.glassfish.jersey.core:jersey-client:2.23.1'
+    api 'org.glassfish.jersey.connectors:jersey-apache-connector:2.23.1'
 
-    testCompile (project(':eureka-test-utils')) {
+    testImplementation (project(':eureka-test-utils')) {
         // exclude all transitives to avoid bringing in jersey1 eureka-core
         transitive = false
     }
     // bring in jersey2 compatible eureka-core-jersey2 directly
-    testCompile project(':eureka-core-jersey2')
+    testImplementation project(':eureka-core-jersey2')
 
-    testCompile "junit:junit:${junit_version}"
-    testCompile "org.mockito:mockito-core:${mockitoVersion}"
-    testCompile "com.netflix.governator:governator:${governatorVersion}"
+    testImplementation "junit:junit:${junit_version}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "com.netflix.governator:governator:${governatorVersion}"
 }
