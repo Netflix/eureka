@@ -193,11 +193,13 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
     private static boolean maybeReadTimeOut(Throwable e) {
         do {
             if (IOException.class.isInstance(e)) {
-            	String message = e.getMessage().toLowerCase();
-            	Matcher matcher = READ_TIME_OUT_PATTERN.matcher(message);
-            	if(matcher.find()) {
-            		return true;
-            	}
+            	String message = e.getMessage();
+                if (message != null) {
+                    Matcher matcher = READ_TIME_OUT_PATTERN.matcher(message.toLowerCase());
+                    if(matcher.find()) {
+                        return true;
+                    }
+                }
             }
             e = e.getCause();
         } while (e != null);
