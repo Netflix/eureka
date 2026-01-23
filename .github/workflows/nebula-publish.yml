@@ -18,6 +18,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           java-version: 11
+          distribution: 'zulu'
       - uses: actions/cache@v5
         id: gradle-cache
         with:
