@@ -192,14 +192,20 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
      */
     private static boolean maybeReadTimeOut(Throwable e) {
         do {
-            if (IOException.class.isInstance(e)) {
-            	String message = e.getMessage().toLowerCase();
-            	Matcher matcher = READ_TIME_OUT_PATTERN.matcher(message);
-            	if(matcher.find()) {
-            		return true;
-            	}
+            try {
+                if (IOException.class.isInstance(e)) {
+                    # !!!this line may occurs NullPointerException in some scenarios.
+                    String message = e.getMessage().toLowerCase();
+                    Matcher matcher = READ_TIME_OUT_PATTERN.matcher(message);
+                    if(matcher.find()) {
+                        return true;
+                    }
+                }
+                e = e.getCause();
+            } catch (Exception ex) {
+                logger.error("Unexpected other exception occurs when check if the income param e is socket read time out exception ", ex);
+                return false;
             }
-            e = e.getCause();
         } while (e != null);
         return false;
     }
