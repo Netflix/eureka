@@ -147,7 +147,7 @@ public abstract class AbstractJersey3EurekaHttpClient implements EurekaHttpClien
             requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE);
             response = requestBuilder.put(Entity.entity("{}", MediaType.APPLICATION_JSON_TYPE)); // Jersey3 refuses to handle PUT with no body
             EurekaHttpResponseBuilder<InstanceInfo> eurekaResponseBuilder = anEurekaHttpResponse(response.getStatus(), InstanceInfo.class).headers(headersOf(response));
-            if (response.hasEntity()) {
+            if (response.getStatus() != Status.NOT_FOUND.getStatusCode() && response.hasEntity()) {
                 eurekaResponseBuilder.entity(response.readEntity(InstanceInfo.class));
             }
             return eurekaResponseBuilder.build();
