@@ -37,6 +37,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
@@ -147,6 +148,7 @@ public class AbstractTester {
         remoteRegionAppsDelta.clear();
         ConfigurationManager.getConfigInstance().clearProperty("eureka.remoteRegionUrls");
         ConfigurationManager.getConfigInstance().clearProperty("eureka.deltaRetentionTimerIntervalInMs");
+        ConfigurationManager.getConfigInstance().clearProperty("eureka.blockingIpAddresses");
     }
 
     private static Application createRemoteApps() {
@@ -210,6 +212,12 @@ public class AbstractTester {
         return instanceBuilder.build();
     }
 
+    protected static InstanceInfo createLocalInstanceWithBlockingIpAddresses(String blockingIpAddresses) {
+        ConfigurationManager.getConfigInstance().clearProperty("eureka.blockingIpAddresses");
+        ConfigurationManager.getConfigInstance().setProperty("eureka.blockingIpAddresses", blockingIpAddresses);
+        return createLocalInstance(LOCAL_REGION_INSTANCE_1_HOSTNAME);
+    }
+
     private static AmazonInfo getAmazonInfo(@Nullable String availabilityZone, String instanceHostName) {
         AmazonInfo.Builder azBuilder = AmazonInfo.Builder.newBuilder();
         azBuilder.addMetadata(AmazonInfo.MetaDataKey.availabilityZone, null == availabilityZone ? "us-east-1a" : availabilityZone);
@@ -260,6 +268,10 @@ public class AbstractTester {
         registeredApps.add(new Pair<String, String>(LOCAL_REGION_APP_NAME, remoteInstance.getId()));
     }
 
+    protected void verifyInstanceNotRegistered(String appName, String id) {
+        InstanceInfo instance = registry.getInstanceByAppAndId(appName, id);
+        assertNull(instance);
+    }
 
     /**
      * Send renewal request to Eureka server to renew lease for 45 instances.

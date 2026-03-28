@@ -705,4 +705,11 @@ public interface EurekaServerConfig {
      * @return the capacity of responseCache.
      */
     int getInitialCapacityOfResponseCache();
+
+    /**
+     *
+     * @return A set of IP addresses that have to be blocked
+     */
+    @Nullable
+    Set<String> getBlockingIpAddresses();
 }
