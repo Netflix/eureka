@@ -12,6 +12,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -45,9 +46,10 @@ class InstanceInfoReplicator implements Runnable {
         this.instanceInfo = instanceInfo;
         this.scheduler = Executors.newScheduledThreadPool(1,
             new ThreadFactory() {
+                private final AtomicInteger threadNumber = new AtomicInteger(1);
                 @Override
                 public Thread newThread(Runnable r) {
-                    Thread thread = new Thread(r, "DiscoveryClient-InstanceInfoReplicator-%d");
+                    Thread thread = new Thread(r, "DiscoveryClient-InstanceInfoReplicator-" + threadNumber.getAndIncrement());
                     thread.setDaemon(true);
                     return thread;
                 }
@@ -95,13 +97,13 @@ class InstanceInfoReplicator implements Runnable {
                     @Override
                     public void run() {
                         logger.debug("Executing on-demand update of local InstanceInfo");
-    
+
                         Future latestPeriodic = scheduledPeriodicRef.get();
                         if (latestPeriodic != null && !latestPeriodic.isDone()) {
                             logger.debug("Canceling the latest scheduled update, it will be rescheduled at the end of on demand update");
                             latestPeriodic.cancel(false);
                         }
-    
+
                         InstanceInfoReplicator.this.run();
                     }
                 });
