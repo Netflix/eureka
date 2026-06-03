@@ -69,3 +69,8 @@ subprojects {
         }
     }
 }
+
+// Define dummy task to satisfy Nebula netflixoss plugin dependency
+task postRelease {
+    description = 'Placeholder task for Nebula release plugin'
+}

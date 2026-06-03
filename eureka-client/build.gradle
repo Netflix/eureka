@@ -28,6 +28,9 @@ dependencies {
     // Prefered jackson Stax serializer. Default Oracle has issues (adds empty namespace) and is slower
     compileOnly "com.fasterxml.woodstox:woodstox-core:${woodstoxVersion}"
 
+    // Required for javax.annotation.PreDestroy and javax.annotation.PostConstruct when running on Java 9+
+    api 'javax.annotation:javax.annotation-api:1.3.2'
+
     runtimeOnly "org.codehaus.jettison:jettison:${jettisonVersion}"
 
     testImplementation project(':eureka-test-utils')
