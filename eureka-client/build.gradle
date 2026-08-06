@@ -5,7 +5,7 @@ configurations.all {
 
 dependencies {
     api "com.netflix.netflix-commons:netflix-eventbus:0.3.0"
-    api 'com.thoughtworks.xstream:xstream:1.4.20'
+    api 'com.thoughtworks.xstream:xstream:1.4.21'
     api "com.netflix.archaius:archaius-core:${archaiusVersion}"
     api 'javax.ws.rs:jsr311-api:1.1.1'
     api "com.netflix.servo:servo-core:${servoVersion}"
