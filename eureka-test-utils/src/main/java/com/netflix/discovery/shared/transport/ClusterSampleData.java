@@ -99,8 +99,8 @@ public final class ClusterSampleData {
                         instance.getAppName(),
                         instance.getId(),
                         System.currentTimeMillis(),
-                        InstanceStatus.OUT_OF_SERVICE.name(),
                         null,
+                        InstanceStatus.OUT_OF_SERVICE.name(),
                         null,
                         action
                 );
@@ -109,8 +109,8 @@ public final class ClusterSampleData {
                         instance.getAppName(),
                         instance.getId(),
                         System.currentTimeMillis(),
-                        InstanceStatus.OUT_OF_SERVICE.name(),
                         null,
+                        InstanceStatus.UP.name(),
                         null,
                         action
                 );

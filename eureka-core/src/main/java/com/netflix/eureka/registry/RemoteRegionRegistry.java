@@ -235,10 +235,10 @@ public class RemoteRegionRegistry implements LookupService<String> {
             // If the delta is disabled or if it is the first time, get all applications
             if (serverConfig.shouldDisableDeltaForRemoteRegions()
                     || (getApplications() == null)
-                    || (getApplications().getRegisteredApplications().size() == 0)) {
+                    || getApplications().isRegisteredApplicationsEmpty()) {
                 logger.info("Disable delta property : {}", serverConfig.shouldDisableDeltaForRemoteRegions());
                 logger.info("Application is null : {}", getApplications() == null);
-                logger.info("Registered Applications size is zero : {}", getApplications().getRegisteredApplications().isEmpty());
+                logger.info("Registered Applications size is zero : {}", getApplications().isRegisteredApplicationsEmpty());
                 success = storeFullRegistry();
             } else {
                 success = fetchAndStoreDelta();

@@ -137,6 +137,12 @@ public class CloudInstanceConfig extends PropertiesInstanceConfig implements Ref
     }
     private String getPublicIpv4Addr() {
         String publicIpv4Addr = amazonInfoHolder.get().get(MetaDataKey.publicIpv4);
+        if (publicIpv4Addr == null) {
+            // publicIpv4s is named as a plural to not conflict with the existing publicIpv4 key. In AmazonInfo.java,
+            // we filter out for the first found IPv4 address in any of the network interface IMDS keys. If it exists,
+            // the value for MetaDataKey.publicIpv4s will always be a string with at most 1 public IPv4 address.
+            publicIpv4Addr = amazonInfoHolder.get().get(MetaDataKey.publicIpv4s);
+        }
         return publicIpv4Addr == null ? super.getIpAddress() : publicIpv4Addr;
     }
 

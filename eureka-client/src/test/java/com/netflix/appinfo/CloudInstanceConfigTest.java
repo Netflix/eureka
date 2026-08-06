@@ -55,6 +55,17 @@ public class CloudInstanceConfigTest {
         assertEquals(instanceInfo.getIPAddr(), config.getIpAddress());
     }
 
+    @Test
+    public void testBroadcastPublicIpv4Address_usingPublicIpv4s() {
+        AmazonInfo info = (AmazonInfo) instanceInfo.getDataCenterInfo();
+        info.getMetadata().remove(AmazonInfo.MetaDataKey.publicIpv4.getName());
+        info.getMetadata().put(AmazonInfo.MetaDataKey.publicIpv4s.getName(), "10.0.0.1");
+
+        config = createConfig(info);
+
+        assertEquals("10.0.0.1", config.getIpAddress());
+    }
+
     private CloudInstanceConfig createConfig(AmazonInfo info) {
 
         return new CloudInstanceConfig(info) {

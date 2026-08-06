@@ -20,7 +20,6 @@ import javax.annotation.Nullable;
 import java.util.AbstractQueue;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -31,8 +30,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import com.netflix.discovery.util.MapUtil;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -65,16 +66,52 @@ import com.thoughtworks.xstream.annotations.XStreamImplicit;
 @JsonRootName("applications")
 public class Applications {
     private static class VipIndexSupport {
-        final AbstractQueue<InstanceInfo> instances = new ConcurrentLinkedQueue<>();
+        // Progressive list: emptyList (0) -> singletonList (1) -> ArrayList (2+)
+        // This avoids CLQ and Node allocations. 56% of VIPs have exactly 1 instance.
+        private List<InstanceInfo> instances = Collections.emptyList();
         final AtomicLong roundRobinIndex = new AtomicLong(0);
-        final AtomicReference<List<InstanceInfo>> vipList = new AtomicReference<>(Collections.emptyList());
+        private volatile List<InstanceInfo> vipList = Collections.emptyList();
+
+        void addInstance(InstanceInfo info) {
+            int size = instances.size();
+            if (size == 0) {
+                // 0 -> 1: use singletonList (56% of VIPs stop here)
+                instances = Collections.singletonList(info);
+            } else if (size == 1) {
+                // 1 -> 2: transition singletonList to ArrayList.
+                // Capacity 12 chosen based on prod data analysis: covers 81% of multi-instance
+                // VIPs without resize (spikes at 6, 9, 12 instances from 3-AZ deployments).
+                // ArrayList grows 1.5x (12->18->27), aligning well with common sizes.
+                // Capacity 12 minimizes total allocation vs smaller capacities.
+                InstanceInfo first = instances.get(0);
+                ArrayList<InstanceInfo> list = new ArrayList<>(12);
+                list.add(first);
+                list.add(info);
+                instances = list;
+            } else {
+                // 2+ -> n: append to ArrayList
+                ((ArrayList<InstanceInfo>) instances).add(info);
+            }
+        }
+
+        int instanceCount() {
+            return instances.size();
+        }
+
+        List<InstanceInfo> getInstances() {
+            return instances;
+        }
 
         public AtomicLong getRoundRobinIndex() {
             return roundRobinIndex;
         }
 
-        public AtomicReference<List<InstanceInfo>> getVipList() {
+        List<InstanceInfo> getVipList() {
             return vipList;
+        }
+
+        void setVipList(List<InstanceInfo> vipList) {
+            this.vipList = vipList;
         }
     }
 
@@ -138,6 +175,17 @@ public class Applications {
     }
 
     /**
+     * Returns whether there are any registered applications.
+     * This is more efficient than {@code getRegisteredApplications().isEmpty()}
+     * as it avoids creating a defensive copy.
+     *
+     * @return true if there are no registered applications
+     */
+    public boolean isRegisteredApplicationsEmpty() {
+        return this.applications.isEmpty();
+    }
+
+    /**
      * Gets the registered <em>application</em> for the given
      * application name.
      *
@@ -161,8 +209,7 @@ public class Applications {
     public List<InstanceInfo> getInstancesByVirtualHostName(String virtualHostName) {
         return Optional.ofNullable(this.virtualHostNameAppMap.get(virtualHostName.toUpperCase(Locale.ROOT)))
             .map(VipIndexSupport::getVipList)
-            .map(AtomicReference::get)
-            .orElseGet(Collections::emptyList); 
+            .orElseGet(Collections::emptyList);
     }
 
     /**
@@ -177,8 +224,7 @@ public class Applications {
     public List<InstanceInfo> getInstancesBySecureVirtualHostName(String secureVirtualHostName) {
         return Optional.ofNullable(this.secureVirtualHostNameAppMap.get(secureVirtualHostName.toUpperCase(Locale.ROOT)))
                 .map(VipIndexSupport::getVipList)
-                .map(AtomicReference::get)
-                .orElseGet(Collections::emptyList);        
+                .orElseGet(Collections::emptyList);
     }
 
     /**
@@ -244,11 +290,19 @@ public class Applications {
      *            the map to populate
      */
     public void populateInstanceCountMap(Map<String, AtomicInteger> instanceCountMap) {
-        for (Application app : this.getRegisteredApplications()) {
-            for (InstanceInfo info : app.getInstancesAsIsFromEureka()) {
-                AtomicInteger instanceCount = instanceCountMap.computeIfAbsent(info.getStatus().name(),
-                        k -> new AtomicInteger(0));
-                instanceCount.incrementAndGet();
+        // accrue here as lightweight as possible
+        int[] statusCounts = new int[InstanceStatus.values().length];
+        Consumer<InstanceInfo> countByStatus = info -> statusCounts[info.getStatus().ordinal()]++;
+        for (Application app : this.applications) {
+            app.forEachInstance(countByStatus);
+        }
+
+        // now convert it over to the API form in a single pass
+        for (InstanceStatus status : InstanceStatus.values()) {
+            int count = statusCounts[status.ordinal()];
+            if (count > 0) {
+                instanceCountMap.computeIfAbsent(status.name(), k -> new AtomicInteger(0))
+                    .addAndGet(count);
             }
         }
     }
@@ -305,8 +359,8 @@ public class Applications {
             @Nullable Map<String, Applications> remoteRegionsRegistry, 
             @Nullable EurekaClientConfig clientConfig,
             @Nullable InstanceRegionChecker instanceRegionChecker) {
-        Map<String, VipIndexSupport> secureVirtualHostNameAppMap = new HashMap<>();
-        Map<String, VipIndexSupport> virtualHostNameAppMap = new HashMap<>();
+        Map<String, VipIndexSupport> secureVirtualHostNameAppMap = MapUtil.newHashMapWithExpectedSize(this.secureVirtualHostNameAppMap.size());
+        Map<String, VipIndexSupport> virtualHostNameAppMap = MapUtil.newHashMapWithExpectedSize(this.virtualHostNameAppMap.size());
         for (Application application : appNameApplicationMap.values()) {
             if (indexByRemoteRegions) {
                 application.shuffleAndStoreInstances(remoteRegionsRegistry, clientConfig, instanceRegionChecker);
@@ -348,21 +402,72 @@ public class Applications {
      *
      */
     private void shuffleAndFilterInstances(Map<String, VipIndexSupport> srcMap, boolean filterUpInstances) {
-
         Random shuffleRandom = new Random();
         for (Map.Entry<String, VipIndexSupport> entries : srcMap.entrySet()) {
-            VipIndexSupport vipIndexSupport = entries.getValue();
-            AbstractQueue<InstanceInfo> vipInstances = vipIndexSupport.instances;
-            final List<InstanceInfo> filteredInstances;
-            if (filterUpInstances) {
-                filteredInstances = vipInstances.stream().filter(ii -> ii.getStatus() == InstanceStatus.UP)
-                        .collect(Collectors.toCollection(() -> new ArrayList<>(vipInstances.size())));
-            } else {
-                filteredInstances = new ArrayList<InstanceInfo>(vipInstances);
+            shuffleAndFilterInstances(entries.getValue(), filterUpInstances, shuffleRandom);
+        }
+    }
+
+    /**
+     * Shuffle and filter instances for a single VIP.
+     */
+    private void shuffleAndFilterInstances(VipIndexSupport vipIndexSupport, boolean filterUpInstances, Random shuffleRandom) {
+        List<InstanceInfo> instances = vipIndexSupport.getInstances();
+        int size = instances.size();
+
+        // Empty: nothing to do
+        if (size == 0) {
+            vipIndexSupport.setVipList(instances);
+            return;
+        }
+
+        // Single instance: no shuffle needed, check status if filtering
+        if (size == 1) {
+            InstanceInfo instance = instances.get(0);
+            boolean keep = !filterUpInstances || instance.getStatus() == InstanceStatus.UP;
+            vipIndexSupport.setVipList(keep ? instances : Collections.emptyList());
+            return;
+        }
+
+        // Multiple instances (2+): instances is always an ArrayList at this point
+        ArrayList<InstanceInfo> list = (ArrayList<InstanceInfo>) instances;
+
+        // Filter in place if needed (no-op when all instances are UP)
+        if (filterUpInstances) {
+            filterToUpInstancesInPlace(list);
+            if (list.isEmpty()) {
+                vipIndexSupport.setVipList(Collections.emptyList());
+                return;
             }
-            Collections.shuffle(filteredInstances, shuffleRandom);
-            vipIndexSupport.vipList.set(filteredInstances);
-            vipIndexSupport.roundRobinIndex.set(0);
+        }
+
+        // Shuffle in place and reuse
+        Collections.shuffle(list, shuffleRandom);
+        vipIndexSupport.setVipList(list);
+    }
+
+    /**
+     * Filter list in place to keep only UP instances. Allocation-free.
+     */
+    private static void filterToUpInstancesInPlace(ArrayList<InstanceInfo> list) {
+        int size = list.size();
+        int writeIndex = 0;
+        // shift forward all of the UP instances
+        for (int i = 0; i < size; i++) {
+            InstanceInfo instance = list.get(i);
+            if (instance.getStatus() == InstanceStatus.UP) {
+                if (writeIndex != i) {
+                    list.set(writeIndex, instance);
+                }
+                writeIndex++;
+            }
+        }
+        // Truncate: remove tail elements. Allows old objects to be GCd.
+        // Array is not shrunk back, but, in the majority case this is not useful.
+        // More important that we clear the entries so the InstanceInfo elements
+        // can be released.
+        if (writeIndex < size) {
+            list.subList(writeIndex, size).clear();
         }
     }
 
@@ -370,16 +475,47 @@ public class Applications {
      * Add the instance to the given map based if the vip address matches with
      * that of the instance. Note that an instance can be mapped to multiple vip
      * addresses.
-     *
      */
     private void addInstanceToMap(InstanceInfo info, String vipAddresses, Map<String, VipIndexSupport> vipMap) {
-        if (vipAddresses != null) {
-            String[] vipAddressArray = vipAddresses.toUpperCase(Locale.ROOT).split(",");
-            for (String vipAddress : vipAddressArray) {
-                VipIndexSupport vis = vipMap.computeIfAbsent(vipAddress, k -> new VipIndexSupport());
-                vis.instances.add(info);
-            }
+        // This code path is quite hot on allocations. We apply common-case optimizations to minimize allocations.
+        // Gathered statistics from a real cluster:
+        // | Metric                | Test   | Prod    |
+        // |-----------------------|--------|---------|
+        // | Total entries         | N      | 2x N    |
+        // | Single VIP (no comma) | 91.1%  | 91.7%   |
+        // | 2 VIPs                | 6.9%   | 5.9%    |
+        // | 3+ VIPs               | 0.4%   | 0.7%    |
+        // | Empty                 | 1.6%   | 1.7%    |
+        // | Max VIPs per entry    | 7      | 13      |
+        // | Avg string length     | 29.5   | 25.8    |
+        // | Max string length     | 204    | 468     |
+
+        // Note: empty vipAddresses is intentionally allowed for backwards compatibility.
+        // Legacy behavior: "" creates a mapping with empty string key.
+        if (vipAddresses == null) {
+            return;
         }
+
+        String upper = vipAddresses.toUpperCase(Locale.ROOT);
+
+        // Fast path (91.7% of cases) single VIP: no split() -> byte[], no substring() -> String
+        int commaIndex = upper.indexOf(',');
+        if (commaIndex == -1) {
+            vipMap.computeIfAbsent(upper, k -> new VipIndexSupport()).addInstance(info);
+            return;
+        }
+
+        // Multiple VIPs: uppercase once, then parse without split() byte[] allocation
+        int start = 0;
+        do {
+            String vipAddress = upper.substring(start, commaIndex);
+            vipMap.computeIfAbsent(vipAddress, k -> new VipIndexSupport()).addInstance(info);
+            start = commaIndex + 1;
+        } while ((commaIndex = upper.indexOf(',', start)) != -1);
+
+        // Last segment
+        String vipAddress = upper.substring(start);
+        vipMap.computeIfAbsent(vipAddress, k -> new VipIndexSupport()).addInstance(info);
     }
 
     /**

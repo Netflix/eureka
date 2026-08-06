@@ -1,5 +1,3 @@
-apply plugin: 'nebula.test-jar'
-
 def archaius2Version = '2.1.7'
 
 sourceSets {
@@ -9,18 +7,18 @@ sourceSets {
 }
 
 dependencies {
-    compile project(':eureka-client')
+    api project(':eureka-client')
 
     // archaius2
-    compile "com.netflix.archaius:archaius2-core:${archaius2Version}"
-    compile "com.netflix.archaius:archaius2-api:${archaius2Version}"
+    api "com.netflix.archaius:archaius2-core:${archaius2Version}"
+    api "com.netflix.archaius:archaius2-api:${archaius2Version}"
 
-    testCompile project(':eureka-test-utils')
+    testImplementation project(':eureka-test-utils')
 
-    testCompile "junit:junit:${junit_version}"
-    testCompile 'org.mortbay.jetty:jetty:6.1H.22'
-    testCompile "org.mockito:mockito-core:${mockitoVersion}"
-    testCompile "org.mock-server:mockserver-netty:${mockserverVersion}"
-    testCompile "com.netflix.archaius:archaius2-guice:${archaius2Version}"
-    testCompile "com.netflix.governator:governator:${governatorVersion}"
+    testImplementation "junit:junit:${junit_version}"
+    testImplementation 'org.mortbay.jetty:jetty:6.1H.22'
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.mock-server:mockserver-netty:${mockserverVersion}"
+    testImplementation "com.netflix.archaius:archaius2-guice:${archaius2Version}"
+    testImplementation "com.netflix.governator:governator:${governatorVersion}"
 }

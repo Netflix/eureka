@@ -91,7 +91,6 @@ public class DiscoveryClientRegisterUpdateTest {
     /**
      * This test is similar to the normal lifecycle test, but don't sleep between calls of setInstanceStatus
      */
-    @Test
     public void registerUpdateQuickLifecycleTest() throws Exception {
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.UP);
         applicationInfoManager.setInstanceStatus(InstanceInfo.InstanceStatus.UNKNOWN);

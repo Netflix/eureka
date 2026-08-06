@@ -40,6 +40,7 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
             });
 
     private final Map<String, String> availabilityZoneVsRegion = new ConcurrentHashMap<String, String>();
+    private final Map<String, String> parsedAzCache = new ConcurrentHashMap<String, String>();
     private String[] regionsToFetch;
 
     protected AbstractAzToRegionMapper(EurekaClientConfig clientConfig) {
@@ -53,6 +54,7 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
             this.regionsToFetch = regionsToFetch;
             logger.info("Fetching availability zone to region mapping for regions {}", (Object) regionsToFetch);
             availabilityZoneVsRegion.clear();
+            parsedAzCache.clear();
             for (String remoteRegion : regionsToFetch) {
                 Set<String> availabilityZones = getZonesForARegion(remoteRegion);
                 if (null == availabilityZones
@@ -83,6 +85,7 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
         } else {
             logger.info("Regions to fetch is null. Erasing older mapping if any.");
             availabilityZoneVsRegion.clear();
+            parsedAzCache.clear();
             this.regionsToFetch = EMPTY_STR_ARRAY;
         }
     }
@@ -96,9 +99,15 @@ public abstract class AbstractAzToRegionMapper implements AzToRegionMapper {
 
     @Override
     public String getRegionForAvailabilityZone(String availabilityZone) {
-        String region = availabilityZoneVsRegion.get(availabilityZone);
+        String region = parsedAzCache.get(availabilityZone);
         if (null == region) {
-            return parseAzToGetRegion(availabilityZone);
+            region = availabilityZoneVsRegion.get(availabilityZone);
+            if (null == region) {
+                region = parseAzToGetRegion(availabilityZone);
+            }
+            if (region != null) {
+                parsedAzCache.put(availabilityZone, region);
+            }
         }
         return region;
     }

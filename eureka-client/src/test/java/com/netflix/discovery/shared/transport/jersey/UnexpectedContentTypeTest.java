@@ -33,7 +33,7 @@ public class UnexpectedContentTypeTest {
     private JerseyApplicationClient jerseyHttpClient;
 
     @Rule
-    public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort().dynamicHttpsPort()); // No-args constructor defaults to port 8080
+    public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort()); // No-args constructor defaults to port 8080
 
     @Before
     public void setUp() throws Exception {

@@ -45,6 +45,10 @@ public class DeserializerStringCache implements Function<String, String> {
     private final Map<CharBuffer, String> applicationCache;
     private final int lengthLimit = LENGTH_LIMIT;
 
+    // Reusable lookup buffers to avoid allocation on cache hits (single-threaded usage)
+    private final MutableArrayCharBuffer parserLookupBuffer = new MutableArrayCharBuffer();
+    private final MutableStringCharBuffer stringLookupBuffer = new MutableStringCharBuffer();
+
     /**
      * adds a new DeserializerStringCache to the passed-in ObjectReader
      * 
@@ -203,48 +207,22 @@ public class DeserializerStringCache implements Function<String, String> {
      * 
      * @param jp
      * @param cacheScope
+     * @param transform optional transform function applied to the parser text on cache miss
      * @return a possibly interned String
      * @throws IOException
      */
-    public String apply(final JsonParser jp, CacheScope cacheScope, Supplier<String> source) throws IOException {
-        return apply(CharBuffer.wrap(jp, source), cacheScope);
-    }
-
-    /**
-     * returns a String that may be interned at app-scope to reduce heap
-     * consumption
-     * 
-     * @param charValue
-     * @return a possibly interned String
-     */
-    public String apply(final CharBuffer charValue) {
-        return apply(charValue, CacheScope.APPLICATION_SCOPE);
-    }
-
-    /**
-     * returns a object of type T that may be interned at the specified scope to
-     * reduce heap consumption
-     * 
-     * @param charValue
-     * @param cacheScope
-     * @param trabsform
-     * @return a possibly interned instance of T
-     */
-    public String apply(CharBuffer charValue, CacheScope cacheScope) {
-        int keyLength = charValue.length();
-        if ((lengthLimit < 0 || keyLength <= lengthLimit)) {
+    public String apply(final JsonParser jp, CacheScope cacheScope, Function<JsonParser, String> transform) throws IOException {
+        parserLookupBuffer.reset(jp, transform);
+        int keyLength = parserLookupBuffer.length();
+        if (lengthLimit < 0 || keyLength <= lengthLimit) {
             Map<CharBuffer, String> cache = (cacheScope == CacheScope.GLOBAL_SCOPE) ? globalCache : applicationCache;
-            String value = cache.get(charValue);
+            String value = cache.get(parserLookupBuffer);
             if (value == null) {
-                value = charValue.consume((k, v) -> {
-                    cache.put(k, v);
-                });
-            } else {
-                // System.out.println("cache hit");
+                value = parserLookupBuffer.consume(cache::put);
             }
             return value;
         }
-        return charValue.toString();
+        return parserLookupBuffer.toString();
     }
 
     /**
@@ -269,11 +247,15 @@ public class DeserializerStringCache implements Function<String, String> {
      */
     public String apply(final String stringValue, CacheScope cacheScope) {
         if (stringValue != null && (lengthLimit < 0 || stringValue.length() <= lengthLimit)) {
-            return (String) (cacheScope == CacheScope.GLOBAL_SCOPE ? globalCache : applicationCache)
-                    .computeIfAbsent(CharBuffer.wrap(stringValue), s -> {
-                        logger.trace(" (string) writing new interned value {} into {} cache scope", stringValue, cacheScope);
-                        return stringValue;
-                    });
+            stringLookupBuffer.reset(stringValue);
+            Map<CharBuffer, String> cache = (cacheScope == CacheScope.GLOBAL_SCOPE) ? globalCache : applicationCache;
+            String value = cache.get(stringLookupBuffer);
+            if (value == null) {
+                logger.trace(" (string) writing new interned value {} into {} cache scope", stringValue, cacheScope);
+                cache.put(new CharBuffer.StringCharBuffer(stringValue), stringValue);
+                value = stringValue;
+            }
+            return value;
         }
         return stringValue;
     }
@@ -285,18 +267,6 @@ public class DeserializerStringCache implements Function<String, String> {
     private interface CharBuffer {
         static final int DEFAULT_VARIANT = -1;
 
-        public static CharBuffer wrap(JsonParser source, Supplier<String> stringSource) throws IOException {
-            return new ArrayCharBuffer(source, stringSource);
-        }
-
-        public static CharBuffer wrap(JsonParser source) throws IOException {
-            return new ArrayCharBuffer(source);
-        }
-
-        public static CharBuffer wrap(String source) {
-            return new StringCharBuffer(source);
-        }
-
         String consume(BiConsumer<CharBuffer, String> valueConsumer);
 
         int length();
@@ -305,118 +275,20 @@ public class DeserializerStringCache implements Function<String, String> {
 
         OfInt chars();
 
-        static class ArrayCharBuffer implements CharBuffer {
-            private final char[] source;
-            private final int offset;
-            private final int length;
-            private final Supplier<String> valueTransform;
-            private final int variant;
-            private final int hash;
-
-            ArrayCharBuffer(JsonParser source) throws IOException {
-                this(source, null);
-            }
-
-            ArrayCharBuffer(JsonParser source, Supplier<String> valueTransform) throws IOException {
-                this.source = source.getTextCharacters();
-                this.offset = source.getTextOffset();
-                this.length = source.getTextLength();
-                this.valueTransform = valueTransform;
-                this.variant = valueTransform == null ? DEFAULT_VARIANT : System.identityHashCode(valueTransform.getClass());
-                this.hash =  31 * arrayHash(this.source, offset, length) + variant;
-            }
-
-            @Override
-            public int length() {
-                return length;
-            }
-
-            @Override
-            public int variant() {
-                return variant;
-            }
-
-            @Override
-            public int hashCode() {
-                return hash;
-            }
-
-            @Override
-            public boolean equals(Object other) {
-                if (other instanceof CharBuffer) {
-                    CharBuffer otherBuffer = (CharBuffer) other;
-                    if (otherBuffer.length() == length) {
-                        if (otherBuffer.variant() == variant) {
-                            OfInt otherText = otherBuffer.chars();
-                            for (int i = offset; i < length; i++) {
-                                if (source[i] != otherText.nextInt()) {
-                                    return false;
-                                }
-                            }
-                        return true;
-                        }
-                    }
-                }
-                return false;
-            }
-
-            @Override
-            public OfInt chars() {
-                return new OfInt() {
-                    int index = offset;
-                    int limit = index + length;
-
-                    @Override
-                    public boolean hasNext() {
-                        return index < limit;
-                    }
-
-                    @Override
-                    public int nextInt() {
-                        return source[index++];
-                    }
-                };
-            }
-
-            @Override
-            public String toString() {
-                return valueTransform  == null ? new String(this.source, offset, length) : valueTransform.get();
-            }
-
-            @Override
-            public String consume(BiConsumer<CharBuffer, String> valueConsumer) {
-                String key = new String(this.source, offset, length);
-                String value = valueTransform == null ? key : valueTransform.get();
-                valueConsumer.accept(new StringCharBuffer(key, variant), value);
-                return value;
-            }
-
-            private static int arrayHash(char[] a, int offset, int length) {
-                if (a == null)
-                    return 0;
-                int result = 0;
-                int limit = offset + length;
-                for (int i = offset; i < limit; i++) {
-                    result = 31 * result + a[i];
-                }
-                return result;
-            }
-        }
-
         static class StringCharBuffer implements CharBuffer {
             private final String source;
             private final int variant;
             private final int hashCode;
 
             StringCharBuffer(String source) {
-                this(source, -1);
+                this(source, DEFAULT_VARIANT);
             }
 
             StringCharBuffer(String source, int variant) {
                 this.source = source;
                 this.variant = variant;
                 this.hashCode = 31 * source.hashCode() + variant;
-            }            
+            }
 
             @Override
             public int hashCode() {
@@ -482,5 +354,180 @@ public class DeserializerStringCache implements Function<String, String> {
             }
         }
 
+    }
+
+    /**
+     * Mutable version of ArrayCharBuffer for reusable lookups.
+     * Reset before each use to avoid allocations on cache hits.
+     */
+    private static class MutableArrayCharBuffer implements CharBuffer {
+        private JsonParser jp;
+        private char[] source;
+        private int offset;
+        private int length;
+        private Function<JsonParser, String> valueTransform;
+        private int variant;
+        private int hash;
+
+        void reset(JsonParser jp, Function<JsonParser, String> valueTransform) throws IOException {
+            this.jp = jp;
+            this.source = jp.getTextCharacters();
+            this.offset = jp.getTextOffset();
+            this.length = jp.getTextLength();
+            this.valueTransform = valueTransform;
+            this.variant = valueTransform == null ? DEFAULT_VARIANT : System.identityHashCode(valueTransform.getClass());
+            this.hash = 31 * arrayHash(this.source, offset, length) + variant;
+        }
+
+        @Override
+        public int length() {
+            return length;
+        }
+
+        @Override
+        public int variant() {
+            return variant;
+        }
+
+        @Override
+        public int hashCode() {
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (other instanceof CharBuffer) {
+                CharBuffer otherBuffer = (CharBuffer) other;
+                if (otherBuffer.length() == length && otherBuffer.variant() == variant) {
+                    OfInt otherText = otherBuffer.chars();
+                    for (int i = offset; i < offset + length; i++) {
+                        if (source[i] != otherText.nextInt()) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public OfInt chars() {
+            return new OfInt() {
+                int index = offset;
+                int limit = index + length;
+
+                @Override
+                public boolean hasNext() {
+                    return index < limit;
+                }
+
+                @Override
+                public int nextInt() {
+                    return source[index++];
+                }
+            };
+        }
+
+        @Override
+        public String toString() {
+            return valueTransform == null ? new String(this.source, offset, length) : valueTransform.apply(jp);
+        }
+
+        @Override
+        public String consume(BiConsumer<CharBuffer, String> valueConsumer) {
+            String key = new String(this.source, offset, length);
+            String value = valueTransform == null ? key : valueTransform.apply(jp);
+            valueConsumer.accept(new CharBuffer.StringCharBuffer(key, variant), value);
+            return value;
+        }
+
+        private static int arrayHash(char[] a, int offset, int length) {
+            if (a == null)
+                return 0;
+            int result = 0;
+            int limit = offset + length;
+            for (int i = offset; i < limit; i++) {
+                result = 31 * result + a[i];
+            }
+            return result;
+        }
+    }
+
+    /**
+     * Mutable version of StringCharBuffer for reusable lookups.
+     * Reset before each use to avoid allocations on cache hits.
+     */
+    private static class MutableStringCharBuffer implements CharBuffer {
+        private String source;
+        private int hashCode;
+
+        void reset(String source) {
+            this.source = source;
+            this.hashCode = 31 * source.hashCode() + DEFAULT_VARIANT;
+        }
+
+        @Override
+        public int hashCode() {
+            return hashCode;
+        }
+
+        @Override
+        public int variant() {
+            return DEFAULT_VARIANT;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (other instanceof CharBuffer) {
+                CharBuffer otherBuffer = (CharBuffer) other;
+                if (otherBuffer.variant() == DEFAULT_VARIANT) {
+                    int length = source.length();
+                    if (otherBuffer.length() == length) {
+                        OfInt otherText = otherBuffer.chars();
+                        for (int i = 0; i < length; i++) {
+                            if (source.charAt(i) != otherText.nextInt()) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public int length() {
+            return source.length();
+        }
+
+        @Override
+        public String toString() {
+            return source;
+        }
+
+        @Override
+        public OfInt chars() {
+            return new OfInt() {
+                int index;
+
+                @Override
+                public boolean hasNext() {
+                    return index < source.length();
+                }
+
+                @Override
+                public int nextInt() {
+                    return source.charAt(index++);
+                }
+            };
+        }
+
+        @Override
+        public String consume(BiConsumer<CharBuffer, String> valueConsumer) {
+            valueConsumer.accept(new CharBuffer.StringCharBuffer(source), source);
+            return source;
+        }
     }
 }

@@ -1,10 +1,10 @@
 apply plugin: 'application'
 
 dependencies {
-    compile project(':eureka-client')
-    compile files('conf')
+    api project(':eureka-client')
+    api files('conf')
 
-    compile "com.netflix.governator:governator:${governatorVersion}"
+    api "com.netflix.governator:governator:${governatorVersion}"
     runtimeOnly 'org.slf4j:slf4j-simple:1.7.7'
 }
 
@@ -43,7 +43,7 @@ task ExampleServiceStartScript(type: CreateStartScripts) {
     mainClassName = "com.netflix.eureka.ExampleEurekaService"
     applicationName = "ExampleEurekaService"
     outputDir = new File(project.buildDir, 'scripts')
-    classpath = jar.outputs.files + project.configurations.runtime
+    classpath = jar.outputs.files + project.configurations.runtimeClasspath
     defaultJvmOpts = ["-Deureka.client.props=sample-eureka-service"]
 }
 
@@ -51,7 +51,7 @@ task ExampleGovernatedServiceStartScript(type: CreateStartScripts) {
     mainClassName = "com.netflix.eureka.ExampleEurekaGovernatedService"
     applicationName = "ExampleEurekaGovernatedService"
     outputDir = new File(project.buildDir, 'scripts')
-    classpath = jar.outputs.files + project.configurations.runtime
+    classpath = jar.outputs.files + project.configurations.runtimeClasspath
     defaultJvmOpts = ["-Deureka.client.props=sample-eureka-service"]
 }
 
@@ -59,11 +59,12 @@ task ExampleClientStartScript(type: CreateStartScripts) {
     mainClassName = "com.netflix.eureka.ExampleEurekaClient"
     applicationName = "ExampleEurekaClient"
     outputDir = new File(project.buildDir, 'scripts')
-    classpath = jar.outputs.files + project.configurations.runtime
+    classpath = jar.outputs.files + project.configurations.runtimeClasspath
     defaultJvmOpts = ["-Deureka.client.props=sample-eureka-client"]
 }
 
 applicationDistribution.into("bin") {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from(ExampleServiceStartScript)
     fileMode = 0755
 
@@ -75,6 +76,7 @@ applicationDistribution.into("bin") {
 }
 
 applicationDistribution.into("lib/conf") {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from("conf")
     fileMode = 0755
 }

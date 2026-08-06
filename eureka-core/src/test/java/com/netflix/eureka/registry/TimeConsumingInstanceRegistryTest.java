@@ -144,6 +144,19 @@ public class TimeConsumingInstanceRegistryTest extends AbstractTester {
                 public void execute() {
                     System.out.println("checking on 120s");
                     System.out.println("getNumOfRenewsPerMinThreshold=" + registry.getNumOfRenewsPerMinThreshold());
+                    // Add retry logic to handle race condition with threshold updater
+                    int retries = 0;
+                    int maxRetries = 10;
+                    while (retries < maxRetries && registry.getNumOfRenewsPerMinThreshold() != 256) {
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                        retries++;
+                        System.out.println("Retry " + retries + ": getNumOfRenewsPerMinThreshold=" + registry.getNumOfRenewsPerMinThreshold());
+                    }
                     Preconditions.checkState(registry.getNumOfRenewsPerMinThreshold() == 256, "NumOfRenewsPerMinThreshold should be updated to 256");
                     Preconditions.checkState(registry.getApplication(LOCAL_REGION_APP_NAME).getInstances().size() == 45,
                         "There should be 45 instances in application - MYLOCAPP");

@@ -28,6 +28,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -135,7 +136,11 @@ public class Application {
      */
     @JsonProperty("instance")
     public List<InstanceInfo> getInstances() {
-        return Optional.ofNullable(shuffledInstances.get()).orElseGet(this::getInstancesAsIsFromEureka);
+        List<InstanceInfo> instances = shuffledInstances.get();
+        if (instances == null) {
+            instances = this.getInstancesAsIsFromEureka();
+        }
+        return instances;
     }
 
     /**
@@ -152,6 +157,18 @@ public class Application {
         }
     }
 
+    /**
+     * Iterate over instances without creating a defensive copy.
+     * Package-private to avoid exposing unsynchronized iteration to external callers.
+     * Callers should be sure that this is a quick iteration.
+     */
+    void forEachInstance(Consumer<InstanceInfo> consumer) {
+        synchronized (instances) {
+            for (InstanceInfo info : instances) {
+                consumer.accept(info);
+            }
+        }
+    }
 
     /**
      * Get the instance info that matches the given id.

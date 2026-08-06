@@ -74,6 +74,8 @@ import org.slf4j.LoggerFactory;
  * @author Karthik Ranganathan, Greg Kim
  */
 public class ResponseCacheImpl implements ResponseCache {
+    private static final Key.KeyType[] KEY_TYPE_VALUES = Key.KeyType.values();
+    private static final Version[] VERSION_VALUES = Version.values();
 
     private static final Logger logger = LoggerFactory.getLogger(ResponseCacheImpl.class);
 
@@ -249,8 +251,8 @@ public class ResponseCacheImpl implements ResponseCache {
      */
     @Override
     public void invalidate(String appName, @Nullable String vipAddress, @Nullable String secureVipAddress) {
-        for (Key.KeyType type : Key.KeyType.values()) {
-            for (Version v : Version.values()) {
+        for (Key.KeyType type : KEY_TYPE_VALUES) {
+            for (Version v : VERSION_VALUES) {
                 invalidate(
                         new Key(Key.EntityType.Application, appName, type, v, EurekaAccept.full),
                         new Key(Key.EntityType.Application, appName, type, v, EurekaAccept.compact),

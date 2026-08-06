@@ -424,6 +424,15 @@ public class EurekaJacksonCodec {
     public static class InstanceInfoDeserializer extends JsonDeserializer<InstanceInfo> {
         private static char[] BUF_AT_CLASS = "@class".toCharArray();
 
+        /** Extract uppercase from current JsonParser cursor. Avoids lambda capture. */
+        private static String toUpperCase(JsonParser jp) {
+            try {
+                return jp.getText().toUpperCase();
+            } catch (IOException e) {
+                throw new RuntimeJsonMappingException(e.getMessage());
+            }
+        }
+
         enum InstanceInfoField {
             HOSTNAME(ELEM_HOST),
             INSTANCE_ID(ELEM_INSTANCE_ID),
@@ -515,14 +524,7 @@ public class EurekaJacksonCodec {
                         break;
                     case APP:
                         builder.setAppNameForDeser(
-                                intern.apply(jp, CacheScope.APPLICATION_SCOPE,
-                                ()->{
-                                    try {
-                                        return jp.getText().toUpperCase();
-                                    } catch (IOException e) {
-                                        throw new RuntimeJsonMappingException(e.getMessage());
-                                    }
-                              }));
+                                intern.apply(jp, CacheScope.APPLICATION_SCOPE, InstanceInfoDeserializer::toUpperCase));
                         break;
                     case IP:
                         builder.setIPAddr(intern.apply(jp));
@@ -590,14 +592,8 @@ public class EurekaJacksonCodec {
                         builder.setHealthCheckUrlsForDeser(null, intern.apply(jp.getText()));
                         break;
                     case APPGROUPNAME:
-                        builder.setAppGroupNameForDeser(intern.apply(jp, CacheScope.GLOBAL_SCOPE, 
-                                ()->{
-                                    try {
-                                        return jp.getText().toUpperCase();
-                                    } catch (IOException e) {
-                                        throw new RuntimeJsonMappingException(e.getMessage());
-                                    }
-                              }));
+                        builder.setAppGroupNameForDeser(
+                                intern.apply(jp, CacheScope.GLOBAL_SCOPE, InstanceInfoDeserializer::toUpperCase));
                         break;
                     case HOMEPAGEURL:
                         builder.setHomePageUrlForDeser(intern.apply(jp.getText()));
@@ -638,7 +634,9 @@ public class EurekaJacksonCodec {
                                 String key = intern.apply(jp, CacheScope.GLOBAL_SCOPE);
                                 jsonToken = jp.nextToken();
                                 String value = intern.apply(jp, CacheScope.APPLICATION_SCOPE );
-                                metadataMap = Optional.ofNullable(metadataMap).orElseGet(METADATA_MAP_SUPPLIER);
+                                if (metadataMap == null) {
+                                    metadataMap = METADATA_MAP_SUPPLIER.get();
+                                }
                                 metadataMap.put(key, value);
                             }
                         };   

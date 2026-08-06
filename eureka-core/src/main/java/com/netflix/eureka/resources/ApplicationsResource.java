@@ -43,6 +43,8 @@ import com.netflix.eureka.registry.Key.KeyType;
 import com.netflix.eureka.registry.ResponseCacheImpl;
 import com.netflix.eureka.registry.Key;
 import com.netflix.eureka.util.EurekaMonitors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A <em>jersey</em> resource that handles request related to all
@@ -54,6 +56,7 @@ import com.netflix.eureka.util.EurekaMonitors;
 @Path("/{version}/apps")
 @Produces({"application/xml", "application/json"})
 public class ApplicationsResource {
+    private static final Logger logger = LoggerFactory.getLogger(ApplicationsResource.class);
     private static final String HEADER_ACCEPT = "Accept";
     private static final String HEADER_ACCEPT_ENCODING = "Accept-Encoding";
     private static final String HEADER_CONTENT_ENCODING = "Content-Encoding";
@@ -161,6 +164,7 @@ public class ApplicationsResource {
                     .build();
         }
         CurrentRequestVersion.remove();
+        logger.debug("Sent registry information to client.");
         return response;
     }
 

@@ -389,6 +389,659 @@ public class ApplicationsTest {
         assertNotNull(applications.getRegisteredApplications("TestApp").getByInstanceId("test.hostname"));
         assertTrue(applications.getInstancesBySecureVirtualHostName("securetest.testname:7102").isEmpty());
         assertTrue(applications.getInstancesBySecureVirtualHostName("test.testname:1").isEmpty());
-    }    
+    }
+
+    // ==================== VIP Address Parsing Tests ====================
+
+    private static final DataCenterInfo TEST_DCI = () -> DataCenterInfo.Name.MyOwn;
+
+    @Test
+    public void testVipParsing_nullVip() {
+        Application app = new Application("TestApp");
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(false);
+
+        // No instances added
+        assertEquals(0, apps.getRegisteredApplications("TestApp").size());
+        assertEquals(0, apps.getRegisteredApplications("TestApp").getInstancesAsIsFromEureka().size());
+        // No VIP mappings exist
+        assertTrue(apps.getInstancesByVirtualHostName("anything").isEmpty());
+    }
+
+    @Test
+    public void testVipParsing_emptyVip() {
+        InstanceInfo instance = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("").setDataCenterInfo(TEST_DCI)
+                .setHostName("host1").setStatus(InstanceStatus.UP).build();
+        Application app = new Application("TestApp");
+        app.addInstance(instance);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(false);
+
+        // Instance exists in application
+        assertEquals(1, apps.getRegisteredApplications("TestApp").size());
+        assertEquals(1, apps.getRegisteredApplications("TestApp").getInstancesAsIsFromEureka().size());
+        // Legacy behavior: empty VIP creates a mapping with empty string key
+        assertEquals(1, apps.getInstancesByVirtualHostName("").size());
+    }
+
+    @Test
+    public void testVipParsing_singleVip() {
+        InstanceInfo instance = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("host1").setStatus(InstanceStatus.UP).build();
+        Application app = new Application("TestApp");
+        app.addInstance(instance);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(false);
+
+        assertEquals(1, apps.getRegisteredApplications("TestApp").size());
+        assertEquals(1, apps.getRegisteredApplications("TestApp").getInstancesAsIsFromEureka().size());
+        assertEquals(1, apps.getInstancesByVirtualHostName("my.vip").size());
+        assertEquals(1, apps.getInstancesByVirtualHostName("MY.VIP").size()); // case-insensitive lookup
+        assertTrue(apps.getInstancesByVirtualHostName("other.vip").isEmpty()); // no other entries
+    }
+
+    @Test
+    public void testVipParsing_singleVipMixedCase() {
+        InstanceInfo instance = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("My.Vip.Address").setDataCenterInfo(TEST_DCI)
+                .setHostName("host1").setStatus(InstanceStatus.UP).build();
+        Application app = new Application("TestApp");
+        app.addInstance(instance);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(false);
+
+        assertEquals(1, apps.getRegisteredApplications("TestApp").size());
+        assertEquals(1, apps.getRegisteredApplications("TestApp").getInstancesAsIsFromEureka().size());
+        // All case variations should resolve to same entry
+        assertEquals(1, apps.getInstancesByVirtualHostName("my.vip.address").size());
+        assertEquals(1, apps.getInstancesByVirtualHostName("MY.VIP.ADDRESS").size());
+        assertEquals(1, apps.getInstancesByVirtualHostName("My.Vip.Address").size());
+    }
+
+    @Test
+    public void testVipParsing_twoVips() {
+        InstanceInfo instance = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("vip1,vip2").setDataCenterInfo(TEST_DCI)
+                .setHostName("host1").setStatus(InstanceStatus.UP).build();
+        Application app = new Application("TestApp");
+        app.addInstance(instance);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(false);
+
+        // One instance in the application
+        assertEquals(1, apps.getRegisteredApplications("TestApp").size());
+        assertEquals(1, apps.getRegisteredApplications("TestApp").getInstancesAsIsFromEureka().size());
+        // Mapped to two VIPs
+        assertEquals(1, apps.getInstancesByVirtualHostName("vip1").size());
+        assertEquals(1, apps.getInstancesByVirtualHostName("vip2").size());
+        // No spurious entries
+        assertTrue(apps.getInstancesByVirtualHostName("vip1,vip2").isEmpty());
+        assertTrue(apps.getInstancesByVirtualHostName("vip3").isEmpty());
+    }
+
+    @Test
+    public void testVipParsing_threeVips() {
+        InstanceInfo instance = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("vip1,vip2,vip3").setDataCenterInfo(TEST_DCI)
+                .setHostName("host1").setStatus(InstanceStatus.UP).build();
+        Application app = new Application("TestApp");
+        app.addInstance(instance);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(false);
+
+        assertEquals(1, apps.getRegisteredApplications("TestApp").size());
+        assertEquals(1, apps.getRegisteredApplications("TestApp").getInstancesAsIsFromEureka().size());
+        assertEquals(1, apps.getInstancesByVirtualHostName("vip1").size());
+        assertEquals(1, apps.getInstancesByVirtualHostName("vip2").size());
+        assertEquals(1, apps.getInstancesByVirtualHostName("vip3").size());
+        // No spurious entries from parsing
+        assertTrue(apps.getInstancesByVirtualHostName("vip1,vip2").isEmpty());
+        assertTrue(apps.getInstancesByVirtualHostName("vip2,vip3").isEmpty());
+        assertTrue(apps.getInstancesByVirtualHostName("vip1,vip2,vip3").isEmpty());
+    }
+
+    @Test
+    public void testVipParsing_multipleVipsMixedCase() {
+        InstanceInfo instance = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("Vip.One,VIP.TWO,vip.three").setDataCenterInfo(TEST_DCI)
+                .setHostName("host1").setStatus(InstanceStatus.UP).build();
+        Application app = new Application("TestApp");
+        app.addInstance(instance);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(false);
+
+        assertEquals(1, apps.getRegisteredApplications("TestApp").size());
+        assertEquals(1, apps.getRegisteredApplications("TestApp").getInstancesAsIsFromEureka().size());
+        // All stored as uppercase, lookup case-insensitive
+        assertEquals(1, apps.getInstancesByVirtualHostName("vip.one").size());
+        assertEquals(1, apps.getInstancesByVirtualHostName("VIP.ONE").size());
+        assertEquals(1, apps.getInstancesByVirtualHostName("vip.two").size());
+        assertEquals(1, apps.getInstancesByVirtualHostName("vip.three").size());
+    }
+
+    @Test
+    public void testVipParsing_multipleInstancesOverlappingVips() {
+        // host1: vip.one, vip.two, vip.three
+        // host2: vip.two, vip.four
+        // host3: vip.three, vip.four, vip.five
+        InstanceInfo host1 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("vip.one,vip.two,vip.three").setDataCenterInfo(TEST_DCI)
+                .setHostName("host1").setStatus(InstanceStatus.UP).build();
+        InstanceInfo host2 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("vip.two,vip.four").setDataCenterInfo(TEST_DCI)
+                .setHostName("host2").setStatus(InstanceStatus.UP).build();
+        InstanceInfo host3 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("vip.three,vip.four,vip.five").setDataCenterInfo(TEST_DCI)
+                .setHostName("host3").setStatus(InstanceStatus.UP).build();
+
+        Application app = new Application("TestApp");
+        app.addInstance(host1);
+        app.addInstance(host2);
+        app.addInstance(host3);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(false);
+
+        // Verify application contains all 3 instances
+        assertEquals(3, apps.getRegisteredApplications("TestApp").size());
+        assertEquals(3, apps.getRegisteredApplications("TestApp").getInstancesAsIsFromEureka().size());
+
+        // vip.one -> host1 only
+        List<InstanceInfo> vipOneInstances = apps.getInstancesByVirtualHostName("vip.one");
+        assertEquals(1, vipOneInstances.size());
+        assertEquals("host1", vipOneInstances.get(0).getHostName());
+
+        // vip.two -> host1, host2
+        List<InstanceInfo> vipTwoInstances = apps.getInstancesByVirtualHostName("vip.two");
+        assertEquals(2, vipTwoInstances.size());
+        assertTrue(vipTwoInstances.stream().anyMatch(i -> "host1".equals(i.getHostName())));
+        assertTrue(vipTwoInstances.stream().anyMatch(i -> "host2".equals(i.getHostName())));
+
+        // vip.three -> host1, host3
+        List<InstanceInfo> vipThreeInstances = apps.getInstancesByVirtualHostName("vip.three");
+        assertEquals(2, vipThreeInstances.size());
+        assertTrue(vipThreeInstances.stream().anyMatch(i -> "host1".equals(i.getHostName())));
+        assertTrue(vipThreeInstances.stream().anyMatch(i -> "host3".equals(i.getHostName())));
+
+        // vip.four -> host2, host3
+        List<InstanceInfo> vipFourInstances = apps.getInstancesByVirtualHostName("vip.four");
+        assertEquals(2, vipFourInstances.size());
+        assertTrue(vipFourInstances.stream().anyMatch(i -> "host2".equals(i.getHostName())));
+        assertTrue(vipFourInstances.stream().anyMatch(i -> "host3".equals(i.getHostName())));
+
+        // vip.five -> host3 only
+        List<InstanceInfo> vipFiveInstances = apps.getInstancesByVirtualHostName("vip.five");
+        assertEquals(1, vipFiveInstances.size());
+        assertEquals("host3", vipFiveInstances.get(0).getHostName());
+
+        // Case-insensitive lookups work
+        assertEquals(2, apps.getInstancesByVirtualHostName("VIP.TWO").size());
+        assertEquals(2, apps.getInstancesByVirtualHostName("VIP.FOUR").size());
+
+        // No spurious VIP entries
+        assertTrue(apps.getInstancesByVirtualHostName("vip.six").isEmpty());
+        assertTrue(apps.getInstancesByVirtualHostName("vip.one,vip.two").isEmpty());
+    }
+
+    // ==================== shuffleAndFilterInstances Tests ====================
+
+    @Test
+    public void testMultipleInstancesFiltering() {
+        DataCenterInfo myDCI = new DataCenterInfo() {
+            public DataCenterInfo.Name getName() {
+                return DataCenterInfo.Name.MyOwn;
+            }
+        };
+        InstanceInfo up1 = InstanceInfo.Builder.newBuilder().setAppName("test")
+                .setVIPAddress("test.vip").setDataCenterInfo(myDCI)
+                .setHostName("up1.hostname").setStatus(InstanceStatus.UP).build();
+        InstanceInfo up2 = InstanceInfo.Builder.newBuilder().setAppName("test")
+                .setVIPAddress("test.vip").setDataCenterInfo(myDCI)
+                .setHostName("up2.hostname").setStatus(InstanceStatus.UP).build();
+        InstanceInfo down = InstanceInfo.Builder.newBuilder().setAppName("test")
+                .setVIPAddress("test.vip").setDataCenterInfo(myDCI)
+                .setHostName("down.hostname").setStatus(InstanceStatus.DOWN).build();
+
+        Application application = new Application("TestApp");
+        application.addInstance(up1);
+        application.addInstance(up2);
+        application.addInstance(down);
+
+        Applications applications = new Applications();
+        applications.addApplication(application);
+        applications.shuffleInstances(true);
+
+        List<InstanceInfo> result = applications.getInstancesByVirtualHostName("test.vip");
+        assertEquals(2, result.size());
+        assertTrue(result.contains(up1));
+        assertTrue(result.contains(up2));
+        assertFalse(result.contains(down));
+    }
+
+    @Test
+    public void testSingleInstanceUp_filterEnabled() {
+        InstanceInfo instance = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("host1").setStatus(InstanceStatus.UP).build();
+        Application app = new Application("TestApp");
+        app.addInstance(instance);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(true);
+
+        List<InstanceInfo> result = apps.getInstancesByVirtualHostName("my.vip");
+        assertEquals(1, result.size());
+        assertTrue(result.contains(instance));
+    }
+
+    @Test
+    public void testSingleInstanceDown_filterEnabled() {
+        InstanceInfo instance = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("host1").setStatus(InstanceStatus.DOWN).build();
+        Application app = new Application("TestApp");
+        app.addInstance(instance);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(true);
+
+        // Single DOWN instance should be filtered out
+        List<InstanceInfo> result = apps.getInstancesByVirtualHostName("my.vip");
+        assertTrue(result.isEmpty());
+        // But instance still exists in the application
+        assertEquals(1, apps.getRegisteredApplications("TestApp").size());
+    }
+
+    @Test
+    public void testMultipleInstances_filterDisabled() {
+        InstanceInfo up = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("up.host").setStatus(InstanceStatus.UP).build();
+        InstanceInfo down = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("down.host").setStatus(InstanceStatus.DOWN).build();
+        InstanceInfo oos = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("oos.host").setStatus(InstanceStatus.OUT_OF_SERVICE).build();
+
+        Application app = new Application("TestApp");
+        app.addInstance(up);
+        app.addInstance(down);
+        app.addInstance(oos);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(false); // filterUpInstances = false
+
+        // All instances should be present regardless of status
+        List<InstanceInfo> result = apps.getInstancesByVirtualHostName("my.vip");
+        assertEquals(3, result.size());
+        assertTrue(result.contains(up));
+        assertTrue(result.contains(down));
+        assertTrue(result.contains(oos));
+    }
+
+    @Test
+    public void testAllInstancesNonUp_filterEnabled() {
+        InstanceInfo down = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("down.host").setStatus(InstanceStatus.DOWN).build();
+        InstanceInfo oos = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("oos.host").setStatus(InstanceStatus.OUT_OF_SERVICE).build();
+        InstanceInfo starting = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("starting.host").setStatus(InstanceStatus.STARTING).build();
+
+        Application app = new Application("TestApp");
+        app.addInstance(down);
+        app.addInstance(oos);
+        app.addInstance(starting);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(true);
+
+        // All instances filtered out
+        List<InstanceInfo> result = apps.getInstancesByVirtualHostName("my.vip");
+        assertTrue(result.isEmpty());
+        // But all instances still exist in the application
+        assertEquals(3, apps.getRegisteredApplications("TestApp").size());
+    }
+
+    @Test
+    public void testSecureVipFiltering() {
+        InstanceInfo up = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setSecureVIPAddress("secure.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("up.host").setStatus(InstanceStatus.UP).build();
+        InstanceInfo down = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setSecureVIPAddress("secure.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("down.host").setStatus(InstanceStatus.DOWN).build();
+
+        Application app = new Application("TestApp");
+        app.addInstance(up);
+        app.addInstance(down);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(true);
+
+        List<InstanceInfo> result = apps.getInstancesBySecureVirtualHostName("secure.vip");
+        assertEquals(1, result.size());
+        assertTrue(result.contains(up));
+        assertFalse(result.contains(down));
+    }
+
+    @Test
+    public void testReshuffleUpdatesFilteredList() {
+        InstanceInfo host1 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("host1").setStatus(InstanceStatus.UP).build();
+        InstanceInfo host2 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("host2").setStatus(InstanceStatus.UP).build();
+
+        Application app = new Application("TestApp");
+        app.addInstance(host1);
+        app.addInstance(host2);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(true);
+
+        assertEquals(2, apps.getInstancesByVirtualHostName("my.vip").size());
+
+        // Change host2 to DOWN and reshuffle
+        host2.setStatus(InstanceStatus.DOWN);
+        apps.shuffleInstances(true);
+
+        // Only host1 should remain
+        List<InstanceInfo> result = apps.getInstancesByVirtualHostName("my.vip");
+        assertEquals(1, result.size());
+        assertTrue(result.contains(host1));
+        assertFalse(result.contains(host2));
+    }
+
+    @Test
+    public void testMixedVipAndSecureVipFiltering() {
+        InstanceInfo upBoth = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setSecureVIPAddress("secure.vip")
+                .setDataCenterInfo(TEST_DCI).setHostName("up.both").setStatus(InstanceStatus.UP).build();
+        InstanceInfo downBoth = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setSecureVIPAddress("secure.vip")
+                .setDataCenterInfo(TEST_DCI).setHostName("down.both").setStatus(InstanceStatus.DOWN).build();
+        InstanceInfo upVipOnly = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip")
+                .setDataCenterInfo(TEST_DCI).setHostName("up.vip").setStatus(InstanceStatus.UP).build();
+
+        Application app = new Application("TestApp");
+        app.addInstance(upBoth);
+        app.addInstance(downBoth);
+        app.addInstance(upVipOnly);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(true);
+
+        // VIP should have 2 UP instances
+        List<InstanceInfo> vipResult = apps.getInstancesByVirtualHostName("my.vip");
+        assertEquals(2, vipResult.size());
+        assertTrue(vipResult.contains(upBoth));
+        assertTrue(vipResult.contains(upVipOnly));
+
+        // Secure VIP should have 1 UP instance
+        List<InstanceInfo> secureResult = apps.getInstancesBySecureVirtualHostName("secure.vip");
+        assertEquals(1, secureResult.size());
+        assertTrue(secureResult.contains(upBoth));
+    }
+
+    // ==================== Collection Progression Tests (emptyList -> singletonList -> ArrayList) ====================
+
+    @Test
+    public void testVipInstanceCountProgression() {
+        // Explicitly test 0->1->2->3->4 instance progression on same VIP
+        // Validates emptyList -> singletonList -> ArrayList(12) transitions
+        InstanceInfo inst1 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("host1").setStatus(InstanceStatus.UP).build();
+        InstanceInfo inst2 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("host2").setStatus(InstanceStatus.UP).build();
+        InstanceInfo inst3 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("host3").setStatus(InstanceStatus.UP).build();
+        InstanceInfo inst4 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("host4").setStatus(InstanceStatus.UP).build();
+
+        Application app = new Application("TestApp");
+        Applications apps = new Applications();
+
+        // 0 instances - no VIP entry exists yet
+        apps.addApplication(app);
+        apps.shuffleInstances(false);
+        assertTrue(apps.getInstancesByVirtualHostName("my.vip").isEmpty());
+
+        // 1 instance - singletonList path
+        app.addInstance(inst1);
+        apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(false);
+        List<InstanceInfo> result1 = apps.getInstancesByVirtualHostName("my.vip");
+        assertEquals(1, result1.size());
+        assertTrue(result1.contains(inst1));
+
+        // 2 instances - ArrayList transition
+        app.addInstance(inst2);
+        apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(false);
+        List<InstanceInfo> result2 = apps.getInstancesByVirtualHostName("my.vip");
+        assertEquals(2, result2.size());
+        assertTrue(result2.contains(inst1));
+        assertTrue(result2.contains(inst2));
+
+        // 3 instances - ArrayList grows
+        app.addInstance(inst3);
+        apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(false);
+        List<InstanceInfo> result3 = apps.getInstancesByVirtualHostName("my.vip");
+        assertEquals(3, result3.size());
+
+        // 4 instances - ArrayList continues to grow
+        app.addInstance(inst4);
+        apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(false);
+        List<InstanceInfo> result4 = apps.getInstancesByVirtualHostName("my.vip");
+        assertEquals(4, result4.size());
+        assertTrue(result4.contains(inst1));
+        assertTrue(result4.contains(inst2));
+        assertTrue(result4.contains(inst3));
+        assertTrue(result4.contains(inst4));
+    }
+
+    @Test
+    public void testFilteringWithSingletonList_instanceUp() {
+        // Single UP instance: singletonList should be preserved
+        InstanceInfo instance = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("host1").setStatus(InstanceStatus.UP).build();
+        Application app = new Application("TestApp");
+        app.addInstance(instance);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(true);
+
+        List<InstanceInfo> result = apps.getInstancesByVirtualHostName("my.vip");
+        assertEquals(1, result.size());
+        assertTrue(result.contains(instance));
+    }
+
+    @Test
+    public void testFilteringWithSingletonList_instanceDown() {
+        // Single DOWN instance: should return emptyList
+        InstanceInfo instance = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("host1").setStatus(InstanceStatus.DOWN).build();
+        Application app = new Application("TestApp");
+        app.addInstance(instance);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(true);
+
+        List<InstanceInfo> result = apps.getInstancesByVirtualHostName("my.vip");
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void testFilteringWithArrayList_oneUpOneDown() {
+        // 2 instances (ArrayList), 1 UP 1 DOWN: filters to 1
+        InstanceInfo up = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("up.host").setStatus(InstanceStatus.UP).build();
+        InstanceInfo down = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("down.host").setStatus(InstanceStatus.DOWN).build();
+        Application app = new Application("TestApp");
+        app.addInstance(up);
+        app.addInstance(down);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(true);
+
+        List<InstanceInfo> result = apps.getInstancesByVirtualHostName("my.vip");
+        assertEquals(1, result.size());
+        assertTrue(result.contains(up));
+        assertFalse(result.contains(down));
+    }
+
+    @Test
+    public void testFilteringWithArrayList_allDown() {
+        // 3 instances (ArrayList), all DOWN: should return emptyList
+        InstanceInfo down1 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("down1.host").setStatus(InstanceStatus.DOWN).build();
+        InstanceInfo down2 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("down2.host").setStatus(InstanceStatus.OUT_OF_SERVICE).build();
+        InstanceInfo down3 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("down3.host").setStatus(InstanceStatus.STARTING).build();
+        Application app = new Application("TestApp");
+        app.addInstance(down1);
+        app.addInstance(down2);
+        app.addInstance(down3);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(true);
+
+        List<InstanceInfo> result = apps.getInstancesByVirtualHostName("my.vip");
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void testFilteringPreservesUpInstancesInOrder() {
+        // Verify UP instances are preserved (order may change due to shuffle)
+        InstanceInfo up1 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("up1").setStatus(InstanceStatus.UP).build();
+        InstanceInfo down1 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("down1").setStatus(InstanceStatus.DOWN).build();
+        InstanceInfo up2 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("up2").setStatus(InstanceStatus.UP).build();
+        InstanceInfo down2 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("down2").setStatus(InstanceStatus.OUT_OF_SERVICE).build();
+        InstanceInfo up3 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("up3").setStatus(InstanceStatus.UP).build();
+
+        Application app = new Application("TestApp");
+        app.addInstance(up1);
+        app.addInstance(down1);
+        app.addInstance(up2);
+        app.addInstance(down2);
+        app.addInstance(up3);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(true);
+
+        List<InstanceInfo> result = apps.getInstancesByVirtualHostName("my.vip");
+        assertEquals(3, result.size());
+        assertTrue(result.contains(up1));
+        assertTrue(result.contains(up2));
+        assertTrue(result.contains(up3));
+        assertFalse(result.contains(down1));
+        assertFalse(result.contains(down2));
+    }
+
+    @Test
+    public void testInstanceRemovalFromApplication() {
+        // Test that removing an instance from application is reflected after reshuffle
+        InstanceInfo inst1 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("host1").setStatus(InstanceStatus.UP).build();
+        InstanceInfo inst2 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("host2").setStatus(InstanceStatus.UP).build();
+        InstanceInfo inst3 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("host3").setStatus(InstanceStatus.UP).build();
+
+        Application app = new Application("TestApp");
+        app.addInstance(inst1);
+        app.addInstance(inst2);
+        app.addInstance(inst3);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(false);
+
+        assertEquals(3, apps.getInstancesByVirtualHostName("my.vip").size());
+
+        // Remove one instance
+        app.removeInstance(inst2);
+        apps.shuffleInstances(false);
+
+        List<InstanceInfo> result = apps.getInstancesByVirtualHostName("my.vip");
+        assertEquals(2, result.size());
+        assertTrue(result.contains(inst1));
+        assertFalse(result.contains(inst2));
+        assertTrue(result.contains(inst3));
+    }
+
+    @Test
+    public void testRemoveAllInstancesFromVip() {
+        // Test removing all instances results in empty VIP list
+        InstanceInfo inst1 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("host1").setStatus(InstanceStatus.UP).build();
+        InstanceInfo inst2 = InstanceInfo.Builder.newBuilder()
+                .setAppName("test").setVIPAddress("my.vip").setDataCenterInfo(TEST_DCI)
+                .setHostName("host2").setStatus(InstanceStatus.UP).build();
+
+        Application app = new Application("TestApp");
+        app.addInstance(inst1);
+        app.addInstance(inst2);
+        Applications apps = new Applications();
+        apps.addApplication(app);
+        apps.shuffleInstances(false);
+
+        assertEquals(2, apps.getInstancesByVirtualHostName("my.vip").size());
+
+        // Remove all instances
+        app.removeInstance(inst1);
+        app.removeInstance(inst2);
+        apps.shuffleInstances(false);
+
+        assertTrue(apps.getInstancesByVirtualHostName("my.vip").isEmpty());
+    }
 
 }
