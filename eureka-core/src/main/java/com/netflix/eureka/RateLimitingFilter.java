@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Netflix, Inc.
+ * Copyright 2014, 2024 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -149,8 +149,7 @@ public class RateLimitingFilter implements Filter {
 
     private static Target getTarget(ServletRequest request) {
         Target target = Target.Other;
-        if (request instanceof HttpServletRequest) {
-            HttpServletRequest httpRequest = (HttpServletRequest) request;
+        if (request instanceof HttpServletRequest httpRequest) {
             String pathInfo = httpRequest.getRequestURI();
 
             if ("GET".equals(httpRequest.getMethod()) && pathInfo != null) {
