@@ -23,4 +23,22 @@ public class InternalPrefixedConfigTest {
         config = new InternalPrefixedConfig(configInstance, "foo", "bar");
         Assert.assertEquals("foo.bar.", config.getNamespace());
     }
+
+    @Test
+    public void testEmptyAndNullPrefixesAreIgnored() {
+        Config configInstance = Mockito.mock(Config.class);
+
+        InternalPrefixedConfig config = new InternalPrefixedConfig(configInstance, null, "", "foo");
+
+        Assert.assertEquals("foo.", config.getNamespace());
+    }
+
+    @Test
+    public void testPrefixEndingWithDotIsNotDuplicated() {
+        Config configInstance = Mockito.mock(Config.class);
+
+        InternalPrefixedConfig config = new InternalPrefixedConfig(configInstance, "foo.", "bar");
+
+        Assert.assertEquals("foo.bar.", config.getNamespace());
+    }
 }
