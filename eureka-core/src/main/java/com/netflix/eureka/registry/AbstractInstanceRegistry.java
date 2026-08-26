@@ -23,6 +23,7 @@ import java.util.AbstractQueue;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -80,10 +81,13 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     private final ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>> registry
             = new ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>>();
     protected Map<String, RemoteRegionRegistry> regionNameVSRemoteRegistry = new HashMap<String, RemoteRegionRegistry>();
-    protected final ConcurrentMap<String, InstanceStatus> overriddenInstanceStatusMap = CacheBuilder
+    // Keyed by (appName, id), not just id: an instance id is entirely client-chosen, so
+    // keying this map by id alone would let one application's status-update call flip
+    // another application's instance if their ids happened to collide (#1630).
+    protected final ConcurrentMap<OverriddenStatusKey, InstanceStatus> overriddenInstanceStatusMap = CacheBuilder
             .newBuilder().initialCapacity(500)
             .expireAfterAccess(1, TimeUnit.HOURS)
-            .<String, InstanceStatus>build().asMap();
+            .<OverriddenStatusKey, InstanceStatus>build().asMap();
 
     // CircularQueues here for debugging/statistics purposes only
     private final CircularQueue<Pair<Long, String>> recentRegisteredQueue;
@@ -182,7 +186,11 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     // for server info use
     @Override
     public Map<String, InstanceStatus> overriddenInstanceStatusesSnapshot() {
-        return new HashMap<>(overriddenInstanceStatusMap);
+        Map<String, InstanceStatus> snapshot = new HashMap<>();
+        for (Map.Entry<OverriddenStatusKey, InstanceStatus> entry : overriddenInstanceStatusMap.entrySet()) {
+            snapshot.put(entry.getKey().toString(), entry.getValue());
+        }
+        return snapshot;
     }
 
     /**
@@ -237,15 +245,17 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     System.currentTimeMillis(),
                     registrant.getAppName() + "(" + registrant.getId() + ")"));
             // This is where the initial state transfer of overridden status happens
+            OverriddenStatusKey registrantOverrideKey =
+                    new OverriddenStatusKey(registrant.getAppName(), registrant.getId());
             if (!InstanceStatus.UNKNOWN.equals(registrant.getOverriddenStatus())) {
                 logger.debug("Found overridden status {} for instance {}. Checking to see if needs to be add to the "
                                 + "overrides", registrant.getOverriddenStatus(), registrant.getId());
-                if (!overriddenInstanceStatusMap.containsKey(registrant.getId())) {
+                if (!overriddenInstanceStatusMap.containsKey(registrantOverrideKey)) {
                     logger.info("Not found overridden id {} and hence adding it", registrant.getId());
-                    overriddenInstanceStatusMap.put(registrant.getId(), registrant.getOverriddenStatus());
+                    overriddenInstanceStatusMap.put(registrantOverrideKey, registrant.getOverriddenStatus());
                 }
             }
-            InstanceStatus overriddenStatusFromMap = overriddenInstanceStatusMap.get(registrant.getId());
+            InstanceStatus overriddenStatusFromMap = overriddenInstanceStatusMap.get(registrantOverrideKey);
             if (overriddenStatusFromMap != null) {
                 logger.info("Storing overridden status {} from map", overriddenStatusFromMap);
                 registrant.setOverriddenStatus(overriddenStatusFromMap);
@@ -304,7 +314,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 leaseToCancel = gMap.remove(id);
             }
             recentCanceledQueue.add(new Pair<Long, String>(System.currentTimeMillis(), appName + "(" + id + ")"));
-            InstanceStatus instanceStatus = overriddenInstanceStatusMap.remove(id);
+            InstanceStatus instanceStatus = overriddenInstanceStatusMap.remove(new OverriddenStatusKey(appName, id));
             if (instanceStatus != null) {
                 logger.debug("Removed instance id {} from the overridden map which has value {}", id, instanceStatus.name());
             }
@@ -400,24 +410,23 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     @Deprecated
     @Override
     public void storeOverriddenStatusIfRequired(String id, InstanceStatus overriddenStatus) {
-        InstanceStatus instanceStatus = overriddenInstanceStatusMap.get(id);
-        if ((instanceStatus == null)
-                || (!overriddenStatus.equals(instanceStatus))) {
-            // We might not have the overridden status if the server got restarted -this will help us maintain
-            // the overridden state from the replica
-            logger.info(
-                    "Adding overridden status for instance id {} and the value is {}",
-                    id, overriddenStatus.name());
-            overriddenInstanceStatusMap.put(id, overriddenStatus);
-            List<InstanceInfo> instanceInfo = this.getInstancesById(id, false);
-            if ((instanceInfo != null) && (!instanceInfo.isEmpty())) {
-                instanceInfo.iterator().next().setOverriddenStatus(overriddenStatus);
-                logger.info(
-                        "Setting the overridden status for instance id {} and the value is {} ",
-                        id, overriddenStatus.name());
-
+        // No appName was given, so an appName has to be resolved from id alone - which is
+        // exactly the ambiguity #1630 is about, so refuse instead of guessing if the id
+        // isn't uniquely owned by one application.
+        List<InstanceInfo> instancesWithId = this.getInstancesById(id, false);
+        Set<String> appNames = new HashSet<>();
+        if (instancesWithId != null) {
+            for (InstanceInfo instance : instancesWithId) {
+                appNames.add(instance.getAppName());
             }
         }
+        if (appNames.size() != 1) {
+            logger.warn("Cannot store overridden status for instance id {}: expected exactly one owning "
+                    + "application, found {}. Use storeOverriddenStatusIfRequired(String, String, "
+                    + "InstanceStatus) instead.", id, appNames);
+            return;
+        }
+        storeOverriddenStatusIfRequired(appNames.iterator().next(), id, overriddenStatus);
     }
 
     /**
@@ -430,14 +439,15 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      */
     @Override
     public void storeOverriddenStatusIfRequired(String appName, String id, InstanceStatus overriddenStatus) {
-        InstanceStatus instanceStatus = overriddenInstanceStatusMap.get(id);
+        OverriddenStatusKey key = new OverriddenStatusKey(appName, id);
+        InstanceStatus instanceStatus = overriddenInstanceStatusMap.get(key);
         if ((instanceStatus == null) || (!overriddenStatus.equals(instanceStatus))) {
             // We might not have the overridden status if the server got
             // restarted -this will help us maintain the overridden state
             // from the replica
             logger.info("Adding overridden status for instance id {} and the value is {}",
                     id, overriddenStatus.name());
-            overriddenInstanceStatusMap.put(id, overriddenStatus);
+            overriddenInstanceStatusMap.put(key, overriddenStatus);
             InstanceInfo instanceInfo = this.getInstanceByAppAndId(appName, id, false);
             instanceInfo.setOverriddenStatus(overriddenStatus);
             logger.info("Set the overridden status for instance (appname:{}, id:{}} and the value is {} ",
@@ -486,7 +496,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                         lease.serviceUp();
                     }
                     // This is NAC overridden status
-                    overriddenInstanceStatusMap.put(id, newStatus);
+                    overriddenInstanceStatusMap.put(new OverriddenStatusKey(appName, id), newStatus);
                     // Set it for transfer of overridden status to replica on
                     // replica start up
                     info.setOverriddenStatus(newStatus);
@@ -548,7 +558,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     logger.error("Found Lease without a holder for instance id {}", id);
                 }
 
-                InstanceStatus currentOverride = overriddenInstanceStatusMap.remove(id);
+                InstanceStatus currentOverride = overriddenInstanceStatusMap.remove(new OverriddenStatusKey(appName, id));
                 if (currentOverride != null && info != null) {
                     info.setOverriddenStatus(InstanceStatus.UNKNOWN);
                     info.setStatusWithoutDirty(newStatus);

@@ -667,7 +667,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                     node.cancel(appName, id);
                     break;
                 case Heartbeat:
-                    InstanceStatus overriddenStatus = overriddenInstanceStatusMap.get(id);
+                    InstanceStatus overriddenStatus = overriddenInstanceStatusMap.get(new OverriddenStatusKey(appName, id));
                     infoFromRegistry = getInstanceByAppAndId(appName, id, false);
                     node.heartbeat(appName, id, infoFromRegistry, overriddenStatus, false);
                     break;
