@@ -156,7 +156,7 @@ public class ResponseCacheImpl implements ResponseCache {
 
         if (shouldUseReadOnlyResponseCache) {
             timer.schedule(getCacheUpdateTask(),
-                    new Date(((System.currentTimeMillis() / responseCacheUpdateIntervalMs) * responseCacheUpdateIntervalMs)
+                    new Date(System.currentTimeMillis()
                             + responseCacheUpdateIntervalMs),
                     responseCacheUpdateIntervalMs);
         }
