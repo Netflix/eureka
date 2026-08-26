@@ -26,7 +26,7 @@ allprojects {
         jerseyVersion = '1.19.1'
         jettisonVersion = '1.5.4'
         apacheHttpClientVersion = '4.5.3'
-        commonsConfigurationVersion = '1.10'
+        commonsLang3Version = '3.20.0'
         jsr305Version = '3.0.2'
         guiceVersion = '4.1.0'
         servoVersion = '0.12.21'

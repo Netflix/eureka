@@ -14,7 +14,9 @@ dependencies {
     api "com.sun.jersey.contribs:jersey-apache-client4:${jerseyVersion}"
     api "org.apache.httpcomponents:httpclient:${apacheHttpClientVersion}"
     api "com.google.code.findbugs:jsr305:${jsr305Version}"
-    api "commons-configuration:commons-configuration:${commonsConfigurationVersion}"
+    api "org.apache.commons:commons-lang3:${commonsLang3Version}"
+    // commons-configuration v1 required at compile time by archaius-core 0.7.6
+    api "commons-configuration:commons-configuration:1.10"
     api "com.google.inject:guice:${guiceVersion}"
 
     api "com.github.vlsi.compactmap:compactmap:2.0"

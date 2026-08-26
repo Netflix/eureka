@@ -23,7 +23,6 @@ import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.internal.util.Archaius1Utils;
-import org.apache.commons.configuration.Configuration;
 
 import static com.netflix.appinfo.PropertyBasedInstanceConfigConstants.*;
 
@@ -212,14 +211,17 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
     public Map<String, String> getMetadataMap() {
         String metadataNamespace = namespace + INSTANCE_METADATA_PREFIX + ".";
         Map<String, String> metadataMap = new LinkedHashMap<>();
-        Configuration config = (Configuration) configInstance.getBackingConfigurationSource();
         String subsetPrefix = metadataNamespace.charAt(metadataNamespace.length() - 1) == '.'
                 ? metadataNamespace.substring(0, metadataNamespace.length() - 1)
                 : metadataNamespace;
-        for (Iterator<String> iter = config.subset(subsetPrefix).getKeys(); iter.hasNext(); ) {
-            String key = iter.next();
-            String value = config.getString(subsetPrefix + "." + key);
-            metadataMap.put(key, value);
+        // Use ConfigurationManager directly to iterate over keys with the metadata prefix
+        Iterator<String> iter = ConfigurationManager.getConfigInstance().getKeys(subsetPrefix);
+        while (iter.hasNext()) {
+            String fullKey = iter.next();
+            // Extract the relative key by removing the prefix (plus the trailing dot)
+            String relativeKey = fullKey.substring(subsetPrefix.length() + 1);
+            String value = ConfigurationManager.getConfigInstance().getString(fullKey);
+            metadataMap.put(relativeKey, value);
         }
         return metadataMap;
     }
