@@ -2,6 +2,7 @@ package com.netflix.eureka.registry.rule;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.eureka.lease.Lease;
+import com.netflix.eureka.registry.OverriddenStatusKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,15 +17,16 @@ public class OverrideExistsRule implements InstanceStatusOverrideRule {
 
     private static final Logger logger = LoggerFactory.getLogger(OverrideExistsRule.class);
 
-    private Map<String, InstanceInfo.InstanceStatus> statusOverrides;
+    private Map<OverriddenStatusKey, InstanceInfo.InstanceStatus> statusOverrides;
 
-    public OverrideExistsRule(Map<String, InstanceInfo.InstanceStatus> statusOverrides) {
+    public OverrideExistsRule(Map<OverriddenStatusKey, InstanceInfo.InstanceStatus> statusOverrides) {
         this.statusOverrides = statusOverrides;
     }
 
     @Override
     public StatusOverrideResult apply(InstanceInfo instanceInfo, Lease<InstanceInfo> existingLease, boolean isReplication) {
-        InstanceInfo.InstanceStatus overridden = statusOverrides.get(instanceInfo.getId());
+        InstanceInfo.InstanceStatus overridden =
+                statusOverrides.get(new OverriddenStatusKey(instanceInfo.getAppName(), instanceInfo.getId()));
         // If there are instance specific overrides, then they win - otherwise the ASG status
         if (overridden != null) {
             logger.debug("The instance specific override for instance {} and the value is {}",
