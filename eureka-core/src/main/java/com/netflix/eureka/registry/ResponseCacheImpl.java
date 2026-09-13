@@ -296,7 +296,7 @@ public class ResponseCacheImpl implements ResponseCache {
     /**
      * Gets the version number of the cached data.
      *
-     * @return teh version number of the cached data.
+     * @return the version number of the cached data.
      */
     @Override
     public AtomicLong getVersionDelta() {
@@ -306,7 +306,7 @@ public class ResponseCacheImpl implements ResponseCache {
     /**
      * Gets the version number of the cached data with remote regions.
      *
-     * @return teh version number of the cached data with remote regions.
+     * @return the version number of the cached data with remote regions.
      */
     @Override
     public AtomicLong getVersionDeltaWithRegions() {
@@ -318,7 +318,7 @@ public class ResponseCacheImpl implements ResponseCache {
      *
      * Gets the version number of the cached data.
      *
-     * @return teh version number of the cached data.
+     * @return the version number of the cached data.
      */
     @Deprecated
     public static AtomicLong getVersionDeltaStatic() {
@@ -330,7 +330,7 @@ public class ResponseCacheImpl implements ResponseCache {
      *
      * Gets the version number of the cached data with remote regions.
      *
-     * @return teh version number of the cached data with remote regions.
+     * @return the version number of the cached data with remote regions.
      */
     @Deprecated
     public static AtomicLong getVersionDeltaWithRegionsLegacy() {
