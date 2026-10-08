@@ -54,6 +54,12 @@ public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClien
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractJersey2EurekaHttpClient.class);
 
+    /**
+     * Upper bound on how much of a non-2xx response body is included in the registration-failure
+     * log line, so a large error page (e.g. a proxy's HTML error document) can't flood the logs.
+     */
+    private static final int MAX_LOGGED_RESPONSE_BODY_LENGTH = 1024;
+
     protected final Client jerseyClient;
     protected final String serviceUrl;
     private final String userName;
@@ -93,6 +99,10 @@ public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClien
                     .accept(MediaType.APPLICATION_JSON)
                     .acceptEncoding("gzip")
                     .post(Entity.json(info));
+            if (!isSuccess(response.getStatus()) && logger.isWarnEnabled()) {
+                logger.warn("Jersey2 HTTP POST {}/{} with instance {} was rejected; statusCode={}, responseBody={}",
+                        serviceUrl, urlPath, info.getId(), response.getStatus(), readBodyForLogging(response));
+            }
             return anEurekaHttpResponse(response.getStatus()).headers(headersOf(response)).build();
         } finally {
             if (logger.isDebugEnabled()) {
@@ -102,6 +112,30 @@ public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClien
             if (response != null) {
                 response.close();
             }
+        }
+    }
+
+    private static boolean isSuccess(int statusCode) {
+        return statusCode >= 200 && statusCode < 300;
+    }
+
+    /**
+     * Reads the response body for inclusion in a log message. Must only be called when the
+     * entity has not already been consumed, and at most once per response. Any failure to read
+     * the body (e.g. it was already consumed, or the connection dropped) is reported inline
+     * rather than thrown, since this is purely diagnostic.
+     */
+    private static String readBodyForLogging(Response response) {
+        try {
+            String body = response.readEntity(String.class);
+            if (body == null || body.isEmpty()) {
+                return "<empty>";
+            }
+            return body.length() > MAX_LOGGED_RESPONSE_BODY_LENGTH
+                    ? body.substring(0, MAX_LOGGED_RESPONSE_BODY_LENGTH) + "...(truncated)"
+                    : body;
+        } catch (Exception e) {
+            return "<unreadable response body: " + e.getMessage() + ">";
         }
     }
 
