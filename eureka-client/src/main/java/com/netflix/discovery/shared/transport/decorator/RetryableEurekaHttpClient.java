@@ -99,6 +99,10 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
         List<EurekaEndpoint> candidateHosts = null;
         int endpointIdx = 0;
         for (int retry = 0; retry < numberOfRetries; retry++) {
+            if (retry > 0 && Thread.currentThread().isInterrupted()) {
+                // The caller gave up on this request (e.g. TimedSupervisorTask cancelled it); do not contact further servers
+                throw new TransportException("Request interrupted; giving up on completing the request");
+            }
             EurekaHttpClient currentHttpClient = delegate.get();
             EurekaEndpoint currentEndpoint = null;
             if (currentHttpClient == null) {

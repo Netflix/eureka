@@ -89,6 +89,29 @@ public class RetryableEurekaHttpClientTest {
     }
 
     @Test
+    public void testNoRetryOnOtherServersWhenThreadIsInterrupted() throws Exception {
+        when(clientFactory.newClient(Matchers.<EurekaEndpoint>anyVararg())).thenReturn(clusterDelegates.get(0), clusterDelegates.get(1));
+        when(requestExecutor.execute(clusterDelegates.get(0))).thenAnswer(invocation -> {
+            // Simulates the caller cancelling the request (e.g. a timed-out Future) while the first server is being contacted
+            Thread.currentThread().interrupt();
+            throw new TransportException("simulated network error");
+        });
+        when(requestExecutor.execute(clusterDelegates.get(1))).thenReturn(EurekaHttpResponse.status(200));
+
+        try {
+            retryableClient.execute(requestExecutor);
+            fail("Expected TransportException");
+        } catch (TransportException e) {
+            // expected
+        } finally {
+            assertThat(Thread.interrupted(), is(true));
+        }
+
+        verify(clientFactory, times(1)).newClient(Matchers.<EurekaEndpoint>anyVararg());
+        verify(requestExecutor, times(0)).execute(clusterDelegates.get(1));
+    }
+
+    @Test
     public void testRequestsReuseSameConnectionIfThereIsNoError() throws Exception {
         when(clientFactory.newClient(Matchers.<EurekaEndpoint>anyVararg())).thenReturn(clusterDelegates.get(0));
         when(requestExecutor.execute(clusterDelegates.get(0))).thenReturn(EurekaHttpResponse.status(200));
